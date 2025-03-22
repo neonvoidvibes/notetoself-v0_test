@@ -6,7 +6,7 @@ struct JournalView: View {
     @State private var expandedEntryId: UUID? = nil
     
     // Access to shared styles
-    private let styles = UIStyles.shared
+    JournalTheme.colors
     
     var body: some View {
         ZStack {
