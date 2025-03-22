@@ -11,7 +11,8 @@ import SwiftUI
 struct NoteToSelf_v0_testApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            JournalView()
         }
     }
 }
+
