@@ -5,6 +5,9 @@ struct ReflectionsView: View {
     @State private var messageText: String = ""
     @State private var isTyping: Bool = false
     @State private var showingSubscriptionPrompt: Bool = false
+    @Binding var tabBarOffset: CGFloat
+    @Binding var lastScrollPosition: CGFloat
+    @Binding var tabBarVisible: Bool
     
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -26,18 +29,49 @@ struct ReflectionsView: View {
             // Chat messages
             ScrollViewReader { scrollView in
                 ScrollView {
+                    GeometryReader { geometry in
+                        Color.clear.preference(
+                            key: ScrollOffsetPreferenceKey.self,
+                            value: geometry.frame(in: .named("scrollView")).minY
+                        )
+                    }
+                    .frame(height: 0)
+                    
                     LazyVStack(spacing: styles.layout.spacingM) {
                         ForEach(appState.chatMessages) { message in
                             ChatBubble(message: message)
                                 .id(message.id)
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.9).combined(with: .opacity).animation(.spring(response: 0.3, dampingFraction: 0.7)),
+                                    removal: .opacity.animation(.easeOut(duration: 0.2))
+                                ))
                         }
                         
                         if isTyping {
                             TypingIndicator()
+                                .transition(.opacity.animation(.easeInOut(duration: 0.2)))
                         }
                     }
                     .padding(.horizontal, styles.layout.paddingL)
                     .padding(.vertical, styles.layout.paddingL)
+                    .padding(.bottom, 80) // Extra padding for input field
+                }
+                .coordinateSpace(name: "scrollView")
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                    // Calculate scroll direction and update tab bar visibility
+                    let scrollingDown = value < lastScrollPosition
+                    
+                    // Only update when scrolling more than a threshold to avoid jitter
+                    if abs(value - lastScrollPosition) > 10 {
+                        if scrollingDown {
+                            tabBarOffset = 100 // Hide tab bar
+                            tabBarVisible = false
+                        } else {
+                            tabBarOffset = 0 // Show tab bar
+                            tabBarVisible = true
+                        }
+                        lastScrollPosition = value
+                    }
                 }
                 .onChange(of: appState.chatMessages.count) { newCount in
                     if let lastMessage = appState.chatMessages.last {
@@ -74,8 +108,10 @@ struct ReflectionsView: View {
                             .colorScheme(.dark) // Force dark mode for the TextEditor
                     }
                     .padding(styles.layout.paddingS)
-                    .background(styles.colors.appBackground) // Changed to match container color
-                    .cornerRadius(styles.layout.radiusM)
+                    .background(
+                        RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                            .fill(styles.colors.secondaryBackground.opacity(0.8))
+                    )
                     .overlay(
                         RoundedRectangle(cornerRadius: styles.layout.radiusM)
                             .stroke(styles.colors.divider, lineWidth: 1)
@@ -85,13 +121,19 @@ struct ReflectionsView: View {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: styles.layout.iconSizeXL))
                             .foregroundColor(messageText.isEmpty ? styles.colors.textDisabled : styles.colors.accent)
+                            .shadow(color: messageText.isEmpty ? Color.clear : styles.colors.accent.opacity(0.5), radius: 5, x: 0, y: 0)
                     }
                     .disabled(messageText.isEmpty)
+                    .scaleEffect(messageText.isEmpty ? 1.0 : 1.1)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: messageText.isEmpty)
                 }
                 .padding(.horizontal, styles.layout.paddingL)
                 .padding(.vertical, styles.layout.paddingM)
             }
-            .background(styles.colors.appBackground)
+            .background(
+                BlurView(style: .systemUltraThinMaterialDark)
+                    .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: -5)
+            )
         }
         .background(styles.colors.appBackground.ignoresSafeArea())
         .alert(isPresented: $showingSubscriptionPrompt) {
@@ -117,7 +159,11 @@ struct ReflectionsView: View {
         
         // Add user message
         let userMessage = ChatMessage(text: messageText, isUser: true)
-        appState.chatMessages.append(userMessage)
+        
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            appState.chatMessages.append(userMessage)
+        }
+        
         messageText = ""
         
         // Increment usage counter for free tier
@@ -135,7 +181,10 @@ struct ReflectionsView: View {
             // Generate a response based on the user's message
             let responseText = generateResponse(to: userMessage.text)
             let aiMessage = ChatMessage(text: responseText, isUser: false)
-            appState.chatMessages.append(aiMessage)
+            
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                appState.chatMessages.append(aiMessage)
+            }
         }
     }
     
@@ -175,12 +224,29 @@ struct ChatBubble: View {
                     .font(styles.typography.bodyFont)
                     .foregroundColor(message.isUser ? styles.colors.text : styles.colors.text)
                     .padding(styles.layout.paddingM)
-                    .background(message.isUser ? styles.colors.accent.opacity(0.2) : styles.colors.chatAIBubble)
-                    .cornerRadius(styles.layout.radiusL)
+                    .background(
+                        RoundedRectangle(cornerRadius: styles.layout.radiusL)
+                            .fill(
+                                message.isUser 
+                                ? LinearGradient(
+                                    gradient: Gradient(colors: [styles.colors.accent.opacity(0.3), styles.colors.accent.opacity(0.15)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                  )
+                                : LinearGradient(
+                                    gradient: Gradient(colors: [styles.colors.chatAIBubble, styles.colors.chatAIBubble.opacity(0.8)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                  )
+                            )
+                    )
+                    .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
                 
                 if !message.isUser {
                     Button(action: {
-                        showingSaveOption.toggle()
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            showingSaveOption.toggle()
+                        }
                     }) {
                         Text("Save to Journal")
                             .font(styles.typography.caption)
@@ -197,22 +263,35 @@ struct ChatBubble: View {
                             
                             Button(action: {
                                 // Save to journal logic would go here
-                                showingSaveOption = false
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    showingSaveOption = false
+                                }
                             }) {
                                 Text("Yes")
                                     .font(styles.typography.caption)
                                     .foregroundColor(styles.colors.accent)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(styles.colors.secondaryBackground)
+                                    .cornerRadius(12)
                             }
                             
                             Button(action: {
-                                showingSaveOption = false
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    showingSaveOption = false
+                                }
                             }) {
                                 Text("No")
                                     .font(styles.typography.caption)
                                     .foregroundColor(styles.colors.textSecondary)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(styles.colors.secondaryBackground)
+                                    .cornerRadius(12)
                             }
                         }
                         .padding(.leading, styles.layout.paddingS)
+                        .transition(.scale.combined(with: .opacity))
                     }
                 }
             }
@@ -241,8 +320,11 @@ struct TypingIndicator: View {
                 }
             }
             .padding(styles.layout.paddingM)
-            .background(styles.colors.chatAIBubble)
-            .cornerRadius(styles.layout.radiusL)
+            .background(
+                RoundedRectangle(cornerRadius: styles.layout.radiusL)
+                    .fill(styles.colors.chatAIBubble)
+                    .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+            )
             
             Spacer()
         }
@@ -264,7 +346,11 @@ struct ReflectionsView_Previews: PreviewProvider {
         let appState = AppState()
         appState.loadSampleData()
         
-        return ReflectionsView()
-            .environmentObject(appState)
+        return ReflectionsView(
+            tabBarOffset: .constant(0),
+            lastScrollPosition: .constant(0),
+            tabBarVisible: .constant(true)
+        )
+        .environmentObject(appState)
     }
 }

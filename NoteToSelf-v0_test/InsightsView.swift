@@ -4,12 +4,23 @@ import Charts
 struct InsightsView: View {
     @EnvironmentObject var appState: AppState
     @State private var selectedMonth: Date = Date()
+    @Binding var tabBarOffset: CGFloat
+    @Binding var lastScrollPosition: CGFloat
+    @Binding var tabBarVisible: Bool
     
     // Access to shared styles
     private let styles = UIStyles.shared
     
     var body: some View {
         ScrollView {
+            GeometryReader { geometry in
+                Color.clear.preference(
+                    key: ScrollOffsetPreferenceKey.self,
+                    value: geometry.frame(in: .named("scrollView")).minY
+                )
+            }
+            .frame(height: 0)
+            
             VStack(spacing: styles.layout.spacingXL) {
                 // Header
                 HStack {
@@ -21,6 +32,7 @@ struct InsightsView: View {
                 }
                 .padding(.horizontal, styles.layout.paddingXL)
                 .padding(.top, styles.layout.topSafeAreaPadding)
+                .padding(.bottom, styles.layout.paddingM)
                 
                 // Current Streak
                 StreakCard(streak: appState.currentStreak)
@@ -37,7 +49,24 @@ struct InsightsView: View {
                 // Advanced Analytics (Subscription Gated)
                 AdvancedAnalyticsSection(subscriptionTier: appState.subscriptionTier)
                     .padding(.horizontal, styles.layout.paddingL)
-                    .padding(.bottom, styles.layout.paddingXL)
+                    .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
+            }
+        }
+        .coordinateSpace(name: "scrollView")
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+            // Calculate scroll direction and update tab bar visibility
+            let scrollingDown = value < lastScrollPosition
+            
+            // Only update when scrolling more than a threshold to avoid jitter
+            if abs(value - lastScrollPosition) > 10 {
+                if scrollingDown {
+                    tabBarOffset = 100 // Hide tab bar
+                    tabBarVisible = false
+                } else {
+                    tabBarOffset = 0 // Show tab bar
+                    tabBarVisible = true
+                }
+                lastScrollPosition = value
             }
         }
         .background(styles.colors.appBackground.ignoresSafeArea())
@@ -85,6 +114,8 @@ struct StreakCard: View {
             }
             .padding(styles.layout.paddingL)
         )
+        .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
+        .transition(.scale.combined(with: .opacity))
     }
 }
 
@@ -113,7 +144,7 @@ struct MonthlyCalendarSection: View {
                     
                     HStack(spacing: styles.layout.spacingM) {
                         Button(action: {
-                            withAnimation {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 selectedMonth = Calendar.current.date(byAdding: .month, value: -1, to: selectedMonth)!
                             }
                         }) {
@@ -126,7 +157,7 @@ struct MonthlyCalendarSection: View {
                             .foregroundColor(styles.colors.text)
                         
                         Button(action: {
-                            withAnimation {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 selectedMonth = Calendar.current.date(byAdding: .month, value: 1, to: selectedMonth)!
                             }
                         }) {
@@ -151,6 +182,7 @@ struct MonthlyCalendarSection: View {
                     ForEach(daysInMonth(), id: \.self) { day in
                         if day.day != 0 {
                             CalendarDayView(day: day, entries: entries)
+                                .transition(.scale.combined(with: .opacity))
                         } else {
                             // Empty cell for days not in this month
                             Color.clear
@@ -161,6 +193,7 @@ struct MonthlyCalendarSection: View {
             }
             .padding(styles.layout.paddingL)
         )
+        .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
     }
     
     private func monthYearString(from date: Date) -> String {
@@ -232,13 +265,39 @@ struct CalendarDayView: View {
     
     var body: some View {
         ZStack {
-            Circle()
-                .fill(hasEntry ? (entryMood?.color.opacity(0.3) ?? styles.colors.accent.opacity(0.3)) : Color.clear)
-                .frame(width: 40, height: 40)
+            // Background circle with subtle gradient for depth
+            if hasEntry {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(
+                                colors: [
+                                    entryMood?.color.opacity(0.4) ?? styles.colors.accent.opacity(0.4),
+                                    entryMood?.color.opacity(0.2) ?? styles.colors.accent.opacity(0.2)
+                                ]
+                            ),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 40, height: 40)
+            }
             
             if isToday {
                 Circle()
-                    .stroke(styles.colors.accent, lineWidth: 2)
+                    .stroke(
+                        LinearGradient(
+                            gradient: Gradient(
+                                colors: [
+                                    styles.colors.accent,
+                                    styles.colors.accent.opacity(0.7)
+                                ]
+                            ),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 2
+                    )
                     .frame(width: 40, height: 40)
             }
             
@@ -322,7 +381,13 @@ struct MoodChartSection: View {
                                     x: .value("Date", dataPoint.date),
                                     y: .value("Mood", dataPoint.value)
                                 )
-                                .foregroundStyle(styles.colors.accent)
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [styles.colors.accent, styles.colors.accent.opacity(0.7)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
                                 .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round))
                                 
                                 PointMark(
@@ -377,6 +442,7 @@ struct MoodChartSection: View {
             }
             .padding(styles.layout.paddingL)
         )
+        .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
     }
     
     private func formatDate(_ date: Date) -> String {
@@ -461,11 +527,15 @@ struct AdvancedAnalyticsSection: View {
                         .frame(width: 150)
                     }
                     .padding(styles.layout.paddingL)
-                    .background(styles.colors.surface.opacity(0.9))
-                    .cornerRadius(styles.layout.radiusL)
+                    .background(
+                        RoundedRectangle(cornerRadius: styles.layout.radiusL)
+                            .fill(styles.colors.surface.opacity(0.9))
+                            .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 10)
+                    )
                 }
             }
         )
+        .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
     }
 }
 
@@ -487,8 +557,6 @@ struct AnalyticItem: View {
                 .font(styles.typography.bodyFont)
                 .foregroundColor(styles.colors.text)
                 .multilineTextAlignment(.center)
-            
-
         }
         .frame(maxWidth: .infinity)
     }
@@ -499,7 +567,11 @@ struct InsightsView_Previews: PreviewProvider {
         let appState = AppState()
         appState.loadSampleData()
         
-        return InsightsView()
-            .environmentObject(appState)
+        return InsightsView(
+            tabBarOffset: .constant(0),
+            lastScrollPosition: .constant(0),
+            tabBarVisible: .constant(true)
+        )
+        .environmentObject(appState)
     }
 }

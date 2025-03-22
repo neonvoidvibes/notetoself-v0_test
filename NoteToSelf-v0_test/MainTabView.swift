@@ -3,8 +3,11 @@ import SwiftUI
 struct MainTabView: View {
     @StateObject private var appState = AppState()
     @State private var selectedTab = 0
-    @State private var showingNavigation = false
     @State private var showingSettings = false
+    @State private var tabBarOffset: CGFloat = 0
+    @State private var lastScrollPosition: CGFloat = 0
+    @State private var tabBarVisible = true
+    @State private var settingsOffset: CGFloat = UIScreen.main.bounds.width
     
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -17,54 +20,27 @@ struct MainTabView: View {
             
             // Main content
             ZStack {
-                // Current tab content
+                // Current tab content with parallax effect
                 Group {
                     if selectedTab == 0 {
-                        JournalView()
+                        JournalView(tabBarOffset: $tabBarOffset, lastScrollPosition: $lastScrollPosition, tabBarVisible: $tabBarVisible)
                     } else if selectedTab == 1 {
-                        InsightsView()
+                        InsightsView(tabBarOffset: $tabBarOffset, lastScrollPosition: $lastScrollPosition, tabBarVisible: $tabBarVisible)
                     } else if selectedTab == 2 {
-                        ReflectionsView()
+                        ReflectionsView(tabBarOffset: $tabBarOffset, lastScrollPosition: $lastScrollPosition, tabBarVisible: $tabBarVisible)
                     }
                 }
-                .offset(x: showingSettings ? -UIScreen.main.bounds.width : 0)
-                .offset(y: showingNavigation ? -120 : 0)
-                .scaleEffect(showingSettings ? 0.9 : 1)
+                .offset(x: showingSettings ? -UIScreen.main.bounds.width * 0.85 : 0)
+                .scaleEffect(showingSettings ? 0.85 : 1)
+                .cornerRadius(showingSettings ? 30 : 0)
+                .shadow(color: Color.black.opacity(showingSettings ? 0.2 : 0), radius: 20, x: 0, y: 0)
+                .blur(radius: showingSettings ? 2 : 0)
                 
-                // Navigation toggle button area with black background
-                VStack {
-                    Spacer()
-                    VStack(spacing: styles.layout.spacingXS) {
-                        Text(showingNavigation ? "Close Navigation" : "Navigation")
-                            .font(styles.typography.navLabel)
-                            .foregroundColor(styles.colors.textSecondary)
-                        
-                        Button(action: {
-                            withAnimation(styles.animation.defaultAnimation) {
-                                showingNavigation.toggle()
-                            }
-                        }) {
-                            Image(systemName: showingNavigation ? "chevron.up" : "chevron.down")
-                                .font(.system(size: styles.layout.iconSizeM))
-                                .foregroundColor(styles.colors.accent)
-                                .frame(width: 44, height: 44)
-                                .background(styles.colors.secondaryBackground.opacity(0.5))
-                                .clipShape(Circle())
-                        }
-                    }
-                    .padding(.bottom, showingNavigation ? 120 : 20)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.black)
-                }
-                
-                // Settings menu
-                if showingSettings {
-                    SettingsView()
-                        .frame(width: styles.layout.settingsMenuWidth)
-                        .transition(.move(edge: .trailing))
-                        .offset(x: UIScreen.main.bounds.width - styles.layout.settingsMenuWidth)
-                        .zIndex(2)
-                }
+                // Settings view
+                SettingsView()
+                    .frame(width: UIScreen.main.bounds.width)
+                    .offset(x: settingsOffset)
+                    .zIndex(2)
             }
             .overlay(
                 // Top bar with settings button
@@ -72,54 +48,68 @@ struct MainTabView: View {
                     HStack {
                         if showingSettings {
                             Button(action: {
-                                withAnimation(styles.animation.defaultAnimation) {
+                                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                                     showingSettings.toggle()
+                                    settingsOffset = UIScreen.main.bounds.width
                                 }
                             }) {
-                                VStack(spacing: 4) {
-                                    Rectangle()
-                                        .frame(width: 24, height: 2)
-                                    Rectangle()
-                                        .frame(width: 16, height: 2)
-                                }
-                                .foregroundColor(styles.colors.accent)
-                                .padding()
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(styles.colors.accent)
+                                    .frame(width: 36, height: 36)
+                                    .background(styles.colors.secondaryBackground.opacity(0.8))
+                                    .clipShape(Circle())
                             }
+                            .padding(.leading, 20)
+                            .transition(.scale.combined(with: .opacity))
+                            
                             Spacer()
                         } else {
                             Spacer()
+                            
                             Button(action: {
-                                withAnimation(styles.animation.defaultAnimation) {
+                                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                                     showingSettings.toggle()
+                                    settingsOffset = 0
                                 }
                             }) {
-                                VStack(spacing: 4) {
+                                VStack(spacing: 5) {
                                     Rectangle()
-                                        .frame(width: 24, height: 2)
+                                        .fill(styles.colors.accent)
+                                        .frame(width: 20, height: 2)
+                                        .cornerRadius(1)
                                     Rectangle()
-                                        .frame(width: 16, height: 2)
+                                        .fill(styles.colors.accent)
+                                        .frame(width: 14, height: 2)
+                                        .cornerRadius(1)
                                 }
-                                .foregroundColor(styles.colors.accent)
-                                .padding()
+                                .frame(width: 36, height: 36)
+                                .background(styles.colors.secondaryBackground.opacity(0.8))
+                                .clipShape(Circle())
+                                .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
                             }
+                            .padding(.trailing, 20)
+                            .transition(.scale.combined(with: .opacity))
                         }
                     }
                     .padding(.top, styles.layout.topSafeAreaPadding - 10)
+                    .zIndex(100)
+                    
                     Spacer()
                 }
                 .zIndex(3)
             )
             
-            // Custom tab bar (shown only when navigation is toggled)
+            // Modern floating tab bar
             VStack {
                 Spacer()
                 
-                if showingNavigation {
-                    CustomTabBar(selectedTab: $selectedTab)
-                        .transition(.move(edge: .bottom))
-                        .zIndex(4)
-                }
+                ModernTabBar(selectedTab: $selectedTab, visible: tabBarVisible)
+                    .offset(y: tabBarOffset)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: tabBarOffset)
             }
+            .ignoresSafeArea(.keyboard)
+            .zIndex(4)
         }
         .environmentObject(appState)
         .preferredColorScheme(.dark)
@@ -136,52 +126,66 @@ struct MainTabView: View {
     }
 }
 
-struct CustomTabBar: View {
+struct ModernTabBar: View {
     @Binding var selectedTab: Int
+    var visible: Bool
     
     // Access to shared styles
     private let styles = UIStyles.shared
     
     var body: some View {
-        HStack {
-            Spacer()
+        ZStack {
+            // Blurred background
+            BlurView(style: .systemUltraThinMaterialDark)
+                .frame(height: 70)
+                .cornerRadius(25)
+                .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 5)
+                .padding(.horizontal, 40)
             
-            // Journal tab
-            TabBarButton(
-                icon: "book.fill",
-                title: "Journal",
-                isSelected: selectedTab == 0,
-                action: { selectedTab = 0 }
-            )
-            
-            Spacer()
-            
-            // Insights tab
-            TabBarButton(
-                icon: "chart.bar.fill",
-                title: "Insights",
-                isSelected: selectedTab == 1,
-                action: { selectedTab = 1 }
-            )
-            
-            Spacer()
-            
-            // Reflections tab
-            TabBarButton(
-                icon: "bubble.left.fill",
-                title: "Reflections",
-                isSelected: selectedTab == 2,
-                action: { selectedTab = 2 }
-            )
-            
-            Spacer()
+            // Tab buttons
+            HStack(spacing: 0) {
+                Spacer()
+                
+                // Journal tab
+                ModernTabButton(
+                    icon: "book.fill",
+                    title: "Journal",
+                    isSelected: selectedTab == 0,
+                    action: { withAnimation { selectedTab = 0 } }
+                )
+                
+                Spacer()
+                
+                // Insights tab
+                ModernTabButton(
+                    icon: "chart.bar.fill",
+                    title: "Insights",
+                    isSelected: selectedTab == 1,
+                    action: { withAnimation { selectedTab = 1 } }
+                )
+                
+                Spacer()
+                
+                // Reflections tab
+                ModernTabButton(
+                    icon: "bubble.left.fill",
+                    title: "Reflections",
+                    isSelected: selectedTab == 2,
+                    action: { withAnimation { selectedTab = 2 } }
+                )
+                
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .frame(height: 70)
         }
-        .padding(.vertical, styles.layout.paddingM)
-        .background(styles.colors.tabBarBackground)
+        .padding(.bottom, 20)
+        .opacity(visible ? 1 : 0)
+        .animation(.easeInOut(duration: 0.3), value: visible)
     }
 }
 
-struct TabBarButton: View {
+struct ModernTabButton: View {
     let icon: String
     let title: String
     let isSelected: Bool
@@ -192,15 +196,51 @@ struct TabBarButton: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: styles.layout.spacingXS) {
-                Image(systemName: icon)
-                    .font(.system(size: styles.layout.iconSizeM))
+            VStack(spacing: 4) {
+                ZStack {
+                    // Background circle for selected tab
+                    Circle()
+                        .fill(isSelected ? styles.colors.accent.opacity(0.2) : Color.clear)
+                        .frame(width: 48, height: 48)
+                    
+                    // Icon
+                    Image(systemName: icon)
+                        .font(.system(size: isSelected ? 22 : 20, weight: isSelected ? .semibold : .regular))
+                        .foregroundColor(isSelected ? styles.colors.accent : styles.colors.textSecondary)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+                }
                 
+                // Title
                 Text(title)
                     .font(styles.typography.caption)
+                    .foregroundColor(isSelected ? styles.colors.accent : styles.colors.textSecondary)
+                    .opacity(isSelected ? 1 : 0.7)
             }
-            .foregroundColor(isSelected ? styles.colors.accent : styles.colors.textSecondary)
+            .frame(width: 80)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(ScaleButtonStyle())
+    }
+}
+
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.9 : 1)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+}
+
+struct BlurView: UIViewRepresentable {
+    let style: UIBlurEffect.Style
+    
+    func makeUIView(context: Context) -> UIVisualEffectView {
+        let view = UIVisualEffectView(effect: UIBlurEffect(style: style))
+        return view
+    }
+    
+    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {
+        uiView.effect = UIBlurEffect(style: style)
     }
 }
 

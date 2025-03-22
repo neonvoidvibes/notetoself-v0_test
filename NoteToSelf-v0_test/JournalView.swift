@@ -5,6 +5,9 @@ struct JournalView: View {
     @State private var showingNewEntrySheet = false
     @State private var expandedEntryId: UUID? = nil
     @State private var editingEntry: JournalEntry? = nil
+    @Binding var tabBarOffset: CGFloat
+    @Binding var lastScrollPosition: CGFloat
+    @Binding var tabBarVisible: Bool
     
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -29,47 +32,75 @@ struct JournalView: View {
                 .padding(.bottom, 16)
                 
                 // Journal entries
-                ScrollView {
-                    if appState.journalEntries.isEmpty {
-                        VStack(spacing: 16) {
-                            Spacer()
-                            
-                            Text("No journal entries yet.")
-                                .font(styles.typography.headingFont)
-                                .foregroundColor(styles.colors.text)
-                            
-                            Text("Tap the + button to add your first entry.")
-                                .font(styles.typography.bodyFont)
-                                .foregroundColor(styles.colors.textSecondary)
-                            
-                            Spacer()
+                ScrollViewReader { scrollProxy in
+                    ScrollView {
+                        GeometryReader { geometry in
+                            Color.clear.preference(
+                                key: ScrollOffsetPreferenceKey.self,
+                                value: geometry.frame(in: .named("scrollView")).minY
+                            )
                         }
-                        .frame(minHeight: UIScreen.main.bounds.height * 0.7)
-                        .padding()
-                    } else {
-                        LazyVStack(spacing: styles.layout.radiusM) {
-                            ForEach(appState.journalEntries) { entry in
-                                JournalEntryCard(
-                                    entry: entry,
-                                    isExpanded: expandedEntryId == entry.id,
-                                    onTap: {
-                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                            expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
-                                        }
-                                    },
-                                    onEdit: {
-                                        if !entry.isLocked {
-                                            editingEntry = entry
-                                        }
-                                    },
-                                    onDelete: {
-                                        deleteEntry(entry)
-                                    }
-                                )
+                        .frame(height: 0)
+                        
+                        if appState.journalEntries.isEmpty {
+                            VStack(spacing: 16) {
+                                Spacer()
+                                
+                                Text("No journal entries yet.")
+                                    .font(styles.typography.headingFont)
+                                    .foregroundColor(styles.colors.text)
+                                
+                                Text("Tap the + button to add your first entry.")
+                                    .font(styles.typography.bodyFont)
+                                    .foregroundColor(styles.colors.textSecondary)
+                                
+                                Spacer()
                             }
+                            .frame(minHeight: UIScreen.main.bounds.height * 0.7)
+                            .padding()
+                        } else {
+                            LazyVStack(spacing: styles.layout.radiusM) {
+                                ForEach(appState.journalEntries) { entry in
+                                    JournalEntryCard(
+                                        entry: entry,
+                                        isExpanded: expandedEntryId == entry.id,
+                                        onTap: {
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                                expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
+                                            }
+                                        },
+                                        onEdit: {
+                                            if !entry.isLocked {
+                                                editingEntry = entry
+                                            }
+                                        },
+                                        onDelete: {
+                                            deleteEntry(entry)
+                                        }
+                                    )
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 100) // Extra padding for floating button
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 100) // Extra padding for floating button
+                    }
+                    .coordinateSpace(name: "scrollView")
+                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                        // Calculate scroll direction and update tab bar visibility
+                        let scrollingDown = value < lastScrollPosition
+                        
+                        // Only update when scrolling more than a threshold to avoid jitter
+                        if abs(value - lastScrollPosition) > 10 {
+                            if scrollingDown {
+                                tabBarOffset = 100 // Hide tab bar
+                                tabBarVisible = false
+                            } else {
+                                tabBarOffset = 0 // Show tab bar
+                                tabBarVisible = true
+                            }
+                            lastScrollPosition = value
+                        }
                     }
                 }
             }
@@ -86,20 +117,40 @@ struct JournalView: View {
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(styles.colors.appBackground)
                             .frame(width: 60, height: 60)
-                            .background(styles.colors.accent)
-                            .clipShape(Circle())
-                            .shadow(color: styles.colors.accent.opacity(0.3), radius: 10, x: 0, y: 5)
+                            .background(
+                                ZStack {
+                                    Circle()
+                                        .fill(styles.colors.accent)
+                                    
+                                    // Add subtle gradient overlay for depth
+                                    Circle()
+                                        .fill(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [Color.white.opacity(0.3), Color.clear]),
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                        .padding(2)
+                                }
+                            )
+                            .shadow(color: styles.colors.accent.opacity(0.4), radius: 15, x: 0, y: 8)
                     }
                     .padding(.trailing, 24)
                     .padding(.bottom, 24)
+                    .offset(y: tabBarOffset * 0.7) // Move with tab bar but not as much
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: tabBarOffset)
                 }
             }
         }
         .sheet(isPresented: $showingNewEntrySheet) {
             NewEntryView(onSave: { text, mood in
                 let newEntry = JournalEntry(text: text, mood: mood, date: Date())
-                appState.journalEntries.insert(newEntry, at: 0)
-                expandedEntryId = newEntry.id // Auto-expand new entry
+                
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                    appState.journalEntries.insert(newEntry, at: 0)
+                    expandedEntryId = newEntry.id // Auto-expand new entry
+                }
             })
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
@@ -115,7 +166,7 @@ struct JournalView: View {
     
     private func deleteEntry(_ entry: JournalEntry) {
         if let index = appState.journalEntries.firstIndex(where: { $0.id == entry.id }) {
-            withAnimation {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 appState.journalEntries.remove(at: index)
             }
         }
@@ -134,6 +185,13 @@ struct JournalView: View {
                 appState.journalEntries[index] = updatedEntry
             }
         }
+    }
+}
+
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 
@@ -166,10 +224,12 @@ struct JournalEntryCard: View {
                 Spacer()
                 
                 HStack(spacing: 12) {
-                    // Mood icon
+                    // Mood icon with subtle animation
                     entry.mood.icon
                         .foregroundColor(entry.mood.color)
                         .font(.system(size: 20))
+                        .scaleEffect(isExpanded ? 1.1 : 1.0)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
                     
                     // Lock icon if needed
                     if entry.isLocked {
@@ -178,10 +238,12 @@ struct JournalEntryCard: View {
                             .foregroundColor(Color(hex: "#FF6B6B"))
                     }
                     
-                    // Expand/collapse chevron
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    // Expand/collapse chevron with rotation
+                    Image(systemName: "chevron.down")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(styles.colors.secondaryAccent)
+                        .rotationEffect(Angle(degrees: isExpanded ? 180 : 0))
+                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
                 }
             }
             .padding(.horizontal, 20)
@@ -237,13 +299,15 @@ struct JournalEntryCard: View {
                 .padding(.bottom, 16)
             }
         }
-        .background(Color("CardBackground"))
-        .clipShape(RoundedRectangle(cornerRadius: styles.layout.radiusM))
+        .background(
+            RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                .fill(Color("CardBackground"))
+                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
                 .stroke(Color(hex: "#222222"), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
         .onTapGesture {
             onTap()
         }
@@ -332,7 +396,9 @@ struct EditEntryView: View {
                         HStack(spacing: styles.layout.spacingM) {
                             ForEach(Mood.allCases, id: \.self) { mood in
                                 Button(action: {
-                                    selectedMood = mood
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        selectedMood = mood
+                                    }
                                 }) {
                                     VStack(spacing: styles.layout.spacingS) {
                                         mood.icon
@@ -345,8 +411,15 @@ struct EditEntryView: View {
                                     }
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, styles.layout.spacingM)
-                                    .background(selectedMood == mood ? styles.colors.secondaryBackground : styles.colors.appBackground)
-                                    .cornerRadius(styles.layout.radiusM)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                            .fill(selectedMood == mood ? styles.colors.secondaryBackground : styles.colors.appBackground)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                            .stroke(selectedMood == mood ? mood.color.opacity(0.5) : Color.clear, lineWidth: 1)
+                                    )
+                                    .scaleEffect(selectedMood == mood ? 1.05 : 1.0)
                                 }
                             }
                         }
@@ -389,6 +462,10 @@ struct JournalView_Previews: PreviewProvider {
     }()
     
     static var previews: some View {
-        JournalView().environmentObject(previewAppState)
+        JournalView(
+            tabBarOffset: .constant(0),
+            lastScrollPosition: .constant(0),
+            tabBarVisible: .constant(true)
+        ).environmentObject(previewAppState)
     }
 }
