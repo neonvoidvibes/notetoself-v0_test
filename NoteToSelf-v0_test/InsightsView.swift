@@ -243,7 +243,7 @@ struct CalendarDayView: View {
             }
             
             Text("\(day.day)")
-                .font(styles.typography.body)
+                .font(styles.typography.bodyFont)
                 .foregroundColor(hasEntry ? styles.colors.text : styles.colors.textSecondary)
         }
         .frame(height: 40)
@@ -363,7 +363,7 @@ struct MoodChartSection: View {
                 } else {
                     // Fallback for iOS 15
                     Text("Mood chart requires iOS 16 or later")
-                        .font(styles.typography.body)
+                        .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.textSecondary)
                         .frame(height: 200)
                         .frame(maxWidth: .infinity)
@@ -483,15 +483,12 @@ struct AnalyticItem: View {
                 .font(.system(size: styles.layout.iconSizeL))
                 .foregroundColor(styles.colors.accent)
             
-            Text(title)
-                .font(styles.typography.caption)
-                .foregroundColor(styles.colors.textSecondary)
-                .multilineTextAlignment(.center)
-            
-                    Text(responseText)
-                        .font(styles.typography.bodyFont)
+            Text(value)
+                .font(styles.typography.bodyFont)
                 .foregroundColor(styles.colors.text)
                 .multilineTextAlignment(.center)
+            
+
         }
         .frame(maxWidth: .infinity)
     }

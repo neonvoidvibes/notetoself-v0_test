@@ -39,14 +39,14 @@ struct ReflectionsView: View {
                     .padding(.horizontal, styles.layout.paddingL)
                     .padding(.vertical, styles.layout.paddingL)
                 }
-                .onChange(of: appState.chatMessages.count) { _ in
+                .onChange(of: appState.chatMessages.count) { newCount in
                     if let lastMessage = appState.chatMessages.last {
                         withAnimation {
                             scrollView.scrollTo(lastMessage.id, anchor: .bottom)
                         }
                     }
                 }
-                .onChange(of: isTyping) { _ in
+                .onChange(of: isTyping) { newValue in
                     withAnimation {
                         scrollView.scrollTo(appState.chatMessages.last?.id, anchor: .bottom)
                     }
@@ -88,7 +88,7 @@ struct ReflectionsView: View {
             }
             .background(styles.colors.surface)
         }
-        .background(styles.colors.background.ignoresSafeArea())
+        .background(styles.colors.appBackground.ignoresSafeArea())
         .alert(isPresented: $showingSubscriptionPrompt) {
             Alert(
                 title: Text("Daily Limit Reached"),

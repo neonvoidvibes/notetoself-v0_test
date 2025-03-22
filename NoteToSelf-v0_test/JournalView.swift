@@ -120,7 +120,7 @@ struct JournalEntryCard: View {
                     // Expand/collapse chevron
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(styles.secondaryAccentColor)
+                        .foregroundColor(styles.colors.secondaryAccent)
                 }
             }
             .padding(.horizontal, 20)
