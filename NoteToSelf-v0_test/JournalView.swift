@@ -28,20 +28,33 @@ struct JournalView: View {
                 
                 // Journal entries
                 ScrollView {
-                    LazyVStack(spacing: styles.layout.radiusM) {
-                        ForEach(appState.journalEntries) { entry in
-                            JournalEntryCard(
-                                entry: entry,
-                                isExpanded: expandedEntryId == entry.id
-                            ) {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                    expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
+                    if appState.journalEntries.isEmpty {
+                        VStack(spacing: 16) {
+                            Text("No journal entries yet.")
+                                .font(styles.typography.headingFont)
+                                .foregroundColor(styles.colors.text)
+                            Text("Tap the + button to add your first entry.")
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(styles.colors.textSecondary)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding()
+                    } else {
+                        LazyVStack(spacing: styles.layout.radiusM) {
+                            ForEach(appState.journalEntries) { entry in
+                                JournalEntryCard(
+                                    entry: entry,
+                                    isExpanded: expandedEntryId == entry.id
+                                ) {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
+                                    }
                                 }
                             }
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 100) // Extra padding for floating button
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 100) // Extra padding for floating button
                 }
             }
             

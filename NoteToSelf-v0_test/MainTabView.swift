@@ -8,17 +8,20 @@ struct MainTabView: View {
                     Image(systemName: "book.closed")
                     Text("Journal")
                 }
-            // Replace with actual InsightsView when available
-            Text("Insights View Placeholder")
+            InsightsView()
                 .tabItem {
                     Image(systemName: "chart.bar")
                     Text("Insights")
                 }
-            // Replace with actual ReflectionsView when available
-            Text("Reflections View Placeholder")
+            ReflectionsView()
                 .tabItem {
                     Image(systemName: "quote.bubble")
                     Text("Reflections")
+                }
+            SettingsView()
+                .tabItem {
+                    Image(systemName: "gearshape")
+                    Text("Settings")
                 }
         }
     }
