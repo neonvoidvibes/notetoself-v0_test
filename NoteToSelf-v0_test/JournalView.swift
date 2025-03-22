@@ -19,7 +19,7 @@ struct JournalView: View {
                 // Header
                 HStack {
                     Text("Journal")
-                        .font(styles.typography.headingFont)
+                        .font(styles.typography.title1)
                         .foregroundColor(styles.colors.text)
                     
                     Spacer()
@@ -200,10 +200,10 @@ struct JournalEntryCard: View {
                     .padding(.vertical, 16)
                 
                 // Action buttons for edit and delete
-                if !entry.isLocked {
-                    HStack {
-                        Spacer()
-                        
+                HStack {
+                    Spacer()
+                    
+                    if !entry.isLocked {
                         Button(action: onEdit) {
                             HStack(spacing: 4) {
                                 Image(systemName: "pencil")
@@ -217,24 +217,24 @@ struct JournalEntryCard: View {
                             .background(styles.colors.secondaryBackground)
                             .cornerRadius(styles.layout.radiusM)
                         }
-                        
-                        Button(action: onDelete) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "trash")
-                                    .font(.system(size: styles.layout.iconSizeS))
-                                Text("Delete")
-                                    .font(styles.typography.smallLabelFont)
-                            }
-                            .foregroundColor(styles.colors.error)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(styles.colors.secondaryBackground)
-                            .cornerRadius(styles.layout.radiusM)
-                        }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 16)
+                    
+                    Button(action: onDelete) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "trash")
+                                .font(.system(size: styles.layout.iconSizeS))
+                            Text("Delete")
+                                .font(styles.typography.smallLabelFont)
+                        }
+                        .foregroundColor(styles.colors.error)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(styles.colors.secondaryBackground)
+                        .cornerRadius(styles.layout.radiusM)
+                    }
                 }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
             }
         }
         .background(Color("CardBackground"))
@@ -252,10 +252,9 @@ struct JournalEntryCard: View {
                 Button(action: onEdit) {
                     Label("Edit", systemImage: "pencil")
                 }
-                
-                Button(role: .destructive, action: onDelete) {
-                    Label("Delete", systemImage: "trash")
-                }
+            }
+            Button(role: .destructive, action: onDelete) {
+                Label("Delete", systemImage: "trash")
             }
         }
     }
@@ -383,9 +382,13 @@ struct EditEntryView: View {
 }
 
 struct JournalView_Previews: PreviewProvider {
-    static var previews: some View {
+    static let previewAppState: AppState = {
         let appState = AppState()
         appState.loadSampleData()
-        return JournalView().environmentObject(appState)
+        return appState
+    }()
+    
+    static var previews: some View {
+        JournalView().environmentObject(previewAppState)
     }
 }

@@ -27,13 +27,13 @@ struct MainTabView: View {
                         ReflectionsView()
                     }
                 }
-                .offset(x: showingSettings ? -styles.layout.settingsMenuWidth * 0.3 : 0)
+                .offset(x: showingSettings ? -UIScreen.main.bounds.width : 0)
+                .offset(y: showingNavigation ? -120 : 0)
                 .scaleEffect(showingSettings ? 0.9 : 1)
                 
-                // Navigation toggle button
+                // Navigation toggle button area with black background
                 VStack {
                     Spacer()
-                    
                     VStack(spacing: styles.layout.spacingXS) {
                         Text(showingNavigation ? "Close Navigation" : "Navigation")
                             .font(styles.typography.navLabel)
@@ -53,8 +53,9 @@ struct MainTabView: View {
                         }
                     }
                     .padding(.bottom, showingNavigation ? 120 : 20)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.black)
                 }
-                .zIndex(1)
                 
                 // Settings menu
                 if showingSettings {
@@ -69,21 +70,41 @@ struct MainTabView: View {
                 // Top bar with settings button
                 VStack {
                     HStack {
-                        Spacer()
-                        
-                        Button(action: {
-                            withAnimation(styles.animation.defaultAnimation) {
-                                showingSettings.toggle()
-                            }
-                        }) {
-                            Image(systemName: "gearshape.fill")
-                                .font(.system(size: styles.layout.iconSizeM))
+                        if showingSettings {
+                            Button(action: {
+                                withAnimation(styles.animation.defaultAnimation) {
+                                    showingSettings.toggle()
+                                }
+                            }) {
+                                VStack(spacing: 4) {
+                                    Rectangle()
+                                        .frame(width: 24, height: 2)
+                                    Rectangle()
+                                        .frame(width: 16, height: 2)
+                                }
                                 .foregroundColor(styles.colors.accent)
                                 .padding()
+                            }
+                            Spacer()
+                        } else {
+                            Spacer()
+                            Button(action: {
+                                withAnimation(styles.animation.defaultAnimation) {
+                                    showingSettings.toggle()
+                                }
+                            }) {
+                                VStack(spacing: 4) {
+                                    Rectangle()
+                                        .frame(width: 24, height: 2)
+                                    Rectangle()
+                                        .frame(width: 16, height: 2)
+                                }
+                                .foregroundColor(styles.colors.accent)
+                                .padding()
+                            }
                         }
                     }
-                    .padding(.top, styles.layout.topSafeAreaPadding)
-                    
+                    .padding(.top, styles.layout.topSafeAreaPadding - 10)
                     Spacer()
                 }
                 .zIndex(3)
