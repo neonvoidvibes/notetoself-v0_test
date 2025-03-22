@@ -32,23 +32,25 @@ struct UIStyles {
         let buttonText: Color = Color("TextColor")
         let placeholderText: Color = Color(hex: "#999999")
         let textDisabled: Color = Color.gray.opacity(0.5)
+        let tabBarBackground: Color = Color.black
     }
     let colors = Colors()
     
     // MARK: - Typography
     struct Typography {
-        let headingFont: Font = Font.custom("Menlo", size: 36)
-        let bodyFont: Font = Font.custom("Menlo", size: 16)
-        let smallLabelFont: Font = Font.custom("Menlo", size: 14)
-        let tinyHeadlineFont: Font = Font.custom("Menlo", size: 12)
-        let bodyLarge: Font = Font.custom("Menlo", size: 18)
-        let caption: Font = Font.custom("Menlo", size: 12)
-        let label: Font = Font.custom("Menlo", size: 14)
-        let bodySmall: Font = Font.custom("Menlo", size: 12)
-        
-        // Added to match usage in code
-        let title1: Font = Font.custom("Menlo", size: 28).weight(.bold)
-        let title3: Font = Font.custom("Menlo", size: 20).weight(.semibold)
+        // Changed all fonts to SF Mono
+        let headingFont: Font = Font.system(size: 36, weight: .bold, design: .monospaced)
+        let bodyFont: Font = Font.system(size: 16, weight: .regular, design: .monospaced)
+        let smallLabelFont: Font = Font.system(size: 14, weight: .regular, design: .monospaced)
+        let tinyHeadlineFont: Font = Font.system(size: 12, weight: .regular, design: .monospaced)
+        let bodyLarge: Font = Font.system(size: 18, weight: .regular, design: .monospaced)
+        let caption: Font = Font.system(size: 12, weight: .regular, design: .monospaced)
+        let label: Font = Font.system(size: 14, weight: .medium, design: .monospaced)
+        let bodySmall: Font = Font.system(size: 12, weight: .regular, design: .monospaced)
+        let title1: Font = Font.system(size: 28, weight: .bold, design: .monospaced)
+        let title3: Font = Font.system(size: 20, weight: .semibold, design: .monospaced)
+        let largeTitle: Font = Font.system(size: 34, weight: .bold, design: .monospaced)
+        let navLabel: Font = Font.system(size: 10, weight: .medium, design: .monospaced)
     }
     let typography = Typography()
     
@@ -66,12 +68,23 @@ struct UIStyles {
         let iconSizeL: CGFloat = 32
         let iconSizeM: CGFloat = 24
         let iconSizeS: CGFloat = 16
+        let iconSizeXS: CGFloat = 12
         let iconSizeXL: CGFloat = 40
         let floatingButtonSize: CGFloat = 60
         let radiusL: CGFloat = 12
         let radiusM: CGFloat = 8
+        let topSafeAreaPadding: CGFloat = 50 // Added for universal top padding
+        let settingsMenuWidth: CGFloat = 300 // Width for the slide-in settings menu
     }
     let layout = Layout()
+    
+    // MARK: - Animation
+    struct Animation {
+        let defaultAnimation = SwiftUI.Animation.spring(response: 0.3, dampingFraction: 0.8)
+        let quickAnimation = SwiftUI.Animation.easeOut(duration: 0.2)
+        let slowAnimation = SwiftUI.Animation.easeInOut(duration: 0.5)
+    }
+    let animation = Animation()
     
     // MARK: - Button Styles
     struct PrimaryButtonStyle: ButtonStyle {

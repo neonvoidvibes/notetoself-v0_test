@@ -2,7 +2,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
-    @Environment(\.dismiss) private var dismiss
     @State private var notificationTime: Date = Date()
     @State private var notificationsEnabled: Bool = false
     
@@ -10,40 +9,38 @@ struct SettingsView: View {
     private let styles = UIStyles.shared
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                styles.colors.appBackground
-                    .ignoresSafeArea()
-                
-                ScrollView {
-                    VStack(spacing: styles.layout.spacingXL) {
-                        // Subscription section
-                        SubscriptionSection(subscriptionTier: appState.subscriptionTier)
+        ZStack {
+            styles.colors.appBackground
+                .ignoresSafeArea()
+            
+            ScrollView {
+                VStack(spacing: styles.layout.spacingXL) {
+                    // Header
+                    HStack {
+                        Text("Settings")
+                            .font(styles.typography.title1)
+                            .foregroundColor(styles.colors.text)
                         
-                        // Notifications section
-                        NotificationsSection(
-                            notificationsEnabled: $notificationsEnabled,
-                            notificationTime: $notificationTime
-                        )
-                        
-                        // Privacy & Export section
-                        PrivacySection()
-                        
-                        // About section
-                        AboutSection()
+                        Spacer()
                     }
-                    .padding(styles.layout.paddingL)
+                    .padding(.top, styles.layout.topSafeAreaPadding)
+                    
+                    // Subscription section
+                    SubscriptionSection(subscriptionTier: appState.subscriptionTier)
+                    
+                    // Notifications section
+                    NotificationsSection(
+                        notificationsEnabled: $notificationsEnabled,
+                        notificationTime: $notificationTime
+                    )
+                    
+                    // Privacy & Export section
+                    PrivacySection()
+                    
+                    // About section
+                    AboutSection()
                 }
-            }
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                    .foregroundColor(styles.colors.accent)
-                }
+                .padding(styles.layout.paddingL)
             }
         }
     }
@@ -239,15 +236,5 @@ struct AboutSection: View {
                 .padding(styles.layout.paddingL)
             )
         }
-    }
-}
-
-struct SettingsView_Previews: PreviewProvider {
-    static var previews: some View {
-        let appState = AppState()
-        
-        return SettingsView()
-            .environmentObject(appState)
-            .preferredColorScheme(.dark)
     }
 }

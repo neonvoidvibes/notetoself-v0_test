@@ -15,12 +15,12 @@ struct ReflectionsView: View {
             HStack {
                 Text("Reflections")
                     .font(styles.typography.title1)
-                    .foregroundColor(styles.colors.placeholderText)
+                    .foregroundColor(styles.colors.text)
                 
                 Spacer()
             }
             .padding(.horizontal, styles.layout.paddingXL)
-            .padding(.top, styles.layout.paddingL)
+            .padding(.top, styles.layout.topSafeAreaPadding)
             .padding(.bottom, styles.layout.paddingM)
             
             // Chat messages
@@ -56,7 +56,7 @@ struct ReflectionsView: View {
             // Message input
             VStack(spacing: 0) {
                 Divider()
-                    .background(styles.colors.appBackground.ignoresSafeArea())
+                    .background(styles.colors.divider)
                 
                 HStack(spacing: styles.layout.spacingM) {
                     ZStack(alignment: .leading) {
@@ -71,10 +71,15 @@ struct ReflectionsView: View {
                             .background(Color.clear)
                             .foregroundColor(styles.colors.text)
                             .frame(minHeight: 40, maxHeight: 120)
+                            .colorScheme(.dark) // Force dark mode for the TextEditor
                     }
                     .padding(styles.layout.paddingS)
-                    .background(styles.colors.inputBackground)
+                    .background(styles.colors.appBackground) // Changed to match container color
                     .cornerRadius(styles.layout.radiusM)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                            .stroke(styles.colors.divider, lineWidth: 1)
+                    )
                     
                     Button(action: sendMessage) {
                         Image(systemName: "arrow.up.circle.fill")
@@ -86,7 +91,7 @@ struct ReflectionsView: View {
                 .padding(.horizontal, styles.layout.paddingL)
                 .padding(.vertical, styles.layout.paddingM)
             }
-            .background(styles.colors.surface)
+            .background(styles.colors.appBackground)
         }
         .background(styles.colors.appBackground.ignoresSafeArea())
         .alert(isPresented: $showingSubscriptionPrompt) {
