@@ -4,89 +4,133 @@ struct UIStyles {
     static let shared = UIStyles()
     
     // MARK: - Colors
-    let appBackground = Color(hex: "#000000")
-    let cardBackground = Color("CardBackground")
-    let accentColor = Color(hex: "#FFFF00")
-    let secondaryAccentColor = Color(hex: "#989898")
-    let textColor = Color("TextColor")
-    let offWhite = Color(red: 0.95, green: 0.95, blue: 0.95)
-    let entryBackground = Color(hex: "#0A0A0A")
-    let secondaryBackground = Color(hex: "#111111")
-    let tertiaryBackground = Color(hex: "#313131")
-    let quaternaryBackground = Color(hex: "#555555")
-    
-    // Mood colors dictionary for mood tracking
-    let moodColors: [String: Color] = [
-        "Happy": Color(red: 1.0, green: 0.84, blue: 0.0),
-        "Neutral": Color.gray,
-        "Sad": Color.blue,
-        "Stressed": Color(red: 0.8, green: 0.0, blue: 0.0),
-        "Excited": Color.orange
-    ]
+    struct Colors {
+        let appBackground: Color = Color(hex: "#000000")
+        let cardBackground: Color = Color("CardBackground")
+        let accent: Color = Color(hex: "#FFFF00")
+        let secondaryAccent: Color = Color(hex: "#989898")
+        let text: Color = Color("TextColor")
+        let textSecondary: Color = Color(hex: "#999999")
+        let offWhite: Color = Color(red: 0.95, green: 0.95, blue: 0.95)
+        let entryBackground: Color = Color(hex: "#0A0A0A")
+        let secondaryBackground: Color = Color(hex: "#111111")
+        let tertiaryBackground: Color = Color(hex: "#313131")
+        let quaternaryBackground: Color = Color(hex: "#555555")
+        
+        // Mood colors
+        let moodHappy: Color = Color(red: 1.0, green: 0.84, blue: 0.0)
+        let moodNeutral: Color = Color.gray
+        let moodSad: Color = Color.blue
+        let moodAnxious: Color = Color(red: 0.8, green: 0.0, blue: 0.0)
+        let moodExcited: Color = Color.orange
+        
+        let inputBackground: Color = Color(hex: "#111111")
+        let surface: Color = Color(hex: "#313131")
+        let divider: Color = Color(hex: "#222222")
+        let error: Color = Color.red
+        let chatAIBubble: Color = Color(hex: "#555555")
+        let buttonText: Color = Color("TextColor")
+    }
+    let colors = Colors()
     
     // MARK: - Typography
-    let headingFont = Font.custom("Menlo", size: 36)
-    let bodyFont = Font.custom("Menlo", size: 16)
-    let smallLabelFont = Font.custom("Menlo", size: 14)
-    let tinyHeadlineFont = Font.custom("Menlo", size: 12)
+    struct Typography {
+        let headingFont: Font = Font.custom("Menlo", size: 36)
+        let bodyFont: Font = Font.custom("Menlo", size: 16)
+        let smallLabelFont: Font = Font.custom("Menlo", size: 14)
+        let tinyHeadlineFont: Font = Font.custom("Menlo", size: 12)
+        let bodyLarge: Font = Font.custom("Menlo", size: 18)
+        let caption: Font = Font.custom("Menlo", size: 12)
+        let label: Font = Font.custom("Menlo", size: 14)
+        let bodySmall: Font = Font.custom("Menlo", size: 12)
+    }
+    let typography = Typography()
     
-    // MARK: - Corners & Radii
-    let defaultCornerRadius: CGFloat = 12
-    let saveButtonCornerRadius: CGFloat = 30
-}
-
-struct ChatBubbleShape: Shape {
-    var isUser: Bool
-    func path(in rect: CGRect) -> Path {
-        let path: UIBezierPath
-        if isUser {
-            path = UIBezierPath(roundedRect: rect,
-                                byRoundingCorners: [.topLeft, .topRight, .bottomLeft],
-                                cornerRadii: CGSize(width: UIStyles.shared.defaultCornerRadius, height: UIStyles.shared.defaultCornerRadius))
-        } else {
-            path = UIBezierPath(roundedRect: rect,
-                                byRoundingCorners: [.topLeft, .topRight, .bottomRight],
-                                cornerRadii: CGSize(width: UIStyles.shared.defaultCornerRadius, height: UIStyles.shared.defaultCornerRadius))
+    // MARK: - Layout
+    struct Layout {
+        let paddingXL: CGFloat = 24
+        let paddingL: CGFloat = 20
+        let paddingM: CGFloat = 16
+        let paddingS: CGFloat = 8
+        let spacingXL: CGFloat = 24
+        let spacingL: CGFloat = 20
+        let spacingM: CGFloat = 16
+        let spacingS: CGFloat = 8
+        let spacingXS: CGFloat = 4
+        let iconSizeL: CGFloat = 32
+        let iconSizeM: CGFloat = 24
+        let iconSizeS: CGFloat = 16
+        let iconSizeXL: CGFloat = 40
+        let floatingButtonSize: CGFloat = 60
+        let radiusL: CGFloat = 12
+        let radiusM: CGFloat = 8
+    }
+    let layout = Layout()
+    
+    // MARK: - Button Styles
+    struct PrimaryButtonStyle: ButtonStyle {
+        let colors: Colors
+        let typography: Typography
+        let layout: Layout
+        
+        func makeBody(configuration: Configuration) -> some View {
+            configuration.label
+                .font(typography.bodyFont)
+                .padding(layout.paddingM)
+                .background(colors.accent)
+                .foregroundColor(.black)
+                .cornerRadius(layout.radiusM)
+                .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
         }
-        return Path(path.cgPath)
     }
-}
-
-struct BottomSheetStyleModifier: ViewModifier {
-    func body(content: Content) -> some View {
+    
+    func PrimaryButtonStyle() -> some ButtonStyle {
+        return PrimaryButtonStyle(colors: colors, typography: typography, layout: layout)
+    }
+    
+    struct SecondaryButtonStyle: ButtonStyle {
+        let colors: Colors
+        let typography: Typography
+        let layout: Layout
+        
+        func makeBody(configuration: Configuration) -> some View {
+            configuration.label
+                .font(typography.bodyFont)
+                .padding(layout.paddingM)
+                .background(colors.secondaryBackground)
+                .foregroundColor(colors.text)
+                .cornerRadius(layout.radiusM)
+                .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+        }
+    }
+    
+    func SecondaryButtonStyle() -> some ButtonStyle {
+        return SecondaryButtonStyle(colors: colors, typography: typography, layout: layout)
+    }
+    
+    struct GhostButtonStyle: ButtonStyle {
+        let colors: Colors
+        let typography: Typography
+        let layout: Layout
+        
+        func makeBody(configuration: Configuration) -> some View {
+            configuration.label
+                .font(typography.bodyFont)
+                .padding(layout.paddingM)
+                .foregroundColor(colors.accent)
+        }
+    }
+    
+    func GhostButtonStyle() -> some ButtonStyle {
+        return GhostButtonStyle(colors: colors, typography: typography, layout: layout)
+    }
+    
+    // MARK: - Card Style Helper
+    func card<Content: View>(_ content: Content) -> some View {
         content
-            .presentationDetents([.height(420), .large])
-            .presentationCornerRadius(30)
-            .presentationDragIndicator(.visible)
-    }
-}
-
-struct BreathingAnimation: ViewModifier {
-    @State private var scale: CGFloat = 1.0
-    func body(content: Content) -> some View {
-        content
-            .scaleEffect(scale)
-            .opacity(2.0 - scale)
-            .onAppear {
-                withAnimation(Animation.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
-                    scale = 1.5
-                }
-            }
-    }
-}
-
-extension UIStyles {
-    var reflectionAssistantLoadingIndicator: some View {
-        Circle()
-            .fill(UIStyles.shared.offWhite)
-            .frame(width: 20, height: 20)
-            .modifier(BreathingAnimation())
-    }
-}
-
-extension View {
-    func applyBottomSheetStyle() -> some View {
-        self.modifier(BottomSheetStyleModifier())
+            .background(colors.cardBackground)
+            .cornerRadius(layout.radiusL)
+            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
     }
 }
 
@@ -113,19 +157,5 @@ extension Color {
             blue: Double(b) / 255,
             opacity: Double(a) / 255
         )
-    }
-}
-
-extension String {
-    func baseMood() -> String {
-        return self.components(separatedBy: "|").first ?? self
-    }
-    
-    func moodOpacity() -> CGFloat {
-        if let lastComponent = self.components(separatedBy: "|").last,
-           let opacity = Double(lastComponent) {
-            return CGFloat(opacity)
-        }
-        return 1.0
     }
 }

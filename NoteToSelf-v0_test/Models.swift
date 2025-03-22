@@ -48,7 +48,6 @@ enum Mood: String, CaseIterable, Codable {
     
     var color: Color {
         let styles = UIStyles.shared
-        
         switch self {
         case .happy: return styles.colors.moodHappy
         case .neutral: return styles.colors.moodNeutral
@@ -118,31 +117,26 @@ class AppState: ObservableObject {
         // Check today first
         let hasTodayEntry = journalEntries.contains { calendar.isDate($0.date, inSameDayAs: checkDate) }
         if !hasTodayEntry {
-            return 0 // No entry today means streak is 0 or not yet updated for today
+            return 0
         }
         
-        streak = 1 // Count today
+        streak = 1
         
-        // Check previous days
         while true {
             checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate)!
             let hasEntryForDate = journalEntries.contains { calendar.isDate($0.date, inSameDayAs: checkDate) }
-            
             if hasEntryForDate {
                 streak += 1
             } else {
                 break
             }
         }
-        
         return streak
     }
     
     // Sample data for preview and testing
     func loadSampleData() {
         let calendar = Calendar.current
-        
-        // Journal entries
         journalEntries = [
             JournalEntry(
                 text: "Completed the new design for the journaling app today. Really proud of how the dark theme turned out.",
@@ -166,10 +160,9 @@ class AppState: ObservableObject {
             )
         ]
         
-        // Chat messages
         chatMessages = [
             ChatMessage(text: "I've been feeling stressed about my upcoming presentation. Any advice?", isUser: true),
-            ChatMessage(text: "It's natural to feel stressed about presentations. Try breaking your preparation into smaller tasks and practice in front of a mirror or trusted friend. Remember that being prepared is the best way to reduce anxiety.", isUser: false),
+            ChatMessage(text: "It's natural to feel stressed about presentations. Try breaking your preparation into smaller tasks and practice in front of a mirror or a trusted friend. Remember that being prepared is the best way to reduce anxiety.", isUser: false),
             ChatMessage(text: "That's helpful. I'll try to practice more.", isUser: true),
             ChatMessage(text: "Great plan. Also, remember to take deep breaths before you start. Is there a specific part of the presentation that concerns you most?", isUser: false)
         ]

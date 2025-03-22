@@ -1,14 +1,15 @@
+// OnboardingView.swift
 import SwiftUI
 
 struct OnboardingView: View {
     var body: some View {
         VStack(spacing: 20) {
             Text("Welcome to Note to Self")
-                UIStyles.shared.headingFont
-                UIStyles.shared.textColor
+                .font(UIStyles.shared.typography.headingFont)
+                .foregroundColor(UIStyles.shared.colors.text)
             Text("Capture your day in under 30 seconds. No sign-ups, no hassle, just quick reflections.")
-                .font(UIStyles.bodyFont)
-                .foregroundColor(UIStyles.textColor.opacity(0.8))
+                .font(UIStyles.shared.typography.bodyFont)
+                .foregroundColor(UIStyles.shared.colors.text.opacity(0.8))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 16)
             Button(action: {
@@ -21,10 +22,10 @@ struct OnboardingView: View {
                     .foregroundColor(.white)
                     .cornerRadius(8)
             }
-            .buttonStyle(UIStyles.PrimaryButtonStyle())
+            .buttonStyle(UIStyles.shared.PrimaryButtonStyle())
         }
         .padding()
-        UIStyles.shared.appBackground
+        .background(UIStyles.shared.colors.appBackground)
     }
 }
 
