@@ -40,7 +40,7 @@ struct InsightsView: View {
                     .padding(.bottom, styles.layout.paddingXL)
             }
         }
-        .background(styles.colors.background.ignoresSafeArea())
+        .background(styles.colors.appBackground.ignoresSafeArea())
     }
 }
 
@@ -73,7 +73,7 @@ struct StreakCard: View {
                         .foregroundColor(styles.colors.text)
                     
                     Text(streak == 1 ? "day" : "days")
-                        .font(styles.typography.body)
+                        .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.textSecondary)
                 }
                 
@@ -453,7 +453,7 @@ struct AdvancedAnalyticsSection: View {
                         Button("Upgrade") {
                             // Show subscription options
                         }
-                        .buttonStyle(PrimaryButtonStyle(
+                        .buttonStyle(UIStyles.PrimaryButtonStyle(
                             colors: styles.colors,
                             typography: styles.typography,
                             layout: styles.layout
@@ -488,8 +488,8 @@ struct AnalyticItem: View {
                 .foregroundColor(styles.colors.textSecondary)
                 .multilineTextAlignment(.center)
             
-            Text(value)
-                .font(styles.typography.body)
+                    Text(responseText)
+                        .font(styles.typography.bodyFont)
                 .foregroundColor(styles.colors.text)
                 .multilineTextAlignment(.center)
         }

@@ -15,7 +15,7 @@ struct ReflectionsView: View {
             HStack {
                 Text("Reflections")
                     .font(styles.typography.title1)
-                    .foregroundColor(styles.colors.text)
+                    .foregroundColor(styles.colors.placeholderText)
                 
                 Spacer()
             }
@@ -56,7 +56,7 @@ struct ReflectionsView: View {
             // Message input
             VStack(spacing: 0) {
                 Divider()
-                    .background(styles.colors.divider)
+                    .background(styles.colors.appBackground.ignoresSafeArea())
                 
                 HStack(spacing: styles.layout.spacingM) {
                     ZStack(alignment: .leading) {
@@ -167,7 +167,7 @@ struct ChatBubble: View {
             
             VStack(alignment: message.isUser ? .trailing : .leading, spacing: styles.layout.spacingXS) {
                 Text(message.text)
-                    .font(styles.typography.body)
+                    .font(styles.typography.bodyFont)
                     .foregroundColor(message.isUser ? styles.colors.text : styles.colors.text)
                     .padding(styles.layout.paddingM)
                     .background(message.isUser ? styles.colors.accent.opacity(0.2) : styles.colors.chatAIBubble)

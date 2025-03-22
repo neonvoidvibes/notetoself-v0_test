@@ -22,7 +22,11 @@ struct OnboardingView: View {
                     .foregroundColor(.white)
                     .cornerRadius(8)
             }
-            .buttonStyle(UIStyles.shared.PrimaryButtonStyle())
+            .buttonStyle(UIStyles.PrimaryButtonStyle(
+                colors: UIStyles.shared.colors,
+                typography: UIStyles.shared.typography,
+                layout: UIStyles.shared.layout
+            ))
         }
         .padding()
         .background(UIStyles.shared.colors.appBackground)

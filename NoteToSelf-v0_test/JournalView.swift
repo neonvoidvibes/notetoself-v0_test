@@ -6,20 +6,19 @@ struct JournalView: View {
     @State private var expandedEntryId: UUID? = nil
     // Access to shared styles
     private let styles = UIStyles.shared
-    private let styles = UIStyles.shared
 
     var body: some View {
         ZStack {
             // Background
-            styles.appBackground
+            styles.colors.appBackground
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
                 // Header
                 HStack {
                     Text("Journal")
-                        .font(styles.headingFont)
-                        .foregroundColor(styles.textColor)
+                        .font(styles.typography.headingFont)
+                        .foregroundColor(styles.colors.text)
                     
                     Spacer()
                 }
@@ -29,7 +28,7 @@ struct JournalView: View {
                 
                 // Journal entries
                 ScrollView {
-                    LazyVStack(spacing: styles.defaultCornerRadius) {
+                    LazyVStack(spacing: styles.layout.radiusM) {
                         ForEach(appState.journalEntries) { entry in
                             JournalEntryCard(
                                 entry: entry,
@@ -56,11 +55,11 @@ struct JournalView: View {
                     }) {
                         Image(systemName: "plus")
                             .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(styles.appBackground)
+                            .foregroundColor(styles.colors.appBackground)
                             .frame(width: 60, height: 60)
-                            .background(styles.accentColor)
+                            .background(styles.colors.accent)
                             .clipShape(Circle())
-                            .shadow(color: styles.accentColor.opacity(0.3), radius: 10, x: 0, y: 5)
+                            .shadow(color: styles.colors.accent.opacity(0.3), radius: 10, x: 0, y: 5)
                     }
                     .padding(.trailing, 24)
                     .padding(.bottom, 24)
@@ -92,14 +91,14 @@ struct JournalEntryCard: View {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(formatDate(entry.date))
-                        .font(styles.smallLabelFont)
-                        .foregroundColor(styles.secondaryAccentColor)
+                        .font(styles.typography.smallLabelFont)
+                        .foregroundColor(styles.colors.secondaryAccent)
                     
                     if !isExpanded {
                         Text(entry.text)
-                            .lineLimit(1)
-                            .font(styles.bodyFont)
-                            .foregroundColor(styles.textColor)
+                        Text(entry.text)
+                            .font(styles.typography.bodyFont)
+                            .foregroundColor(styles.colors.text)
                     }
                 }
                 
@@ -134,16 +133,16 @@ struct JournalEntryCard: View {
                     .padding(.horizontal, 16)
                 
                 Text(entry.text)
-                    .font(styles.bodyFont)
-                    .foregroundColor(styles.textColor)
+                    .font(styles.typography.bodyFont)
+                    .foregroundColor(styles.colors.text)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
             }
         }
         .background(Color("CardBackground"))
-        .clipShape(RoundedRectangle(cornerRadius: styles.defaultCornerRadius))
+        .clipShape(RoundedRectangle(cornerRadius: styles.layout.radiusM))
         .overlay(
-            RoundedRectangle(cornerRadius: styles.defaultCornerRadius)
+            RoundedRectangle(cornerRadius: styles.layout.radiusM)
                 .stroke(Color(hex: "#222222"), lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)

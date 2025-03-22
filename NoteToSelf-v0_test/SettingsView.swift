@@ -12,7 +12,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                styles.colors.background
+                styles.colors.appBackground
                     .ignoresSafeArea()
                 
                 ScrollView {
@@ -89,7 +89,7 @@ struct SubscriptionSection: View {
                         Button("Upgrade to Premium") {
                             // Show subscription options
                         }
-                        .buttonStyle(PrimaryButtonStyle(
+                        .buttonStyle(UIStyles.PrimaryButtonStyle(
                             colors: styles.colors,
                             typography: styles.typography,
                             layout: styles.layout
@@ -98,7 +98,7 @@ struct SubscriptionSection: View {
                         Button("Manage Subscription") {
                             // Show subscription management
                         }
-                        .buttonStyle(SecondaryButtonStyle(
+                        .buttonStyle(UIStyles.SecondaryButtonStyle(
                             colors: styles.colors,
                             typography: styles.typography,
                             layout: styles.layout
@@ -108,7 +108,7 @@ struct SubscriptionSection: View {
                     Button("Restore Purchases") {
                         // Restore purchases logic
                     }
-                    .buttonStyle(GhostButtonStyle(
+                    .buttonStyle(UIStyles.GhostButtonStyle(
                         colors: styles.colors,
                         typography: styles.typography,
                         layout: styles.layout
@@ -172,7 +172,7 @@ struct PrivacySection: View {
                     Button("Export Journal Data") {
                         // Export data logic
                     }
-                    .buttonStyle(SecondaryButtonStyle(
+                    .buttonStyle(UIStyles.SecondaryButtonStyle(
                         colors: styles.colors,
                         typography: styles.typography,
                         layout: styles.layout
@@ -182,7 +182,7 @@ struct PrivacySection: View {
                         // Delete data logic with confirmation
                     }
                     .foregroundColor(styles.colors.error)
-                    .buttonStyle(GhostButtonStyle(
+                    .buttonStyle(UIStyles.GhostButtonStyle(
                         colors: styles.colors,
                         typography: styles.typography,
                         layout: styles.layout

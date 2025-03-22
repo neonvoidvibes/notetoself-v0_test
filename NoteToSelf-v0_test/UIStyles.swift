@@ -30,6 +30,8 @@ struct UIStyles {
         let error: Color = Color.red
         let chatAIBubble: Color = Color(hex: "#555555")
         let buttonText: Color = Color("TextColor")
+        let placeholderText: Color = Color(hex: "#999999")
+        let textDisabled: Color = Color.gray.opacity(0.5)
     }
     let colors = Colors()
     
@@ -43,6 +45,10 @@ struct UIStyles {
         let caption: Font = Font.custom("Menlo", size: 12)
         let label: Font = Font.custom("Menlo", size: 14)
         let bodySmall: Font = Font.custom("Menlo", size: 12)
+        
+        // Added to match usage in code
+        let title1: Font = Font.custom("Menlo", size: 28).weight(.bold)
+        let title3: Font = Font.custom("Menlo", size: 20).weight(.semibold)
     }
     let typography = Typography()
     
@@ -84,10 +90,6 @@ struct UIStyles {
         }
     }
     
-    func PrimaryButtonStyle() -> some ButtonStyle {
-        return PrimaryButtonStyle(colors: colors, typography: typography, layout: layout)
-    }
-    
     struct SecondaryButtonStyle: ButtonStyle {
         let colors: Colors
         let typography: Typography
@@ -104,10 +106,6 @@ struct UIStyles {
         }
     }
     
-    func SecondaryButtonStyle() -> some ButtonStyle {
-        return SecondaryButtonStyle(colors: colors, typography: typography, layout: layout)
-    }
-    
     struct GhostButtonStyle: ButtonStyle {
         let colors: Colors
         let typography: Typography
@@ -119,10 +117,6 @@ struct UIStyles {
                 .padding(layout.paddingM)
                 .foregroundColor(colors.accent)
         }
-    }
-    
-    func GhostButtonStyle() -> some ButtonStyle {
-        return GhostButtonStyle(colors: colors, typography: typography, layout: layout)
     }
     
     // MARK: - Card Style Helper
