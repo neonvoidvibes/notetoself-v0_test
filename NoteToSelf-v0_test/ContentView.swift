@@ -1,24 +1,22 @@
-//
-//  ContentView.swift
-//  NoteToSelf-v0_test
-//
-//  Created by Stefan Ekwall on 2025-03-22.
-//
-
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var appState = AppState()
+    @State private var hasSeenOnboarding: Bool = false
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        if !hasSeenOnboarding {
+            OnboardingView(hasSeenOnboarding: $hasSeenOnboarding)
+                .environmentObject(appState)
+        } else {
+            MainTabView()
+                .environmentObject(appState)
         }
-        .padding()
     }
 }
 
-#Preview {
-    ContentView()
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+    }
 }
