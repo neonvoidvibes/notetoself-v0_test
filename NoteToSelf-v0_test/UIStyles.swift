@@ -9,7 +9,7 @@ struct UIStyles {
         let cardBackground: Color = Color("CardBackground")
         let accent: Color = Color(hex: "#FFFF00")
         let secondaryAccent: Color = Color(hex: "#989898")
-        let text: Color = Color("TextColor")
+        let text: Color = Color(hex: "#FFFFFF")
         let textSecondary: Color = Color(hex: "#999999")
         let offWhite: Color = Color(red: 0.95, green: 0.95, blue: 0.95)
         let entryBackground: Color = Color(hex: "#0A0A0A")
