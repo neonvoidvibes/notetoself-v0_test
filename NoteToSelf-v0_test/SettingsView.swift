@@ -38,9 +38,7 @@ struct SettingsView: View {
                             .padding(.bottom, styles.layout.paddingXL)
                     }
                     .padding(.horizontal, styles.layout.paddingL)
-                    .padding(.top, styles.headerPadding.top + styles.layout.paddingM)
-                    .padding(.top, styles.headerPadding.top + styles.layout.paddingM)
-                    .padding(.top, styles.layout.topSafeAreaPadding)
+                    .padding(.top, styles.headerPadding.top)
                 }
             }
         }
