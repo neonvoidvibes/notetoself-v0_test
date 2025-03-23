@@ -55,7 +55,6 @@ struct MainTabView: View {
                         bottomSheetExpanded = false
                     }
                 } else {
-                    // Snap logic
                     let snapUpThreshold = (peekHeight - fullSheetHeight) * 0.3
                     withAnimation(styles.animation.bottomSheetAnimation) {
                         if bottomSheetOffset < snapUpThreshold {
@@ -75,21 +74,14 @@ struct MainTabView: View {
         DragGesture()
             .onChanged { value in
                 isSwipingSettings = true
-                // When settings is closed, only allow left swipes (negative translation)
-                if !showingSettings {
-                    dragOffset = min(0, value.translation.width)
-                } else {
-                    // When settings is open, only allow right swipes (positive translation)
-                    dragOffset = max(0, value.translation.width)
-                }
+                dragOffset = value.translation.width
             } 
             .onEnded { value in
                 isSwipingSettings = false
                 let horizontalAmount = value.translation.width
                 let velocity = value.predictedEndLocation.x - value.location.x
-                
-                // If settings is open and swiping right
                 if showingSettings {
+                    // If user swipes to the right enough, close
                     if horizontalAmount > screenWidth * 0.3 || (horizontalAmount > 20 && velocity > 100) {
                         withAnimation(.easeOut(duration: 0.25)) {
                             showingSettings = false
@@ -97,13 +89,13 @@ struct MainTabView: View {
                             dragOffset = 0
                         }
                     } else {
+                        // Snap back fully open
                         withAnimation(.easeOut(duration: 0.25)) {
                             dragOffset = 0
                         }
                     }
-                }
-                // If settings is closed and swiping left
-                else {
+                } else {
+                    // If user swipes left enough, open
                     if horizontalAmount < -screenWidth * 0.3 || (horizontalAmount < -20 && velocity < -100) {
                         withAnimation(.easeOut(duration: 0.25)) {
                             showingSettings = true
@@ -111,6 +103,7 @@ struct MainTabView: View {
                             dragOffset = 0
                         }
                     } else {
+                        // Snap back fully closed
                         withAnimation(.easeOut(duration: 0.25)) {
                             dragOffset = 0
                         }
@@ -121,13 +114,10 @@ struct MainTabView: View {
     
     var body: some View {
         ZStack {
-            // Background for top safe area + bottom area
+            // Background
             VStack(spacing: 0) {
-                // Dark color for top safe area
                 Color.black
                     .frame(height: styles.layout.topSafeAreaPadding)
-                
-                // Below top safe area color depends on bottomSheetExpanded
                 if bottomSheetExpanded {
                     styles.colors.bottomSheetBackground
                 } else {
@@ -136,16 +126,14 @@ struct MainTabView: View {
             }
             .ignoresSafeArea()
             
-            // If the sheet is expanded, extend black across the top
             if bottomSheetExpanded {
                 Color.black
                     .frame(height: styles.layout.topSafeAreaPadding)
                     .ignoresSafeArea(edges: .top)
             }
             
-            // Main content
+            // Main content: disabled during settings swipes
             VStack(spacing: 0) {
-                // Switchable tab content
                 Group {
                     if selectedTab == 0 {
                         JournalView(tabBarOffset: .constant(0),
@@ -163,7 +151,6 @@ struct MainTabView: View {
                 }
                 .mainCardStyle()
                 .overlay(
-                    // Settings menu button in top-right
                     VStack {
                         HStack {
                             Spacer()
@@ -190,9 +177,7 @@ struct MainTabView: View {
                     }
                 )
                 
-                // Bottom sheet area
                 VStack(spacing: 0) {
-                    // Chevron button
                     Button(action: {
                         withAnimation(styles.animation.bottomSheetAnimation) {
                             bottomSheetExpanded.toggle()
@@ -210,7 +195,6 @@ struct MainTabView: View {
                     .padding(.bottom, bottomSheetExpanded ? 18 : 12)
                     
                     if bottomSheetExpanded {
-                        // Tab buttons
                         HStack(spacing: 0) {
                             Spacer()
                             NavigationTabButton(
@@ -221,7 +205,6 @@ struct MainTabView: View {
                                 withAnimation(styles.animation.tabSwitchAnimation) {
                                     selectedTab = 0
                                 }
-                                // Auto close bottom sheet after switching
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                     withAnimation(styles.animation.bottomSheetAnimation) {
                                         bottomSheetExpanded = false
@@ -238,7 +221,6 @@ struct MainTabView: View {
                                 withAnimation(styles.animation.tabSwitchAnimation) {
                                     selectedTab = 1
                                 }
-                                // Auto close bottom sheet after switching
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                     withAnimation(styles.animation.bottomSheetAnimation) {
                                         bottomSheetExpanded = false
@@ -255,7 +237,6 @@ struct MainTabView: View {
                                 withAnimation(styles.animation.tabSwitchAnimation) {
                                     selectedTab = 2
                                 }
-                                // Auto close bottom sheet after switching
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                     withAnimation(styles.animation.bottomSheetAnimation) {
                                         bottomSheetExpanded = false
@@ -286,10 +267,9 @@ struct MainTabView: View {
             .disabled(isSwipingSettings)
             .gesture(settingsDrag)
             
-            // Dark overlay when settings is open
+            // Dim overlay
             Color.black
                 .opacity(showingSettings ? 0.5 : 0)
-                // Adjust overlay opacity during drag
                 .opacity(
                     dragOffset != 0
                         ? (showingSettings
@@ -300,9 +280,8 @@ struct MainTabView: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
             
-            // Settings View
+            // Settings overlay, no disable so we can swipe inside it
             ZStack(alignment: .top) {
-                // Settings header
                 ZStack {
                     Text("Settings")
                         .font(styles.typography.title1)
@@ -319,8 +298,6 @@ struct MainTabView: View {
                                 Rectangle()
                                     .fill(styles.colors.accent)
                                     .frame(width: 20, height: 2)
-                                
-                                // Subtle animation for lines
                                 if showingSettings {
                                     HStack {
                                         Rectangle()
@@ -340,7 +317,6 @@ struct MainTabView: View {
                             .frame(width: 36, height: 36)
                         }
                         .padding(.leading, 20)
-                        
                         Spacer()
                     }
                 }
@@ -353,12 +329,14 @@ struct MainTabView: View {
                 .background(styles.colors.menuBackground)
                 .zIndex(100)
                 
-                // Actual settings content
+                // Actual Settings content
                 SettingsView()
                     .background(styles.colors.menuBackground)
                     .padding(.top, styles.layout.topSafeAreaPadding + 60)
             }
-            .disabled(isSwipingSettings)
+            .contentShape(Rectangle())
+            // This is the key: a highPriorityGesture ensures the horizontal drag takes precedence
+            .highPriorityGesture(settingsDrag, including: .all)
             .frame(width: screenWidth)
             .background(styles.colors.menuBackground)
             .offset(x: showingSettings ? settingsOffset + dragOffset : screenWidth + dragOffset)
@@ -369,8 +347,6 @@ struct MainTabView: View {
         .onAppear {
             bottomSheetOffset = peekHeight - fullSheetHeight
             appState.loadSampleData()
-            
-            // Minimal onboarding check
             if !appState.hasSeenOnboarding {
                 appState.hasSeenOnboarding = true
             }
@@ -378,13 +354,11 @@ struct MainTabView: View {
     }
 }
 
-// Simple tab button
 struct NavigationTabButton: View {
     let icon: String
     let title: String
     let isSelected: Bool
     let action: () -> Void
-    
     private let styles = UIStyles.shared
     
     var body: some View {
@@ -412,7 +386,6 @@ struct NavigationTabButton: View {
     }
 }
 
-// Simple scale effect button style
 struct ScaleButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
