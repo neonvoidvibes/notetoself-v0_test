@@ -5,6 +5,9 @@ struct SettingsView: View {
     @State private var notificationTime: Date = Date()
     @State private var notificationsEnabled: Bool = false
     
+    // For tracking horizontal swiping state to disable scrolling
+    @State private var isSwipingHorizontally = false
+    
     // Access to shared styles
     private let styles = UIStyles.shared
     
@@ -40,11 +43,34 @@ struct SettingsView: View {
                     .padding(.horizontal, styles.layout.paddingL)
                     .padding(.top, styles.headerPadding.top)
                 }
+                .simultaneousGesture(
+                    // This gesture purely detects horizontal swipes to disable scrolling
+                    // It doesn't handle the swipe action itself - that's still done by MainTabView
+                    DragGesture(minimumDistance: 5)
+                        .onChanged { value in
+                            // Only monitor swipes from the left edge (for closing)
+                            if value.startLocation.x < 50 {
+                                // Is this a significant horizontal movement?
+                                let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
+                                let isSignificant = abs(value.translation.width) > 10
+                                
+                                // Only from left to right (closing gesture)
+                                let isRightward = value.translation.width > 0
+                                
+                                // Set swiping flag to disable scrolling during horizontal swipes
+                                isSwipingHorizontally = isHorizontal && isRightward && isSignificant
+                            }
+                        }
+                        .onEnded { _ in
+                            // Re-enable scrolling when the gesture ends
+                            isSwipingHorizontally = false
+                        }
+                )
+                .disabled(isSwipingHorizontally)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        // Let parent view's gestures handle everything
-        // This view is added to the parent with .simultaneousGesture in MainTabView
+        // Let parent handle the actual swiping effects
     }
 }
 
