@@ -69,7 +69,7 @@ struct MainTabView: View {
     var body: some View {
         ZStack {
             // Background
-            styles.colors.appBackground
+            styles.colors.bottomSheetBackground
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
