@@ -39,6 +39,7 @@ struct SettingsView: View {
                     }
                     .padding(.horizontal, styles.layout.paddingL)
                     .padding(.top, styles.headerPadding.top + styles.layout.paddingM)
+                    .padding(.top, styles.headerPadding.top + styles.layout.paddingM)
                     .padding(.top, styles.layout.topSafeAreaPadding)
                 }
             }
@@ -113,6 +114,7 @@ struct SubscriptionSection: View {
                     ))
                 }
                 .padding(styles.layout.paddingL)
+                .frame(maxWidth: .infinity)
             )
             .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
         }

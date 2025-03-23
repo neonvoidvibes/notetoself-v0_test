@@ -141,16 +141,41 @@ struct MainTabView: View {
                 .animation(.easeInOut(duration: 0.3), value: showingSettings)
                 .gesture(
                     DragGesture(minimumDistance: 20, coordinateSpace: .local)
+                        .onChanged { value in
+                            let translation = value.translation.width
+                            if showingSettings {
+                                // Menu is open, dragging to close: offset increases from 0 up to screenWidth
+                                let newOffset = max(0, min(screenWidth, translation))
+                                settingsOffset = newOffset
+                            } else {
+                                // Menu is closed, dragging to open: offset decreases from screenWidth to 0
+                                let newOffset = max(0, min(screenWidth, screenWidth + translation))
+                                settingsOffset = newOffset
+                            }
+                        }
                         .onEnded { value in
-                            if value.translation.width < -50 && !showingSettings {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showingSettings = true
-                                    settingsOffset = 0
+                            let translation = value.translation.width
+                            if showingSettings {
+                                if translation > screenWidth / 2 {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        showingSettings = false
+                                        settingsOffset = screenWidth
+                                    }
+                                } else {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        settingsOffset = 0
+                                    }
                                 }
-                            } else if value.translation.width > 50 && showingSettings {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showingSettings = false
-                                    settingsOffset = screenWidth
+                            } else {
+                                if translation < -screenWidth / 2 {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        showingSettings = true
+                                        settingsOffset = 0
+                                    }
+                                } else {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        settingsOffset = screenWidth
+                                    }
                                 }
                             }
                         }
@@ -298,7 +323,7 @@ struct MainTabView: View {
                                 Spacer()
                             }
                         }
-                        .padding(.top, styles.layout.topSafeAreaPadding)
+                        .padding(EdgeInsets(top: styles.layout.topSafeAreaPadding, leading: styles.layout.paddingXL, bottom: styles.layout.paddingM, trailing: styles.layout.paddingXL))
                         .background(styles.colors.menuBackground)
                         .zIndex(100)
                         
