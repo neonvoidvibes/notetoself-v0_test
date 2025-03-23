@@ -124,14 +124,14 @@ struct MainTabView: View {
                                 VStack(spacing: 5) {
                                     Rectangle()
                                         .fill(styles.colors.accent)
-                                        .frame(width: 24, height: 2)
+                                        .frame(width: 20, height: 2)
                                         .cornerRadius(1)
                                     
                                     HStack {
                                         if showingSettings {
                                             Rectangle()
                                                 .fill(styles.colors.accent)
-                                                .frame(width: 24, height: 2)
+                                                .frame(width: 20, height: 2)
                                                 .cornerRadius(1)
                                             Spacer(minLength: 0)
                                         } else {
@@ -291,7 +291,7 @@ struct MainTabView: View {
                                     HStack {
                                         Rectangle()
                                             .fill(styles.colors.accent)
-                                            .frame(width: 24, height: 2)
+                                            .frame(width: 20, height: 2)
                                             .cornerRadius(1)
                                         Spacer(minLength: 0)
                                     }
@@ -302,6 +302,12 @@ struct MainTabView: View {
                             .padding(.top, styles.layout.topSafeAreaPadding)
                             
                             Spacer()
+                            
+                            Text("Settings")
+                                .font(styles.typography.title1)
+                                .foregroundColor(styles.colors.text)
+                                .padding(.trailing, 20)
+                                .padding(.top, styles.layout.topSafeAreaPadding)
                         }
                         .background(styles.colors.menuBackground)
                         .zIndex(100)

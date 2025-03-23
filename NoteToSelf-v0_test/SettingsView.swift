@@ -14,22 +14,13 @@ struct SettingsView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Header - matches the layout of other main views
-                HStack {
-                    Spacer()
-                    
-                    Text("Settings")
-                        .font(styles.typography.title1)
-                        .foregroundColor(styles.colors.text)
-                }
-                .padding(styles.headerPadding)
-                
                 // Content
                 ScrollView {
                     VStack(spacing: styles.layout.spacingXL) {
                         // Subscription section
                         SubscriptionSection(subscriptionTier: appState.subscriptionTier)
                             .transition(.scale.combined(with: .opacity))
+                            .padding(.top, styles.layout.paddingXL)
                         
                         // Notifications section
                         NotificationsSection(
