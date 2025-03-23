@@ -20,7 +20,6 @@ struct SettingsView: View {
                         // Subscription section
                         SubscriptionSection(subscriptionTier: appState.subscriptionTier)
                             .transition(.scale.combined(with: .opacity))
-                            .padding(.top, styles.layout.paddingM)
                         
                         // Notifications section
                         NotificationsSection(
@@ -39,6 +38,7 @@ struct SettingsView: View {
                             .padding(.bottom, styles.layout.paddingXL)
                     }
                     .padding(.horizontal, styles.layout.paddingL)
+                    .padding(.top, styles.headerPadding.top + styles.layout.paddingM)
                     .padding(.top, styles.layout.topSafeAreaPadding)
                 }
             }

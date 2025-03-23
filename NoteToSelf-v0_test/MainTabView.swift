@@ -276,9 +276,21 @@ struct MainTabView: View {
                                         Rectangle()
                                             .fill(styles.colors.accent)
                                             .frame(width: 20, height: 2)
-                                        Rectangle()
-                                            .fill(styles.colors.accent)
-                                            .frame(width: 20, height: 2)
+                                        if showingSettings {
+                                            HStack {
+                                                Rectangle()
+                                                    .fill(styles.colors.accent)
+                                                    .frame(width: 16, height: 2)
+                                                Spacer()
+                                            }
+                                        } else {
+                                            HStack {
+                                                Spacer()
+                                                Rectangle()
+                                                    .fill(styles.colors.accent)
+                                                    .frame(width: 16, height: 2)
+                                            }
+                                        }
                                     }
                                     .frame(width: 36, height: 36)
                                 }
