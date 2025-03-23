@@ -66,6 +66,29 @@ struct MainTabView: View {
             }
     }
     
+    // Drag gesture for opening/closing settings
+    private var settingsDrag: some Gesture {
+        DragGesture(minimumDistance: 20)
+            .onEnded { value in
+                let horizontalAmount = value.translation.width
+                
+                // If settings is open and swiping right, close it
+                if showingSettings && horizontalAmount > 50 {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showingSettings = false
+                        settingsOffset = screenWidth
+                    }
+                }
+                // If settings is closed and swiping left, open it
+                else if !showingSettings && horizontalAmount < -50 {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showingSettings = true
+                        settingsOffset = 0
+                    }
+                }
+            }
+    }
+    
     var body: some View {
         ZStack {
             // Background: top safe area always black; bottom area changes based on bottomSheetExpanded state
@@ -139,47 +162,7 @@ struct MainTabView: View {
                 )
                 .offset(x: showingSettings ? -screenWidth * 0.85 : 0)
                 .animation(.easeInOut(duration: 0.3), value: showingSettings)
-                .gesture(
-                    DragGesture(minimumDistance: 20, coordinateSpace: .local)
-                        .onChanged { value in
-                            let translation = value.translation.width
-                            if showingSettings {
-                                // Menu is open, dragging to close: offset increases from 0 up to screenWidth
-                                let newOffset = max(0, min(screenWidth, translation))
-                                settingsOffset = newOffset
-                            } else {
-                                // Menu is closed, dragging to open: offset decreases from screenWidth to 0
-                                let newOffset = max(0, min(screenWidth, screenWidth + translation))
-                                settingsOffset = newOffset
-                            }
-                        }
-                        .onEnded { value in
-                            let translation = value.translation.width
-                            if showingSettings {
-                                if translation > screenWidth / 2 {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        showingSettings = false
-                                        settingsOffset = screenWidth
-                                    }
-                                } else {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        settingsOffset = 0
-                                    }
-                                }
-                            } else {
-                                if translation < -screenWidth / 2 {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        showingSettings = true
-                                        settingsOffset = 0
-                                    }
-                                } else {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        settingsOffset = screenWidth
-                                    }
-                                }
-                            }
-                        }
-                )
+                .gesture(settingsDrag)
                 
                 // Bottom navigation area with gray background extended to the screen bottom
                 VStack(spacing: 0) {
@@ -330,6 +313,18 @@ struct MainTabView: View {
                         Spacer()
                     }
                     .opacity(showingSettings ? 1 : 0)
+                )
+                .gesture(
+                    DragGesture(minimumDistance: 20)
+                        .onEnded { value in
+                            // Only handle right swipes when settings is open
+                            if showingSettings && value.translation.width > 50 {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showingSettings = false
+                                    settingsOffset = screenWidth
+                                }
+                            }
+                        }
                 )
                 .zIndex(2)
         }
