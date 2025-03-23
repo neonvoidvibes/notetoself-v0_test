@@ -39,6 +39,13 @@ struct UIStyles {
       let bottomSheetPeek: Color = Color(hex: "#222222")
       let bottomSheetIndicator: Color = Color(hex: "#444444")
       let bottomSheetShadow: Color = Color.black.opacity(0.3)
+      
+      // Update the menu icon background color to be slightly brighter
+      // In the Colors struct, add:
+      let menuIconBackground: Color = Color(hex: "#222222") // Slightly brighter than black
+
+      // Add a new property for the menu background
+      let menuBackground: Color = Color(hex: "#111111") // Slightly brighter than app background
   }
   let colors = Colors()
   

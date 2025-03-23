@@ -160,6 +160,7 @@ struct NotificationsSection: View {
             styles.card(
                 VStack(spacing: styles.layout.spacingM) {
                     Toggle("Daily Reminder", isOn: $notificationsEnabled)
+                        .font(styles.typography.bodyFont) // Use consistent font
                         .foregroundColor(styles.colors.text)
                         .toggleStyle(ModernToggleStyle(colors: styles.colors))
                     

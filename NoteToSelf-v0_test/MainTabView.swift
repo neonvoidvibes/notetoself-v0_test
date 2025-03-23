@@ -116,9 +116,9 @@ struct MainTabView: View {
                         HStack {
                             Spacer()
                             Button(action: {
-                                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                    showingSettings = true
-                                    settingsOffset = 0
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showingSettings.toggle()
+                                    settingsOffset = showingSettings ? 0 : screenWidth
                                 }
                             }) {
                                 VStack(spacing: 5) {
@@ -126,15 +126,26 @@ struct MainTabView: View {
                                         .fill(styles.colors.accent)
                                         .frame(width: 20, height: 2)
                                         .cornerRadius(1)
-                                    Rectangle()
-                                        .fill(styles.colors.accent)
-                                        .frame(width: 14, height: 2)
-                                        .cornerRadius(1)
+                                    
+                                    HStack {
+                                        if showingSettings {
+                                            Rectangle()
+                                                .fill(styles.colors.accent)
+                                                .frame(width: 14, height: 2)
+                                                .cornerRadius(1)
+                                            Spacer(minLength: 0)
+                                        } else {
+                                            Spacer(minLength: 0)
+                                            Rectangle()
+                                                .fill(styles.colors.accent)
+                                                .frame(width: 14, height: 2)
+                                                .cornerRadius(1)
+                                        }
+                                    }
                                 }
                                 .frame(width: 36, height: 36)
-                                .background(Color.black)
+                                .background(styles.colors.menuIconBackground)
                                 .clipShape(Circle())
-                                .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
                             }
                             .padding(.trailing, 20)
                             .padding(.top, styles.layout.topSafeAreaPadding)
@@ -142,9 +153,24 @@ struct MainTabView: View {
                         Spacer()
                     }
                 )
-                .offset(x: showingSettings ? -screenWidth : 0)
-                .scaleEffect(showingSettings ? 0.85 : 1)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingSettings)
+                .offset(x: showingSettings ? -screenWidth * 0.85 : 0)
+                .animation(.easeInOut(duration: 0.3), value: showingSettings)
+                .gesture(
+                    DragGesture(minimumDistance: 20, coordinateSpace: .local)
+                        .onEnded { value in
+                            if value.translation.width < -50 && !showingSettings {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showingSettings = true
+                                    settingsOffset = 0
+                                }
+                            } else if value.translation.width > 50 && showingSettings {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showingSettings = false
+                                    settingsOffset = screenWidth
+                                }
+                            }
+                        }
+                )
                 
                 // Bottom navigation area with gray background extended to the screen bottom
                 VStack(spacing: 0) {
@@ -246,29 +272,44 @@ struct MainTabView: View {
             
             // Settings view overlay
             SettingsView()
-                .background(styles.colors.appBackground)
+                .background(styles.colors.menuBackground)
                 .frame(width: screenWidth)
                 .offset(x: settingsOffset)
                 .overlay(
                     VStack {
                         HStack {
                             Button(action: {
-                                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                withAnimation(.easeInOut(duration: 0.3)) {
                                     showingSettings = false
                                     settingsOffset = screenWidth
                                 }
                             }) {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(styles.colors.accent)
-                                    .frame(width: 36, height: 36)
-                                    .background(styles.colors.secondaryBackground.opacity(0.8))
-                                    .clipShape(Circle())
+                                VStack(spacing: 5) {
+                                    Rectangle()
+                                        .fill(styles.colors.accent)
+                                        .frame(width: 20, height: 2)
+                                        .cornerRadius(1)
+                                    
+                                    HStack {
+                                        Rectangle()
+                                            .fill(styles.colors.accent)
+                                            .frame(width: 14, height: 2)
+                                            .cornerRadius(1)
+                                        Spacer(minLength: 0)
+                                    }
+                                }
+                                .frame(width: 36, height: 36)
+                                .background(styles.colors.menuIconBackground)
+                                .clipShape(Circle())
                             }
                             .padding(.leading, 20)
-                            .padding(.top, styles.layout.topSafeAreaPadding - 10)
+                            .padding(.top, styles.layout.topSafeAreaPadding)
+                            
                             Spacer()
                         }
+                        .background(styles.colors.menuBackground)
+                        .zIndex(100)
+                        
                         Spacer()
                     }
                     .opacity(showingSettings ? 1 : 0)
