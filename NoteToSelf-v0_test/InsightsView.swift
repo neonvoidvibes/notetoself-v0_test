@@ -30,9 +30,7 @@ struct InsightsView: View {
                     
                     Spacer()
                 }
-                .padding(.horizontal, styles.layout.paddingXL)
-                .padding(.top, styles.layout.topSafeAreaPadding)
-                .padding(.bottom, styles.layout.paddingM)
+                .padding(styles.headerPadding)
                 
                 // Current Streak
                 StreakCard(streak: appState.currentStreak)

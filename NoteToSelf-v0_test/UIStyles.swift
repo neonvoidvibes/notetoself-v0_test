@@ -103,6 +103,10 @@ struct UIStyles {
   }
   let animation = Animation()
   
+  var headerPadding: EdgeInsets {
+      EdgeInsets(top: layout.topSafeAreaPadding, leading: layout.paddingXL, bottom: layout.paddingM, trailing: layout.paddingXL)
+  }
+  
   // MARK: - Button Styles
   struct PrimaryButtonStyle: ButtonStyle {
       let colors: Colors

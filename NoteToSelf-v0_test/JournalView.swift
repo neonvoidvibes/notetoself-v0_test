@@ -27,9 +27,7 @@ struct JournalView: View {
                     
                     Spacer()
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, styles.layout.topSafeAreaPadding)
-                .padding(.bottom, 16)
+                .padding(styles.headerPadding)
                 
                 // Journal entries
                 ScrollViewReader { scrollProxy in

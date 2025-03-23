@@ -22,9 +22,7 @@ struct ReflectionsView: View {
                 
                 Spacer()
             }
-            .padding(.horizontal, styles.layout.paddingXL)
-            .padding(.top, styles.layout.topSafeAreaPadding)
-            .padding(.bottom, styles.layout.paddingM)
+            .padding(styles.headerPadding)
             
             // Chat messages
             ScrollViewReader { scrollView in
