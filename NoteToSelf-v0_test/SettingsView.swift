@@ -4,6 +4,7 @@ struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @State private var notificationTime: Date = Date()
     @State private var notificationsEnabled: Bool = false
+    @State private var isHorizontalSwiping = false
     
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -41,7 +42,39 @@ struct SettingsView: View {
                     .padding(.top, styles.headerPadding.top)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // Only disable vertical scrolling when a horizontal swipe is in progress
+                .disabled(isHorizontalSwiping)
             }
+            
+            // A transparent overlay only on the left edge to detect swipes to close
+            HStack(spacing: 0) {
+                // Left edge detection area - 50 points from the left edge
+                Rectangle()
+                    .fill(Color.clear)
+                    .contentShape(Rectangle())
+                    .frame(width: 50)
+                    .gesture(
+                        DragGesture(minimumDistance: 10)
+                            .onChanged { value in
+                                // Only detect horizontal swipes for closing
+                                let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
+                                if isHorizontal && value.translation.width > 0 {
+                                    // Only when swiping right from left edge (to close)
+                                    isHorizontalSwiping = true
+                                }
+                            }
+                            .onEnded { _ in
+                                isHorizontalSwiping = false
+                            }
+                    )
+                
+                // The rest of the screen should not respond to horizontal swipes
+                Rectangle()
+                    .fill(Color.clear)
+                    .contentShape(Rectangle())
+                    .allowsHitTesting(false) // Let touches pass through
+            }
+            .frame(maxHeight: .infinity)
         }
     }
 }

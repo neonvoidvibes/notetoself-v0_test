@@ -71,20 +71,20 @@ struct MainTabView: View {
     
     // Drag gesture for Settings
     private var settingsDrag: some Gesture {
-        DragGesture()
+        DragGesture(minimumDistance: 10)
             .onChanged { value in
-                if abs(value.translation.width) > abs(value.translation.height) && abs(value.translation.width) > 10 {
+                // Activate swipe only if the drag starts from the left edge (within 50 points)
+                if value.startLocation.x < 50 && abs(value.translation.width) > abs(value.translation.height) && abs(value.translation.width) > 10 {
                     isSwipingSettings = true
                     dragOffset = value.translation.width
                 }
             } 
             .onEnded { value in
-                if abs(value.translation.width) > abs(value.translation.height) && abs(value.translation.width) > 10 {
-                    isSwipingSettings = false
+                if isSwipingSettings {
                     let horizontalAmount = value.translation.width
                     let velocity = value.predictedEndLocation.x - value.location.x
                     if showingSettings {
-                        // If user swipes to the right enough, close
+                        // If user swipes right enough from the edge, close Settings
                         if horizontalAmount > screenWidth * 0.3 || (horizontalAmount > 20 && velocity > 100) {
                             withAnimation(.easeOut(duration: 0.25)) {
                                 showingSettings = false
@@ -92,13 +92,13 @@ struct MainTabView: View {
                                 dragOffset = 0
                             }
                         } else {
-                            // Snap back fully open
+                            // Snap back open
                             withAnimation(.easeOut(duration: 0.25)) {
                                 dragOffset = 0
                             }
                         }
                     } else {
-                        // If user swipes left enough, open
+                        // If user swipes left enough from the edge, open Settings
                         if horizontalAmount < -screenWidth * 0.3 || (horizontalAmount < -20 && velocity < -100) {
                             withAnimation(.easeOut(duration: 0.25)) {
                                 showingSettings = true
@@ -106,16 +106,14 @@ struct MainTabView: View {
                                 dragOffset = 0
                             }
                         } else {
-                            // Snap back fully closed
+                            // Snap back closed
                             withAnimation(.easeOut(duration: 0.25)) {
                                 dragOffset = 0
                             }
                         }
                     }
-                } else {
-                    isSwipingSettings = false
-                    dragOffset = 0
                 }
+                isSwipingSettings = false
             }
     }
     
