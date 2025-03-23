@@ -4,13 +4,74 @@ struct MainTabView: View {
     @StateObject private var appState = AppState()
     @State private var selectedTab = 0
     @State private var showingSettings = false
-    @State private var tabBarOffset: CGFloat = 0
-    @State private var lastScrollPosition: CGFloat = 0
-    @State private var tabBarVisible = true
+    @State private var bottomSheetOffset: CGFloat = 0
+    @State private var bottomSheetExpanded = false
+    @State private var isDragging = false
     @State private var settingsOffset: CGFloat = UIScreen.main.bounds.width
     
     // Access to shared styles
     private let styles = UIStyles.shared
+    
+    // Calculated properties for layout
+    private var screenHeight: CGFloat {
+        UIScreen.main.bounds.height
+    }
+    
+    private var screenWidth: CGFloat {
+        UIScreen.main.bounds.width
+    }
+    
+    private var peekHeight: CGFloat {
+        styles.layout.bottomSheetPeekHeight
+    }
+    
+    private var fullSheetHeight: CGFloat {
+        styles.layout.bottomSheetFullHeight
+    }
+    
+    // Drag gesture for the bottom sheet
+    private var bottomSheetDrag: some Gesture {
+        return DragGesture()
+            .onChanged { value in
+                isDragging = true
+                
+                let dragAmount = value.translation.height
+                let newOffset = max(0, min(peekHeight - fullSheetHeight, bottomSheetOffset + dragAmount))
+                
+                bottomSheetOffset = newOffset
+            }
+            .onEnded { value in
+                isDragging = false
+                
+                let dragAmount = value.translation.height
+                let dragVelocity = value.predictedEndTranslation.height - value.translation.height
+                
+                // Expand or collapse based on velocity and position
+                if dragAmount + dragVelocity < 0 && dragAmount < -20 {
+                    // Swipe up - expand
+                    withAnimation(styles.animation.bottomSheetAnimation) {
+        
+                        bottomSheetExpanded = true
+                    }
+                } else if dragAmount > 20 || dragVelocity > 500 {
+                    // Swipe down - collapse
+                    withAnimation(styles.animation.bottomSheetAnimation) {
+                        bottomSheetOffset = peekHeight - fullSheetHeight
+                        bottomSheetExpanded = false
+                    }
+                } else {
+                    // Snap to closest state based on current position
+                    let snapUpThreshold = (peekHeight - fullSheetHeight) * 0.3
+                    
+                    withAnimation(styles.animation.bottomSheetAnimation) {
+                        if bottomSheetOffset < snapUpThreshold {
+                            bottomSheetOffset = 0
+                            bottomSheetExpanded = true
+                        } else {
+                            bottomSheetOffset = peekHeight - fullSheetHeight
+                            bottomSheetExpanded = false
+}
+    }
     
     var body: some View {
         ZStack {
@@ -18,58 +79,40 @@ struct MainTabView: View {
             styles.colors.appBackground
                 .ignoresSafeArea()
             
-            // Main content
-            ZStack {
-                // Current tab content with parallax effect
-                Group {
-                    if selectedTab == 0 {
-                        JournalView(tabBarOffset: $tabBarOffset, lastScrollPosition: $lastScrollPosition, tabBarVisible: $tabBarVisible)
-                    } else if selectedTab == 1 {
-                        InsightsView(tabBarOffset: $tabBarOffset, lastScrollPosition: $lastScrollPosition, tabBarVisible: $tabBarVisible)
-                    } else if selectedTab == 2 {
-                        ReflectionsView(tabBarOffset: $tabBarOffset, lastScrollPosition: $lastScrollPosition, tabBarVisible: $tabBarVisible)
+            VStack(spacing: 0) {
+                // Main content as a floating card with rounded corners
+                ZStack {
+                    // Current tab content
+                    Group {
+                        if selectedTab == 0 {
+                            JournalView(
+                                tabBarOffset: .constant(0),
+                                lastScrollPosition: .constant(0),
+                                tabBarVisible: .constant(true)
+                            )
+                        } else if selectedTab == 1 {
+                            InsightsView(
+                                tabBarOffset: .constant(0),
+                                lastScrollPosition: .constant(0),
+                                tabBarVisible: .constant(true)
+                            )
+                        } else if selectedTab == 2 {
+                            ReflectionsView(
+                                tabBarOffset: .constant(0),
+                                lastScrollPosition: .constant(0),
+                                tabBarVisible: .constant(true)
+                            )
+                        }
                     }
-                }
-                .offset(x: showingSettings ? -UIScreen.main.bounds.width * 0.85 : 0)
-                .scaleEffect(showingSettings ? 0.85 : 1)
-                .cornerRadius(showingSettings ? 30 : 0)
-                .shadow(color: Color.black.opacity(showingSettings ? 0.2 : 0), radius: 20, x: 0, y: 0)
-                .blur(radius: showingSettings ? 2 : 0)
-                
-                // Settings view
-                SettingsView()
-                    .frame(width: UIScreen.main.bounds.width)
-                    .offset(x: settingsOffset)
-                    .zIndex(2)
-            }
-            .overlay(
-                // Top bar with settings button
-                VStack {
-                    HStack {
-                        if showingSettings {
-                            Button(action: {
-                                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                    showingSettings.toggle()
-                                    settingsOffset = UIScreen.main.bounds.width
-                                }
-                            }) {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(styles.colors.accent)
-                                    .frame(width: 36, height: 36)
-                                    .background(styles.colors.secondaryBackground.opacity(0.8))
-                                    .clipShape(Circle())
-                            }
-                            .padding(.leading, 20)
-                            .transition(.scale.combined(with: .opacity))
-                            
-                            Spacer()
-                        } else {
+                    
+                    // Settings menu button overlay
+                    VStack {
+                        HStack {
                             Spacer()
                             
                             Button(action: {
                                 withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                    showingSettings.toggle()
+                                    showingSettings = true
                                     settingsOffset = 0
                                 }
                             }) {
@@ -89,31 +132,161 @@ struct MainTabView: View {
                                 .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
                             }
                             .padding(.trailing, 20)
-                            .transition(.scale.combined(with: .opacity))
+                            .padding(.top, styles.layout.topSafeAreaPadding - 10)
+                        }
+                        
+                        Spacer()
+                    }
+                }
+                .background(styles.colors.cardBackground)
+                .cornerRadius(styles.layout.mainContentCornerRadius, corners: [.bottomLeft, .bottomRight])
+                .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
+                // Removed offset to keep main view fixed, showing its rounded bottom corners as a card
+                .animation(isDragging ? nil : styles.animation.bottomSheetAnimation, value: bottomSheetExpanded)
+                .offset(x: showingSettings ? -screenWidth : 0)
+                .scaleEffect(showingSettings ? 0.85 : 1)
+                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingSettings)
+                
+                // Bottom sheet for navigation
+                VStack(spacing: 0) {
+                    // Handle indicator (chevron only)
+                    HStack {
+                        Spacer()
+                        
+                        Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
+                            .font(.system(size: bottomSheetExpanded ? 14 : 18, weight: .bold))
+                            .foregroundColor(styles.colors.textSecondary)
+                        
+                        Spacer()
+                    }
+                    .padding(.top, 8)
                         }
                     }
-                    .padding(.top, styles.layout.topSafeAreaPadding - 10)
-                    .zIndex(100)
                     
-                    Spacer()
+                    if bottomSheetExpanded {
+                        // Navigation tabs
+                        HStack(spacing: 0) {
+                            Spacer()
+                            
+                            // Journal tab
+                            NavigationTabButton(
+                                icon: "book.fill",
+                                title: "Journal",
+                                isSelected: selectedTab == 0,
+                                action: {
+                                    withAnimation(styles.animation.tabSwitchAnimation) {
+                                        selectedTab = 0
+                                    }
+                                    
+                                    // Auto-collapse sheet after selection
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        withAnimation(styles.animation.bottomSheetAnimation) {
+                                            bottomSheetExpanded = false
+                                            bottomSheetOffset = peekHeight - fullSheetHeight
+                                        }
+                                    }
+                                }
+                            )
+                            
+                            Spacer()
+                            
+                            // Insights tab
+                            NavigationTabButton(
+                                icon: "chart.bar.fill",
+                                title: "Insights",
+                                isSelected: selectedTab == 1,
+                                action: {
+                                    withAnimation(styles.animation.tabSwitchAnimation) {
+                                        selectedTab = 1
+                                    }
+                                    
+                                    // Auto-collapse sheet after selection
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        withAnimation(styles.animation.bottomSheetAnimation) {
+                                            bottomSheetExpanded = false
+                                            bottomSheetOffset = peekHeight - fullSheetHeight
+                                        }
+                                    }
+                                }
+                            )
+                            
+                            Spacer()
+                            
+                            // Reflections tab
+                            NavigationTabButton(
+                                icon: "bubble.left.fill",
+                                title: "Reflections",
+                                isSelected: selectedTab == 2,
+                                action: {
+                                    withAnimation(styles.animation.tabSwitchAnimation) {
+                                        selectedTab = 2
+                                    }
+                                    
+                                    // Auto-collapse sheet after selection
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        withAnimation(styles.animation.bottomSheetAnimation) {
+                                            bottomSheetExpanded = false
+                                            bottomSheetOffset = peekHeight - fullSheetHeight
+                                        }
+                                    }
+                                }
+                            )
+                            
+                            Spacer()
+                        }
+                        .padding(.vertical, 12)
+                        .frame(height: fullSheetHeight - peekHeight)
+                        .background(styles.colors.bottomSheetBackground)
+                    }
                 }
-                .zIndex(3)
-            )
-            
-            // Modern floating tab bar
-            VStack {
-                Spacer()
-                
-                ModernTabBar(selectedTab: $selectedTab, visible: tabBarVisible)
-                    .offset(y: tabBarOffset)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: tabBarOffset)
+                .background(styles.colors.bottomSheetBackground)
+                .frame(height: fullSheetHeight)
+                // Offset removed to keep main view fixed with rounded bottom corners
+                .gesture(bottomSheetDrag)
+                .shadow(color: styles.colors.bottomSheetShadow, radius: 8, x: 0, y: -4)
+                .offset(x: showingSettings ? -screenWidth : 0)
+                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingSettings)
             }
-            .ignoresSafeArea(.keyboard)
-            .zIndex(4)
+            
+            // Settings view
+            SettingsView()
+                .background(styles.colors.appBackground)
+                .frame(width: screenWidth)
+                .offset(x: settingsOffset)
+                .overlay(
+                    VStack {
+                        HStack {
+                            Button(action: {
+                                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                    showingSettings = false
+                                    settingsOffset = screenWidth
+                                }
+                            }) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(styles.colors.accent)
+                                    .frame(width: 36, height: 36)
+                                    .background(styles.colors.secondaryBackground.opacity(0.8))
+                                    .clipShape(Circle())
+                            }
+                            .padding(.leading, 20)
+                            .padding(.top, styles.layout.topSafeAreaPadding - 10)
+                            
+                            Spacer()
+                        }
+                        
+                        Spacer()
+                    }
+                    .opacity(showingSettings ? 1 : 0)
+                )
+                .zIndex(2)
         }
         .environmentObject(appState)
         .preferredColorScheme(.dark)
         .onAppear {
+            // Initialize bottom sheet in collapsed state
+            bottomSheetOffset = peekHeight - fullSheetHeight
+            
             // Load sample data for preview
             appState.loadSampleData()
             
@@ -125,67 +298,7 @@ struct MainTabView: View {
         }
     }
 }
-
-struct ModernTabBar: View {
-    @Binding var selectedTab: Int
-    var visible: Bool
-    
-    // Access to shared styles
-    private let styles = UIStyles.shared
-    
-    var body: some View {
-        ZStack {
-            // Blurred background
-            BlurView(style: .systemUltraThinMaterialDark)
-                .frame(height: 70)
-                .cornerRadius(25)
-                .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 5)
-                .padding(.horizontal, 40)
-            
-            // Tab buttons
-            HStack(spacing: 0) {
-                Spacer()
-                
-                // Journal tab
-                ModernTabButton(
-                    icon: "book.fill",
-                    title: "Journal",
-                    isSelected: selectedTab == 0,
-                    action: { withAnimation { selectedTab = 0 } }
-                )
-                
-                Spacer()
-                
-                // Insights tab
-                ModernTabButton(
-                    icon: "chart.bar.fill",
-                    title: "Insights",
-                    isSelected: selectedTab == 1,
-                    action: { withAnimation { selectedTab = 1 } }
-                )
-                
-                Spacer()
-                
-                // Reflections tab
-                ModernTabButton(
-                    icon: "bubble.left.fill",
-                    title: "Reflections",
-                    isSelected: selectedTab == 2,
-                    action: { withAnimation { selectedTab = 2 } }
-                )
-                
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .frame(height: 70)
-        }
-        .padding(.bottom, 20)
-        .opacity(visible ? 1 : 0)
-        .animation(.easeInOut(duration: 0.3), value: visible)
-    }
-}
-
-struct ModernTabButton: View {
+struct NavigationTabButton: View {
     let icon: String
     let title: String
     let isSelected: Bool
@@ -196,12 +309,12 @@ struct ModernTabButton: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
+            VStack(spacing: 6) {
                 ZStack {
                     // Background circle for selected tab
                     Circle()
                         .fill(isSelected ? styles.colors.accent.opacity(0.2) : Color.clear)
-                        .frame(width: 48, height: 48)
+                        .frame(width: 46, height: 46)
                     
                     // Icon
                     Image(systemName: icon)
@@ -228,19 +341,6 @@ struct ScaleButtonStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.9 : 1)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
-    }
-}
-
-struct BlurView: UIViewRepresentable {
-    let style: UIBlurEffect.Style
-    
-    func makeUIView(context: Context) -> UIVisualEffectView {
-        let view = UIVisualEffectView(effect: UIBlurEffect(style: style))
-        return view
-    }
-    
-    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {
-        uiView.effect = UIBlurEffect(style: style)
     }
 }
 

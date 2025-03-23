@@ -166,7 +166,7 @@ struct JournalView: View {
     
     private func deleteEntry(_ entry: JournalEntry) {
         if let index = appState.journalEntries.firstIndex(where: { $0.id == entry.id }) {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            _ = withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 appState.journalEntries.remove(at: index)
             }
         }

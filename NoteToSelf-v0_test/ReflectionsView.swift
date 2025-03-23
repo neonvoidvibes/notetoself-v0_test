@@ -73,14 +73,14 @@ struct ReflectionsView: View {
                         lastScrollPosition = value
                     }
                 }
-                .onChange(of: appState.chatMessages.count) { newCount in
+                .onChange(of: appState.chatMessages.count) { oldValue, newCount in
                     if let lastMessage = appState.chatMessages.last {
                         withAnimation {
                             scrollView.scrollTo(lastMessage.id, anchor: .bottom)
                         }
                     }
                 }
-                .onChange(of: isTyping) { newValue in
+                .onChange(of: isTyping) { oldValue, newValue in
                     withAnimation {
                         scrollView.scrollTo(appState.chatMessages.last?.id, anchor: .bottom)
                     }
