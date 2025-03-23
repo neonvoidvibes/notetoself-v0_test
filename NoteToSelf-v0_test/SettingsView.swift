@@ -15,7 +15,7 @@ struct SettingsView: View {
             
             VStack(spacing: 0) {
                 // Content
-                ScrollView {
+                ScrollView(.vertical, showsIndicators: true) {
                     VStack(spacing: styles.layout.spacingXL) {
                         // Subscription section
                         SubscriptionSection(subscriptionTier: appState.subscriptionTier)
@@ -40,6 +40,7 @@ struct SettingsView: View {
                     .padding(.horizontal, styles.layout.paddingL)
                     .padding(.top, styles.headerPadding.top)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
     }
@@ -140,6 +141,53 @@ struct GlowingButtonStyle: ButtonStyle {
 
 // MARK: - Notifications Section
 
+// Define a custom time picker to replace DatePicker
+private struct CustomTimePicker: View {
+    @Binding var date: Date
+    @State private var showTimePicker = false
+    private let styles = UIStyles.shared
+    
+    var body: some View {
+        Button(action: {
+            showTimePicker = true
+        }) {
+            HStack {
+                Text(timeString(from: date))
+                    .foregroundColor(styles.colors.accent)
+                    .font(styles.typography.bodyFont)
+                
+                Image(systemName: "chevron.right")
+                    .foregroundColor(styles.colors.textSecondary)
+                    .font(.system(size: 14))
+            }
+        }
+        .sheet(isPresented: $showTimePicker) {
+            VStack {
+                DatePicker("", selection: $date, displayedComponents: .hourAndMinute)
+                    .datePickerStyle(WheelDatePickerStyle())
+                    .labelsHidden()
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(styles.colors.menuBackground)
+                
+                Button("Done") {
+                    showTimePicker = false
+                }
+                .foregroundColor(styles.colors.accent)
+                .padding(.bottom, 40)
+            }
+            .background(styles.colors.menuBackground)
+            .presentationDetents([.medium])
+        }
+    }
+    
+    private func timeString(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+}
+
 struct NotificationsSection: View {
     @Binding var notificationsEnabled: Bool
     @Binding var notificationTime: Date
@@ -155,26 +203,34 @@ struct NotificationsSection: View {
             
             styles.card(
                 VStack(spacing: styles.layout.spacingM) {
+                    // Toggle with fixed width
                     Toggle("Daily Reminder", isOn: $notificationsEnabled)
-                        .font(styles.typography.bodyFont) // Use consistent font
+                        .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.text)
                         .toggleStyle(ModernToggleStyle(colors: styles.colors))
                     
+                    // Conditionally show time picker with transition
                     if notificationsEnabled {
-                        DatePicker("Reminder Time", selection: $notificationTime, displayedComponents: .hourAndMinute)
-                            .foregroundColor(styles.colors.text)
-                            .datePickerStyle(WheelDatePickerStyle())
-                            .labelsHidden()
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 10)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        HStack {
+                            Text("Reminder Time")
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(styles.colors.text)
+                            
+                            Spacer()
+                            
+                            // Simple time display
+                            CustomTimePicker(date: $notificationTime)
+                        }
+                        .transition(.opacity)
                     }
                 }
                 .padding(styles.layout.paddingL)
-                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: notificationsEnabled)
+                .frame(maxWidth: .infinity)
             )
             .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
+            // Remove fixed height constraint to allow proper scrolling
         }
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: notificationsEnabled)
     }
 }
 
