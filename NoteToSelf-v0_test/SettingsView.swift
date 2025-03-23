@@ -5,8 +5,8 @@ struct SettingsView: View {
     @State private var notificationTime: Date = Date()
     @State private var notificationsEnabled: Bool = false
     
-    // For tracking horizontal swiping state to disable scrolling
-    @State private var isSwipingHorizontally = false
+    // For controlling scroll behavior during swipes
+    @State private var isSwipingToClose = false
     
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -16,61 +16,57 @@ struct SettingsView: View {
             styles.colors.menuBackground
                 .ignoresSafeArea()
             
-            VStack(spacing: 0) {
-                // Content
-                ScrollView(.vertical, showsIndicators: true) {
-                    VStack(spacing: styles.layout.spacingXL) {
-                        // Subscription section
-                        SubscriptionSection(subscriptionTier: appState.subscriptionTier)
-                            .transition(.scale.combined(with: .opacity))
-                        
-                        // Notifications section
-                        NotificationsSection(
-                            notificationsEnabled: $notificationsEnabled,
-                            notificationTime: $notificationTime
-                        )
+            ScrollView(.vertical, showsIndicators: true) {
+                VStack(spacing: styles.layout.spacingXL) {
+                    // Subscription section
+                    SubscriptionSection(subscriptionTier: appState.subscriptionTier)
                         .transition(.scale.combined(with: .opacity))
-                        
-                        // Privacy & Export section
-                        PrivacySection()
-                            .transition(.scale.combined(with: .opacity))
-                        
-                        // About section
-                        AboutSection()
-                            .transition(.scale.combined(with: .opacity))
-                            .padding(.bottom, styles.layout.paddingXL)
-                    }
-                    .padding(.horizontal, styles.layout.paddingL)
-                    .padding(.top, styles.headerPadding.top)
+                    
+                    // Notifications section
+                    NotificationsSection(
+                        notificationsEnabled: $notificationsEnabled,
+                        notificationTime: $notificationTime
+                    )
+                    .transition(.scale.combined(with: .opacity))
+                    
+                    // Privacy & Export section
+                    PrivacySection()
+                        .transition(.scale.combined(with: .opacity))
+                    
+                    // About section
+                    AboutSection()
+                        .transition(.scale.combined(with: .opacity))
+                        .padding(.bottom, styles.layout.paddingXL)
                 }
-                .simultaneousGesture(
-                    // This gesture purely detects horizontal swipes to disable scrolling
-                    // It doesn't handle the swipe action itself - that's still done by MainTabView
-                    DragGesture(minimumDistance: 5)
-                        .onChanged { value in
-                            // Only monitor swipes from the left edge (for closing)
-                            if value.startLocation.x < 50 {
-                                // Is this a significant horizontal movement?
-                                let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
-                                let isSignificant = abs(value.translation.width) > 10
-                                
-                                // Only from left to right (closing gesture)
-                                let isRightward = value.translation.width > 0
-                                
-                                // Set swiping flag to disable scrolling during horizontal swipes
-                                isSwipingHorizontally = isHorizontal && isRightward && isSignificant
-                            }
-                        }
-                        .onEnded { _ in
-                            // Re-enable scrolling when the gesture ends
-                            isSwipingHorizontally = false
-                        }
-                )
-                .disabled(isSwipingHorizontally)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.horizontal, styles.layout.paddingL)
+                .padding(.top, styles.headerPadding.top)
             }
+            .disabled(isSwipingToClose)
+            
+            // Edge detection for close gesture
+            HStack(spacing: 0) {
+                // Only detect right swipes from the left edge (50pts)
+                Rectangle()
+                    .fill(Color.clear)
+                    .contentShape(Rectangle())
+                    .frame(width: 50)
+                    .gesture(
+                        DragGesture(minimumDistance: 10)
+                            .onChanged { value in
+                                let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
+                                let isRightward = value.translation.width > 0
+                                isSwipingToClose = isHorizontal && isRightward
+                            }
+                            .onEnded { _ in
+                                isSwipingToClose = false
+                            }
+                    )
+                
+                // Rest of screen - don't interfere with scrolling
+                Spacer()
+            }
+            .frame(maxHeight: .infinity)
         }
-        // Let parent handle the actual swiping effects
     }
 }
 

@@ -73,15 +73,23 @@ struct MainTabView: View {
     private var settingsDrag: some Gesture {
         DragGesture(minimumDistance: 10)
             .onChanged { value in
-                // When settings are open, only allow horizontal swipes from left edge
+                // When settings are open, ONLY allow horizontal swipes from left edge (50pt)
                 if showingSettings {
-                    if value.startLocation.x < 50 && abs(value.translation.width) > abs(value.translation.height) && abs(value.translation.width) > 10 {
+                    let isLeftEdge = value.startLocation.x < 50
+                    let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
+                    let isSignificant = abs(value.translation.width) > 10
+                    
+                    // Only respect right swipes from left edge when settings are open
+                    if isLeftEdge && isHorizontal && isSignificant && value.translation.width > 0 {
                         isSwipingSettings = true
                         dragOffset = value.translation.width
                     }
                 } else {
                     // When settings are closed, allow horizontal swipes from anywhere
-                    if abs(value.translation.width) > abs(value.translation.height) && abs(value.translation.width) > 10 {
+                    let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
+                    let isSignificant = abs(value.translation.width) > 10
+                    
+                    if isHorizontal && isSignificant {
                         isSwipingSettings = true
                         dragOffset = value.translation.width
                     }
@@ -348,7 +356,8 @@ struct MainTabView: View {
                     .padding(.top, styles.layout.topSafeAreaPadding + 60)
             }
             .contentShape(Rectangle())
-            // This is the key: a highPriorityGesture ensures the horizontal drag takes precedence
+            // Settings swipe is handled both by the inner SettingsView (for scroll disabling) 
+            // and by MainTabView (for the actual animation)
             .simultaneousGesture(settingsDrag)
             .frame(width: screenWidth)
             .background(styles.colors.menuBackground)
