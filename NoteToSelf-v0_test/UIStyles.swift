@@ -35,7 +35,7 @@ struct UIStyles {
       let tabBarBackground: Color = Color.black
       
       // Navigation sheet colors
-      let bottomSheetBackground: Color = Color(hex: "#1A1A1A")
+        let bottomSheetBackground: Color = Color(hex: "#444444")
       let bottomSheetPeek: Color = Color(hex: "#222222")
       let bottomSheetIndicator: Color = Color(hex: "#444444")
       let bottomSheetShadow: Color = Color.black.opacity(0.3)
@@ -89,7 +89,7 @@ struct UIStyles {
       let bottomSheetIndicatorWidth: CGFloat = 40 // Width of the handle indicator
       let bottomSheetIndicatorHeight: CGFloat = 4 // Height of the handle indicator
       let bottomSheetCornerRadius: CGFloat = 24 // Corner radius of the bottom sheet
-      let mainContentCornerRadius: CGFloat = 24 // Corner radius for the main content card
+        let mainContentCornerRadius: CGFloat = 50 // Corner radius for the main content card
   }
   let layout = Layout()
   

@@ -217,7 +217,7 @@ struct MainTabView: View {
                 // Removed the frame modifier to prevent excessive height
                 .background(styles.colors.bottomSheetBackground)
                 .gesture(bottomSheetDrag)
-                .shadow(color: styles.colors.bottomSheetShadow, radius: 8, x: 0, y: -4)
+                .shadow(color: styles.colors.bottomSheetShadow, radius: 4, x: 0, y: -2)
                 .offset(x: showingSettings ? -screenWidth : 0)
                 .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingSettings)
             }
