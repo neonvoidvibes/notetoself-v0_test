@@ -77,68 +77,64 @@ struct MainTabView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Main content as a floating card with rounded corners
-                ZStack {
-                    // Current tab content
-                    Group {
-                        if selectedTab == 0 {
-                            JournalView(
-                                tabBarOffset: .constant(0),
-                                lastScrollPosition: .constant(0),
-                                tabBarVisible: .constant(true)
-                            )
-                        } else if selectedTab == 1 {
-                            InsightsView(
-                                tabBarOffset: .constant(0),
-                                lastScrollPosition: .constant(0),
-                                tabBarVisible: .constant(true)
-                            )
-                        } else if selectedTab == 2 {
-                            ReflectionsView(
-                                tabBarOffset: .constant(0),
-                                lastScrollPosition: .constant(0),
-                                tabBarVisible: .constant(true)
-                            )
-                        }
-                    }
-                    
-                    // Settings menu button overlay
-                    VStack {
-                        HStack {
-                            Spacer()
-                            
-                            Button(action: {
-                                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                    showingSettings = true
-                                    settingsOffset = 0
-                                }
-                            }) {
-                                VStack(spacing: 5) {
-                                    Rectangle()
-                                        .fill(styles.colors.accent)
-                                        .frame(width: 20, height: 2)
-                                        .cornerRadius(1)
-                                    Rectangle()
-                                        .fill(styles.colors.accent)
-                                        .frame(width: 14, height: 2)
-                                        .cornerRadius(1)
-                                }
-                                .frame(width: 36, height: 36)
-                                .background(styles.colors.secondaryBackground.opacity(0.8))
-                                .clipShape(Circle())
-                                .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+CardContainer {
+                    ZStack {
+                        // Current tab content
+                        Group {
+                            if selectedTab == 0 {
+                                JournalView(
+                                    tabBarOffset: .constant(0),
+                                    lastScrollPosition: .constant(0),
+                                    tabBarVisible: .constant(true)
+                                )
+                            } else if selectedTab == 1 {
+                                InsightsView(
+                                    tabBarOffset: .constant(0),
+                                    lastScrollPosition: .constant(0),
+                                    tabBarVisible: .constant(true)
+                                )
+                            } else if selectedTab == 2 {
+                                ReflectionsView(
+                                    tabBarOffset: .constant(0),
+                                    lastScrollPosition: .constant(0),
+                                    tabBarVisible: .constant(true)
+                                )
                             }
-                            .padding(.trailing, 20)
-                            .padding(.top, styles.layout.topSafeAreaPadding - 10)
                         }
                         
-                        Spacer()
+                        // Settings menu button overlay
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                        showingSettings = true
+                                        settingsOffset = 0
+                                    }
+                                }) {
+                                    VStack(spacing: 5) {
+                                        Rectangle()
+                                            .fill(styles.colors.accent)
+                                            .frame(width: 20, height: 2)
+                                            .cornerRadius(1)
+                                        Rectangle()
+                                            .fill(styles.colors.accent)
+                                            .frame(width: 14, height: 2)
+                                            .cornerRadius(1)
+                                    }
+                                    .frame(width: 36, height: 36)
+                                    .background(styles.colors.secondaryBackground.opacity(0.8))
+                                    .clipShape(Circle())
+                                    .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+                                }
+                                .padding(.trailing, 20)
+                                .padding(.top, styles.layout.topSafeAreaPadding - 10)
+                            }
+                            
+                            Spacer()
+                        }
                     }
                 }
-                .background(styles.colors.cardBackground)
-                .cornerRadius(styles.layout.mainContentCornerRadius, corners: [.bottomLeft, .bottomRight])
-                .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
-                .animation(isDragging ? nil : styles.animation.bottomSheetAnimation, value: bottomSheetExpanded)
                 .offset(x: showingSettings ? -screenWidth : 0)
                 .scaleEffect(showingSettings ? 0.85 : 1)
                 .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingSettings)
@@ -221,7 +217,6 @@ struct MainTabView: View {
                     }
                 }
                 .background(styles.colors.bottomSheetBackground)
-                .cornerRadius(styles.layout.bottomSheetCornerRadius)
                 .frame(height: fullSheetHeight)
                 .gesture(bottomSheetDrag)
                 .shadow(color: styles.colors.bottomSheetShadow, radius: 8, x: 0, y: -4)
