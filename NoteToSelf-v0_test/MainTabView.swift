@@ -265,7 +265,6 @@ struct MainTabView: View {
                             Text("Settings")
                                 .font(styles.typography.title1)
                                 .foregroundColor(styles.colors.text)
-                                .padding(.top, styles.layout.topSafeAreaPadding)
                             HStack {
                                 Button(action: {
                                     withAnimation(.easeInOut(duration: 0.3)) {
@@ -287,6 +286,7 @@ struct MainTabView: View {
                                 Spacer()
                             }
                         }
+                        .padding(.top, styles.layout.topSafeAreaPadding)
                         .background(styles.colors.menuBackground)
                         .zIndex(100)
                         
