@@ -8,6 +8,7 @@ struct MainTabView: View {
     @State private var bottomSheetExpanded = false
     @State private var isDragging = false
     @State private var settingsOffset: CGFloat = UIScreen.main.bounds.width
+    @State private var dragOffset: CGFloat = 0
 
     // Access shared styles
     private let styles = UIStyles.shared
@@ -66,25 +67,53 @@ struct MainTabView: View {
             }
     }
     
-    // Drag gesture for opening/closing settings
+    // Interactive drag gesture for settings
     private var settingsDrag: some Gesture {
-        DragGesture(minimumDistance: 20)
+        DragGesture()
+            .onChanged { value in
+                // When settings is closed, only allow left swipes (negative translation)
+                if !showingSettings {
+                    dragOffset = min(0, value.translation.width)
+                } 
+                // When settings is open, only allow right swipes (positive translation)
+                else {
+                    dragOffset = max(0, value.translation.width)
+                }
+            }
             .onEnded { value in
                 let horizontalAmount = value.translation.width
+                let velocity = value.predictedEndLocation.x - value.location.x
                 
-                // If settings is open and swiping right, close it
-                if showingSettings && horizontalAmount > 50 {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showingSettings = false
-                        settingsOffset = screenWidth
+                // If settings is open and swiping right
+                if showingSettings {
+                    if horizontalAmount > screenWidth * 0.3 || (horizontalAmount > 20 && velocity > 100) {
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            showingSettings = false
+                            settingsOffset = screenWidth
+                        }
+                    } else {
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            dragOffset = 0
+                        }
+                    }
+                } 
+                // If settings is closed and swiping left
+                else {
+                    if horizontalAmount < -screenWidth * 0.3 || (horizontalAmount < -20 && velocity < -100) {
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            showingSettings = true
+                            settingsOffset = 0
+                        }
+                    } else {
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            dragOffset = 0
+                        }
                     }
                 }
-                // If settings is closed and swiping left, open it
-                else if !showingSettings && horizontalAmount < -50 {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showingSettings = true
-                        settingsOffset = 0
-                    }
+                
+                // Reset drag offset after animation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    dragOffset = 0
                 }
             }
     }
@@ -109,6 +138,7 @@ struct MainTabView: View {
                     .ignoresSafeArea(edges: .top)
             }
             
+            // Main content that stays in place
             VStack(spacing: 0) {
                 // Main content with universal card style
                 Group {
@@ -160,9 +190,6 @@ struct MainTabView: View {
                         Spacer()
                     }
                 )
-                .offset(x: showingSettings ? -screenWidth * 0.85 : 0)
-                .animation(.easeInOut(duration: 0.3), value: showingSettings)
-                .gesture(settingsDrag)
                 
                 // Bottom navigation area with gray background extended to the screen bottom
                 VStack(spacing: 0) {
@@ -246,7 +273,6 @@ struct MainTabView: View {
                     }
                 }
                 .frame(height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
-                // Removed the frame modifier to prevent excessive height
                 .background(
                     Group {
                         if bottomSheetExpanded {
@@ -257,16 +283,21 @@ struct MainTabView: View {
                     }
                 )
                 .gesture(bottomSheetDrag)
-                // Shadow removed
-                .offset(x: showingSettings ? -screenWidth : 0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingSettings)
             }
+            .gesture(settingsDrag)
             
-            // Settings view overlay
+            // Dark overlay when settings is open
+            Color.black
+                .opacity(showingSettings ? 0.5 : 0)
+                .opacity(dragOffset != 0 ? (showingSettings ? 0.5 - (dragOffset / screenWidth) * 0.5 : 0.5 + (dragOffset / screenWidth) * 0.5) : (showingSettings ? 0.5 : 0))
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+            
+            // Settings view overlay that slides in from the right
             SettingsView()
                 .background(styles.colors.menuBackground)
                 .frame(width: screenWidth)
-                .offset(x: settingsOffset)
+                .offset(x: showingSettings ? settingsOffset + dragOffset : screenWidth + dragOffset)
                 .overlay(
                     VStack {
                         ZStack {
@@ -312,20 +343,9 @@ struct MainTabView: View {
                         
                         Spacer()
                     }
-                    .opacity(showingSettings ? 1 : 0)
+                    .opacity(showingSettings || dragOffset < 0 ? 1 : 0)
                 )
-                .gesture(
-                    DragGesture(minimumDistance: 20)
-                        .onEnded { value in
-                            // Only handle right swipes when settings is open
-                            if showingSettings && value.translation.width > 50 {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showingSettings = false
-                                    settingsOffset = screenWidth
-                                }
-                            }
-                        }
-                )
+                .gesture(settingsDrag)
                 .zIndex(2)
         }
         .environmentObject(appState)
