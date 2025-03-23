@@ -2,6 +2,7 @@ import SwiftUI
 
 struct JournalView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled: Bool
     @State private var showingNewEntrySheet = false
     @State private var expandedEntryId: UUID? = nil
     @State private var editingEntry: JournalEntry? = nil
@@ -84,6 +85,7 @@ struct JournalView: View {
                         }
                     }
                     .coordinateSpace(name: "scrollView")
+                    .disabled(mainScrollingDisabled)
                     .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                         // Calculate scroll direction and update tab bar visibility
                         let scrollingDown = value < lastScrollPosition

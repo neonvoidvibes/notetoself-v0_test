@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct MainTabView: View {
     @StateObject private var appState = AppState()
@@ -364,6 +365,8 @@ struct MainTabView: View {
             .offset(x: showingSettings ? settingsOffset + dragOffset : screenWidth + dragOffset)
             .zIndex(2)
         }
+        .environment(\.mainScrollingDisabled, showingSettings || isSwipingSettings)
+        .environment(\.settingsScrollingDisabled, isSwipingSettings)
         .environmentObject(appState)
         .preferredColorScheme(.dark)
         .onAppear {

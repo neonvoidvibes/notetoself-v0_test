@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ReflectionsView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled: Bool
     @State private var messageText: String = ""
     @State private var isTyping: Bool = false
     @State private var showingSubscriptionPrompt: Bool = false
@@ -55,6 +56,7 @@ struct ReflectionsView: View {
                     .padding(.bottom, 80) // Extra padding for input field
                 }
                 .coordinateSpace(name: "scrollView")
+                .disabled(mainScrollingDisabled)
                 .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                     // Calculate scroll direction and update tab bar visibility
                     let scrollingDown = value < lastScrollPosition

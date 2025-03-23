@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.settingsScrollingDisabled) private var settingsScrollingDisabled: Bool
     @State private var notificationTime: Date = Date()
     @State private var notificationsEnabled: Bool = false
     
@@ -40,8 +41,8 @@ struct SettingsView: View {
                 }
                 .padding(.horizontal, styles.layout.paddingL)
                 .padding(.top, styles.headerPadding.top)
-            }
-            .disabled(isSwipingToClose)
+        }
+        .disabled(settingsScrollingDisabled)
             
             // Edge detection for close gesture
             HStack(spacing: 0) {

@@ -3,6 +3,7 @@ import Charts
 
 struct InsightsView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled: Bool
     @State private var selectedMonth: Date = Date()
     @Binding var tabBarOffset: CGFloat
     @Binding var lastScrollPosition: CGFloat
@@ -54,6 +55,7 @@ var body: some View {
                 }
             }
             .coordinateSpace(name: "scrollView")
+            .disabled(mainScrollingDisabled)
             .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                 let scrollingDown = value < lastScrollPosition
                 if abs(value - lastScrollPosition) > 10 {
