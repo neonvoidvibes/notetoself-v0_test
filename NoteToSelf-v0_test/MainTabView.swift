@@ -73,10 +73,18 @@ struct MainTabView: View {
     private var settingsDrag: some Gesture {
         DragGesture(minimumDistance: 10)
             .onChanged { value in
-                // Activate swipe only if the drag starts from the left edge (within 50 points)
-                if value.startLocation.x < 50 && abs(value.translation.width) > abs(value.translation.height) && abs(value.translation.width) > 10 {
-                    isSwipingSettings = true
-                    dragOffset = value.translation.width
+                // When settings are open, only allow horizontal swipes from left edge
+                if showingSettings {
+                    if value.startLocation.x < 50 && abs(value.translation.width) > abs(value.translation.height) && abs(value.translation.width) > 10 {
+                        isSwipingSettings = true
+                        dragOffset = value.translation.width
+                    }
+                } else {
+                    // When settings are closed, allow horizontal swipes from anywhere
+                    if abs(value.translation.width) > abs(value.translation.height) && abs(value.translation.width) > 10 {
+                        isSwipingSettings = true
+                        dragOffset = value.translation.width
+                    }
                 }
             } 
             .onEnded { value in
