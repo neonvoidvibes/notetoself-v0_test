@@ -73,62 +73,61 @@ struct MainTabView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Main content wrapped in CardContainer for universal bottom rounding and drop shadow
-                CardContainer {
-                    ZStack {
-                        Group {
-                            if selectedTab == 0 {
-                                JournalView(
-                                    tabBarOffset: .constant(0),
-                                    lastScrollPosition: .constant(0),
-                                    tabBarVisible: .constant(true)
-                                )
-                            } else if selectedTab == 1 {
-                                InsightsView(
-                                    tabBarOffset: .constant(0),
-                                    lastScrollPosition: .constant(0),
-                                    tabBarVisible: .constant(true)
-                                )
-                            } else if selectedTab == 2 {
-                                ReflectionsView(
-                                    tabBarOffset: .constant(0),
-                                    lastScrollPosition: .constant(0),
-                                    tabBarVisible: .constant(true)
-                                )
-                            }
-                        }
-                        // Settings menu button overlay
-                        VStack {
-                            HStack {
-                                Spacer()
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                        showingSettings = true
-                                        settingsOffset = 0
-                                    }
-                                }) {
-                                    VStack(spacing: 5) {
-                                        Rectangle()
-                                            .fill(styles.colors.accent)
-                                            .frame(width: 20, height: 2)
-                                            .cornerRadius(1)
-                                        Rectangle()
-                                            .fill(styles.colors.accent)
-                                            .frame(width: 14, height: 2)
-                                            .cornerRadius(1)
-                                    }
-                                    .frame(width: 36, height: 36)
-                                    .background(styles.colors.secondaryBackground.opacity(0.8))
-                                    .clipShape(Circle())
-                                    .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
-                                }
-                                .padding(.trailing, 20)
-                                .padding(.top, styles.layout.topSafeAreaPadding - 10)
-                            }
-                            Spacer()
-                        }
+                // Main content with universal card style
+                Group {
+                    if selectedTab == 0 {
+                        JournalView(
+                            tabBarOffset: .constant(0),
+                            lastScrollPosition: .constant(0),
+                            tabBarVisible: .constant(true)
+                        )
+                    } else if selectedTab == 1 {
+                        InsightsView(
+                            tabBarOffset: .constant(0),
+                            lastScrollPosition: .constant(0),
+                            tabBarVisible: .constant(true)
+                        )
+                    } else if selectedTab == 2 {
+                        ReflectionsView(
+                            tabBarOffset: .constant(0),
+                            lastScrollPosition: .constant(0),
+                            tabBarVisible: .constant(true)
+                        )
                     }
                 }
+                .mainCardStyle()
+                .overlay(
+                    // Settings menu button overlay remains outside the card style
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                    showingSettings = true
+                                    settingsOffset = 0
+                                }
+                            }) {
+                                VStack(spacing: 5) {
+                                    Rectangle()
+                                        .fill(styles.colors.accent)
+                                        .frame(width: 20, height: 2)
+                                        .cornerRadius(1)
+                                    Rectangle()
+                                        .fill(styles.colors.accent)
+                                        .frame(width: 14, height: 2)
+                                        .cornerRadius(1)
+                                }
+                                .frame(width: 36, height: 36)
+                                .background(styles.colors.secondaryBackground.opacity(0.8))
+                                .clipShape(Circle())
+                                .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+                            }
+                            .padding(.trailing, 20)
+                            .padding(.top, styles.layout.topSafeAreaPadding - 10)
+                        }
+                        Spacer()
+                    }
+                )
                 .offset(x: showingSettings ? -screenWidth : 0)
                 .scaleEffect(showingSettings ? 0.85 : 1)
                 .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingSettings)

@@ -199,6 +199,16 @@ extension View {
     }
 }
 
+// MARK: - Universal Main Card Style Modifier
+extension View {
+    func mainCardStyle() -> some View {
+        self
+            .background(UIStyles.shared.colors.cardBackground)
+            .clipShape(RoundedCorner(radius: UIStyles.shared.layout.mainContentCornerRadius, corners: [.bottomLeft, .bottomRight]))
+            .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
+    }
+}
+
 struct RoundedCorner: Shape {
     var radius: CGFloat = .infinity
     var corners: UIRectCorner = .allCorners
