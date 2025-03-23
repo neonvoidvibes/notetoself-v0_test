@@ -132,7 +132,7 @@ struct MainTabView: View {
                                         .cornerRadius(1)
                                 }
                                 .frame(width: 36, height: 36)
-                                .background(bottomSheetExpanded ? styles.colors.bottomSheetBackground : Color.black)
+                                .background(Color.black)
                                 .clipShape(Circle())
                                 .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
                             }
@@ -156,7 +156,7 @@ struct MainTabView: View {
                     }) {
                         HStack {
                             Spacer()
-                            Image(systemName: "chevron.up")
+                            Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(bottomSheetExpanded ? styles.colors.textSecondary : styles.colors.text)
                             Spacer()
