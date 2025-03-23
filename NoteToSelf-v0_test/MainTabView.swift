@@ -9,7 +9,7 @@ struct MainTabView: View {
     @State private var isDragging = false
     @State private var settingsOffset: CGFloat = UIScreen.main.bounds.width
 
-    // Access to shared styles
+    // Access shared styles
     private let styles = UIStyles.shared
 
     // Calculated properties for layout
@@ -31,7 +31,7 @@ struct MainTabView: View {
     
     // Drag gesture for the bottom sheet
     private var bottomSheetDrag: some Gesture {
-        return DragGesture()
+        DragGesture()
             .onChanged { value in
                 isDragging = true
                 let dragAmount = value.translation.height
@@ -42,20 +42,16 @@ struct MainTabView: View {
                 isDragging = false
                 let dragAmount = value.translation.height
                 let dragVelocity = value.predictedEndTranslation.height - value.translation.height
-                // Expand or collapse based on velocity and position
                 if dragAmount + dragVelocity < 0 && dragAmount < -20 {
-                    // Swipe up - expand
                     withAnimation(styles.animation.bottomSheetAnimation) {
                         bottomSheetExpanded = true
                     }
                 } else if dragAmount > 20 || dragVelocity > 500 {
-                    // Swipe down - collapse
                     withAnimation(styles.animation.bottomSheetAnimation) {
                         bottomSheetOffset = peekHeight - fullSheetHeight
                         bottomSheetExpanded = false
                     }
                 } else {
-                    // Snap to closest state based on current position
                     let snapUpThreshold = (peekHeight - fullSheetHeight) * 0.3
                     withAnimation(styles.animation.bottomSheetAnimation) {
                         if bottomSheetOffset < snapUpThreshold {
@@ -77,9 +73,9 @@ struct MainTabView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-CardContainer {
+                // Main content wrapped in CardContainer for universal bottom rounding and drop shadow
+                CardContainer {
                     ZStack {
-                        // Current tab content
                         Group {
                             if selectedTab == 0 {
                                 JournalView(
@@ -101,7 +97,6 @@ CardContainer {
                                 )
                             }
                         }
-                        
                         // Settings menu button overlay
                         VStack {
                             HStack {
@@ -130,7 +125,6 @@ CardContainer {
                                 .padding(.trailing, 20)
                                 .padding(.top, styles.layout.topSafeAreaPadding - 10)
                             }
-                            
                             Spacer()
                         }
                     }
@@ -139,23 +133,28 @@ CardContainer {
                 .scaleEffect(showingSettings ? 0.85 : 1)
                 .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingSettings)
                 
-                // Bottom sheet for navigation
+                // Bottom navigation area with gray background extended to the screen bottom
                 VStack(spacing: 0) {
-                    // Handle indicator (chevron only)
-                    HStack {
-                        Spacer()
-                        Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
-                            .font(.system(size: bottomSheetExpanded ? 14 : 18, weight: .bold))
-                            .foregroundColor(styles.colors.textSecondary)
-                        Spacer()
+                    // Tappable chevron with dynamic vertical spacing
+                    Button(action: {
+                        withAnimation(styles.animation.bottomSheetAnimation) {
+                            bottomSheetExpanded.toggle()
+                        }
+                    }) {
+                        HStack {
+                            Spacer()
+                            Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
+                                .font(.system(size: bottomSheetExpanded ? 14 : 18, weight: .bold))
+                                .foregroundColor(styles.colors.textSecondary)
+                            Spacer()
+                        }
                     }
-                    .padding(.top, 8)
+                    .padding(.vertical, 8)
                     
                     if bottomSheetExpanded {
-                        // Navigation tabs
+                        // Navigation tabs with added bottom padding to avoid overlap with chevron
                         HStack(spacing: 0) {
                             Spacer()
-                            // Journal tab
                             NavigationTabButton(
                                 icon: "book.fill",
                                 title: "Journal",
@@ -164,7 +163,6 @@ CardContainer {
                                     withAnimation(styles.animation.tabSwitchAnimation) {
                                         selectedTab = 0
                                     }
-                                    // Auto-collapse sheet after selection
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                         withAnimation(styles.animation.bottomSheetAnimation) {
                                             bottomSheetExpanded = false
@@ -174,7 +172,6 @@ CardContainer {
                                 }
                             )
                             Spacer()
-                            // Insights tab
                             NavigationTabButton(
                                 icon: "chart.bar.fill",
                                 title: "Insights",
@@ -192,7 +189,6 @@ CardContainer {
                                 }
                             )
                             Spacer()
-                            // Reflections tab
                             NavigationTabButton(
                                 icon: "bubble.left.fill",
                                 title: "Reflections",
@@ -212,24 +208,21 @@ CardContainer {
                             Spacer()
                         }
                         .padding(.vertical, 12)
+                        .padding(.bottom, 8)
                         .frame(height: fullSheetHeight - peekHeight)
                         .background(styles.colors.bottomSheetBackground)
                     }
                 }
+                .frame(height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
+                .frame(maxHeight: .infinity, alignment: .bottom)
                 .background(styles.colors.bottomSheetBackground)
-                .frame(height: fullSheetHeight)
-                .gesture(bottomSheetDrag)
-                .shadow(color: styles.colors.bottomSheetShadow, radius: 8, x: 0, y: -4)
-                .offset(x: showingSettings ? -screenWidth : 0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingSettings)
-                .frame(height: fullSheetHeight)
                 .gesture(bottomSheetDrag)
                 .shadow(color: styles.colors.bottomSheetShadow, radius: 8, x: 0, y: -4)
                 .offset(x: showingSettings ? -screenWidth : 0)
                 .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingSettings)
             }
             
-            // Settings view
+            // Settings view overlay
             SettingsView()
                 .background(styles.colors.appBackground)
                 .frame(width: screenWidth)
@@ -252,7 +245,6 @@ CardContainer {
                             }
                             .padding(.leading, 20)
                             .padding(.top, styles.layout.topSafeAreaPadding - 10)
-                            
                             Spacer()
                         }
                         Spacer()
@@ -264,11 +256,8 @@ CardContainer {
         .environmentObject(appState)
         .preferredColorScheme(.dark)
         .onAppear {
-            // Initialize bottom sheet in collapsed state
             bottomSheetOffset = peekHeight - fullSheetHeight
-            // Load sample data for preview
             appState.loadSampleData()
-            // Check if user has seen onboarding
             if !appState.hasSeenOnboarding {
                 appState.hasSeenOnboarding = true
             }
@@ -281,8 +270,6 @@ struct NavigationTabButton: View {
     let title: String
     let isSelected: Bool
     let action: () -> Void
-    
-    // Access to shared styles
     private let styles = UIStyles.shared
     
     var body: some View {
