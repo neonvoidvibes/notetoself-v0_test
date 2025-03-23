@@ -10,41 +10,45 @@ struct SettingsView: View {
     
     var body: some View {
         ZStack {
-            styles.colors.appBackground
+            styles.colors.menuBackground
                 .ignoresSafeArea()
             
-            ScrollView {
-                VStack(spacing: styles.layout.spacingXL) {
-                    // Header
-                    HStack {
-                        Text("Settings")
-                            .font(styles.typography.title1)
-                            .foregroundColor(styles.colors.text)
-                        
-                        Spacer()
-                    }
-                    .padding(.top, styles.layout.topSafeAreaPadding)
+            VStack(spacing: 0) {
+                // Header - matches the layout of other main views
+                HStack {
+                    Spacer()
                     
-                    // Subscription section
-                    SubscriptionSection(subscriptionTier: appState.subscriptionTier)
-                        .transition(.scale.combined(with: .opacity))
-                    
-                    // Notifications section
-                    NotificationsSection(
-                        notificationsEnabled: $notificationsEnabled,
-                        notificationTime: $notificationTime
-                    )
-                    .transition(.scale.combined(with: .opacity))
-                    
-                    // Privacy & Export section
-                    PrivacySection()
-                        .transition(.scale.combined(with: .opacity))
-                    
-                    // About section
-                    AboutSection()
-                        .transition(.scale.combined(with: .opacity))
+                    Text("Settings")
+                        .font(styles.typography.title1)
+                        .foregroundColor(styles.colors.text)
                 }
-                .padding(styles.layout.paddingL)
+                .padding(styles.headerPadding)
+                
+                // Content
+                ScrollView {
+                    VStack(spacing: styles.layout.spacingXL) {
+                        // Subscription section
+                        SubscriptionSection(subscriptionTier: appState.subscriptionTier)
+                            .transition(.scale.combined(with: .opacity))
+                        
+                        // Notifications section
+                        NotificationsSection(
+                            notificationsEnabled: $notificationsEnabled,
+                            notificationTime: $notificationTime
+                        )
+                        .transition(.scale.combined(with: .opacity))
+                        
+                        // Privacy & Export section
+                        PrivacySection()
+                            .transition(.scale.combined(with: .opacity))
+                        
+                        // About section
+                        AboutSection()
+                            .transition(.scale.combined(with: .opacity))
+                            .padding(.bottom, styles.layout.paddingXL)
+                    }
+                    .padding(.horizontal, styles.layout.paddingL)
+                }
             }
         }
     }

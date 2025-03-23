@@ -124,28 +124,26 @@ struct MainTabView: View {
                                 VStack(spacing: 5) {
                                     Rectangle()
                                         .fill(styles.colors.accent)
-                                        .frame(width: 20, height: 2)
+                                        .frame(width: 24, height: 2)
                                         .cornerRadius(1)
                                     
                                     HStack {
                                         if showingSettings {
                                             Rectangle()
                                                 .fill(styles.colors.accent)
-                                                .frame(width: 14, height: 2)
+                                                .frame(width: 24, height: 2)
                                                 .cornerRadius(1)
                                             Spacer(minLength: 0)
                                         } else {
                                             Spacer(minLength: 0)
                                             Rectangle()
                                                 .fill(styles.colors.accent)
-                                                .frame(width: 14, height: 2)
+                                                .frame(width: 20, height: 2)
                                                 .cornerRadius(1)
                                         }
                                     }
                                 }
                                 .frame(width: 36, height: 36)
-                                .background(styles.colors.menuIconBackground)
-                                .clipShape(Circle())
                             }
                             .padding(.trailing, 20)
                             .padding(.top, styles.layout.topSafeAreaPadding)
@@ -293,14 +291,12 @@ struct MainTabView: View {
                                     HStack {
                                         Rectangle()
                                             .fill(styles.colors.accent)
-                                            .frame(width: 14, height: 2)
+                                            .frame(width: 24, height: 2)
                                             .cornerRadius(1)
                                         Spacer(minLength: 0)
                                     }
                                 }
                                 .frame(width: 36, height: 36)
-                                .background(styles.colors.menuIconBackground)
-                                .clipShape(Circle())
                             }
                             .padding(.leading, 20)
                             .padding(.top, styles.layout.topSafeAreaPadding)
