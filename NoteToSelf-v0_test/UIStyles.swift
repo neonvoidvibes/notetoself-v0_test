@@ -89,7 +89,7 @@ struct UIStyles {
       let bottomSheetIndicatorWidth: CGFloat = 40 // Width of the handle indicator
       let bottomSheetIndicatorHeight: CGFloat = 4 // Height of the handle indicator
       let bottomSheetCornerRadius: CGFloat = 24 // Corner radius of the bottom sheet
-        let mainContentCornerRadius: CGFloat = 50 // Corner radius for the main content card
+      let mainContentCornerRadius: CGFloat = 40 // Corner radius for the main content card
   }
   let layout = Layout()
   
@@ -154,7 +154,6 @@ struct UIStyles {
       content
           .background(colors.cardBackground)
           .cornerRadius(layout.radiusL)
-          .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
   }
   
   // MARK: - Bottom Sheet Style Helper
@@ -162,7 +161,6 @@ struct UIStyles {
       content
           .background(colors.bottomSheetBackground)
           .cornerRadius(layout.bottomSheetCornerRadius)
-          .shadow(color: colors.bottomSheetShadow, radius: 10, x: 0, y: -5)
   }
 }
 

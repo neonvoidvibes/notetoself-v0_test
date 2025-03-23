@@ -13,7 +13,7 @@ struct CardContainer<Content: View>: View {
         content
             .background(UIStyles.shared.colors.cardBackground)
             .clipShape(RoundedCorner(radius: cornerRadius, corners: [.bottomLeft, .bottomRight]))
-            .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
+            // Shadow removed
     }
 }
 
