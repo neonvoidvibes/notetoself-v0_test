@@ -121,27 +121,13 @@ struct MainTabView: View {
                                     settingsOffset = showingSettings ? 0 : screenWidth
                                 }
                             }) {
-                                VStack(spacing: 5) {
+                                VStack(spacing: 4) {
                                     Rectangle()
                                         .fill(styles.colors.accent)
                                         .frame(width: 20, height: 2)
-                                        .cornerRadius(1)
-                                    
-                                    HStack {
-                                        if showingSettings {
-                                            Rectangle()
-                                                .fill(styles.colors.accent)
-                                                .frame(width: 20, height: 2)
-                                                .cornerRadius(1)
-                                            Spacer(minLength: 0)
-                                        } else {
-                                            Spacer(minLength: 0)
-                                            Rectangle()
-                                                .fill(styles.colors.accent)
-                                                .frame(width: 20, height: 2)
-                                                .cornerRadius(1)
-                                        }
-                                    }
+                                    Rectangle()
+                                        .fill(styles.colors.accent)
+                                        .frame(width: 20, height: 2)
                                 }
                                 .frame(width: 36, height: 36)
                             }
@@ -275,39 +261,31 @@ struct MainTabView: View {
                 .offset(x: settingsOffset)
                 .overlay(
                     VStack {
-                        HStack {
-                            Button(action: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showingSettings = false
-                                    settingsOffset = screenWidth
-                                }
-                            }) {
-                                VStack(spacing: 5) {
-                                    Rectangle()
-                                        .fill(styles.colors.accent)
-                                        .frame(width: 20, height: 2)
-                                        .cornerRadius(1)
-                                    
-                                    HStack {
-                                        Rectangle()
-                                            .fill(styles.colors.accent)
-                                            .frame(width: 20, height: 2)
-                                            .cornerRadius(1)
-                                        Spacer(minLength: 0)
-                                    }
-                                }
-                                .frame(width: 36, height: 36)
-                            }
-                            .padding(.leading, 20)
-                            .padding(.top, styles.layout.topSafeAreaPadding)
-                            
-                            Spacer()
-                            
+                        ZStack {
                             Text("Settings")
                                 .font(styles.typography.title1)
                                 .foregroundColor(styles.colors.text)
-                                .padding(.trailing, 20)
                                 .padding(.top, styles.layout.topSafeAreaPadding)
+                            HStack {
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        showingSettings = false
+                                        settingsOffset = screenWidth
+                                    }
+                                }) {
+                                    VStack(spacing: 4) {
+                                        Rectangle()
+                                            .fill(styles.colors.accent)
+                                            .frame(width: 20, height: 2)
+                                        Rectangle()
+                                            .fill(styles.colors.accent)
+                                            .frame(width: 20, height: 2)
+                                    }
+                                    .frame(width: 36, height: 36)
+                                }
+                                .padding(.leading, 20)
+                                Spacer()
+                            }
                         }
                         .background(styles.colors.menuBackground)
                         .zIndex(100)
