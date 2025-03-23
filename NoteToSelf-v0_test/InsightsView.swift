@@ -11,64 +11,65 @@ struct InsightsView: View {
     // Access to shared styles
     private let styles = UIStyles.shared
     
-    var body: some View {
-        ScrollView {
-            GeometryReader { geometry in
-                Color.clear.preference(
-                    key: ScrollOffsetPreferenceKey.self,
-                    value: geometry.frame(in: .named("scrollView")).minY
-                )
+var body: some View {
+    ZStack {
+        styles.colors.appBackground.ignoresSafeArea()
+        VStack(spacing: 0) {
+            // Fixed Header (matches JournalView and ReflectionsView)
+            HStack {
+                Text("Insights")
+                    .font(styles.typography.title1)
+                    .foregroundColor(styles.colors.text)
+                Spacer()
             }
-            .frame(height: 0)
+            .padding(styles.headerPadding)
             
-            VStack(spacing: styles.layout.spacingXL) {
-                // Header
-                HStack {
-                    Text("Insights")
-                        .font(styles.typography.title1)
-                        .foregroundColor(styles.colors.text)
+            // Main content in ScrollView
+            ScrollView {
+                GeometryReader { geometry in
+                    Color.clear.preference(
+                        key: ScrollOffsetPreferenceKey.self,
+                        value: geometry.frame(in: .named("scrollView")).minY
+                    )
+                }
+                .frame(height: 0)
+                
+                VStack(spacing: styles.layout.spacingXL) {
+                    // Current Streak
+                    StreakCard(streak: appState.currentStreak)
+                        .padding(.horizontal, styles.layout.paddingL)
                     
-                    Spacer()
+                    // Monthly Calendar
+                    MonthlyCalendarSection(selectedMonth: $selectedMonth, entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingL)
+                    
+                    // Mood Chart
+                    MoodChartSection(entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingL)
+                    
+                    // Advanced Analytics (Subscription Gated)
+                    AdvancedAnalyticsSection(subscriptionTier: appState.subscriptionTier)
+                        .padding(.horizontal, styles.layout.paddingL)
+                        .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
                 }
-                .padding(styles.headerPadding)
-                
-                // Current Streak
-                StreakCard(streak: appState.currentStreak)
-                    .padding(.horizontal, styles.layout.paddingL)
-                
-                // Monthly Calendar
-                MonthlyCalendarSection(selectedMonth: $selectedMonth, entries: appState.journalEntries)
-                    .padding(.horizontal, styles.layout.paddingL)
-                
-                // Mood Chart
-                MoodChartSection(entries: appState.journalEntries)
-                    .padding(.horizontal, styles.layout.paddingL)
-                
-                // Advanced Analytics (Subscription Gated)
-                AdvancedAnalyticsSection(subscriptionTier: appState.subscriptionTier)
-                    .padding(.horizontal, styles.layout.paddingL)
-                    .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
+            }
+            .coordinateSpace(name: "scrollView")
+            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                let scrollingDown = value < lastScrollPosition
+                if abs(value - lastScrollPosition) > 10 {
+                    if scrollingDown {
+                        tabBarOffset = 100
+                        tabBarVisible = false
+                    } else {
+                        tabBarOffset = 0
+                        tabBarVisible = true
+                    }
+                    lastScrollPosition = value
+                }
             }
         }
-        .coordinateSpace(name: "scrollView")
-        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-            // Calculate scroll direction and update tab bar visibility
-            let scrollingDown = value < lastScrollPosition
-            
-            // Only update when scrolling more than a threshold to avoid jitter
-            if abs(value - lastScrollPosition) > 10 {
-                if scrollingDown {
-                    tabBarOffset = 100 // Hide tab bar
-                    tabBarVisible = false
-                } else {
-                    tabBarOffset = 0 // Show tab bar
-                    tabBarVisible = true
-                }
-                lastScrollPosition = value
-            }
-        }
-        .background(styles.colors.appBackground.ignoresSafeArea())
     }
+}
 }
 
 // MARK: - Streak Card
