@@ -354,6 +354,7 @@ struct MainTabView: View {
         }
     }
 }
+}
 
 struct NavigationTabButton: View {
     let icon: String
