@@ -161,7 +161,7 @@ struct UIStyles {
   func bottomSheet<Content: View>(_ content: Content) -> some View {
       content
           .background(colors.bottomSheetBackground)
-          .cornerRadius(layout.bottomSheetCornerRadius, corners: [.topLeft, .topRight])
+          .cornerRadius(layout.bottomSheetCornerRadius)
           .shadow(color: colors.bottomSheetShadow, radius: 10, x: 0, y: -5)
   }
 }

@@ -221,6 +221,12 @@ struct MainTabView: View {
                     }
                 }
                 .background(styles.colors.bottomSheetBackground)
+                .cornerRadius(styles.layout.bottomSheetCornerRadius)
+                .frame(height: fullSheetHeight)
+                .gesture(bottomSheetDrag)
+                .shadow(color: styles.colors.bottomSheetShadow, radius: 8, x: 0, y: -4)
+                .offset(x: showingSettings ? -screenWidth : 0)
+                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingSettings)
                 .frame(height: fullSheetHeight)
                 .gesture(bottomSheetDrag)
                 .shadow(color: styles.colors.bottomSheetShadow, radius: 8, x: 0, y: -4)
