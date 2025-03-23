@@ -214,7 +214,7 @@ struct MainTabView: View {
                     }
                 }
                 .frame(height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
-                .frame(maxHeight: .infinity, alignment: .bottom)
+                // Removed the frame modifier to prevent excessive height
                 .background(styles.colors.bottomSheetBackground)
                 .gesture(bottomSheetDrag)
                 .shadow(color: styles.colors.bottomSheetShadow, radius: 8, x: 0, y: -4)
