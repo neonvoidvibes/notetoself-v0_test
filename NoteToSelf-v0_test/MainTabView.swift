@@ -69,8 +69,14 @@ struct MainTabView: View {
     var body: some View {
         ZStack {
             // Background
-            styles.colors.bottomSheetBackground
-                .ignoresSafeArea()
+            Group {
+                if bottomSheetExpanded {
+                    styles.colors.bottomSheetBackground
+                } else {
+                    Color.black
+                }
+            }
+            .ignoresSafeArea()
             
             VStack(spacing: 0) {
                 // Main content with universal card style
@@ -118,7 +124,7 @@ struct MainTabView: View {
                                         .cornerRadius(1)
                                 }
                                 .frame(width: 36, height: 36)
-                                .background(styles.colors.secondaryBackground.opacity(0.8))
+                                .background(bottomSheetExpanded ? styles.colors.bottomSheetBackground : Color.black)
                                 .clipShape(Circle())
                                 .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
                             }
@@ -134,7 +140,7 @@ struct MainTabView: View {
                 
                 // Bottom navigation area with gray background extended to the screen bottom
                 VStack(spacing: 0) {
-                    // Tappable chevron with dynamic vertical spacing
+                // Tappable chevron with dynamic vertical spacing and fixed chevron size
                     Button(action: {
                         withAnimation(styles.animation.bottomSheetAnimation) {
                             bottomSheetExpanded.toggle()
@@ -142,14 +148,14 @@ struct MainTabView: View {
                     }) {
                         HStack {
                             Spacer()
-                            Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
-                                .font(.system(size: bottomSheetExpanded ? 14 : 18, weight: .bold))
-                                .foregroundColor(styles.colors.textSecondary)
+                            Image(systemName: "chevron.up")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(bottomSheetExpanded ? styles.colors.textSecondary : styles.colors.text)
                             Spacer()
                         }
                     }
-                    .padding(.top, 32)
-                    .padding(.bottom, bottomSheetExpanded ? 32 : 24)
+                    .padding(.top, 18)
+                    .padding(.bottom, bottomSheetExpanded ? 18 : 12)
                     
                     if bottomSheetExpanded {
                         // Navigation tabs with added bottom padding to avoid overlap with chevron
@@ -210,12 +216,20 @@ struct MainTabView: View {
                         .padding(.vertical, 12)
                         .padding(.bottom, 8)
                         .frame(height: fullSheetHeight - peekHeight)
-                        .background(styles.colors.bottomSheetBackground)
+                        .background(bottomSheetExpanded ? styles.colors.bottomSheetBackground : Color.black)
                     }
                 }
                 .frame(height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
                 // Removed the frame modifier to prevent excessive height
-                .background(styles.colors.bottomSheetBackground)
+                .background(
+                    Group {
+                        if bottomSheetExpanded {
+                            styles.colors.bottomSheetBackground
+                        } else {
+                            Color.black
+                        }
+                    }
+                )
                 .gesture(bottomSheetDrag)
                 // Shadow removed
                 .offset(x: showingSettings ? -screenWidth : 0)
