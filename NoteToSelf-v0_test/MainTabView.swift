@@ -8,10 +8,10 @@ struct MainTabView: View {
     @State private var bottomSheetExpanded = false
     @State private var isDragging = false
     @State private var settingsOffset: CGFloat = UIScreen.main.bounds.width
-    
+
     // Access to shared styles
     private let styles = UIStyles.shared
-    
+
     // Calculated properties for layout
     private var screenHeight: CGFloat {
         UIScreen.main.bounds.height
@@ -34,23 +34,18 @@ struct MainTabView: View {
         return DragGesture()
             .onChanged { value in
                 isDragging = true
-                
                 let dragAmount = value.translation.height
                 let newOffset = max(0, min(peekHeight - fullSheetHeight, bottomSheetOffset + dragAmount))
-                
                 bottomSheetOffset = newOffset
             }
             .onEnded { value in
                 isDragging = false
-                
                 let dragAmount = value.translation.height
                 let dragVelocity = value.predictedEndTranslation.height - value.translation.height
-                
                 // Expand or collapse based on velocity and position
                 if dragAmount + dragVelocity < 0 && dragAmount < -20 {
                     // Swipe up - expand
                     withAnimation(styles.animation.bottomSheetAnimation) {
-        
                         bottomSheetExpanded = true
                     }
                 } else if dragAmount > 20 || dragVelocity > 500 {
@@ -62,7 +57,6 @@ struct MainTabView: View {
                 } else {
                     // Snap to closest state based on current position
                     let snapUpThreshold = (peekHeight - fullSheetHeight) * 0.3
-                    
                     withAnimation(styles.animation.bottomSheetAnimation) {
                         if bottomSheetOffset < snapUpThreshold {
                             bottomSheetOffset = 0
@@ -70,7 +64,10 @@ struct MainTabView: View {
                         } else {
                             bottomSheetOffset = peekHeight - fullSheetHeight
                             bottomSheetExpanded = false
-}
+                        }
+                    }
+                }
+            }
     }
     
     var body: some View {
@@ -141,7 +138,6 @@ struct MainTabView: View {
                 .background(styles.colors.cardBackground)
                 .cornerRadius(styles.layout.mainContentCornerRadius, corners: [.bottomLeft, .bottomRight])
                 .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
-                // Removed offset to keep main view fixed, showing its rounded bottom corners as a card
                 .animation(isDragging ? nil : styles.animation.bottomSheetAnimation, value: bottomSheetExpanded)
                 .offset(x: showingSettings ? -screenWidth : 0)
                 .scaleEffect(showingSettings ? 0.85 : 1)
@@ -152,22 +148,17 @@ struct MainTabView: View {
                     // Handle indicator (chevron only)
                     HStack {
                         Spacer()
-                        
                         Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
                             .font(.system(size: bottomSheetExpanded ? 14 : 18, weight: .bold))
                             .foregroundColor(styles.colors.textSecondary)
-                        
                         Spacer()
                     }
                     .padding(.top, 8)
-                        }
-                    }
                     
                     if bottomSheetExpanded {
                         // Navigation tabs
                         HStack(spacing: 0) {
                             Spacer()
-                            
                             // Journal tab
                             NavigationTabButton(
                                 icon: "book.fill",
@@ -177,7 +168,6 @@ struct MainTabView: View {
                                     withAnimation(styles.animation.tabSwitchAnimation) {
                                         selectedTab = 0
                                     }
-                                    
                                     // Auto-collapse sheet after selection
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                         withAnimation(styles.animation.bottomSheetAnimation) {
@@ -187,9 +177,7 @@ struct MainTabView: View {
                                     }
                                 }
                             )
-                            
                             Spacer()
-                            
                             // Insights tab
                             NavigationTabButton(
                                 icon: "chart.bar.fill",
@@ -199,8 +187,6 @@ struct MainTabView: View {
                                     withAnimation(styles.animation.tabSwitchAnimation) {
                                         selectedTab = 1
                                     }
-                                    
-                                    // Auto-collapse sheet after selection
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                         withAnimation(styles.animation.bottomSheetAnimation) {
                                             bottomSheetExpanded = false
@@ -209,9 +195,7 @@ struct MainTabView: View {
                                     }
                                 }
                             )
-                            
                             Spacer()
-                            
                             // Reflections tab
                             NavigationTabButton(
                                 icon: "bubble.left.fill",
@@ -221,8 +205,6 @@ struct MainTabView: View {
                                     withAnimation(styles.animation.tabSwitchAnimation) {
                                         selectedTab = 2
                                     }
-                                    
-                                    // Auto-collapse sheet after selection
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                         withAnimation(styles.animation.bottomSheetAnimation) {
                                             bottomSheetExpanded = false
@@ -231,7 +213,6 @@ struct MainTabView: View {
                                     }
                                 }
                             )
-                            
                             Spacer()
                         }
                         .padding(.vertical, 12)
@@ -241,7 +222,6 @@ struct MainTabView: View {
                 }
                 .background(styles.colors.bottomSheetBackground)
                 .frame(height: fullSheetHeight)
-                // Offset removed to keep main view fixed with rounded bottom corners
                 .gesture(bottomSheetDrag)
                 .shadow(color: styles.colors.bottomSheetShadow, radius: 8, x: 0, y: -4)
                 .offset(x: showingSettings ? -screenWidth : 0)
@@ -274,7 +254,6 @@ struct MainTabView: View {
                             
                             Spacer()
                         }
-                        
                         Spacer()
                     }
                     .opacity(showingSettings ? 1 : 0)
@@ -286,18 +265,16 @@ struct MainTabView: View {
         .onAppear {
             // Initialize bottom sheet in collapsed state
             bottomSheetOffset = peekHeight - fullSheetHeight
-            
             // Load sample data for preview
             appState.loadSampleData()
-            
             // Check if user has seen onboarding
             if !appState.hasSeenOnboarding {
-                // In a real app, you would present the onboarding flow here
                 appState.hasSeenOnboarding = true
             }
         }
     }
 }
+
 struct NavigationTabButton: View {
     let icon: String
     let title: String
@@ -311,19 +288,14 @@ struct NavigationTabButton: View {
         Button(action: action) {
             VStack(spacing: 6) {
                 ZStack {
-                    // Background circle for selected tab
                     Circle()
                         .fill(isSelected ? styles.colors.accent.opacity(0.2) : Color.clear)
                         .frame(width: 46, height: 46)
-                    
-                    // Icon
                     Image(systemName: icon)
                         .font(.system(size: isSelected ? 22 : 20, weight: isSelected ? .semibold : .regular))
                         .foregroundColor(isSelected ? styles.colors.accent : styles.colors.textSecondary)
                         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
                 }
-                
-                // Title
                 Text(title)
                     .font(styles.typography.caption)
                     .foregroundColor(isSelected ? styles.colors.accent : styles.colors.textSecondary)
