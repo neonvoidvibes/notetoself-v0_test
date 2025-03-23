@@ -68,8 +68,10 @@ struct MainTabView: View {
     
     var body: some View {
         ZStack {
-            // Background
-            Group {
+            // Background: top safe area always black; bottom area changes based on bottomSheetExpanded state
+            VStack(spacing: 0) {
+                Color.black
+                    .frame(height: styles.layout.topSafeAreaPadding)
                 if bottomSheetExpanded {
                     styles.colors.bottomSheetBackground
                 } else {
@@ -77,6 +79,12 @@ struct MainTabView: View {
                 }
             }
             .ignoresSafeArea()
+            
+            if bottomSheetExpanded {
+                Color.black
+                    .frame(height: UIStyles.shared.layout.topSafeAreaPadding)
+                    .ignoresSafeArea(edges: .top)
+            }
             
             VStack(spacing: 0) {
                 // Main content with universal card style
