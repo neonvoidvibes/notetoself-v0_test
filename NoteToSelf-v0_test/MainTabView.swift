@@ -149,7 +149,8 @@ struct MainTabView: View {
                             Spacer()
                         }
                     }
-                    .padding(.vertical, 8)
+                    .padding(.top, 18)
+                    .padding(.bottom, bottomSheetExpanded ? 18 : 12)
                     
                     if bottomSheetExpanded {
                         // Navigation tabs with added bottom padding to avoid overlap with chevron
