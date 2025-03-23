@@ -73,41 +73,48 @@ struct MainTabView: View {
     private var settingsDrag: some Gesture {
         DragGesture()
             .onChanged { value in
-                isSwipingSettings = true
-                dragOffset = value.translation.width
+                if abs(value.translation.width) > abs(value.translation.height) && abs(value.translation.width) > 10 {
+                    isSwipingSettings = true
+                    dragOffset = value.translation.width
+                }
             } 
             .onEnded { value in
-                isSwipingSettings = false
-                let horizontalAmount = value.translation.width
-                let velocity = value.predictedEndLocation.x - value.location.x
-                if showingSettings {
-                    // If user swipes to the right enough, close
-                    if horizontalAmount > screenWidth * 0.3 || (horizontalAmount > 20 && velocity > 100) {
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            showingSettings = false
-                            settingsOffset = screenWidth
-                            dragOffset = 0
+                if abs(value.translation.width) > abs(value.translation.height) && abs(value.translation.width) > 10 {
+                    isSwipingSettings = false
+                    let horizontalAmount = value.translation.width
+                    let velocity = value.predictedEndLocation.x - value.location.x
+                    if showingSettings {
+                        // If user swipes to the right enough, close
+                        if horizontalAmount > screenWidth * 0.3 || (horizontalAmount > 20 && velocity > 100) {
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                showingSettings = false
+                                settingsOffset = screenWidth
+                                dragOffset = 0
+                            }
+                        } else {
+                            // Snap back fully open
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                dragOffset = 0
+                            }
                         }
                     } else {
-                        // Snap back fully open
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            dragOffset = 0
+                        // If user swipes left enough, open
+                        if horizontalAmount < -screenWidth * 0.3 || (horizontalAmount < -20 && velocity < -100) {
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                showingSettings = true
+                                settingsOffset = 0
+                                dragOffset = 0
+                            }
+                        } else {
+                            // Snap back fully closed
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                dragOffset = 0
+                            }
                         }
                     }
                 } else {
-                    // If user swipes left enough, open
-                    if horizontalAmount < -screenWidth * 0.3 || (horizontalAmount < -20 && velocity < -100) {
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            showingSettings = true
-                            settingsOffset = 0
-                            dragOffset = 0
-                        }
-                    } else {
-                        // Snap back fully closed
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            dragOffset = 0
-                        }
-                    }
+                    isSwipingSettings = false
+                    dragOffset = 0
                 }
             }
     }
@@ -336,7 +343,7 @@ struct MainTabView: View {
             }
             .contentShape(Rectangle())
             // This is the key: a highPriorityGesture ensures the horizontal drag takes precedence
-            .highPriorityGesture(settingsDrag, including: .all)
+            .simultaneousGesture(settingsDrag)
             .frame(width: screenWidth)
             .background(styles.colors.menuBackground)
             .offset(x: showingSettings ? settingsOffset + dragOffset : screenWidth + dragOffset)
