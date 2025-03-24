@@ -23,47 +23,56 @@ struct ReflectionsView: View {
             
             VStack(spacing: 0) {
                 // Header
-                HStack {
-                    // Menu button on left
-                    Button(action: {
-                        NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
-                    }) {
-                        VStack(spacing: 4) {
-                            HStack {
-                                Rectangle()
-                                    .fill(styles.colors.accent)
-                                    .frame(width: 24, height: 2) // Top bar
-                                Spacer()
-                            }
-                            HStack {
-                                Rectangle()
-                                    .fill(styles.colors.accent)
-                                    .frame(width: 20, height: 2) // Bottom bar (shorter)
-                                Spacer()
-                            }
-                        }
-                        .frame(width: 36, height: 36)
-                    }
-                    .padding(.leading, styles.layout.paddingXL)
-                    
-                    // Title in center with accent bar
-                    Spacer()
-                    styles.headerTitleWithAccent("Reflect")
-                    Spacer()
-                    
-                    // Clear conversation button on right
-                    Button {
-                        // Clear conversation logic
-                        appState.chatMessages = []
-                    } label: {
-                        Image(systemName: "square.and.pencil")
-                            .font(.system(size: 24))
+                ZStack(alignment: .center) {
+                    // Title truly centered
+                    VStack(spacing: 8) {
+                        Text("Reflect")
+                            .font(styles.typography.title1)
                             .foregroundColor(styles.colors.text)
+                        
+                        Rectangle()
+                            .fill(styles.colors.accent)
+                            .frame(width: 20, height: 3)
                     }
-                    .padding(.trailing, styles.layout.paddingXL)
+                    
+                    // Menu button on left and clear button on right
+                    HStack {
+                        Button(action: {
+                            NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
+                        }) {
+                            VStack(spacing: 6) { // Increased spacing between bars
+                                HStack {
+                                    Rectangle()
+                                        .fill(styles.colors.accent)
+                                        .frame(width: 28, height: 2) // Top bar - slightly longer
+                                    Spacer()
+                                }
+                                HStack {
+                                    Rectangle()
+                                        .fill(styles.colors.accent)
+                                        .frame(width: 20, height: 2) // Bottom bar (shorter)
+                                    Spacer()
+                                }
+                            }
+                            .frame(width: 36, height: 36)
+                        }
+                        
+                        Spacer()
+                        
+                        // Clear conversation button on right
+                        Button {
+                            // Clear conversation logic
+                            appState.chatMessages = []
+                        } label: {
+                            Image(systemName: "square.and.pencil")
+                                .font(.system(size: 24))
+                                .foregroundColor(styles.colors.text)
+                        }
+                    }
+                    .padding(.horizontal, styles.layout.paddingXL)
                 }
-                .padding(.top, 20)
-                .padding(.bottom, 10)
+                .padding(.top, 8) // Further reduced top padding
+                .padding(.bottom, 8)
                 
                 // Chat messages
                 ScrollViewReader { scrollView in

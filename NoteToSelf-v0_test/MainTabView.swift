@@ -341,51 +341,40 @@ struct MainTabView: View {
             // Settings overlay, no disable so we can swipe inside it
             ZStack(alignment: .top) {
                 VStack(spacing: 0) {
-                    // Header with title and close button side by side
-                    HStack {
-                        // Menu button on left
-                        Button(action: {
-                            NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
-                        }) {
-                            VStack(spacing: 4) {
-                                HStack {
-                                    Rectangle()
-                                        .fill(styles.colors.accent)
-                                        .frame(width: 24, height: 2) // Top bar
-                                    Spacer()
-                                }
-                                HStack {
-                                    Rectangle()
-                                        .fill(styles.colors.accent)
-                                        .frame(width: 20, height: 2) // Bottom bar (shorter)
-                                    Spacer()
-                                }
-                            }
-                            .frame(width: 36, height: 36)
+                    // Header with title and close button
+                    ZStack(alignment: .center) {
+                        // Title truly centered
+                        VStack(spacing: 8) {
+                            Text("Settings")
+                                .font(styles.typography.title1)
+                                .foregroundColor(styles.colors.text)
+                            
+                            Rectangle()
+                                .fill(styles.colors.accent)
+                                .frame(width: 20, height: 3)
                         }
-                        .padding(.leading, styles.layout.paddingXL)
                         
-                        // Title in center with accent bar
-                        Spacer()
-                        styles.headerTitleWithAccent("Settings")
-                        Spacer()
-                        
-                        // Close button (double chevron) at right side
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                showingSettings = false
-                                settingsOffset = -screenWidth
+                        // Close button on right
+                        HStack {
+                            Spacer()
+                            
+                            // Close button (double chevron) at right side
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showingSettings = false
+                                    settingsOffset = -screenWidth
+                                }
+                            }) {
+                                Image(systemName: "chevron.right.2")
+                                    .font(.system(size: 20, weight: .bold))
+                                    .foregroundColor(styles.colors.accent)
+                                    .frame(width: 36, height: 36)
                             }
-                        }) {
-                            Image(systemName: "chevron.right.2")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(styles.colors.accent)
-                                .frame(width: 36, height: 36)
                         }
-                        .padding(.trailing, styles.layout.paddingXL)
+                        .padding(.horizontal, styles.layout.paddingXL)
                     }
-                    .padding(.top, 20)
-                    .padding(.bottom, 10)
+                    .padding(.top, 8) // Further reduced top padding
+                    .padding(.bottom, 8)
                     
                     // Actual Settings content
                     SettingsView()
