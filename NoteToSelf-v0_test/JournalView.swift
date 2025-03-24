@@ -160,6 +160,11 @@ struct JournalView: View {
             })
             // Presentation detents moved to EntryFormView for consistency
         }
+.onAppear {
+    if expandedEntryId == nil, let firstEntry = appState.journalEntries.first {
+         expandedEntryId = firstEntry.id
+    }
+}
     }
     
     private func deleteEntry(_ entry: JournalEntry) {
@@ -280,18 +285,14 @@ struct JournalEntryCard: View {
                     }
                     
                     Button(action: onDelete) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "trash")
-                                .font(.system(size: styles.layout.iconSizeS))
-                            Text("Delete")
-                                .font(styles.typography.smallLabelFont)
-                        }
-                        .foregroundColor(styles.colors.error)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(styles.colors.secondaryBackground)
-                        .cornerRadius(styles.layout.radiusM)
+                        Image(systemName: "trash")
+                            .font(.system(size: styles.layout.iconSizeS))
                     }
+                    .foregroundColor(styles.colors.error)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(styles.colors.secondaryBackground)
+                    .cornerRadius(styles.layout.radiusM)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 16)
