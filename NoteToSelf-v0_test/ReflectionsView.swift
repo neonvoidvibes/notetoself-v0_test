@@ -64,7 +64,7 @@ struct ReflectionsView: View {
                             // Clear conversation logic
                             appState.chatMessages = []
                         } label: {
-                            Image(systemName: "square.and.pencil")
+                            Image(systemName: "clock.arrow.trianglepath")
                                 .font(.system(size: 24))
                                 .foregroundColor(styles.colors.text)
                         }
@@ -117,6 +117,7 @@ struct ReflectionsView: View {
                         ZStack(alignment: .leading) {
                             if messageText.isEmpty && !isTyping {
                                 Text("Ask a question...")
+                                    .font(styles.typography.bodyFont)
                                     .foregroundColor(styles.colors.placeholderText)
                                     .padding(.leading, 4)
                             }
@@ -125,11 +126,15 @@ struct ReflectionsView: View {
                                 .padding(4)
                                 .background(Color.clear) // Transparent background
                                 .foregroundColor(isTyping ? styles.colors.textDisabled : styles.colors.text)
-                                .frame(height: styles.layout.inputAreaHeight)
+                                .frame(height: min(60, max(40, textEditorHeight(text: messageText))))
                                 .colorScheme(.dark)
                                 .disabled(isTyping)
                                 .scrollContentBackground(.hidden) // Hide the default background
                                 .focused($isInputFocused) // Track focus state
+                                .onChange(of: messageText) { _, _ in
+                                    // Force layout update when text changes
+                                    withAnimation(.easeInOut(duration: 0.1)) {}
+                                }
                         }
                         .padding(styles.layout.paddingS)
                         .background(styles.colors.reflectionsNavBackground) // Use the same gray as outer container
@@ -246,6 +251,17 @@ struct ReflectionsView: View {
             return "Thank you for sharing that with me. Would you like to explore this topic further? Sometimes writing about our thoughts can help us gain clarity and perspective."
         }
     }
+
+    private func textEditorHeight(text: String) -> CGFloat {
+        let lineHeight: CGFloat = 20 // Approximate line height
+        let maxLines: Int = 2
+        
+        // Count newlines and estimate height
+        let lines = text.components(separatedBy: "\n").count
+        let estimatedLines = min(maxLines, max(1, lines))
+        
+        return CGFloat(estimatedLines) * lineHeight
+    }
 }
 
 struct ChatBubble: View {
@@ -272,7 +288,7 @@ struct ChatBubble: View {
                     Text(message.text)
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.assistantBubbleText)
-                        .padding(styles.layout.paddingM)
+                        .padding(.vertical, styles.layout.paddingM)
                         .background(styles.colors.assistantBubbleColor)
                         .clipShape(ChatBubbleShape(isUser: false))
                         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
