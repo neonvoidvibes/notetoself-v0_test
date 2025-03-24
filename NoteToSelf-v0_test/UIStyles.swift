@@ -55,6 +55,14 @@ struct Colors {
     let navIconDefault: Color = Color(hex: "#666666") // Darker gray for non-selected icons
     let navIconSelected: Color = Color(hex: "#000000") // Black for selected icons
     let navSelectionCircle: Color = Color.white.opacity(0.3) // Light gray circle for selection
+    
+    let reflectionBackground: Color = Color(hex: "#1A1A1A") // Dark gray for ReflectionsView background
+    let userBubbleColor: Color = Color(hex: "#CCCCCC") // Light gray for user bubbles
+    let userBubbleText: Color = Color.black // Black text for user bubbles
+    let assistantBubbleColor: Color = Color.clear // Transparent for assistant bubbles
+    let assistantBubbleText: Color = Color.white // White text for assistant bubbles
+    let inputContainerBackground: Color = Color.black // Black for outer input container
+    let inputAreaBackground: Color = Color.clear // Transparent for input area
 }
 let colors = Colors()
 
@@ -110,6 +118,8 @@ struct Layout {
     let bottomSheetIndicatorHeight: CGFloat = 4 // Height of the handle indicator
     let bottomSheetCornerRadius: CGFloat = 24 // Corner radius of the bottom sheet
     let mainContentCornerRadius: CGFloat = 40 // Corner radius for the main content card
+    
+    let inputAreaHeight: CGFloat = 40 // Fixed height for input area
 }
 let layout = Layout()
 
