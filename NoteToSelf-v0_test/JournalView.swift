@@ -153,7 +153,7 @@ struct JournalView: View {
                                         .padding(2)
                                 }
                             )
-                            .shadow(color: styles.colors.accent.opacity(0.4), radius: 15, x: 0, y: 8)
+                            .shadow(color: styles.colors.accent.opacity(0.2), radius: 8, x: 0, y: 4)
                     }
                     .padding(.trailing, 24)
                     .padding(.bottom, 24)
@@ -412,3 +412,4 @@ struct JournalView_Previews: PreviewProvider {
         ).environmentObject(previewAppState)
     }
 }
+
