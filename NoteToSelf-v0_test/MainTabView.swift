@@ -123,7 +123,7 @@ struct MainTabView: View {
                 if bottomSheetExpanded {
                     styles.colors.navBackground
                 } else {
-                    styles.colors.navBackground
+                    Color.black
                 }
             }
             .ignoresSafeArea()
@@ -290,7 +290,7 @@ struct MainTabView: View {
                         .padding(.vertical, 12)
                         .padding(.bottom, 8)
                         .frame(height: fullSheetHeight - peekHeight)
-                        .background(bottomSheetExpanded ? styles.colors.navBackground : styles.colors.navBackground)
+                        .background(styles.colors.navBackground)
                     }
                 }
                 .frame(height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
@@ -299,7 +299,7 @@ struct MainTabView: View {
                         if bottomSheetExpanded {
                             styles.colors.navBackground
                         } else {
-                            styles.colors.navBackground
+                            Color.black
                         }
                     }
                 )
