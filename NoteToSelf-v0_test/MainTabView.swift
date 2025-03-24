@@ -247,7 +247,7 @@ struct MainTabView: View {
                                 Spacer()
                                 Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
                                     .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(bottomSheetExpanded ? styles.colors.navIconSelected : Color.white)
+                                    .foregroundColor(Color.white) // Always white for better contrast
                                 Spacer()
                             }
                             .frame(height: peekHeight)
@@ -433,20 +433,20 @@ struct NavigationTabButton: View {
             VStack(spacing: 6) {
                 ZStack {
                     Circle()
-                        .fill(isSelected ? styles.colors.navSelectionCircle : Color.clear)
+                        .fill(isSelected ? Color.white.opacity(0.2) : Color.clear) // Lighter selection circle
                         .frame(width: 46, height: 46)
                     
                     Image(systemName: icon)
                         .font(.system(size: isSelected ? 22 : 20, weight: isSelected ? .bold : .regular))
-                        .foregroundColor(isSelected ? styles.colors.navIconSelected : styles.colors.navIconDefault)
+                        .foregroundColor(isSelected ? Color.white : Color.white.opacity(0.6)) // White for selected, light gray for unselected
                         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
                 }
                 Text(title)
                     .font(isSelected ? 
                           .system(size: 12, weight: .bold, design: .monospaced) : 
                           styles.typography.caption)
-                    .foregroundColor(isSelected ? styles.colors.navIconSelected : styles.colors.navIconDefault)
-                    .opacity(isSelected ? 1 : 0.7)
+                    .foregroundColor(isSelected ? Color.white : Color.white.opacity(0.6)) // White for selected, light gray for unselected
+                    .opacity(isSelected ? 1 : 0.8)
             }
             .frame(width: 80)
             .contentShape(Rectangle())
