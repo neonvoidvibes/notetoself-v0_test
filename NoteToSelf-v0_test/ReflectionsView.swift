@@ -112,7 +112,7 @@ struct ReflectionsView: View {
                             } else {
                                 // Send button
                                 Image(systemName: "arrow.up")
-                                    .font(.system(size: 24, weight: .bold))
+                                    .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(styles.colors.appBackground)
                             }
                         }
