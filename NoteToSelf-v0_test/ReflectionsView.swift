@@ -119,14 +119,15 @@ struct ReflectionsView: View {
                             
                             TextEditor(text: isTyping ? .constant("") : $messageText)
                                 .padding(4)
-                                .background(styles.colors.inputAreaBackground)
+                                .background(Color.clear) // Transparent background
                                 .foregroundColor(isTyping ? styles.colors.textDisabled : styles.colors.text)
                                 .frame(height: styles.layout.inputAreaHeight)
                                 .colorScheme(.dark)
                                 .disabled(isTyping)
+                                .scrollContentBackground(.hidden) // Hide the default background
                         }
                         .padding(styles.layout.paddingS)
-                        .background(styles.colors.inputAreaBackground)
+                        .background(styles.colors.reflectionsNavBackground) // Use the same gray as outer container
                         
                         Button(action: sendMessage) {
                             if isTyping {
@@ -147,14 +148,12 @@ struct ReflectionsView: View {
                         .disabled(messageText.isEmpty && !isTyping)
                         .opacity((messageText.isEmpty && !isTyping) ? 0.5 : 1.0)
                     }
-                    .padding(.horizontal, styles.layout.paddingL)
                     .padding(.vertical, styles.layout.paddingM)
+                    .padding(.horizontal, styles.layout.paddingL)
                     .background(
                         styles.colors.reflectionsNavBackground
-                            .cornerRadius(30) // Maximum rounded corners
+                            .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight])) // Top rounded corners only
                     )
-                    .padding(.horizontal, styles.layout.paddingM)
-                    .padding(.bottom, styles.layout.paddingM)
                     .transition(.opacity.animation(.easeInOut(duration: 0.2)))
                 }
             }
