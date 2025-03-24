@@ -49,7 +49,7 @@ struct UIStyles {
       
       // Navigation colors
       let navBackground: Color = Color(hex: "#CCCCCC") // Light gray for nav background
-      let navIconDefault: Color = Color(hex: "#999999") // Default icon color
+      let navIconDefault: Color = Color(hex: "#666666") // Darker gray for non-selected icons
       let navIconSelected: Color = Color(hex: "#000000") // Black for selected icons
       let navSelectionCircle: Color = Color.white.opacity(0.3) // Light gray circle for selection
   }
