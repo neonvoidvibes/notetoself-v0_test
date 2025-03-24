@@ -365,7 +365,7 @@ struct EditEntryView: View {
     
     var body: some View {
         EntryFormView(
-            title: "Edit Entry",
+            title: "Edit Note",
             onSave: {
                 onSave(entryText, selectedMood)
                 dismiss()

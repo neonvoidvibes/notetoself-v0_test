@@ -14,7 +14,7 @@ struct NewEntryView: View {
 
     var body: some View {
         EntryFormView(
-            title: "New Entry",
+            title: "Add Note",
             onSave: {
                 if !entryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     onSave(entryText, selectedMood)
