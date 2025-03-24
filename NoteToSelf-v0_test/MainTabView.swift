@@ -232,8 +232,8 @@ struct MainTabView: View {
                             Spacer()
                         }
                     }
-                    .padding(.top, 18)
-                    .padding(.bottom, bottomSheetExpanded ? 18 : 12)
+                    .padding(.top, 24)
+                    .padding(.bottom, bottomSheetExpanded ? 24 : 18)
                     
                     if bottomSheetExpanded {
                         HStack(spacing: 0) {
