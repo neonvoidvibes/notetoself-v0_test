@@ -36,8 +36,8 @@ struct Colors {
     let tabBarBackground: Color = Color.black
     
     // Navigation sheet colors
-    let bottomSheetBackground: Color = Color(hex: "#1A1A1A") // Same as reflectionBackground
-    let bottomSheetPeek: Color = Color(hex: "#1A1A1A") // Same as reflectionBackground
+    let bottomSheetBackground: Color = Color(hex: "#444444")
+    let bottomSheetPeek: Color = Color(hex: "#222222")
     let bottomSheetIndicator: Color = Color(hex: "#444444")
     let bottomSheetShadow: Color = Color.black.opacity(0.3)
     
@@ -56,13 +56,16 @@ struct Colors {
     let navIconSelected: Color = Color(hex: "#000000") // Black for selected icons
     let navSelectionCircle: Color = Color.white.opacity(0.3) // Light gray circle for selection
     
-    let reflectionBackground: Color = Color(hex: "#1A1A1A") // Dark gray for ReflectionsView background
+    // Chat bubble colors
     let userBubbleColor: Color = Color(hex: "#CCCCCC") // Light gray for user bubbles
     let userBubbleText: Color = Color.black // Black text for user bubbles
     let assistantBubbleColor: Color = Color.clear // Transparent for assistant bubbles
     let assistantBubbleText: Color = Color.white // White text for assistant bubbles
     let inputContainerBackground: Color = Color.black // Black for outer input container
     let inputAreaBackground: Color = Color.clear // Transparent for input area
+    
+    // Bottom nav area color for ReflectionsView
+    let reflectionsNavBackground: Color = Color(hex: "#1A1A1A") // Gray for bottom nav in ReflectionsView
 }
 let colors = Colors()
 

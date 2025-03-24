@@ -116,10 +116,10 @@ struct MainTabView: View {
     
     var body: some View {
         ZStack {
-            // Background - conditional based on nav area state
+            // Background - conditional based on nav area state and selected tab
             ZStack {
-                // Base black background
-                styles.colors.appBackground
+                // Base background - use gray for Reflections tab, black for others
+                (selectedTab == 2 ? styles.colors.reflectionsNavBackground : styles.colors.appBackground)
                     .ignoresSafeArea()
                 
                 // Conditional gradient background when nav is expanded
@@ -322,8 +322,8 @@ struct MainTabView: View {
                                 // Make the nav area background transparent to let the main gradient show through
                                 Color.clear
                             } else {
-                                // Black background when collapsed
-                                styles.colors.appBackground
+                                // Use reflectionsNavBackground for Reflections tab, black for others
+                                selectedTab == 2 ? styles.colors.reflectionsNavBackground : styles.colors.appBackground
                             }
                         }
                     )

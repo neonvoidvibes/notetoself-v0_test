@@ -17,8 +17,8 @@ struct ReflectionsView: View {
     
     var body: some View {
         ZStack {
-            // Background
-            styles.colors.reflectionBackground.ignoresSafeArea()
+            // Background - using standard black background for the view itself
+            styles.colors.appBackground.ignoresSafeArea()
             
             VStack(spacing: 0) {
                 // Header
@@ -150,7 +150,7 @@ struct ReflectionsView: View {
                     .padding(.horizontal, styles.layout.paddingL)
                     .padding(.vertical, styles.layout.paddingM)
                     .background(
-                        styles.colors.reflectionBackground
+                        styles.colors.reflectionsNavBackground
                             .cornerRadius(30) // Maximum rounded corners
                     )
                     .padding(.horizontal, styles.layout.paddingM)
