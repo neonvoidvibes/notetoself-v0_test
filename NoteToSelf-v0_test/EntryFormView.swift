@@ -66,6 +66,9 @@ struct EntryFormView<Content: View>: View {
                     .padding(.bottom, 12)
                 }
                 .background(styles.colors.appBackground)
+                .onTapGesture {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
             }
         }
         .preferredColorScheme(.dark)
