@@ -340,20 +340,12 @@ struct MainTabView: View {
             
             // Settings overlay, no disable so we can swipe inside it
             ZStack(alignment: .top) {
-                ZStack {
-                    Text("Settings")
-                        .font(styles.typography.title1)
-                        .foregroundColor(styles.colors.text)
-                        .frame(maxWidth: .infinity, alignment: .center)
-        
+                VStack(spacing: 0) {
+                    // Header with title and close button side by side
                     HStack {
-                        Spacer()
-            
+                        // Menu button on left
                         Button(action: {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                showingSettings = false
-                                settingsOffset = -screenWidth
-                            }
+                            NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
                         }) {
                             VStack(spacing: 4) {
                                 HStack {
@@ -371,17 +363,36 @@ struct MainTabView: View {
                             }
                             .frame(width: 36, height: 36)
                         }
+                        .padding(.leading, styles.layout.paddingXL)
+                        
+                        // Title in center with accent bar
+                        Spacer()
+                        styles.headerTitleWithAccent("Settings")
+                        Spacer()
+                        
+                        // Close button (double chevron) at right side
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showingSettings = false
+                                settingsOffset = -screenWidth
+                            }
+                        }) {
+                            Image(systemName: "chevron.right.2")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(styles.colors.accent)
+                                .frame(width: 36, height: 36)
+                        }
                         .padding(.trailing, styles.layout.paddingXL)
                     }
+                    .padding(.top, 20)
+                    .padding(.bottom, 10)
+                    
+                    // Actual Settings content
+                    SettingsView()
+                        .background(styles.colors.menuBackground)
                 }
-                .padding(.top, styles.layout.topSafeAreaPadding - 10)
                 .background(styles.colors.menuBackground)
                 .zIndex(100)
-                
-                // Actual Settings content
-                SettingsView()
-                    .background(styles.colors.menuBackground)
-                    .padding(.top, styles.layout.topSafeAreaPadding + 40)
             }
             .contentShape(Rectangle())
             .simultaneousGesture(settingsDrag)

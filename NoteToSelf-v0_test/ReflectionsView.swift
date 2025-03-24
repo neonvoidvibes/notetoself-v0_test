@@ -23,54 +23,47 @@ struct ReflectionsView: View {
             
             VStack(spacing: 0) {
                 // Header
-                VStack(spacing: 0) {
-                    // Title at the very top
-                    Text("Reflect")
-                        .font(styles.typography.title1)
-                        .foregroundColor(styles.colors.text)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 20) // More top padding
-                        .padding(.bottom, 10) // Add bottom padding
-                    
-                    // Menu button below title
-                    HStack {
-                        Button(action: {
-                            NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
-                        }) {
-                            VStack(spacing: 4) {
-                                HStack {
-                                    Rectangle()
-                                        .fill(styles.colors.accent)
-                                        .frame(width: 24, height: 2) // Top bar
-                                    Spacer()
-                                }
-                                HStack {
-                                    Rectangle()
-                                        .fill(styles.colors.accent)
-                                        .frame(width: 20, height: 2) // Bottom bar (shorter)
-                                    Spacer()
-                                }
+                HStack {
+                    // Menu button on left
+                    Button(action: {
+                        NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
+                    }) {
+                        VStack(spacing: 4) {
+                            HStack {
+                                Rectangle()
+                                    .fill(styles.colors.accent)
+                                    .frame(width: 24, height: 2) // Top bar
+                                Spacer()
                             }
-                            .frame(width: 36, height: 36)
+                            HStack {
+                                Rectangle()
+                                    .fill(styles.colors.accent)
+                                    .frame(width: 20, height: 2) // Bottom bar (shorter)
+                                Spacer()
+                            }
                         }
-                        .padding(.leading, styles.layout.paddingXL)
-                        
-                        Spacer()
-                        
-                        // Clear conversation button
-                        Button {
-                            // Clear conversation logic
-                            appState.chatMessages = []
-                        } label: {
-                            Image(systemName: "square.and.pencil")
-                                .font(.system(size: 24))
-                                .foregroundColor(styles.colors.text)
-                        }
-                        .padding(.trailing, styles.layout.paddingXL)
+                        .frame(width: 36, height: 36)
                     }
-                    .padding(.top, 5) // Small spacing between title and menu
-                    .padding(.bottom, styles.layout.paddingM)
+                    .padding(.leading, styles.layout.paddingXL)
+                    
+                    // Title in center with accent bar
+                    Spacer()
+                    styles.headerTitleWithAccent("Reflect")
+                    Spacer()
+                    
+                    // Clear conversation button on right
+                    Button {
+                        // Clear conversation logic
+                        appState.chatMessages = []
+                    } label: {
+                        Image(systemName: "square.and.pencil")
+                            .font(.system(size: 24))
+                            .foregroundColor(styles.colors.text)
+                    }
+                    .padding(.trailing, styles.layout.paddingXL)
                 }
+                .padding(.top, 20)
+                .padding(.bottom, 10)
                 
                 // Chat messages
                 ScrollViewReader { scrollView in

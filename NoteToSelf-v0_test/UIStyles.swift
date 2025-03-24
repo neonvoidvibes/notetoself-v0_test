@@ -140,6 +140,30 @@ var headerPadding: EdgeInsets {
     EdgeInsets(top: 0, leading: layout.paddingXL, bottom: layout.paddingM, trailing: layout.paddingXL)
 }
 
+// Add a new function to create the accent bar
+// Add this function inside the UIStyles struct, after the existing functions
+
+// MARK: - Header Accent Bar
+func accentBar() -> some View {
+    Rectangle()
+        .fill(colors.accent)
+        .frame(width: 20, height: 3) // Reduced from 40 to 20 points
+}
+
+// MARK: - Header Title with Accent Bar
+func headerTitleWithAccent(_ title: String) -> some View {
+    VStack(spacing: 8) {
+        Text(title)
+            .font(typography.title1)
+            .foregroundColor(colors.text)
+        
+        accentBar()
+    }
+    .frame(maxWidth: .infinity, alignment: .center)
+    .padding(.top, 20)
+    .padding(.bottom, 10)
+}
+
 // MARK: - Button Styles
 struct PrimaryButtonStyle: ButtonStyle {
     let colors: Colors
