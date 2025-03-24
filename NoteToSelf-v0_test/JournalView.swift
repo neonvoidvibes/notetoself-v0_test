@@ -152,7 +152,7 @@ struct JournalView: View {
                     expandedEntryId = newEntry.id // Auto-expand new entry
                 }
             })
-            .presentationDetents([.medium, .large])
+            .presentationDetents([.fraction(0.85), .large])
             .presentationDragIndicator(.visible)
         }
         .sheet(item: $editingEntry) { entry in
@@ -373,7 +373,8 @@ struct EditEntryView: View {
                     ZStack(alignment: .topLeading) {
                         TextEditor(text: $entryText)
                             .font(styles.typography.bodyLarge)
-                            .padding(styles.layout.paddingM)
+                            .padding([.leading, .trailing, .bottom], styles.layout.paddingXL)
+                            .padding(.top, styles.layout.paddingL)
                             .frame(maxWidth: .infinity, minHeight: 200)
                             .background(styles.colors.inputBackground)
                             .cornerRadius(styles.layout.radiusM)
