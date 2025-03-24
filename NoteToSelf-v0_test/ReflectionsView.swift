@@ -11,6 +11,7 @@ struct ReflectionsView: View {
     @Binding var tabBarVisible: Bool
     // Add environment property to access bottom sheet state
     @Environment(\.bottomSheetExpanded) private var bottomSheetExpanded: Bool
+    @FocusState private var isInputFocused: Bool
     
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -58,7 +59,7 @@ struct ReflectionsView: View {
                                 ChatBubble(message: message)
                                     .id(message.id)
                                     .transition(.asymmetric(
-                                        insertion: .scale(scale: 0.9).combined(with: .opacity).animation(.spring(response: 0.3, dampingFraction: 0.7)),
+                                        insertion: .scale(scale: 0.95).combined(with: .opacity).animation(.spring(response: 0.3, dampingFraction: 0.8)),
                                         removal: .opacity.animation(.easeOut(duration: 0.2))
                                     ))
                             }
@@ -96,14 +97,21 @@ struct ReflectionsView: View {
                         }
                     }
                     .onChange(of: appState.chatMessages.count) { oldValue, newCount in
-                        withAnimation {
-                            scrollView.scrollTo("BottomAnchor", anchor: .bottom)
+                        // Smoother scrolling with a slight delay to ensure animation completes
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                scrollView.scrollTo("BottomAnchor", anchor: .bottom)
+                            }
                         }
                     }
                     .onChange(of: isTyping) { oldValue, newValue in
-                        withAnimation {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                             scrollView.scrollTo("BottomAnchor", anchor: .bottom)
                         }
+                    }
+                    // Tap gesture to dismiss keyboard
+                    .onTapGesture {
+                        isInputFocused = false
                     }
                 }
                 
@@ -125,6 +133,7 @@ struct ReflectionsView: View {
                                 .colorScheme(.dark)
                                 .disabled(isTyping)
                                 .scrollContentBackground(.hidden) // Hide the default background
+                                .focused($isInputFocused) // Track focus state
                         }
                         .padding(styles.layout.paddingS)
                         .background(styles.colors.reflectionsNavBackground) // Use the same gray as outer container
@@ -158,6 +167,10 @@ struct ReflectionsView: View {
                 }
             }
         }
+        // Tap gesture to dismiss keyboard when tapping anywhere in the view
+        .onTapGesture {
+            isInputFocused = false
+        }
         .alert(isPresented: $showingSubscriptionPrompt) {
             Alert(
                 title: Text("Daily Limit Reached"),
@@ -185,14 +198,17 @@ struct ReflectionsView: View {
             return
         }
         
+        // Dismiss keyboard when sending message
+        isInputFocused = false
+        
         // Add user message
         let userMessage = ChatMessage(text: messageText, isUser: true)
+        let messageToSend = messageText
+        messageText = "" // Clear input field immediately
         
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
             appState.chatMessages.append(userMessage)
         }
-        
-        messageText = ""
         
         // Increment usage counter for free tier
         if appState.subscriptionTier == .free {
@@ -207,7 +223,7 @@ struct ReflectionsView: View {
             isTyping = false
             
             // Generate a response based on the user's message
-            let responseText = generateResponse(to: userMessage.text)
+            let responseText = generateResponse(to: messageToSend)
             let aiMessage = ChatMessage(text: responseText, isUser: false)
             
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
