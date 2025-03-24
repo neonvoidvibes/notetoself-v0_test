@@ -12,8 +12,29 @@ struct JournalView: View {
     @Binding var lastScrollPosition: CGFloat
     @Binding var tabBarVisible: Bool
     
+    // Filter state variables
+    @State private var showingFilterPanel = false
+    @State private var searchText = ""
+    @State private var searchTags: [String] = []
+    @State private var selectedMoods: Set<Mood> = []
+    @State private var dateFilterType: DateFilterType = .all
+    @State private var customStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+    @State private var customEndDate: Date = Date()
+    
     // Access to shared styles
     private let styles = UIStyles.shared
+    
+    // Computed property to filter the journal entries
+    private var filteredEntries: [JournalEntry] {
+        appState.journalEntries.filtered(
+            by: searchTags,
+            moods: selectedMoods,
+            dateFilter: dateFilterType,
+            customStartDate: customStartDate,
+            customEndDate: customEndDate
+        )
+    }
+    
     
     var body: some View {
         ZStack {
@@ -35,7 +56,7 @@ struct JournalView: View {
                             .frame(width: 20, height: 3)
                     }
                     
-                    // Menu button on left
+                    // Menu button on left and filter button on right
                     HStack {
                         Button(action: {
                             NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
@@ -56,12 +77,43 @@ struct JournalView: View {
                             }
                             .frame(width: 36, height: 36)
                         }
+                        
                         Spacer()
+                        
+                        // Filter button
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                showingFilterPanel.toggle()
+                            }
+                        }) {
+                            Image(systemName: "slider.horizontal.2.square")
+                                .font(.system(size: 20))
+                                .foregroundColor(showingFilterPanel || !searchTags.isEmpty || !selectedMoods.isEmpty || dateFilterType != .all ? styles.colors.accent : styles.colors.text)
+                        }
                     }
                     .padding(.horizontal, styles.layout.paddingXL)
                 }
                 .padding(.top, 8) // Further reduced top padding
                 .padding(.bottom, 8)
+                
+                // Filter panel
+                if showingFilterPanel {
+                    FilterPanel(
+                        searchText: $searchText,
+                        searchTags: $searchTags,
+                        selectedMoods: $selectedMoods,
+                        dateFilterType: $dateFilterType,
+                        customStartDate: $customStartDate,
+                        customEndDate: $customEndDate,
+                        onClearFilters: {
+                            searchText = ""
+                            searchTags = []
+                            selectedMoods = []
+                            dateFilterType = .all
+                        }
+                    )
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
                 
                 // Journal entries
                 ScrollViewReader { scrollProxy in
@@ -91,17 +143,40 @@ struct JournalView: View {
                             .padding(.top, styles.layout.spacingS)
                         }
                         
-                        if appState.journalEntries.isEmpty {
+                        if filteredEntries.isEmpty {
                             VStack(spacing: 16) {
                                 Spacer()
                                 
-                                Text("No journal entries yet.")
-                                    .font(styles.typography.headingFont)
-                                    .foregroundColor(styles.colors.text)
-                                
-                                Text("Tap the + button to add your first entry.")
-                                    .font(styles.typography.bodyFont)
-                                    .foregroundColor(styles.colors.textSecondary)
+                                if !searchTags.isEmpty || !selectedMoods.isEmpty || dateFilterType != .all {
+                                    Text("No matching entries")
+                                        .font(styles.typography.headingFont)
+                                        .foregroundColor(styles.colors.text)
+                                    
+                                    Text("Try adjusting your filters")
+                                        .font(styles.typography.bodyFont)
+                                        .foregroundColor(styles.colors.textSecondary)
+                                    
+                                    Button("Clear Filters") {
+                                        searchText = ""
+                                        searchTags = []
+                                        selectedMoods = []
+                                        dateFilterType = .all
+                                    }
+                                    .buttonStyle(UIStyles.SecondaryButtonStyle(
+                                        colors: styles.colors,
+                                        typography: styles.typography,
+                                        layout: styles.layout
+                                    ))
+                                    .padding(.top, 16)
+                                } else {
+                                    Text("No journal entries yet.")
+                                        .font(styles.typography.headingFont)
+                                        .foregroundColor(styles.colors.text)
+                                    
+                                    Text("Tap the + button to add your first entry.")
+                                        .font(styles.typography.bodyFont)
+                                        .foregroundColor(styles.colors.textSecondary)
+                                }
                                 
                                 Spacer()
                             }
@@ -109,7 +184,7 @@ struct JournalView: View {
                             .padding()
                         } else {
                             LazyVStack(spacing: styles.layout.radiusM) {
-                                ForEach(appState.journalEntries) { entry in
+                                ForEach(filteredEntries) { entry in
                                     JournalEntryCard(
                                         entry: entry,
                                         isExpanded: expandedEntryId == entry.id,
@@ -210,11 +285,11 @@ struct JournalView: View {
             })
             // Presentation detents moved to EntryFormView for consistency
         }
-.onAppear {
-    if expandedEntryId == nil, let firstEntry = appState.journalEntries.first {
-         expandedEntryId = firstEntry.id
-    }
-}
+        .onAppear {
+            if expandedEntryId == nil, let firstEntry = appState.journalEntries.first {
+                expandedEntryId = firstEntry.id
+            }
+        }
     }
     
     private func deleteEntry(_ entry: JournalEntry) {
