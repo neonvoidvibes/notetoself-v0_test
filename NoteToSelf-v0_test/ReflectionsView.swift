@@ -12,6 +12,7 @@ struct ReflectionsView: View {
     // Add environment property to access bottom sheet state
     @Environment(\.bottomSheetExpanded) private var bottomSheetExpanded: Bool
     @FocusState private var isInputFocused: Bool
+    @State private var textEditorHeight: CGFloat = 30
     
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -95,6 +96,10 @@ struct ReflectionsView: View {
                         .padding(.horizontal, styles.layout.paddingL)
                         .padding(.vertical, styles.layout.paddingL)
                         .padding(.bottom, 20) // Reduced spacing at the bottom
+                        .contentShape(Rectangle()) // Add this to make the entire content tappable
+                        .onTapGesture { // Add explicit tap gesture to the content
+                            isInputFocused = false
+                        }
                     }
                     .onChange(of: appState.chatMessages.count) { _, _ in
                         scrollToBottom(proxy: scrollView)
@@ -125,20 +130,34 @@ struct ReflectionsView: View {
                                         .padding(.top, 8)
                                 }
                                 
-                                TextEditor(text: isTyping ? .constant("") : $messageText)
-                                    .font(styles.typography.bodyFont)
-                                    .padding(4)
-                                    .background(Color.clear)
-                                    .foregroundColor(isTyping ? styles.colors.textDisabled : styles.colors.text)
-                                    .frame(minHeight: 40, maxHeight: 60)
-                                    .colorScheme(.dark)
-                                    .disabled(isTyping)
-                                    .scrollContentBackground(.hidden)
-                                    .focused($isInputFocused)
-                                    .onChange(of: messageText) { _, _ in
-                                        // Force layout update when text changes
-                                        withAnimation(.easeInOut(duration: 0.1)) {}
-                                    }
+                                GeometryReader { geometry in
+                                    TextEditor(text: isTyping ? .constant("") : $messageText)
+                                        .font(styles.typography.bodyFont)
+                                        .padding(4)
+                                        .background(Color.clear)
+                                        .foregroundColor(isTyping ? styles.colors.textDisabled : styles.colors.text)
+                                        .frame(height: textEditorHeight)
+                                        .colorScheme(.dark)
+                                        .disabled(isTyping)
+                                        .scrollContentBackground(.hidden)
+                                        .focused($isInputFocused)
+                                        .onChange(of: messageText) { _, newValue in
+                                            // Calculate if text would wrap based on available width
+                                            let availableWidth = geometry.size.width - 16 // Subtract padding
+                                            let font = UIFont.monospacedSystemFont(ofSize: 16, weight: .regular)
+                                            let attributes = [NSAttributedString.Key.font: font]
+                                            let size = (newValue as NSString).size(withAttributes: attributes)
+                                            
+                                            withAnimation(.easeInOut(duration: 0.1)) {
+                                                if size.width > availableWidth || newValue.contains("\n") {
+                                                    textEditorHeight = 60 // Expand to two rows
+                                                } else {
+                                                    textEditorHeight = 30 // Single row
+                                                }
+                                            }
+                                        }
+                                }
+                                .frame(height: textEditorHeight)
                             }
                             .padding(8)
                             .background(styles.colors.reflectionsNavBackground)
@@ -217,6 +236,11 @@ struct ReflectionsView: View {
         let userMessage = ChatMessage(text: messageText, isUser: true)
         let messageToSend = messageText
         messageText = "" // Clear input field immediately
+        
+        // Reset text editor height
+        withAnimation(.easeInOut(duration: 0.1)) {
+            textEditorHeight = 30
+        }
         
         // Add message without animation
         appState.chatMessages.append(userMessage)
