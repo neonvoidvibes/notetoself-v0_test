@@ -145,6 +145,7 @@ struct MainTabView: View {
                     }
                 }
                 .mainCardStyle()
+                // Original onTapGesture for empty areas
                 .onTapGesture {
                     if bottomSheetExpanded {
                         withAnimation(styles.animation.bottomSheetAnimation) {
@@ -153,6 +154,17 @@ struct MainTabView: View {
                         }
                     }
                 }
+                // New simultaneousGesture ensures any tap (even on interactive elements) will collapse the bottom sheet
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        if bottomSheetExpanded {
+                            withAnimation(styles.animation.bottomSheetAnimation) {
+                                bottomSheetExpanded = false
+                                bottomSheetOffset = peekHeight - fullSheetHeight
+                            }
+                        }
+                    }
+                )
                 .overlay(
                     VStack {
                         HStack {
