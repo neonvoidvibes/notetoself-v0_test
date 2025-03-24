@@ -113,56 +113,63 @@ struct ReflectionsView: View {
                 
                 // Message input container - only shown when bottom sheet is closed
                 if !bottomSheetExpanded {
-                    HStack(spacing: styles.layout.spacingM) {
-                        ZStack(alignment: .leading) {
-                            if messageText.isEmpty && !isTyping {
-                                Text("Ask a question...")
-                                    .font(styles.typography.bodyFont)
-                                    .foregroundColor(styles.colors.placeholderText)
-                                    .padding(.leading, 4)
-                            }
-                            
-                            TextEditor(text: isTyping ? .constant("") : $messageText)
-                                .padding(4)
-                                .background(Color.clear) // Transparent background
-                                .foregroundColor(isTyping ? styles.colors.textDisabled : styles.colors.text)
-                                .frame(height: min(60, max(40, textEditorHeight(text: messageText))))
-                                .colorScheme(.dark)
-                                .disabled(isTyping)
-                                .scrollContentBackground(.hidden) // Hide the default background
-                                .focused($isInputFocused) // Track focus state
-                                .onChange(of: messageText) { _, _ in
-                                    // Force layout update when text changes
-                                    withAnimation(.easeInOut(duration: 0.1)) {}
+                    VStack(spacing: 0) {
+                        HStack(alignment: .bottom, spacing: styles.layout.spacingM) {
+                            // Input field with dynamic height
+                            ZStack(alignment: .topLeading) {
+                                if messageText.isEmpty && !isTyping {
+                                    Text("Ask a question...")
+                                        .font(styles.typography.bodyFont)
+                                        .foregroundColor(styles.colors.placeholderText)
+                                        .padding(.leading, 8)
+                                        .padding(.top, 8)
                                 }
-                        }
-                        .padding(styles.layout.paddingS)
-                        .background(styles.colors.reflectionsNavBackground) // Use the same gray as outer container
-                        
-                        Button(action: sendMessage) {
-                            if isTyping {
-                                // Stop button
-                                Image(systemName: "stop.fill")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(styles.colors.appBackground)
-                            } else {
-                                // Send button
-                                Image(systemName: "arrow.up")
-                                    .font(.system(size: 24, weight: .bold))
-                                    .foregroundColor(styles.colors.appBackground)
+                                
+                                TextEditor(text: isTyping ? .constant("") : $messageText)
+                                    .font(styles.typography.bodyFont)
+                                    .padding(4)
+                                    .background(Color.clear)
+                                    .foregroundColor(isTyping ? styles.colors.textDisabled : styles.colors.text)
+                                    .frame(minHeight: 40, maxHeight: 60)
+                                    .colorScheme(.dark)
+                                    .disabled(isTyping)
+                                    .scrollContentBackground(.hidden)
+                                    .focused($isInputFocused)
+                                    .onChange(of: messageText) { _, _ in
+                                        // Force layout update when text changes
+                                        withAnimation(.easeInOut(duration: 0.1)) {}
+                                    }
                             }
+                            .padding(8)
+                            .background(styles.colors.reflectionsNavBackground)
+                            .cornerRadius(20)
+                            
+                            // Send button - fixed position
+                            Button(action: sendMessage) {
+                                if isTyping {
+                                    // Stop button
+                                    Image(systemName: "stop.fill")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(styles.colors.appBackground)
+                                } else {
+                                    // Send button
+                                    Image(systemName: "arrow.up")
+                                        .font(.system(size: 24, weight: .bold))
+                                        .foregroundColor(styles.colors.appBackground)
+                                }
+                            }
+                            .frame(width: 40, height: 40)
+                            .background(styles.colors.accent)
+                            .clipShape(Circle())
+                            .disabled(messageText.isEmpty && !isTyping)
+                            .opacity((messageText.isEmpty && !isTyping) ? 0.5 : 1.0)
                         }
-                        .frame(width: 40, height: 40)
-                        .background(styles.colors.accent)
-                        .clipShape(Circle())
-                        .disabled(messageText.isEmpty && !isTyping)
-                        .opacity((messageText.isEmpty && !isTyping) ? 0.5 : 1.0)
+                        .padding(.vertical, styles.layout.paddingM)
+                        .padding(.horizontal, styles.layout.paddingL)
                     }
-                    .padding(.vertical, styles.layout.paddingM)
-                    .padding(.horizontal, styles.layout.paddingL)
                     .background(
                         styles.colors.reflectionsNavBackground
-                            .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight])) // Top rounded corners only
+                            .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight]))
                     )
                 }
             }
@@ -250,17 +257,6 @@ struct ReflectionsView: View {
         } else {
             return "Thank you for sharing that with me. Would you like to explore this topic further? Sometimes writing about our thoughts can help us gain clarity and perspective."
         }
-    }
-
-    private func textEditorHeight(text: String) -> CGFloat {
-        let lineHeight: CGFloat = 20 // Approximate line height
-        let maxLines: Int = 2
-        
-        // Count newlines and estimate height
-        let lines = text.components(separatedBy: "\n").count
-        let estimatedLines = min(maxLines, max(1, lines))
-        
-        return CGFloat(estimatedLines) * lineHeight
     }
 }
 
