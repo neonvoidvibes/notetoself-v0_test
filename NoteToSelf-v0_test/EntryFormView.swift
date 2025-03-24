@@ -31,6 +31,9 @@ struct EntryFormView<Content: View>: View {
                 }
                 .padding(styles.layout.paddingXL)
             }
+            .onTapGesture {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
             
             // Custom navigation bar with optimized top spacing
             .safeAreaInset(edge: .top) {
