@@ -356,12 +356,18 @@ struct MainTabView: View {
                             }
                         }) {
                             VStack(spacing: 4) {
-                                Rectangle()
-                                    .fill(styles.colors.accent)
-                                    .frame(width: 24, height: 2) // Top bar
-                                Rectangle()
-                                    .fill(styles.colors.accent)
-                                    .frame(width: 20, height: 2) // Bottom bar (shorter)
+                                HStack {
+                                    Rectangle()
+                                        .fill(styles.colors.accent)
+                                        .frame(width: 24, height: 2) // Top bar
+                                    Spacer()
+                                }
+                                HStack {
+                                    Rectangle()
+                                        .fill(styles.colors.accent)
+                                        .frame(width: 20, height: 2) // Bottom bar (shorter)
+                                    Spacer()
+                                }
                             }
                             .frame(width: 36, height: 36)
                         }

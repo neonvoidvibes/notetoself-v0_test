@@ -23,7 +23,8 @@ var body: some View {
                     .font(styles.typography.title1)
                     .foregroundColor(styles.colors.text)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 5) // Minimal top padding
+                    .padding(.top, 20) // More top padding
+                    .padding(.bottom, 10) // Add bottom padding
               
                 // Menu button below title
                 HStack {
@@ -31,12 +32,18 @@ var body: some View {
                         NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
                     }) {
                         VStack(spacing: 4) {
-                            Rectangle()
-                                .fill(styles.colors.accent)
-                                .frame(width: 24, height: 2) // Top bar
-                            Rectangle()
-                                .fill(styles.colors.accent)
-                                .frame(width: 20, height: 2) // Bottom bar (shorter)
+                            HStack {
+                                Rectangle()
+                                    .fill(styles.colors.accent)
+                                    .frame(width: 24, height: 2) // Top bar
+                                Spacer()
+                            }
+                            HStack {
+                                Rectangle()
+                                    .fill(styles.colors.accent)
+                                    .frame(width: 20, height: 2) // Bottom bar (shorter)
+                                Spacer()
+                            }
                         }
                         .frame(width: 36, height: 36)
                     }
