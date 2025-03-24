@@ -27,8 +27,8 @@ struct NewEntryView: View {
                     .font(styles.typography.bodyLarge)
                     .padding(styles.layout.paddingM)
                     .frame(maxWidth: .infinity, minHeight: 240)
-                    .background(styles.colors.inputBackground)
-                    .cornerRadius(styles.layout.radiusM)
+                    .background(Color.clear)
+                    .scrollContentBackground(.hidden)
                     .foregroundColor(styles.colors.text)
                 if entryText.isEmpty {
                     Text("What's on your mind today?")
@@ -37,6 +37,8 @@ struct NewEntryView: View {
                         .padding(22)
                 }
             }
+            .background(styles.colors.inputBackground)
+            .cornerRadius(styles.layout.inputOuterCornerRadius)
 
             // Mood selector
             VStack(alignment: .leading, spacing: styles.layout.spacingM) {

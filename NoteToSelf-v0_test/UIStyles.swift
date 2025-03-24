@@ -25,6 +25,7 @@ struct UIStyles {
       let moodExcited: Color = Color.orange
       
       let inputBackground: Color = Color(hex: "#111111")
+      let inputFieldInnerBackground: Color = Color.clear
       let surface: Color = Color(hex: "#313131")
       let divider: Color = Color(hex: "#222222")
       let error: Color = Color.red
@@ -92,6 +93,8 @@ struct UIStyles {
       let floatingButtonSize: CGFloat = 60
       let radiusL: CGFloat = 12
       let radiusM: CGFloat = 8
+      let inputFieldCornerRadius: CGFloat = 16
+      let inputOuterCornerRadius: CGFloat = 20
       let topSafeAreaPadding: CGFloat = 50 // Added for universal top padding
       let settingsMenuWidth: CGFloat = 300 // Width for the slide-in settings menu
       
