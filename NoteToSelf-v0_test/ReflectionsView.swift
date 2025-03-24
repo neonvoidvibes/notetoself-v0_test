@@ -13,6 +13,7 @@ struct ReflectionsView: View {
     @Environment(\.bottomSheetExpanded) private var bottomSheetExpanded: Bool
     @FocusState private var isInputFocused: Bool
     @State private var textEditorHeight: CGFloat = 30
+    @State private var expandedMessageId: UUID? = nil
     
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -65,7 +66,7 @@ struct ReflectionsView: View {
                             // Clear conversation logic
                             appState.chatMessages = []
                         } label: {
-                            Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                            Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90") // Keep this exact name
                                 .font(.system(size: 24))
                                 .foregroundColor(styles.colors.text)
                         }
@@ -80,8 +81,20 @@ struct ReflectionsView: View {
                     ScrollView {
                         LazyVStack(spacing: styles.layout.spacingL) {
                             ForEach(appState.chatMessages) { message in
-                                ChatBubble(message: message)
-                                    .id(message.id)
+                                ChatBubble(
+                                    message: message,
+                                    isExpanded: expandedMessageId == message.id,
+                                    onTap: {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                            if expandedMessageId == message.id {
+                                                expandedMessageId = nil
+                                            } else {
+                                                expandedMessageId = message.id
+                                            }
+                                        }
+                                    }
+                                )
+                                .id(message.id)
                             }
                             
                             if isTyping {
@@ -96,10 +109,6 @@ struct ReflectionsView: View {
                         .padding(.horizontal, styles.layout.paddingL)
                         .padding(.vertical, styles.layout.paddingL)
                         .padding(.bottom, 20) // Reduced spacing at the bottom
-                        .contentShape(Rectangle()) // Add this to make the entire content tappable
-                        .onTapGesture { // Add explicit tap gesture to the content
-                            isInputFocused = false
-                        }
                     }
                     .onChange(of: appState.chatMessages.count) { _, _ in
                         scrollToBottom(proxy: scrollView)
@@ -110,9 +119,10 @@ struct ReflectionsView: View {
                     .onAppear {
                         scrollToBottom(proxy: scrollView)
                     }
-                    // Tap gesture to dismiss keyboard
+                    // Tap gesture to dismiss keyboard and collapse any expanded message
                     .onTapGesture {
                         isInputFocused = false
+                        expandedMessageId = nil
                     }
                 }
                 
@@ -196,6 +206,7 @@ struct ReflectionsView: View {
         // Tap gesture to dismiss keyboard when tapping anywhere in the view
         .onTapGesture {
             isInputFocused = false
+            expandedMessageId = nil
         }
         .alert(isPresented: $showingSubscriptionPrompt) {
             Alert(
@@ -286,7 +297,9 @@ struct ReflectionsView: View {
 
 struct ChatBubble: View {
     let message: ChatMessage
-    @State private var showingOptions: Bool = false
+    let isExpanded: Bool
+    let onTap: () -> Void
+    @State private var isCopied: Bool = false
     
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -296,43 +309,84 @@ struct ChatBubble: View {
             if message.isUser {
                 Spacer()
                 
-                Text(message.text)
-                    .font(styles.typography.bodyFont)
-                    .foregroundColor(styles.colors.userBubbleText)
-                    .padding(styles.layout.paddingM)
-                    .background(styles.colors.userBubbleColor)
-                    .clipShape(ChatBubbleShape(isUser: true))
-                    .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(message.text)
+                        .font(styles.typography.bodyFont)
+                        .foregroundColor(styles.colors.userBubbleText)
+                        .padding(styles.layout.paddingM) // Reverted to original padding
+                        .background(styles.colors.userBubbleColor)
+                        .clipShape(ChatBubbleShape(isUser: true))
+                        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                        .contentShape(Rectangle())
+                        .padding(.vertical, 8) // Moved padding outside the bubble
+                        .onTapGesture {
+                            onTap()
+                        }
+                    
+                    if isExpanded {
+                        Button(action: {
+                            // Copy to clipboard
+                            UIPasteboard.general.string = message.text
+                            
+                            // Show confirmation
+                            withAnimation {
+                                isCopied = true
+                            }
+                            
+                            // Reset after delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                withAnimation {
+                                    isCopied = false
+                                }
+                            }
+                        }) {
+                            Image(systemName: isCopied ? "checkmark" : "rectangle.on.rectangle")
+                                .font(.system(size: 16))
+                                .foregroundColor(isCopied ? styles.colors.accent : Color.gray.opacity(0.9))
+                        }
+                        .padding(.trailing, 8)
+                        .padding(.top, 0) // Reduced top padding to copy icon
+                        .transition(.opacity)
+                    }
+                }
             } else {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(message.text)
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.assistantBubbleText)
-                        .padding(.vertical, styles.layout.paddingM)
+                        // Removed horizontal padding
                         .background(styles.colors.assistantBubbleColor)
                         .clipShape(ChatBubbleShape(isUser: false))
                         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                showingOptions.toggle()
-                            }
+                            onTap()
                         }
                     
-                    if showingOptions {
-                        HStack(spacing: styles.layout.spacingM) {
-                            Text("Save to Journal")
-                                .font(styles.typography.caption)
-                                .foregroundColor(styles.colors.accent)
+                    if isExpanded {
+                        Button(action: {
+                            // Copy to clipboard
+                            UIPasteboard.general.string = message.text
                             
-                            Image(systemName: "doc.on.doc")
-                                .font(.system(size: 14))
-                                .foregroundColor(styles.colors.accent)
+                            // Show confirmation
+                            withAnimation {
+                                isCopied = true
+                            }
+                            
+                            // Reset after delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                withAnimation {
+                                    isCopied = false
+                                }
+                            }
+                        }) {
+                            Image(systemName: isCopied ? "checkmark" : "rectangle.on.rectangle")
+                                .font(.system(size: 16))
+                                .foregroundColor(isCopied ? styles.colors.accent : Color.gray.opacity(0.9))
                         }
-                        .padding(.top, 8)
-                        .padding(.bottom, 12)
-                        .padding(.leading, styles.layout.paddingM)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .padding(.leading, 8)
+                        .padding(.top, 6) // Added top padding to copy icon
+                        .transition(.opacity)
                     }
                 }
                 
