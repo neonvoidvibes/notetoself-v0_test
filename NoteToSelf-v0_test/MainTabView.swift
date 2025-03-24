@@ -228,7 +228,7 @@ struct MainTabView: View {
                             Spacer()
                             Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
                                 .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(bottomSheetExpanded ? styles.colors.navIconSelected : styles.colors.navIconSelected)
+                                .foregroundColor(bottomSheetExpanded ? styles.colors.navIconSelected : Color.white)
                             Spacer()
                         }
                     }
