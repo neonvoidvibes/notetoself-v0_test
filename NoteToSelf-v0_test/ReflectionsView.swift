@@ -9,6 +9,8 @@ struct ReflectionsView: View {
     @Binding var tabBarOffset: CGFloat
     @Binding var lastScrollPosition: CGFloat
     @Binding var tabBarVisible: Bool
+    // Add environment property to access bottom sheet state
+    @Environment(\.bottomSheetExpanded) private var bottomSheetExpanded: Bool
     
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -105,53 +107,56 @@ struct ReflectionsView: View {
                     }
                 }
                 
-                // Message input container - styled like the original but with amendments
-                HStack(spacing: styles.layout.spacingM) {
-                    ZStack(alignment: .leading) {
-                        if messageText.isEmpty && !isTyping {
-                            Text("Ask a question...")
-                                .foregroundColor(styles.colors.placeholderText)
-                                .padding(.leading, 4)
+                // Message input container - only shown when bottom sheet is closed
+                if !bottomSheetExpanded {
+                    HStack(spacing: styles.layout.spacingM) {
+                        ZStack(alignment: .leading) {
+                            if messageText.isEmpty && !isTyping {
+                                Text("Ask a question...")
+                                    .foregroundColor(styles.colors.placeholderText)
+                                    .padding(.leading, 4)
+                            }
+                            
+                            TextEditor(text: isTyping ? .constant("") : $messageText)
+                                .padding(4)
+                                .background(styles.colors.inputAreaBackground)
+                                .foregroundColor(isTyping ? styles.colors.textDisabled : styles.colors.text)
+                                .frame(height: styles.layout.inputAreaHeight)
+                                .colorScheme(.dark)
+                                .disabled(isTyping)
                         }
+                        .padding(styles.layout.paddingS)
+                        .background(styles.colors.inputAreaBackground)
                         
-                        TextEditor(text: isTyping ? .constant("") : $messageText)
-                            .padding(4)
-                            .background(styles.colors.inputAreaBackground)
-                            .foregroundColor(isTyping ? styles.colors.textDisabled : styles.colors.text)
-                            .frame(height: styles.layout.inputAreaHeight)
-                            .colorScheme(.dark)
-                            .disabled(isTyping)
-                    }
-                    .padding(styles.layout.paddingS)
-                    .background(styles.colors.inputAreaBackground)
-                    
-                    Button(action: sendMessage) {
-                        if isTyping {
-                            // Stop button
-                            Image(systemName: "stop.fill")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(styles.colors.appBackground)
-                        } else {
-                            // Send button
-                            Image(systemName: "arrow.up")
-                                .font(.system(size: 26, weight: .bold))
-                                .foregroundColor(styles.colors.appBackground)
+                        Button(action: sendMessage) {
+                            if isTyping {
+                                // Stop button
+                                Image(systemName: "stop.fill")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(styles.colors.appBackground)
+                            } else {
+                                // Send button
+                                Image(systemName: "arrow.up")
+                                    .font(.system(size: 26, weight: .bold))
+                                    .foregroundColor(styles.colors.appBackground)
+                            }
                         }
+                        .frame(width: 40, height: 40)
+                        .background(styles.colors.accent)
+                        .clipShape(Circle())
+                        .disabled(messageText.isEmpty && !isTyping)
+                        .opacity((messageText.isEmpty && !isTyping) ? 0.5 : 1.0)
                     }
-                    .frame(width: 40, height: 40)
-                    .background(styles.colors.accent)
-                    .clipShape(Circle())
-                    .disabled(messageText.isEmpty && !isTyping)
-                    .opacity((messageText.isEmpty && !isTyping) ? 0.5 : 1.0)
+                    .padding(.horizontal, styles.layout.paddingL)
+                    .padding(.vertical, styles.layout.paddingM)
+                    .background(
+                        styles.colors.reflectionBackground
+                            .cornerRadius(30) // Maximum rounded corners
+                    )
+                    .padding(.horizontal, styles.layout.paddingM)
+                    .padding(.bottom, styles.layout.paddingM)
+                    .transition(.opacity.animation(.easeInOut(duration: 0.2)))
                 }
-                .padding(.horizontal, styles.layout.paddingL)
-                .padding(.vertical, styles.layout.paddingM)
-                .background(
-                    styles.colors.inputContainerBackground
-                        .cornerRadius(styles.layout.radiusL * 3)
-                )
-                .padding(.horizontal, styles.layout.paddingM)
-                .padding(.bottom, styles.layout.paddingM)
             }
         }
         .alert(isPresented: $showingSubscriptionPrompt) {
@@ -165,7 +170,7 @@ struct ReflectionsView: View {
             )
         }
     }
-    
+
     private func sendMessage() {
         if isTyping {
             // Stop the assistant from typing

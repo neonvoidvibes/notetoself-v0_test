@@ -36,8 +36,8 @@ struct Colors {
     let tabBarBackground: Color = Color.black
     
     // Navigation sheet colors
-    let bottomSheetBackground: Color = Color(hex: "#444444")
-    let bottomSheetPeek: Color = Color(hex: "#222222")
+    let bottomSheetBackground: Color = Color(hex: "#1A1A1A") // Same as reflectionBackground
+    let bottomSheetPeek: Color = Color(hex: "#1A1A1A") // Same as reflectionBackground
     let bottomSheetIndicator: Color = Color(hex: "#444444")
     let bottomSheetShadow: Color = Color.black.opacity(0.3)
     

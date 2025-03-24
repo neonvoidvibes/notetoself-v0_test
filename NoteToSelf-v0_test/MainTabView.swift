@@ -168,6 +168,7 @@ struct MainTabView: View {
                 .mainCardStyle()
                 .offset(y: bottomSheetExpanded ? -fullSheetHeight * 0.25 : 0)
                 .animation(styles.animation.bottomSheetAnimation, value: bottomSheetExpanded)
+                .environment(\.bottomSheetExpanded, bottomSheetExpanded)
                 // Auto-close on tap
                 .onTapGesture {
                     if bottomSheetExpanded {
@@ -418,6 +419,18 @@ struct MainTabView: View {
                 appState.hasSeenOnboarding = true
             }
         }
+    }
+}
+
+// Add environment key for bottom sheet expanded state
+private struct BottomSheetExpandedKey: EnvironmentKey {
+    static let defaultValue: Bool = false
+}
+
+extension EnvironmentValues {
+    var bottomSheetExpanded: Bool {
+        get { self[BottomSheetExpandedKey.self] }
+        set { self[BottomSheetExpandedKey.self] = newValue }
     }
 }
 
