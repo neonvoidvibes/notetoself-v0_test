@@ -46,27 +46,14 @@ struct ReflectionsView: View {
                 // Chat messages
                 ScrollViewReader { scrollView in
                     ScrollView {
-                        GeometryReader { geometry in
-                            Color.clear.preference(
-                                key: ScrollOffsetPreferenceKey.self,
-                                value: geometry.frame(in: .named("scrollView")).minY
-                            )
-                        }
-                        .frame(height: 0)
-                        
                         LazyVStack(spacing: styles.layout.spacingM) {
                             ForEach(appState.chatMessages) { message in
                                 ChatBubble(message: message)
                                     .id(message.id)
-                                    .transition(.asymmetric(
-                                        insertion: .scale(scale: 0.95).combined(with: .opacity).animation(.spring(response: 0.3, dampingFraction: 0.8)),
-                                        removal: .opacity.animation(.easeOut(duration: 0.2))
-                                    ))
                             }
                             
                             if isTyping {
                                 TypingIndicator()
-                                    .transition(.opacity.animation(.easeInOut(duration: 0.2)))
                             }
                             
                             // Invisible anchor to scroll to
@@ -76,38 +63,16 @@ struct ReflectionsView: View {
                         }
                         .padding(.horizontal, styles.layout.paddingL)
                         .padding(.vertical, styles.layout.paddingL)
-                        .padding(.bottom, 80) // Extra padding for input field
+                        .padding(.bottom, 20) // Reduced spacing at the bottom
                     }
-                    .coordinateSpace(name: "scrollView")
-                    .disabled(mainScrollingDisabled)
-                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                        // Calculate scroll direction and update tab bar visibility
-                        let scrollingDown = value < lastScrollPosition
-                        
-                        // Only update when scrolling more than a threshold to avoid jitter
-                        if abs(value - lastScrollPosition) > 10 {
-                            if scrollingDown {
-                                tabBarOffset = 100 // Hide tab bar
-                                tabBarVisible = false
-                            } else {
-                                tabBarOffset = 0 // Show tab bar
-                                tabBarVisible = true
-                            }
-                            lastScrollPosition = value
-                        }
+                    .onChange(of: appState.chatMessages.count) { _, _ in
+                        scrollToBottom(proxy: scrollView)
                     }
-                    .onChange(of: appState.chatMessages.count) { oldValue, newCount in
-                        // Smoother scrolling with a slight delay to ensure animation completes
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                scrollView.scrollTo("BottomAnchor", anchor: .bottom)
-                            }
-                        }
+                    .onChange(of: isTyping) { _, _ in
+                        scrollToBottom(proxy: scrollView)
                     }
-                    .onChange(of: isTyping) { oldValue, newValue in
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            scrollView.scrollTo("BottomAnchor", anchor: .bottom)
-                        }
+                    .onAppear {
+                        scrollToBottom(proxy: scrollView)
                     }
                     // Tap gesture to dismiss keyboard
                     .onTapGesture {
@@ -163,7 +128,6 @@ struct ReflectionsView: View {
                         styles.colors.reflectionsNavBackground
                             .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight])) // Top rounded corners only
                     )
-                    .transition(.opacity.animation(.easeInOut(duration: 0.2)))
                 }
             }
         }
@@ -181,6 +145,11 @@ struct ReflectionsView: View {
                 secondaryButton: .cancel(Text("Maybe Later"))
             )
         }
+    }
+    
+    // Simplified scrolling function
+    private func scrollToBottom(proxy: ScrollViewProxy) {
+        proxy.scrollTo("BottomAnchor")
     }
 
     private func sendMessage() {
@@ -206,9 +175,8 @@ struct ReflectionsView: View {
         let messageToSend = messageText
         messageText = "" // Clear input field immediately
         
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-            appState.chatMessages.append(userMessage)
-        }
+        // Add message without animation
+        appState.chatMessages.append(userMessage)
         
         // Increment usage counter for free tier
         if appState.subscriptionTier == .free {
@@ -226,9 +194,8 @@ struct ReflectionsView: View {
             let responseText = generateResponse(to: messageToSend)
             let aiMessage = ChatMessage(text: responseText, isUser: false)
             
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                appState.chatMessages.append(aiMessage)
-            }
+            // Add message without animation
+            appState.chatMessages.append(aiMessage)
         }
     }
     
