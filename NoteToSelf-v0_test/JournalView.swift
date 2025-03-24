@@ -43,6 +43,23 @@ struct JournalView: View {
                         }
                         .frame(height: 0)
                         
+                        // Inspiring prompt
+                        if !appState.journalEntries.isEmpty {
+                            VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                                Text("Today's Reflection")
+                                    .font(styles.typography.smallLabelFont)
+                                    .foregroundColor(styles.colors.accent)
+                                
+                                Text("What's one small or big thing on your mind right now?")
+                                    .font(styles.typography.bodyFont)
+                                    .foregroundColor(styles.colors.textSecondary)
+                                    .padding(.bottom, styles.layout.spacingS)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, styles.layout.spacingM)
+                            .padding(.top, styles.layout.spacingS)
+                        }
+                        
                         if appState.journalEntries.isEmpty {
                             VStack(spacing: 16) {
                                 Spacer()
