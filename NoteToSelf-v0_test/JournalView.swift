@@ -288,7 +288,7 @@ struct JournalEntryCard: View {
                     if isExpanded && entry.isLocked {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 14))
-                            .foregroundColor(Color(hex: "#FF6B6B"))
+                            .foregroundColor(styles.colors.secondaryAccent)
                     }
                     
                     // Expand/collapse chevron with rotation

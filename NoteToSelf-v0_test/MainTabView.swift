@@ -253,7 +253,7 @@ struct MainTabView: View {
                             HStack(spacing: 0) {
                                 Spacer()
                                 NavigationTabButton(
-                                    icon: "book.fill",
+                                    icon: "book.pages.fill",
                                     title: "Journal",
                                     isSelected: selectedTab == 0
                                 ) {
@@ -435,24 +435,39 @@ struct NavigationTabButton: View {
     let action: () -> Void
     private let styles = UIStyles.shared
     
+    // Fixed dimensions
+    private let buttonHeight: CGFloat = 60
+    private let textHeight: CGFloat = 15
+    private let iconSize: CGFloat = 24
+    
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: isSelected ? 22 : 20, weight: isSelected ? .bold : .regular))
-                    .foregroundColor(isSelected ? styles.colors.accent : Color.white)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+            ZStack(alignment: .bottom) {
+                // Container
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(width: 80, height: buttonHeight)
                 
+                // Text label - always at the same position from bottom
                 Text(title)
                     .font(isSelected ? 
                           .system(size: 12, weight: .bold, design: .monospaced) : 
                           styles.typography.caption)
                     .foregroundColor(isSelected ? styles.colors.accent : Color.white)
+                    .frame(height: textHeight)
+                    .padding(.bottom, 5) // Fixed padding from bottom
+                
+                // Icon - positioned relative to text
+                Image(systemName: icon)
+                    .font(.system(size: iconSize, 
+                                 weight: isSelected ? .bold : .regular))
+                    .foregroundColor(isSelected ? styles.colors.accent : Color.white)
+                    .frame(height: iconSize)
+                    .offset(y: isSelected ? -30 : -textHeight - 10) // Position icon above text
             }
-            .frame(width: 80)
-            .contentShape(Rectangle())
         }
         .buttonStyle(ScaleButtonStyle())
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }
 
