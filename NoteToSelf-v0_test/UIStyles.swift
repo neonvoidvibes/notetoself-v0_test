@@ -95,6 +95,8 @@ struct UIStyles {
       let radiusM: CGFloat = 8
       let inputFieldCornerRadius: CGFloat = 16
       let inputOuterCornerRadius: CGFloat = 20
+      let entryFormInputMinHeight: CGFloat = 240
+      let entryFormInputMinHeightKeyboardOpen: CGFloat = 160
       let topSafeAreaPadding: CGFloat = 50 // Added for universal top padding
       let settingsMenuWidth: CGFloat = 300 // Width for the slide-in settings menu
       

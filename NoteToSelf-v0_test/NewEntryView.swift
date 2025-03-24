@@ -6,6 +6,7 @@ struct NewEntryView: View {
 
     @State private var entryText: String = ""
     @State private var selectedMood: Mood = .neutral
+    @State private var isKeyboardVisible: Bool = false
 
     // Access shared styles
     private let styles = UIStyles.shared
@@ -26,7 +27,7 @@ struct NewEntryView: View {
                 TextEditor(text: $entryText)
                     .font(styles.typography.bodyLarge)
                     .padding(styles.layout.paddingM)
-                    .frame(maxWidth: .infinity, minHeight: 240)
+                    .frame(maxWidth: .infinity, minHeight: isKeyboardVisible ? styles.layout.entryFormInputMinHeightKeyboardOpen : styles.layout.entryFormInputMinHeight)
                     .background(Color.clear)
                     .scrollContentBackground(.hidden)
                     .foregroundColor(styles.colors.text)
@@ -39,6 +40,12 @@ struct NewEntryView: View {
             }
             .background(styles.colors.inputBackground)
             .cornerRadius(styles.layout.inputOuterCornerRadius)
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                isKeyboardVisible = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                isKeyboardVisible = false
+            }
 
             // Mood selector
             VStack(alignment: .leading, spacing: styles.layout.spacingM) {
