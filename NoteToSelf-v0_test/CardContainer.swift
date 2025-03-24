@@ -13,7 +13,8 @@ struct CardContainer<Content: View>: View {
         content
             .background(UIStyles.shared.colors.cardBackground)
             .clipShape(RoundedCorner(radius: cornerRadius, corners: [.bottomLeft, .bottomRight]))
-            // Shadow removed
+            // Add a subtle shadow to enhance the 3D effect
+            .shadow(color: Color.black.opacity(0.3), radius: 15, x: 0, y: 5)
     }
 }
 
@@ -27,3 +28,4 @@ struct CardContainer_Previews: PreviewProvider {
         .background(Color.gray.opacity(0.3))
     }
 }
+

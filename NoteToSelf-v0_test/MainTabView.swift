@@ -116,23 +116,37 @@ struct MainTabView: View {
     
     var body: some View {
         ZStack {
-            // Background
+            // Background - conditional based on nav area state
+            ZStack {
+                // Base black background
+                styles.colors.appBackground
+                    .ignoresSafeArea()
+                
+                // Conditional gradient background when nav is expanded
+                if bottomSheetExpanded {
+                    // Single continuous gradient for the entire screen
+                    LinearGradient(
+                        gradient: Gradient(
+                            colors: [
+                                styles.colors.appBackground, // Start with black at the top
+                                styles.colors.appBackgroundDarker.opacity(0.8), // Transition to dark gray
+                                styles.colors.navBackgroundBottom // End with the nav bottom color
+                            ]
+                        ),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .ignoresSafeArea()
+                }
+            }
+                
+            // Status bar area
             VStack(spacing: 0) {
                 Color.black
                     .frame(height: styles.layout.topSafeAreaPadding)
-                if bottomSheetExpanded {
-                    styles.colors.navBackground
-                } else {
-                    Color.black
-                }
+                Spacer()
             }
             .ignoresSafeArea()
-            
-            if bottomSheetExpanded {
-                Color.black
-                    .frame(height: styles.layout.topSafeAreaPadding)
-                    .ignoresSafeArea(edges: .top)
-            }
             
             // Main content: disabled during settings swipes
             VStack(spacing: 0) {
@@ -304,9 +318,11 @@ struct MainTabView: View {
                     .background(
                         Group {
                             if bottomSheetExpanded {
-                                styles.colors.navBackground
+                                // Make the nav area background transparent to let the main gradient show through
+                                Color.clear
                             } else {
-                                Color.black
+                                // Black background when collapsed
+                                styles.colors.appBackground
                             }
                         }
                     )
@@ -446,3 +462,4 @@ struct ScaleButtonStyle: ButtonStyle {
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
+
