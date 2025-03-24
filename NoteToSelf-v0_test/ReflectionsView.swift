@@ -22,6 +22,16 @@ struct ReflectionsView: View {
                     .foregroundColor(styles.colors.text)
                 
                 Spacer()
+                
+                // Clear conversation button
+                Button {
+                    // Clear conversation logic
+                    appState.chatMessages = []
+                } label: {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 24))
+                        .foregroundColor(styles.colors.text)
+                }
             }
             .padding(styles.headerPadding)
             
@@ -50,6 +60,11 @@ struct ReflectionsView: View {
                             TypingIndicator()
                                 .transition(.opacity.animation(.easeInOut(duration: 0.2)))
                         }
+                        
+                        // Invisible anchor to scroll to
+                        Color.clear
+                            .frame(height: 1)
+                            .id("BottomAnchor")
                     }
                     .padding(.horizontal, styles.layout.paddingL)
                     .padding(.vertical, styles.layout.paddingL)
@@ -74,66 +89,76 @@ struct ReflectionsView: View {
                     }
                 }
                 .onChange(of: appState.chatMessages.count) { oldValue, newCount in
-                    if let lastMessage = appState.chatMessages.last {
-                        withAnimation {
-                            scrollView.scrollTo(lastMessage.id, anchor: .bottom)
-                        }
+                    withAnimation {
+                        scrollView.scrollTo("BottomAnchor", anchor: .bottom)
                     }
                 }
                 .onChange(of: isTyping) { oldValue, newValue in
                     withAnimation {
-                        scrollView.scrollTo(appState.chatMessages.last?.id, anchor: .bottom)
+                        scrollView.scrollTo("BottomAnchor", anchor: .bottom)
                     }
                 }
             }
             
-            // Message input
-            VStack(spacing: 0) {
-                Divider()
-                    .background(styles.colors.divider)
-                
-                HStack(spacing: styles.layout.spacingM) {
-                    ZStack(alignment: .leading) {
-                        if messageText.isEmpty {
-                            Text("Ask a question...")
-                                .foregroundColor(styles.colors.placeholderText)
-                                .padding(.leading, 4)
-                        }
-                        
-                        TextEditor(text: $messageText)
-                            .padding(4)
-                            .background(Color.clear)
-                            .foregroundColor(styles.colors.text)
-                            .frame(minHeight: 40, maxHeight: 120)
-                            .colorScheme(.dark) // Force dark mode for the TextEditor
+            // Black margin between chat bubbles and the input container
+            Rectangle()
+                .fill(styles.colors.appBackground)
+                .frame(height: 20)
+            
+            // Message input container - styled like the original
+            HStack(spacing: styles.layout.spacingM) {
+                ZStack(alignment: .leading) {
+                    if messageText.isEmpty && !isTyping {
+                        Text("Ask a question...")
+                            .foregroundColor(styles.colors.placeholderText)
+                            .padding(.leading, 4)
                     }
-                    .padding(styles.layout.paddingS)
-                    .background(
-                        RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                            .fill(styles.colors.secondaryBackground.opacity(0.8))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                            .stroke(styles.colors.divider, lineWidth: 1)
-                    )
                     
-                    Button(action: sendMessage) {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: styles.layout.iconSizeXL))
-                            .foregroundColor(messageText.isEmpty ? styles.colors.textDisabled : styles.colors.accent)
-                            .shadow(color: messageText.isEmpty ? Color.clear : styles.colors.accent.opacity(0.5), radius: 5, x: 0, y: 0)
-                    }
-                    .disabled(messageText.isEmpty)
-                    .scaleEffect(messageText.isEmpty ? 1.0 : 1.1)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: messageText.isEmpty)
+                    TextEditor(text: isTyping ? .constant("") : $messageText)
+                        .padding(4)
+                        .background(Color.clear)
+                        .foregroundColor(isTyping ? styles.colors.textDisabled : styles.colors.text)
+                        .frame(minHeight: 40, maxHeight: 120)
+                        .colorScheme(.dark)
+                        .disabled(isTyping)
                 }
-                .padding(.horizontal, styles.layout.paddingL)
-                .padding(.vertical, styles.layout.paddingM)
+                .padding(styles.layout.paddingS)
+                .background(
+                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                        .fill(styles.colors.tertiaryBackground)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                        .stroke(styles.colors.divider, lineWidth: 1)
+                )
+                
+                Button(action: sendMessage) {
+                    if isTyping {
+                        // Stop button
+                        Image(systemName: "stop.fill")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(styles.colors.appBackground)
+                    } else {
+                        // Send button
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 26, weight: .bold))
+                            .foregroundColor(styles.colors.appBackground)
+                    }
+                }
+                .frame(width: 40, height: 40)
+                .background(styles.colors.accent)
+                .clipShape(Circle())
+                .disabled(messageText.isEmpty && !isTyping)
+                .opacity((messageText.isEmpty && !isTyping) ? 0.5 : 1.0)
             }
+            .padding(.horizontal, styles.layout.paddingL)
+            .padding(.vertical, styles.layout.paddingM)
             .background(
-                BlurView(style: .systemUltraThinMaterialDark)
-                    .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: -5)
+                styles.colors.tertiaryBackground
+                    .cornerRadius(styles.layout.radiusL * 3)
             )
+            .padding(.horizontal, styles.layout.paddingM)
+            .padding(.bottom, styles.layout.paddingM)
         }
         .background(styles.colors.appBackground.ignoresSafeArea())
         .alert(isPresented: $showingSubscriptionPrompt) {
@@ -149,6 +174,12 @@ struct ReflectionsView: View {
     }
     
     private func sendMessage() {
+        if isTyping {
+            // Stop the assistant from typing
+            isTyping = false
+            return
+        }
+        
         guard !messageText.isEmpty else { return }
         
         // Check if user can send more messages
@@ -222,24 +253,14 @@ struct ChatBubble: View {
             VStack(alignment: message.isUser ? .trailing : .leading, spacing: styles.layout.spacingXS) {
                 Text(message.text)
                     .font(styles.typography.bodyFont)
-                    .foregroundColor(message.isUser ? styles.colors.text : styles.colors.text)
+                    .foregroundColor(styles.colors.text)
                     .padding(styles.layout.paddingM)
                     .background(
-                        RoundedRectangle(cornerRadius: styles.layout.radiusL)
-                            .fill(
-                                message.isUser 
-                                ? LinearGradient(
-                                    gradient: Gradient(colors: [styles.colors.accent.opacity(0.3), styles.colors.accent.opacity(0.15)]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                  )
-                                : LinearGradient(
-                                    gradient: Gradient(colors: [styles.colors.chatAIBubble, styles.colors.chatAIBubble.opacity(0.8)]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                  )
-                            )
+                        message.isUser 
+                        ? styles.colors.offWhite
+                        : styles.colors.chatAIBubble
                     )
+                    .clipShape(ChatBubbleShape(isUser: message.isUser))
                     .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
                 
                 if !message.isUser {
@@ -251,6 +272,7 @@ struct ChatBubble: View {
                         Text("Save to Journal")
                             .font(styles.typography.caption)
                             .foregroundColor(styles.colors.accent)
+                            .underline()
                     }
                     .padding(.leading, styles.layout.paddingS)
                     .opacity(showingSaveOption ? 0 : 1)
@@ -303,6 +325,21 @@ struct ChatBubble: View {
     }
 }
 
+struct ChatBubbleShape: Shape {
+    var isUser: Bool
+    
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: isUser 
+                ? [.topLeft, .topRight, .bottomLeft]
+                : [.topLeft, .topRight, .bottomRight],
+            cornerRadii: CGSize(width: 12, height: 12)
+        )
+        return Path(path.cgPath)
+    }
+}
+
 struct TypingIndicator: View {
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -314,16 +351,15 @@ struct TypingIndicator: View {
             HStack(spacing: styles.layout.spacingS) {
                 ForEach(0..<3) { index in
                     Circle()
-                        .fill(styles.colors.accent)
+                        .fill(styles.colors.offWhite)
                         .frame(width: 8, height: 8)
                         .offset(y: animationOffset(for: index))
                 }
             }
             .padding(styles.layout.paddingM)
             .background(
-                RoundedRectangle(cornerRadius: styles.layout.radiusL)
-                    .fill(styles.colors.chatAIBubble)
-                    .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                styles.colors.chatAIBubble
+                    .clipShape(ChatBubbleShape(isUser: false))
             )
             
             Spacer()
@@ -354,3 +390,4 @@ struct ReflectionsView_Previews: PreviewProvider {
         .environmentObject(appState)
     }
 }
+
