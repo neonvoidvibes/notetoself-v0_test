@@ -143,15 +143,17 @@ struct MainTabView: View {
                                     tabBarVisible: .constant(true))
                     } else if selectedTab == 1 {
                         InsightsView(tabBarOffset: .constant(0),
-                                     lastScrollPosition: .constant(0),
-                                     tabBarVisible: .constant(true))
+                         lastScrollPosition: .constant(0),
+                         tabBarVisible: .constant(true))
                     } else if selectedTab == 2 {
                         ReflectionsView(tabBarOffset: .constant(0),
-                                        lastScrollPosition: .constant(0),
-                                        tabBarVisible: .constant(true))
+                         lastScrollPosition: .constant(0),
+                         tabBarVisible: .constant(true))
                     }
                 }
                 .mainCardStyle()
+                .offset(y: bottomSheetExpanded ? -fullSheetHeight * 0.4 : 0)
+                .animation(styles.animation.bottomSheetAnimation, value: bottomSheetExpanded)
                 // Auto-close on tap
                 .onTapGesture {
                     if bottomSheetExpanded {
@@ -218,91 +220,98 @@ struct MainTabView: View {
                     }
                 )
                 
-                VStack(spacing: 0) {
-                    Button(action: {
-                        withAnimation(styles.animation.bottomSheetAnimation) {
-                            bottomSheetExpanded.toggle()
+                // Bottom sheet / tab bar - using GeometryReader for precise positioning
+                GeometryReader { geometry in
+                    VStack(spacing: 0) {
+                        // Chevron button - positioned at the very top with no spacing
+                        Button(action: {
+                            withAnimation(styles.animation.bottomSheetAnimation) {
+                                bottomSheetExpanded.toggle()
+                            }
+                        }) {
+                            HStack {
+                                Spacer()
+                                Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(bottomSheetExpanded ? styles.colors.navIconSelected : Color.white)
+                                Spacer()
+                            }
+                            .frame(height: peekHeight)
+                            .contentShape(Rectangle())
+                            .padding(.bottom, bottomSheetExpanded ? 16 : 8) // More padding below the chevron
                         }
-                    }) {
-                        HStack {
-                            Spacer()
-                            Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(bottomSheetExpanded ? styles.colors.navIconSelected : Color.white)
-                            Spacer()
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        // Tab buttons - only shown when expanded
+                        if bottomSheetExpanded {
+                            HStack(spacing: 0) {
+                                Spacer()
+                                NavigationTabButton(
+                                    icon: "book.fill",
+                                    title: "Journal",
+                                    isSelected: selectedTab == 0
+                                ) {
+                                    withAnimation(styles.animation.tabSwitchAnimation) {
+                                        selectedTab = 0
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        withAnimation(styles.animation.bottomSheetAnimation) {
+                                            bottomSheetExpanded = false
+                                            bottomSheetOffset = peekHeight - fullSheetHeight
+                                        }
+                                    }
+                                }
+                                Spacer()
+                                NavigationTabButton(
+                                    icon: "chart.bar.fill",
+                                    title: "Insights",
+                                    isSelected: selectedTab == 1
+                                ) {
+                                    withAnimation(styles.animation.tabSwitchAnimation) {
+                                        selectedTab = 1
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        withAnimation(styles.animation.bottomSheetAnimation) {
+                                            bottomSheetExpanded = false
+                                            bottomSheetOffset = peekHeight - fullSheetHeight
+                                        }
+                                    }
+                                }
+                                Spacer()
+                                NavigationTabButton(
+                                    icon: "bubble.left.fill",
+                                    title: "Reflections",
+                                    isSelected: selectedTab == 2
+                                ) {
+                                    withAnimation(styles.animation.tabSwitchAnimation) {
+                                        selectedTab = 2
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        withAnimation(styles.animation.bottomSheetAnimation) {
+                                            bottomSheetExpanded = false
+                                            bottomSheetOffset = peekHeight - fullSheetHeight
+                                        }
+                                    }
+                                }
+                                Spacer()
+                            }
+                            .padding(.vertical, 12)
+                            .padding(.bottom, 8)
+                            .frame(height: fullSheetHeight - peekHeight)
                         }
                     }
-                    .padding(.top, 24)
-                    .padding(.bottom, bottomSheetExpanded ? 24 : 18)
-                    
-                    if bottomSheetExpanded {
-                        HStack(spacing: 0) {
-                            Spacer()
-                            NavigationTabButton(
-                                icon: "book.fill",
-                                title: "Journal",
-                                isSelected: selectedTab == 0
-                            ) {
-                                withAnimation(styles.animation.tabSwitchAnimation) {
-                                    selectedTab = 0
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                    withAnimation(styles.animation.bottomSheetAnimation) {
-                                        bottomSheetExpanded = false
-                                        bottomSheetOffset = peekHeight - fullSheetHeight
-                                    }
-                                }
+                    .frame(width: geometry.size.width, height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
+                    .background(
+                        Group {
+                            if bottomSheetExpanded {
+                                styles.colors.navBackground
+                            } else {
+                                Color.black
                             }
-                            Spacer()
-                            NavigationTabButton(
-                                icon: "chart.bar.fill",
-                                title: "Insights",
-                                isSelected: selectedTab == 1
-                            ) {
-                                withAnimation(styles.animation.tabSwitchAnimation) {
-                                    selectedTab = 1
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                    withAnimation(styles.animation.bottomSheetAnimation) {
-                                        bottomSheetExpanded = false
-                                        bottomSheetOffset = peekHeight - fullSheetHeight
-                                    }
-                                }
-                            }
-                            Spacer()
-                            NavigationTabButton(
-                                icon: "bubble.left.fill",
-                                title: "Reflections",
-                                isSelected: selectedTab == 2
-                            ) {
-                                withAnimation(styles.animation.tabSwitchAnimation) {
-                                    selectedTab = 2
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                    withAnimation(styles.animation.bottomSheetAnimation) {
-                                        bottomSheetExpanded = false
-                                        bottomSheetOffset = peekHeight - fullSheetHeight
-                                    }
-                                }
-                            }
-                            Spacer()
                         }
-                        .padding(.vertical, 12)
-                        .padding(.bottom, 8)
-                        .frame(height: fullSheetHeight - peekHeight)
-                        .background(styles.colors.navBackground)
-                    }
+                    )
                 }
                 .frame(height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
-                .background(
-                    Group {
-                        if bottomSheetExpanded {
-                            styles.colors.navBackground
-                        } else {
-                            Color.black
-                        }
-                    }
-                )
                 .gesture(bottomSheetDrag)
             }
             .disabled(isSwipingSettings)
