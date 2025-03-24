@@ -145,6 +145,14 @@ struct MainTabView: View {
                     }
                 }
                 .mainCardStyle()
+                .onTapGesture {
+                    if bottomSheetExpanded {
+                        withAnimation(styles.animation.bottomSheetAnimation) {
+                            bottomSheetExpanded = false
+                            bottomSheetOffset = peekHeight - fullSheetHeight
+                        }
+                    }
+                }
                 .overlay(
                     VStack {
                         HStack {
