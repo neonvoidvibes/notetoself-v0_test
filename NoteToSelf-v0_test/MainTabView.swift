@@ -311,7 +311,7 @@ struct MainTabView: View {
                             }
                             .frame(width: 36, height: 36)
                         }
-                        .padding(.leading, 20)
+                        
                         Spacer()
                     }
                 }
