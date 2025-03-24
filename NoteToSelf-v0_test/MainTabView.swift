@@ -74,6 +74,13 @@ struct MainTabView: View {
     private var settingsDrag: some Gesture {
         DragGesture(minimumDistance: 10)
             .onChanged { value in
+                // Collapse bottom sheet if expanded
+                if bottomSheetExpanded {
+                    withAnimation(styles.animation.bottomSheetAnimation) {
+                        bottomSheetExpanded = false
+                        bottomSheetOffset = peekHeight - fullSheetHeight
+                    }
+                }
                 if !showingSettings {
                     let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
                     let isSignificant = abs(value.translation.width) > 10
@@ -145,7 +152,7 @@ struct MainTabView: View {
                     }
                 }
                 .mainCardStyle()
-                // Original onTapGesture for empty areas
+                // Auto-close on tap
                 .onTapGesture {
                     if bottomSheetExpanded {
                         withAnimation(styles.animation.bottomSheetAnimation) {
@@ -154,7 +161,19 @@ struct MainTabView: View {
                         }
                     }
                 }
-                // New simultaneousGesture ensures any tap (even on interactive elements) will collapse the bottom sheet
+                // Auto-close on any drag (scroll) gesture in the main content
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 1)
+                        .onChanged { _ in
+                            if bottomSheetExpanded {
+                                withAnimation(styles.animation.bottomSheetAnimation) {
+                                    bottomSheetExpanded = false
+                                    bottomSheetOffset = peekHeight - fullSheetHeight
+                                }
+                            }
+                        }
+                )
+                // Also preserve the previous tap gesture (for redundancy)
                 .simultaneousGesture(
                     TapGesture().onEnded {
                         if bottomSheetExpanded {
@@ -170,6 +189,13 @@ struct MainTabView: View {
                         HStack {
                             Spacer()
                             Button(action: {
+                                // Collapse bottom sheet if open before opening SettingsView
+                                withAnimation(styles.animation.bottomSheetAnimation) {
+                                    if bottomSheetExpanded {
+                                        bottomSheetExpanded = false
+                                        bottomSheetOffset = peekHeight - fullSheetHeight
+                                    }
+                                }
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     showingSettings.toggle()
                                     settingsOffset = showingSettings ? 0 : screenWidth
@@ -350,8 +376,6 @@ struct MainTabView: View {
                     .padding(.top, styles.layout.topSafeAreaPadding + 60)
             }
             .contentShape(Rectangle())
-            // Settings swipe is handled both by the inner SettingsView (for scroll disabling) 
-            // and by MainTabView (for the actual animation)
             .simultaneousGesture(settingsDrag)
             .frame(width: screenWidth)
             .background(styles.colors.menuBackground)
