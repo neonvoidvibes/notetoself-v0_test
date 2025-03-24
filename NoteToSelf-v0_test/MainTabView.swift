@@ -295,7 +295,7 @@ struct MainTabView: View {
                                 Spacer()
                                 NavigationTabButton(
                                     icon: "bubble.left.fill",
-                                    title: "Reflections",
+                                    title: "Reflect",
                                     isSelected: selectedTab == 2
                                 ) {
                                     withAnimation(styles.animation.tabSwitchAnimation) {

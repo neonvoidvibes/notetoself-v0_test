@@ -24,7 +24,7 @@ struct ReflectionsView: View {
             VStack(spacing: 0) {
                 // Header
                 HStack {
-                    Text("Reflections")
+                    Text("Reflect")
                         .font(styles.typography.title1)
                         .foregroundColor(styles.colors.text)
                     
@@ -46,7 +46,7 @@ struct ReflectionsView: View {
                 // Chat messages
                 ScrollViewReader { scrollView in
                     ScrollView {
-                        LazyVStack(spacing: styles.layout.spacingM) {
+                        LazyVStack(spacing: styles.layout.spacingL) {
                             ForEach(appState.chatMessages) { message in
                                 ChatBubble(message: message)
                                     .id(message.id)
@@ -112,7 +112,7 @@ struct ReflectionsView: View {
                             } else {
                                 // Send button
                                 Image(systemName: "arrow.up")
-                                    .font(.system(size: 26, weight: .bold))
+                                    .font(.system(size: 24, weight: .bold))
                                     .foregroundColor(styles.colors.appBackground)
                             }
                         }
@@ -219,7 +219,7 @@ struct ReflectionsView: View {
 
 struct ChatBubble: View {
     let message: ChatMessage
-    @State private var showingSaveOption: Bool = false
+    @State private var showingOptions: Bool = false
     
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -228,77 +228,47 @@ struct ChatBubble: View {
         HStack {
             if message.isUser {
                 Spacer()
-            }
-            
-            VStack(alignment: message.isUser ? .trailing : .leading, spacing: styles.layout.spacingXS) {
+                
                 Text(message.text)
                     .font(styles.typography.bodyFont)
-                    .foregroundColor(message.isUser ? styles.colors.userBubbleText : styles.colors.assistantBubbleText)
+                    .foregroundColor(styles.colors.userBubbleText)
                     .padding(styles.layout.paddingM)
-                    .background(
-                        message.isUser 
-                        ? styles.colors.userBubbleColor
-                        : styles.colors.assistantBubbleColor
-                    )
-                    .clipShape(ChatBubbleShape(isUser: message.isUser))
+                    .background(styles.colors.userBubbleColor)
+                    .clipShape(ChatBubbleShape(isUser: true))
                     .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
-                
-                if !message.isUser {
-                    Button(action: {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            showingSaveOption.toggle()
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(message.text)
+                        .font(styles.typography.bodyFont)
+                        .foregroundColor(styles.colors.assistantBubbleText)
+                        .padding(styles.layout.paddingM)
+                        .background(styles.colors.assistantBubbleColor)
+                        .clipShape(ChatBubbleShape(isUser: false))
+                        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                showingOptions.toggle()
+                            }
                         }
-                    }) {
-                        Text("Save to Journal")
-                            .font(styles.typography.caption)
-                            .foregroundColor(styles.colors.accent)
-                            .underline()
-                    }
-                    .padding(.leading, styles.layout.paddingS)
-                    .opacity(showingSaveOption ? 0 : 1)
                     
-                    if showingSaveOption {
-                        HStack {
-                            Text("Save this reflection?")
+                    if showingOptions {
+                        HStack(spacing: styles.layout.spacingM) {
+                            Text("Save to Journal")
                                 .font(styles.typography.caption)
-                                .foregroundColor(styles.colors.textSecondary)
+                                .foregroundColor(styles.colors.accent)
                             
-                            Button(action: {
-                                // Save to journal logic would go here
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    showingSaveOption = false
-                                }
-                            }) {
-                                Text("Yes")
-                                    .font(styles.typography.caption)
-                                    .foregroundColor(styles.colors.accent)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 4)
-                                    .background(styles.colors.secondaryBackground)
-                                    .cornerRadius(12)
-                            }
-                            
-                            Button(action: {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    showingSaveOption = false
-                                }
-                            }) {
-                                Text("No")
-                                    .font(styles.typography.caption)
-                                    .foregroundColor(styles.colors.textSecondary)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 4)
-                                    .background(styles.colors.secondaryBackground)
-                                    .cornerRadius(12)
-                            }
+                            Image(systemName: "doc.on.doc")
+                                .font(.system(size: 14))
+                                .foregroundColor(styles.colors.accent)
                         }
-                        .padding(.leading, styles.layout.paddingS)
-                        .transition(.scale.combined(with: .opacity))
+                        .padding(.top, 8)
+                        .padding(.bottom, 12)
+                        .padding(.leading, styles.layout.paddingM)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
-            }
-            
-            if !message.isUser {
+                
                 Spacer()
             }
         }
