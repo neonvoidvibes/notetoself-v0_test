@@ -70,26 +70,13 @@ struct MainTabView: View {
             }
     }
     
-    // Drag gesture for Settings
+    // Drag gesture for Settings: Only allow swipe-to-open; disable swipe-to-close when settings are open
     private var settingsDrag: some Gesture {
         DragGesture(minimumDistance: 10)
             .onChanged { value in
-                // When settings are open, ONLY allow horizontal swipes from left edge (50pt)
-                if showingSettings {
-                    let isLeftEdge = value.startLocation.x < 50
+                if !showingSettings {
                     let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
                     let isSignificant = abs(value.translation.width) > 10
-                    
-                    // Only respect right swipes from left edge when settings are open
-                    if isLeftEdge && isHorizontal && isSignificant && value.translation.width > 0 {
-                        isSwipingSettings = true
-                        dragOffset = value.translation.width
-                    }
-                } else {
-                    // When settings are closed, allow horizontal swipes from anywhere
-                    let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
-                    let isSignificant = abs(value.translation.width) > 10
-                    
                     if isHorizontal && isSignificant {
                         isSwipingSettings = true
                         dragOffset = value.translation.width
@@ -97,37 +84,23 @@ struct MainTabView: View {
                 }
             } 
             .onEnded { value in
-                if isSwipingSettings {
+                if !showingSettings && isSwipingSettings {
                     let horizontalAmount = value.translation.width
                     let velocity = value.predictedEndLocation.x - value.location.x
-                    if showingSettings {
-                        // If user swipes right enough from the edge, close Settings
-                        if horizontalAmount > screenWidth * 0.3 || (horizontalAmount > 20 && velocity > 100) {
-                            withAnimation(.easeOut(duration: 0.25)) {
-                                showingSettings = false
-                                settingsOffset = screenWidth
-                                dragOffset = 0
-                            }
-                        } else {
-                            // Snap back open
-                            withAnimation(.easeOut(duration: 0.25)) {
-                                dragOffset = 0
-                            }
+                    if horizontalAmount < -screenWidth * 0.3 || (horizontalAmount < -20 && velocity < -100) {
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            showingSettings = true
+                            settingsOffset = 0
+                            dragOffset = 0
                         }
                     } else {
-                        // If user swipes left enough from the edge, open Settings
-                        if horizontalAmount < -screenWidth * 0.3 || (horizontalAmount < -20 && velocity < -100) {
-                            withAnimation(.easeOut(duration: 0.25)) {
-                                showingSettings = true
-                                settingsOffset = 0
-                                dragOffset = 0
-                            }
-                        } else {
-                            // Snap back closed
-                            withAnimation(.easeOut(duration: 0.25)) {
-                                dragOffset = 0
-                            }
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            dragOffset = 0
                         }
+                    }
+                } else {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        dragOffset = 0
                     }
                 }
                 isSwipingSettings = false

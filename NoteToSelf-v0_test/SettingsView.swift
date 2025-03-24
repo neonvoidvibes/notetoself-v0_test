@@ -7,7 +7,7 @@ struct SettingsView: View {
     @State private var notificationsEnabled: Bool = false
     
     // For controlling scroll behavior during swipes
-    @State private var isSwipingToClose = false
+    
     
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -37,36 +37,14 @@ struct SettingsView: View {
                     // About section
                     AboutSection()
                         .transition(.scale.combined(with: .opacity))
-                        .padding(.bottom, styles.layout.paddingXL)
+                                
                 }
                 .padding(.horizontal, styles.layout.paddingL)
                 .padding(.top, styles.headerPadding.top)
         }
         .disabled(settingsScrollingDisabled)
             
-            // Edge detection for close gesture
-            HStack(spacing: 0) {
-                // Only detect right swipes from the left edge (50pts)
-                Rectangle()
-                    .fill(Color.clear)
-                    .contentShape(Rectangle())
-                    .frame(width: 50)
-                    .gesture(
-                        DragGesture(minimumDistance: 10)
-                            .onChanged { value in
-                                let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
-                                let isRightward = value.translation.width > 0
-                                isSwipingToClose = isHorizontal && isRightward
-                            }
-                            .onEnded { _ in
-                                isSwipingToClose = false
-                            }
-                    )
-                
-                // Rest of screen - don't interfere with scrolling
-                Spacer()
-            }
-            .frame(maxHeight: .infinity)
+            
         }
     }
 }
