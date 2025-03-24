@@ -152,7 +152,7 @@ struct MainTabView: View {
                     }
                 }
                 .mainCardStyle()
-                .offset(y: bottomSheetExpanded ? -fullSheetHeight * 0.4 : 0)
+                .offset(y: bottomSheetExpanded ? -fullSheetHeight * 0.25 : 0)
                 .animation(styles.animation.bottomSheetAnimation, value: bottomSheetExpanded)
                 // Auto-close on tap
                 .onTapGesture {
