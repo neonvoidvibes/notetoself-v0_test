@@ -152,15 +152,13 @@ struct JournalView: View {
                     expandedEntryId = newEntry.id // Auto-expand new entry
                 }
             })
-            .presentationDetents([.fraction(0.85), .large])
-            .presentationDragIndicator(.visible)
+            // Presentation detents moved to EntryFormView for consistency
         }
         .sheet(item: $editingEntry) { entry in
             EditEntryView(entry: entry, onSave: { updatedText, updatedMood in
                 updateEntry(entry, newText: updatedText, newMood: updatedMood)
             })
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
+            // Presentation detents moved to EntryFormView for consistency
         }
     }
     
@@ -363,95 +361,69 @@ struct EditEntryView: View {
     }
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                styles.colors.appBackground
-                    .ignoresSafeArea()
-                
-                VStack(spacing: styles.layout.spacingXL) {
-                    // Text editor
-                    ZStack(alignment: .topLeading) {
-                        TextEditor(text: $entryText)
-                            .font(styles.typography.bodyLarge)
-                            .padding([.leading, .trailing, .bottom], styles.layout.paddingXL)
-                            .padding(.top, styles.layout.paddingL)
-                            .frame(maxWidth: .infinity, minHeight: 200)
-                            .background(styles.colors.inputBackground)
-                            .cornerRadius(styles.layout.radiusM)
-                            .foregroundColor(styles.colors.text)
-                        
-                        if entryText.isEmpty {
-                            Text("What's on your mind today?")
-                                .font(styles.typography.bodyLarge)
-                                .foregroundColor(styles.colors.placeholderText)
-                                .padding(22)
-                        }
-                    }
-                    
-                    // Mood selector
-                    VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                        Text("How are you feeling?")
-                            .font(styles.typography.label)
-                            .foregroundColor(styles.colors.textSecondary)
-                        
-                        HStack(spacing: styles.layout.spacingM) {
-                            ForEach(Mood.allCases, id: \.self) { mood in
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                        selectedMood = mood
-                                    }
-                                }) {
-                                    VStack(spacing: styles.layout.spacingS) {
-                                        mood.icon
-                                            .font(.system(size: styles.layout.iconSizeL))
-                                            .foregroundColor(selectedMood == mood ? mood.color : styles.colors.textSecondary)
-                                        
-                                        Text(mood.name)
-                                            .font(styles.typography.caption)
-                                            .foregroundColor(selectedMood == mood ? styles.colors.text : styles.colors.textSecondary)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, styles.layout.spacingM)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                            .fill(selectedMood == mood ? styles.colors.secondaryBackground : styles.colors.appBackground)
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                            .stroke(selectedMood == mood ? mood.color.opacity(0.5) : Color.clear, lineWidth: 1)
-                                    )
-                                    .scaleEffect(selectedMood == mood ? 1.05 : 1.0)
-                                }
-                            }
-                        }
-                    }
-                    
-                    Spacer()
+        EntryFormView(
+            title: "Edit Entry",
+            onSave: {
+                onSave(entryText, selectedMood)
+                dismiss()
+            },
+            saveButtonEnabled: !entryText.isEmpty
+        ) {
+            // Text editor with placeholder
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $entryText)
+                    .font(styles.typography.bodyLarge)
+                    .padding(styles.layout.paddingM)
+                    .frame(maxWidth: .infinity, minHeight: 240)
+                    .background(styles.colors.inputBackground)
+                    .cornerRadius(styles.layout.radiusM)
+                    .foregroundColor(styles.colors.text)
+                if entryText.isEmpty {
+                    Text("What's on your mind today?")
+                        .font(styles.typography.bodyLarge)
+                        .foregroundColor(styles.colors.placeholderText)
+                        .padding(22)
                 }
-                .padding(styles.layout.paddingXL)
             }
-            .navigationTitle("Edit Entry")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundColor(styles.colors.accent)
-                }
+            
+            // Mood selector
+            VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                Text("How are you feeling?")
+                    .font(styles.typography.label)
+                    .foregroundColor(styles.colors.textSecondary)
                 
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        onSave(entryText, selectedMood)
-                        dismiss()
+                HStack(spacing: styles.layout.spacingM) {
+                    ForEach(Mood.allCases, id: \.self) { mood in
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                selectedMood = mood
+                            }
+                        }) {
+                            VStack(spacing: styles.layout.spacingS) {
+                                mood.icon
+                                    .font(.system(size: styles.layout.iconSizeL))
+                                    .foregroundColor(selectedMood == mood ? mood.color : styles.colors.textSecondary)
+                                
+                                Text(mood.name)
+                                    .font(styles.typography.caption)
+                                    .foregroundColor(selectedMood == mood ? styles.colors.text : styles.colors.textSecondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, styles.layout.spacingM)
+                            .background(
+                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                    .fill(selectedMood == mood ? styles.colors.secondaryBackground : styles.colors.appBackground)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                    .stroke(selectedMood == mood ? mood.color.opacity(0.5) : Color.clear, lineWidth: 1)
+                            )
+                            .scaleEffect(selectedMood == mood ? 1.05 : 1.0)
+                        }
                     }
-                    .foregroundColor(styles.colors.accent)
-                    .disabled(entryText.isEmpty)
-                    .opacity(entryText.isEmpty ? 0.5 : 1.0)
                 }
             }
         }
-        .preferredColorScheme(.dark)
     }
 }
 
