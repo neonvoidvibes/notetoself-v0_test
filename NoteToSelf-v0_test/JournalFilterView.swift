@@ -51,7 +51,7 @@ struct FilterPanel: View {
             HStack {
                 Button(action: onClearFilters) {
                     Text("Clear Filters")
-                        .font(styles.typography.bodyFont)
+                        .font(styles.typography.bodySmall)
                         .foregroundColor(styles.colors.accent)
                 }
                 
@@ -64,9 +64,9 @@ struct FilterPanel: View {
             .padding(.horizontal, styles.layout.paddingM)
         }
         .padding(styles.layout.paddingM)
-        .background(styles.colors.cardBackground)
+        .background(Color(hex: "#1A1A1A")) // Darker gray for contrast
         .cornerRadius(styles.layout.radiusL)
-        .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
+        .shadow(color: Color.black.opacity(0.3), radius: 15, x: 0, y: 8)
         .padding(.horizontal, styles.layout.paddingL)
     }
     
@@ -75,9 +75,9 @@ struct FilterPanel: View {
             // Search input
             HStack {
                 TextField("Search keywords...", text: $searchText)
-                    .font(styles.typography.bodyFont)
+                    .font(styles.typography.bodySmall)
                     .foregroundColor(styles.colors.text)
-                    .padding(styles.layout.paddingM)
+                    .padding(styles.layout.paddingS)
                     .background(styles.colors.secondaryBackground)
                     .cornerRadius(styles.layout.radiusM)
                     .onSubmit {
@@ -87,7 +87,7 @@ struct FilterPanel: View {
                 Button(action: addSearchTag) {
                     Image(systemName: "plus.circle.fill")
                         .foregroundColor(styles.colors.accent)
-                        .font(.system(size: 24))
+                        .font(.system(size: 20))
                 }
                 .disabled(searchText.isEmpty)
                 .opacity(searchText.isEmpty ? 0.5 : 1.0)
@@ -108,60 +108,68 @@ struct FilterPanel: View {
                                 }) {
                                     Image(systemName: "xmark.circle.fill")
                                         .foregroundColor(styles.colors.textSecondary)
-                                        .font(.system(size: 14))
+                                        .font(.system(size: 12))
                                 }
                             }
-                            .padding(.horizontal, styles.layout.paddingS)
-                            .padding(.vertical, 6)
+                            .padding(.horizontal, styles.layout.spacingS)
+                            .padding(.vertical, 4)
                             .background(styles.colors.secondaryBackground)
                             .cornerRadius(styles.layout.radiusM)
                         }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 2)
                 }
             }
         }
     }
     
     private var moodTab: some View {
-        VStack(spacing: styles.layout.spacingM) {
+        VStack(spacing: styles.layout.spacingS) {
             Text("Select moods to filter by:")
                 .font(styles.typography.bodySmall)
                 .foregroundColor(styles.colors.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
-            HStack(spacing: styles.layout.spacingM) {
+            // Grid layout for mood selection to accommodate many emotions
+            LazyVGrid(columns: [
+                GridItem(.adaptive(minimum: 80, maximum: 100), spacing: 8)
+            ], spacing: 8) {
                 ForEach(Mood.allCases, id: \.self) { mood in
                     Button(action: {
                         toggleMood(mood)
                     }) {
-                        VStack(spacing: styles.layout.spacingS) {
-                            mood.icon
-                                .font(.system(size: styles.layout.iconSizeL))
-                                .foregroundColor(selectedMoods.contains(mood) ? mood.color : styles.colors.textSecondary)
-                            Text(mood.name)
-                                .font(styles.typography.caption)
-                                .foregroundColor(selectedMoods.contains(mood) ? styles.colors.text : styles.colors.textSecondary)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, styles.layout.spacingM)
-                        .background(
-                            RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                .fill(selectedMoods.contains(mood) ? styles.colors.secondaryBackground : styles.colors.appBackground)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                .stroke(selectedMoods.contains(mood) ? mood.color.opacity(0.5) : Color.clear, lineWidth: 1)
-                        )
-                        .scaleEffect(selectedMoods.contains(mood) ? 1.05 : 1.0)
+                        Text(mood.name)
+                            .font(styles.typography.caption)
+                            .foregroundColor(selectedMoods.contains(mood) ? styles.colors.text : styles.colors.textSecondary)
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                    .fill(selectedMoods.contains(mood) ? 
+                                          mood.color.opacity(0.3) : 
+                                          styles.colors.appBackground)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                    .stroke(selectedMoods.contains(mood) ? 
+                                            mood.color.opacity(0.5) : 
+                                            Color.clear, lineWidth: 1)
+                            )
                     }
                 }
             }
+            
+            Text("Future-ready for 20+ emotions")
+                .font(styles.typography.caption)
+                .foregroundColor(styles.colors.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.top, 4)
         }
     }
     
     private var dateTab: some View {
-        VStack(spacing: styles.layout.spacingM) {
+        VStack(spacing: styles.layout.spacingS) {
             // Date filter options
             ForEach(DateFilterType.allCases) { filterType in
                 Button(action: {
@@ -169,7 +177,7 @@ struct FilterPanel: View {
                 }) {
                     HStack {
                         Text(filterType.rawValue)
-                            .font(styles.typography.bodyFont)
+                            .font(styles.typography.bodySmall)
                             .foregroundColor(styles.colors.text)
                         
                         Spacer()
@@ -177,9 +185,11 @@ struct FilterPanel: View {
                         if dateFilterType == filterType {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(styles.colors.accent)
+                                .font(.system(size: 14))
                         }
                     }
-                    .padding(styles.layout.paddingM)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
                     .background(
                         RoundedRectangle(cornerRadius: styles.layout.radiusM)
                             .fill(dateFilterType == filterType ? styles.colors.secondaryBackground : styles.colors.appBackground)
@@ -187,20 +197,40 @@ struct FilterPanel: View {
                 }
             }
             
-            // Custom date range
+            // Custom date range - more compact
             if dateFilterType == .custom {
-                VStack(spacing: styles.layout.spacingS) {
-                    DatePicker("Start Date", selection: $customStartDate, displayedComponents: .date)
-                        .datePickerStyle(CompactDatePickerStyle())
-                        .foregroundColor(styles.colors.text)
-                        .accentColor(styles.colors.accent)
+                VStack(spacing: styles.layout.spacingXS) {
+                    HStack {
+                        Text("Start:")
+                            .font(styles.typography.caption)
+                            .foregroundColor(styles.colors.textSecondary)
+                            .frame(width: 40, alignment: .leading)
+                        
+                        DatePicker("", selection: $customStartDate, displayedComponents: .date)
+                            .datePickerStyle(CompactDatePickerStyle())
+                            .labelsHidden()
+                            .foregroundColor(styles.colors.text)
+                            .accentColor(styles.colors.accent)
+                            .scaleEffect(0.9)
+                            .frame(maxHeight: 30)
+                    }
                     
-                    DatePicker("End Date", selection: $customEndDate, displayedComponents: .date)
-                        .datePickerStyle(CompactDatePickerStyle())
-                        .foregroundColor(styles.colors.text)
-                        .accentColor(styles.colors.accent)
+                    HStack {
+                        Text("End:")
+                            .font(styles.typography.caption)
+                            .foregroundColor(styles.colors.textSecondary)
+                            .frame(width: 40, alignment: .leading)
+                        
+                        DatePicker("", selection: $customEndDate, displayedComponents: .date)
+                            .datePickerStyle(CompactDatePickerStyle())
+                            .labelsHidden()
+                            .foregroundColor(styles.colors.text)
+                            .accentColor(styles.colors.accent)
+                            .scaleEffect(0.9)
+                            .frame(maxHeight: 30)
+                    }
                 }
-                .padding(styles.layout.paddingM)
+                .padding(styles.layout.paddingS)
                 .background(styles.colors.secondaryBackground)
                 .cornerRadius(styles.layout.radiusM)
             }
@@ -234,6 +264,7 @@ struct FilterPanel: View {
     }
 }
 
+// Update the FilterTabButton to be more compact and visually distinct
 struct FilterTabButton: View {
     let title: String
     let isSelected: Bool
@@ -246,8 +277,8 @@ struct FilterTabButton: View {
             Text(title)
                 .font(styles.typography.bodySmall)
                 .foregroundColor(isSelected ? styles.colors.accent : styles.colors.textSecondary)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .padding(.horizontal, 10)
                 .background(
                     isSelected ?
                         RoundedRectangle(cornerRadius: styles.layout.radiusM)
