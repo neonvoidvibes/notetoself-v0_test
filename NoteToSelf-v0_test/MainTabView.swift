@@ -121,9 +121,9 @@ struct MainTabView: View {
                 Color.black
                     .frame(height: styles.layout.topSafeAreaPadding)
                 if bottomSheetExpanded {
-                    styles.colors.bottomSheetBackground
+                    styles.colors.navBackground
                 } else {
-                    Color.black
+                    styles.colors.navBackground
                 }
             }
             .ignoresSafeArea()
@@ -228,7 +228,7 @@ struct MainTabView: View {
                             Spacer()
                             Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
                                 .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(bottomSheetExpanded ? styles.colors.textSecondary : styles.colors.text)
+                                .foregroundColor(bottomSheetExpanded ? styles.colors.navIconSelected : styles.colors.navIconSelected)
                             Spacer()
                         }
                     }
@@ -290,16 +290,16 @@ struct MainTabView: View {
                         .padding(.vertical, 12)
                         .padding(.bottom, 8)
                         .frame(height: fullSheetHeight - peekHeight)
-                        .background(bottomSheetExpanded ? styles.colors.bottomSheetBackground : Color.black)
+                        .background(bottomSheetExpanded ? styles.colors.navBackground : styles.colors.navBackground)
                     }
                 }
                 .frame(height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
                 .background(
                     Group {
                         if bottomSheetExpanded {
-                            styles.colors.bottomSheetBackground
+                            styles.colors.navBackground
                         } else {
-                            Color.black
+                            styles.colors.navBackground
                         }
                     }
                 )
@@ -408,17 +408,19 @@ struct NavigationTabButton: View {
             VStack(spacing: 6) {
                 ZStack {
                     Circle()
-                        .fill(isSelected ? styles.colors.accent.opacity(0.2) : Color.clear)
+                        .fill(isSelected ? styles.colors.navSelectionCircle : Color.clear)
                         .frame(width: 46, height: 46)
                     
                     Image(systemName: icon)
-                        .font(.system(size: isSelected ? 22 : 20, weight: isSelected ? .semibold : .regular))
-                        .foregroundColor(isSelected ? styles.colors.accent : styles.colors.textSecondary)
+                        .font(.system(size: isSelected ? 22 : 20, weight: isSelected ? .bold : .regular))
+                        .foregroundColor(isSelected ? styles.colors.navIconSelected : styles.colors.navIconDefault)
                         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
                 }
                 Text(title)
-                    .font(styles.typography.caption)
-                    .foregroundColor(isSelected ? styles.colors.accent : styles.colors.textSecondary)
+                    .font(isSelected ? 
+                          .system(size: 12, weight: .bold, design: .monospaced) : 
+                          styles.typography.caption)
+                    .foregroundColor(isSelected ? styles.colors.navIconSelected : styles.colors.navIconDefault)
                     .opacity(isSelected ? 1 : 0.7)
             }
             .frame(width: 80)
