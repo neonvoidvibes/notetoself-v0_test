@@ -7,7 +7,7 @@ struct MainTabView: View {
     
     // Settings-related states
     @State private var showingSettings = false
-    @State private var settingsOffset: CGFloat = UIScreen.main.bounds.width
+    @State private var settingsOffset: CGFloat = -UIScreen.main.bounds.width // Changed to negative for left side
     @State private var dragOffset: CGFloat = 0
     @State private var isSwipingSettings = false
     
@@ -70,7 +70,7 @@ struct MainTabView: View {
             }
     }
     
-    // Drag gesture for Settings: Only allow swipe-to-open; disable swipe-to-close when settings are open
+    // Drag gesture for Settings: Allow swipe from left edge to open
     private var settingsDrag: some Gesture {
         DragGesture(minimumDistance: 10)
             .onChanged { value in
@@ -81,36 +81,60 @@ struct MainTabView: View {
                         bottomSheetOffset = peekHeight - fullSheetHeight
                     }
                 }
+                
+                let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
+                let isSignificant = abs(value.translation.width) > 10
+                
                 if !showingSettings {
-                    let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
-                    let isSignificant = abs(value.translation.width) > 10
-                    if isHorizontal && isSignificant {
+                    // Opening from left edge - check for right swipe from left edge
+                    if isHorizontal && isSignificant && value.translation.width > 0 && value.startLocation.x < 50 {
                         isSwipingSettings = true
-                        dragOffset = value.translation.width
-                    }
-                }
-            } 
-            .onEnded { value in
-                if !showingSettings && isSwipingSettings {
-                    let horizontalAmount = value.translation.width
-                    let velocity = value.predictedEndLocation.x - value.location.x
-                    if horizontalAmount < -screenWidth * 0.3 || (horizontalAmount < -20 && velocity < -100) {
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            showingSettings = true
-                            settingsOffset = 0
-                            dragOffset = 0
-                        }
-                    } else {
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            dragOffset = 0
-                        }
+                        dragOffset = min(value.translation.width, screenWidth)
+                        settingsOffset = -screenWidth + dragOffset
                     }
                 } else {
-                    withAnimation(.easeOut(duration: 0.25)) {
-                        dragOffset = 0
+                    // Closing - check for left swipe
+                    if isHorizontal && isSignificant && value.translation.width < 0 {
+                        isSwipingSettings = true
+                        dragOffset = max(value.translation.width, -screenWidth)
+                        settingsOffset = dragOffset
                     }
                 }
+            }
+            .onEnded { value in
+                if isSwipingSettings {
+                    let horizontalAmount = value.translation.width
+                    let velocity = value.predictedEndLocation.x - value.location.x
+                    
+                    if !showingSettings {
+                        // Opening gesture
+                        if horizontalAmount > screenWidth * 0.3 || (horizontalAmount > 20 && velocity > 100) {
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                showingSettings = true
+                                settingsOffset = 0
+                            }
+                        } else {
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                settingsOffset = -screenWidth
+                            }
+                        }
+                    } else {
+                        // Closing gesture
+                        if horizontalAmount < -screenWidth * 0.3 || (horizontalAmount < -20 && velocity < -100) {
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                showingSettings = false
+                                settingsOffset = -screenWidth
+                            }
+                        } else {
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                settingsOffset = 0
+                            }
+                        }
+                    }
+                }
+                
                 isSwipingSettings = false
+                dragOffset = 0
             }
     }
     
@@ -199,39 +223,6 @@ struct MainTabView: View {
                                 bottomSheetOffset = peekHeight - fullSheetHeight
                             }
                         }
-                    }
-                )
-                .overlay(
-                    VStack {
-                        HStack {
-                            Spacer()
-                            Button(action: {
-                                // Collapse bottom sheet if open before opening SettingsView
-                                withAnimation(styles.animation.bottomSheetAnimation) {
-                                    if bottomSheetExpanded {
-                                        bottomSheetExpanded = false
-                                        bottomSheetOffset = peekHeight - fullSheetHeight
-                                    }
-                                }
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showingSettings.toggle()
-                                    settingsOffset = showingSettings ? 0 : screenWidth
-                                }
-                            }) {
-                                VStack(spacing: 4) {
-                                    Rectangle()
-                                        .fill(styles.colors.accent)
-                                        .frame(width: 20, height: 2)
-                                    Rectangle()
-                                        .fill(styles.colors.accent)
-                                        .frame(width: 20, height: 2)
-                                }
-                                .frame(width: 36, height: 36)
-                            }
-                            .padding(.trailing, 20)
-                            .padding(.top, styles.layout.topSafeAreaPadding)
-                        }
-                        Spacer()
                     }
                 )
                 
@@ -341,7 +332,7 @@ struct MainTabView: View {
                     dragOffset != 0
                         ? (showingSettings
                             ? 0.5 - (dragOffset / screenWidth) * 0.5
-                            : 0.5 + (dragOffset / screenWidth) * 0.5)
+                            : (dragOffset / screenWidth) * 0.5)
                         : (showingSettings ? 0.5 : 0)
                 )
                 .ignoresSafeArea()
@@ -353,59 +344,44 @@ struct MainTabView: View {
                     Text("Settings")
                         .font(styles.typography.title1)
                         .foregroundColor(styles.colors.text)
-                    
+                        .frame(maxWidth: .infinity, alignment: .center)
+        
                     HStack {
+                        Spacer()
+            
                         Button(action: {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 showingSettings = false
-                                settingsOffset = screenWidth
+                                settingsOffset = -screenWidth
                             }
                         }) {
                             VStack(spacing: 4) {
                                 Rectangle()
                                     .fill(styles.colors.accent)
-                                    .frame(width: 20, height: 2)
-                                if showingSettings {
-                                    HStack {
-                                        Rectangle()
-                                            .fill(styles.colors.accent)
-                                            .frame(width: 16, height: 2)
-                                        Spacer()
-                                    }
-                                } else {
-                                    HStack {
-                                        Spacer()
-                                        Rectangle()
-                                            .fill(styles.colors.accent)
-                                            .frame(width: 16, height: 2)
-                                    }
-                                }
+                                    .frame(width: 24, height: 2) // Top bar
+                                Rectangle()
+                                    .fill(styles.colors.accent)
+                                    .frame(width: 20, height: 2) // Bottom bar (shorter)
                             }
                             .frame(width: 36, height: 36)
                         }
-                        
-                        Spacer()
+                        .padding(.trailing, styles.layout.paddingXL)
                     }
                 }
-                .padding(EdgeInsets(
-                    top: styles.layout.topSafeAreaPadding,
-                    leading: styles.layout.paddingXL,
-                    bottom: styles.layout.paddingM,
-                    trailing: styles.layout.paddingXL
-                ))
+                .padding(.top, styles.layout.topSafeAreaPadding - 10)
                 .background(styles.colors.menuBackground)
                 .zIndex(100)
                 
                 // Actual Settings content
                 SettingsView()
                     .background(styles.colors.menuBackground)
-                    .padding(.top, styles.layout.topSafeAreaPadding + 60)
+                    .padding(.top, styles.layout.topSafeAreaPadding + 40)
             }
             .contentShape(Rectangle())
             .simultaneousGesture(settingsDrag)
             .frame(width: screenWidth)
             .background(styles.colors.menuBackground)
-            .offset(x: showingSettings ? settingsOffset + dragOffset : screenWidth + dragOffset)
+            .offset(x: settingsOffset)
             .zIndex(2)
         }
         .environment(\.mainScrollingDisabled, showingSettings || isSwipingSettings)
@@ -417,6 +393,18 @@ struct MainTabView: View {
             appState.loadSampleData()
             if !appState.hasSeenOnboarding {
                 appState.hasSeenOnboarding = true
+            }
+            
+            // Add notification observer for menu button
+            NotificationCenter.default.addObserver(forName: NSNotification.Name("ToggleSettings"), object: nil, queue: .main) { _ in
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showingSettings.toggle()
+                    if showingSettings {
+                        settingsOffset = 0
+                    } else {
+                        settingsOffset = -screenWidth
+                    }
+                }
             }
         }
     }

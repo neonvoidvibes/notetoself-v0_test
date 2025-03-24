@@ -23,14 +23,36 @@ struct JournalView: View {
             
             VStack(spacing: 0) {
                 // Header
-                HStack {
+                VStack(spacing: 0) {
+                    // Title at the very top
                     Text("Journal")
                         .font(styles.typography.title1)
                         .foregroundColor(styles.colors.text)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 5) // Minimal top padding
                     
-                    Spacer()
+                    // Menu button below title
+                    HStack {
+                        Button(action: {
+                            NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
+                        }) {
+                            VStack(spacing: 4) {
+                                Rectangle()
+                                    .fill(styles.colors.accent)
+                                    .frame(width: 24, height: 2) // Top bar
+                                Rectangle()
+                                    .fill(styles.colors.accent)
+                                    .frame(width: 20, height: 2) // Bottom bar (shorter)
+                            }
+                            .frame(width: 36, height: 36)
+                        }
+                        .padding(.leading, styles.layout.paddingXL)
+                        
+                        Spacer()
+                    }
+                    .padding(.top, 5) // Small spacing between title and menu
+                    .padding(.bottom, styles.layout.paddingM)
                 }
-                .padding(styles.headerPadding)
                 
                 // Journal entries
                 ScrollViewReader { scrollProxy in
@@ -394,22 +416,6 @@ struct EditEntryView: View {
                 selectedMood: $selectedMood
             )
         }
-    }
-}
-
-struct JournalView_Previews: PreviewProvider {
-    static let previewAppState: AppState = {
-        let appState = AppState()
-        appState.loadSampleData()
-        return appState
-    }()
-    
-    static var previews: some View {
-        JournalView(
-            tabBarOffset: .constant(0),
-            lastScrollPosition: .constant(0),
-            tabBarVisible: .constant(true)
-        ).environmentObject(previewAppState)
     }
 }
 

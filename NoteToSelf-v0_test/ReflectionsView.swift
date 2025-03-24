@@ -23,25 +23,47 @@ struct ReflectionsView: View {
             
             VStack(spacing: 0) {
                 // Header
-                HStack {
+                VStack(spacing: 0) {
+                    // Title at the very top
                     Text("Reflect")
                         .font(styles.typography.title1)
                         .foregroundColor(styles.colors.text)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 5) // Minimal top padding
                     
-                    Spacer()
-                    
-                    // Clear conversation button - moved to left of settings
-                    Button {
-                        // Clear conversation logic
-                        appState.chatMessages = []
-                    } label: {
-                        Image(systemName: "square.and.pencil")
-                            .font(.system(size: 24))
-                            .foregroundColor(styles.colors.text)
+                    // Menu button below title
+                    HStack {
+                        Button(action: {
+                            NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
+                        }) {
+                            VStack(spacing: 4) {
+                                Rectangle()
+                                    .fill(styles.colors.accent)
+                                    .frame(width: 24, height: 2) // Top bar
+                                Rectangle()
+                                    .fill(styles.colors.accent)
+                                    .frame(width: 20, height: 2) // Bottom bar (shorter)
+                            }
+                            .frame(width: 36, height: 36)
+                        }
+                        .padding(.leading, styles.layout.paddingXL)
+                        
+                        Spacer()
+                        
+                        // Clear conversation button
+                        Button {
+                            // Clear conversation logic
+                            appState.chatMessages = []
+                        } label: {
+                            Image(systemName: "square.and.pencil")
+                                .font(.system(size: 24))
+                                .foregroundColor(styles.colors.text)
+                        }
+                        .padding(.trailing, styles.layout.paddingXL)
                     }
-                    .padding(.trailing, styles.layout.spacingL)
+                    .padding(.top, 5) // Small spacing between title and menu
+                    .padding(.bottom, styles.layout.paddingM)
                 }
-                .padding(styles.headerPadding)
                 
                 // Chat messages
                 ScrollViewReader { scrollView in
@@ -112,7 +134,7 @@ struct ReflectionsView: View {
                             } else {
                                 // Send button
                                 Image(systemName: "arrow.up")
-                                    .font(.system(size: 20, weight: .bold))
+                                    .font(.system(size: 24, weight: .bold))
                                     .foregroundColor(styles.colors.appBackground)
                             }
                         }
@@ -324,20 +346,6 @@ struct TypingIndicator: View {
     private func animationOffset(for index: Int) -> CGFloat {
         let delay = Double(index) * 0.2
         return sin(animationOffset + CGFloat(delay)) * 5
-    }
-}
-
-struct ReflectionsView_Previews: PreviewProvider {
-    static var previews: some View {
-        let appState = AppState()
-        appState.loadSampleData()
-        
-        return ReflectionsView(
-            tabBarOffset: .constant(0),
-            lastScrollPosition: .constant(0),
-            tabBarVisible: .constant(true)
-        )
-        .environmentObject(appState)
     }
 }
 

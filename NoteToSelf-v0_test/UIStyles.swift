@@ -80,7 +80,7 @@ struct Typography {
     let caption: Font = Font.system(size: 12, weight: .regular, design: .monospaced)
     let label: Font = Font.system(size: 14, weight: .medium, design: .monospaced)
     let bodySmall: Font = Font.system(size: 12, weight: .regular, design: .monospaced)
-    let title1: Font = Font.system(size: 28, weight: .bold, design: .monospaced)
+    let title1: Font = Font.system(size: 20, weight: .bold, design: .monospaced)
     let title3: Font = Font.system(size: 20, weight: .semibold, design: .monospaced)
     let largeTitle: Font = Font.system(size: 34, weight: .bold, design: .monospaced)
     let navLabel: Font = Font.system(size: 10, weight: .medium, design: .monospaced)
@@ -137,7 +137,7 @@ struct Animation {
 let animation = Animation()
 
 var headerPadding: EdgeInsets {
-    EdgeInsets(top: layout.topSafeAreaPadding, leading: layout.paddingXL, bottom: layout.paddingM, trailing: layout.paddingXL)
+    EdgeInsets(top: 0, leading: layout.paddingXL, bottom: layout.paddingM, trailing: layout.paddingXL)
 }
 
 // MARK: - Button Styles

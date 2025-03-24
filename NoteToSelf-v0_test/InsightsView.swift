@@ -16,14 +16,37 @@ var body: some View {
     ZStack {
         styles.colors.appBackground.ignoresSafeArea()
         VStack(spacing: 0) {
-            // Fixed Header (matches JournalView and ReflectionsView)
-            HStack {
+            // Fixed Header
+            VStack(spacing: 0) {
+                // Title at the very top
                 Text("Insights")
                     .font(styles.typography.title1)
                     .foregroundColor(styles.colors.text)
-                Spacer()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 5) // Minimal top padding
+              
+                // Menu button below title
+                HStack {
+                    Button(action: {
+                        NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
+                    }) {
+                        VStack(spacing: 4) {
+                            Rectangle()
+                                .fill(styles.colors.accent)
+                                .frame(width: 24, height: 2) // Top bar
+                            Rectangle()
+                                .fill(styles.colors.accent)
+                                .frame(width: 20, height: 2) // Bottom bar (shorter)
+                        }
+                        .frame(width: 36, height: 36)
+                    }
+                    .padding(.leading, styles.layout.paddingXL)
+                  
+                    Spacer()
+                }
+                .padding(.top, 5) // Small spacing between title and menu
+                .padding(.bottom, styles.layout.paddingM)
             }
-            .padding(styles.headerPadding)
             
             // Main content in ScrollView
             ScrollView {
@@ -576,3 +599,4 @@ struct InsightsView_Previews: PreviewProvider {
         .environmentObject(appState)
     }
 }
+
