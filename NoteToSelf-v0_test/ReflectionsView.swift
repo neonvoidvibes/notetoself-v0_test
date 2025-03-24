@@ -65,7 +65,7 @@ struct ReflectionsView: View {
                             // Clear conversation logic
                             appState.chatMessages = []
                         } label: {
-                            Image(systemName: "clock.arrow.trianglepath")
+                            Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
                                 .font(.system(size: 24))
                                 .foregroundColor(styles.colors.text)
                         }

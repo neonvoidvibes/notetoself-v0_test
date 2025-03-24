@@ -438,22 +438,16 @@ struct NavigationTabButton: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 6) {
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? Color.white.opacity(0.2) : Color.clear) // Lighter selection circle
-                        .frame(width: 46, height: 46)
-                    
-                    Image(systemName: icon)
-                        .font(.system(size: isSelected ? 22 : 20, weight: isSelected ? .bold : .regular))
-                        .foregroundColor(isSelected ? Color.white : Color.white.opacity(0.6)) // White for selected, light gray for unselected
-                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
-                }
+                Image(systemName: icon)
+                    .font(.system(size: isSelected ? 22 : 20, weight: isSelected ? .bold : .regular))
+                    .foregroundColor(isSelected ? styles.colors.accent : Color.white)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+                
                 Text(title)
                     .font(isSelected ? 
                           .system(size: 12, weight: .bold, design: .monospaced) : 
                           styles.typography.caption)
-                    .foregroundColor(isSelected ? Color.white : Color.white.opacity(0.6)) // White for selected, light gray for unselected
-                    .opacity(isSelected ? 1 : 0.8)
+                    .foregroundColor(isSelected ? styles.colors.accent : Color.white)
             }
             .frame(width: 80)
             .contentShape(Rectangle())
