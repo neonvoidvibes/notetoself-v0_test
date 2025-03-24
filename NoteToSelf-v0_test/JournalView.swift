@@ -231,8 +231,8 @@ struct JournalEntryCard: View {
                         .scaleEffect(isExpanded ? 1.1 : 1.0)
                         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
                     
-                    // Lock icon if needed
-                    if entry.isLocked {
+                    // Lock icon if needed (only when expanded)
+                    if isExpanded && entry.isLocked {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 14))
                             .foregroundColor(Color(hex: "#FF6B6B"))
