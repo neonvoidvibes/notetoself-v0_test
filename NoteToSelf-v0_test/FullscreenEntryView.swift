@@ -137,8 +137,8 @@ struct FullscreenEntryView: View {
 
     private func formattedMoodText(_ mood: Mood, intensity: Int = 2) -> String {
         switch intensity {
-        case 1: return "A little \(mood.name.lowercased())"
-        case 3: return "Very \(mood.name.lowercased())"
+        case 1: return "Slightly \(mood.name)"
+        case 3: return "Very \(mood.name)"
         default: return mood.name
         }
     }
@@ -377,8 +377,8 @@ struct EditableFullscreenEntryView: View {
 
     private func formattedMoodText(_ mood: Mood, intensity: Int = 2) -> String {
         switch intensity {
-        case 1: return "A little \(mood.name.lowercased())"
-        case 3: return "Very \(mood.name.lowercased())"
+        case 1: return "Slightly \(mood.name)"
+        case 3: return "Very \(mood.name)"
         default: return mood.name
         }
     }

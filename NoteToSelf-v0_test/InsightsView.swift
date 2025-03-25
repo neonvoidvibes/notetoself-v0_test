@@ -396,6 +396,14 @@ struct MoodChartSection: View {
         return result
     }
     
+    private func formattedMoodText(_ mood: Mood, intensity: Int = 2) -> String {
+        switch intensity {
+        case 1: return "Slightly \(mood.name)"
+        case 3: return "Very \(mood.name)"
+        default: return mood.name
+        }
+    }
+    
     var body: some View {
         styles.card(
             VStack(spacing: styles.layout.spacingM) {

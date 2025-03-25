@@ -165,8 +165,8 @@ struct MoodWheel: View {
     // Add a new function for formatted display text that can be used elsewhere
     func formattedMoodText(_ mood: Mood, intensity: Int) -> String {
         switch intensity {
-        case 1: return "A little \(mood.name.lowercased())"
-        case 3: return "Very \(mood.name.lowercased())"
+        case 1: return "Slightly \(mood.name)"
+        case 3: return "Very \(mood.name)"
         default: return mood.name
         }
     }
