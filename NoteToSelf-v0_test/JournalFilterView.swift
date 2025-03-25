@@ -166,47 +166,17 @@ struct FilterPanel: View {
                 }
             }
             
-            // Add a button to show the mood wheel for more intuitive selection
-            Button(action: {
-                showMoodWheelSelector = true
-            }) {
-                HStack {
-                    Image(systemName: "circle.grid.2x2")
-                        .font(.system(size: 14))
-                    Text("Show Mood Wheel")
-                        .font(styles.typography.bodySmall)
+            // Clear all button
+            if !selectedMoods.isEmpty {
+                Button("Clear All") {
+                    selectedMoods.removeAll()
                 }
+                .font(styles.typography.bodySmall)
                 .foregroundColor(styles.colors.accent)
-                .padding(.vertical, 8)
-            }
-            .sheet(isPresented: $showMoodWheelSelector) {
-                VStack {
-                    Text("Select Moods to Filter")
-                        .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
-                        .padding(.top, styles.layout.paddingL)
-                    
-                    MoodWheelFilterSelector(selectedMoods: $selectedMoods)
-                        .padding()
-                    
-                    Button("Done") {
-                        showMoodWheelSelector = false
-                    }
-                    .buttonStyle(UIStyles.PrimaryButtonStyle(
-                        colors: styles.colors,
-                        typography: styles.typography,
-                        layout: styles.layout
-                    ))
-                    .padding(.bottom, styles.layout.paddingL)
-                }
-                .background(styles.colors.appBackground)
-                .presentationDetents([.medium, .large])
+                .padding(.top, 8)
             }
         }
     }
-    
-    // Add state variable for mood wheel selector
-    @State private var showMoodWheelSelector: Bool = false
     
     private var dateTab: some View {
         VStack(spacing: styles.layout.spacingS) {
@@ -344,75 +314,6 @@ struct FilterPanel: View {
     }
 }
 
-// Add a new component for multi-selection in the mood wheel
-struct MoodWheelFilterSelector: View {
-    @Binding var selectedMoods: Set<Mood>
-    @State private var tempSelectedMood: Mood = .neutral
-    @State private var tempSelectedIntensity: Int = 2
-    
-    private let styles = UIStyles.shared
-    
-    var body: some View {
-        VStack(spacing: styles.layout.spacingM) {
-            // Mood wheel for selection
-            MoodWheel(selectedMood: $tempSelectedMood, selectedIntensity: $tempSelectedIntensity)
-                .onChange(of: tempSelectedMood) { _, newValue in
-                    // Toggle the selected mood in the set
-                    if selectedMoods.contains(newValue) {
-                        selectedMoods.remove(newValue)
-                    } else {
-                        selectedMoods.insert(newValue)
-                    }
-                }
-                .onAppear {
-                    // Dismiss keyboard when wheel appears
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                }
-            
-            // Show currently selected moods as tags
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: styles.layout.spacingS) {
-                    ForEach(Array(selectedMoods), id: \.self) { mood in
-                        HStack(spacing: 4) {
-                            Text(mood.name)
-                                .font(styles.typography.bodySmall)
-                                .foregroundColor(styles.colors.text)
-                            
-                            Button(action: {
-                                selectedMoods.remove(mood)
-                            }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(styles.colors.textSecondary)
-                                    .font(.system(size: 12))
-                            }
-                        }
-                        .padding(.horizontal, styles.layout.spacingS)
-                        .padding(.vertical, 4)
-                        .background(
-                            RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                .fill(mood.color.opacity(0.3))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                .stroke(mood.color.opacity(0.5), lineWidth: 1)
-                        )
-                    }
-                }
-                .padding(.vertical, 2)
-            }
-            
-            // Clear all button
-            if !selectedMoods.isEmpty {
-                Button("Clear All") {
-                    selectedMoods.removeAll()
-                }
-                .font(styles.typography.bodySmall)
-                .foregroundColor(styles.colors.accent)
-            }
-        }
-    }
-}
-
 // Update the FilterTabButton to be more compact and visually distinct
 struct FilterTabButton: View {
     let title: String
@@ -438,6 +339,8 @@ struct FilterTabButton: View {
     }
 }
 
+// Update the Array extension to filter by mood regardless of intensity
+
 // Helper extension to filter journal entries
 extension Array where Element == JournalEntry {
     func filtered(
@@ -458,9 +361,11 @@ extension Array where Element == JournalEntry {
             }
         }
         
-        // Filter by mood
+        // Filter by mood - match base mood regardless of intensity
         if !moods.isEmpty {
-            entries = entries.filter { moods.contains($0.mood) }
+            entries = entries.filter { entry in
+                moods.contains(entry.mood)
+            }
         }
         
         // Filter by date
