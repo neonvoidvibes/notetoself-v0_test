@@ -506,6 +506,7 @@ struct MainTabView: View {
       .onAppear {
           bottomSheetOffset = peekHeight - fullSheetHeight
           appState.loadSampleData()
+          
           if !appState.hasSeenOnboarding {
               appState.hasSeenOnboarding = true
           }

@@ -158,7 +158,7 @@ struct ReflectionsView: View {
                             // Input field with dynamic height
                             ZStack(alignment: .topLeading) {
                                 if messageText.isEmpty && !isTyping {
-                                    Text("Ask a question...")
+                                    Text("Ask anything")
                                         .font(styles.typography.bodyFont)
                                         .foregroundColor(styles.colors.placeholderText)
                                         .padding(.leading, 8)

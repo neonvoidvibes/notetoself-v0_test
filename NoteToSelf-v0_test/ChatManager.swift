@@ -42,6 +42,30 @@ class ChatManager: ObservableObject {
         
         // Load saved chats
         loadChats()
+        
+        // Add a sample chat if there are no chats (easily removable for production)
+        // Remove or comment out the sample chat creation in init() since we're now doing it in MainTabView
+        // Comment out or remove this block:
+        /*
+        if chats.isEmpty {
+            // Create a sample chat with the mock messages from AppState
+            let sampleMessages = [
+                ChatMessage(text: "I've been feeling stressed about my upcoming presentation. Any advice?", isUser: true),
+                ChatMessage(text: "It's natural to feel stressed about presentations. Try breaking your preparation into smaller tasks and practice in front of a mirror or a trusted friend. Remember that being prepared is the best way to reduce anxiety.", isUser: false),
+                ChatMessage(text: "That's helpful. I'll try to practice more.", isUser: true),
+                ChatMessage(text: "Great plan. Also, remember to take deep breaths before you start. Is there a specific part of the presentation that concerns you most?", isUser: false)
+            ]
+            
+            var sampleChat = Chat(
+                messages: sampleMessages,
+                createdAt: Date().addingTimeInterval(-3600), // 1 hour ago
+                lastUpdatedAt: Date().addingTimeInterval(-1800) // 30 minutes ago
+            )
+            sampleChat.generateTitle()
+            chats.append(sampleChat)
+            saveChats()
+        }
+        */
     }
     
     // Add a message to the current chat

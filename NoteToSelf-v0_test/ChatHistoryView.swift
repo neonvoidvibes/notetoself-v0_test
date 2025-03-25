@@ -38,18 +38,19 @@ struct ChatHistoryView: View {
                                 
                                 Spacer()
                             }
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, styles.layout.paddingL)
                             .padding(.top, 20)
                             .padding(.bottom, 4)
                             
                             // Chats in this section
                             ForEach(chats) { chat in
                                 ChatHistoryItem(chat: chat)
+                                    .padding(.horizontal, styles.layout.paddingL)
+                                    .padding(.vertical, 4)
+                                    .contentShape(Rectangle())
                                     .onTapGesture {
                                         onSelectChat(chat)
                                     }
-                                    .padding(.horizontal, styles.layout.paddingL)
-                                    .padding(.vertical, 4)
                             }
                         }
                     }
