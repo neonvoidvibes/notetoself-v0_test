@@ -77,13 +77,25 @@ struct ReflectionsView: View {
                         Spacer()
                         
                         // Chat history button
-                        Button {
-                            // Show chat history via MainTabView
-                            showChatHistory()
+                        Menu {
+                            Button(action: {
+                                // Start a new chat
+                                chatManager.startNewChat()
+                            }) {
+                                Label("New Chat", systemImage: "square.and.pencil")
+                            }
+                            
+                            Button(action: {
+                                // Show chat history via MainTabView
+                                showChatHistory()
+                            }) {
+                                Label("Chat History", systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                            }
                         } label: {
                             Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
-                                .font(.system(size: 20))
+                                .font(.system(size: 22))
                                 .foregroundColor(styles.colors.text)
+                                .frame(width: 36, height: 36)
                         }
                     }
                     .padding(.horizontal, styles.layout.paddingXL)

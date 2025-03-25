@@ -4,13 +4,16 @@ struct ChatHistoryView: View {
   @EnvironmentObject var appState: AppState
   @ObservedObject var chatManager: ChatManager
   var onSelectChat: (Chat) -> Void
-  var onDismiss: () -> Void  // Add this line
+  var onDismiss: () -> Void
   
-  // Add filter state variables
+  // Filter state variables
   @State private var showingFilterPanel = false
   @State private var searchText = ""
   @State private var searchTags: [String] = []
   @State private var showStarredOnly = false
+  @State private var dateFilterType: DateFilterType = .all
+  @State private var customStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+  @State private var customEndDate: Date = Date()
   
   // Access to shared styles
   private let styles = UIStyles.shared
@@ -19,6 +22,14 @@ struct ChatHistoryView: View {
       ZStack {
           styles.colors.menuBackground
               .ignoresSafeArea()
+          
+          // Add a tap gesture to the entire view to dismiss keyboard
+          Color.clear
+              .contentShape(Rectangle())
+              .ignoresSafeArea()
+              .onTapGesture {
+                  UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+              }
           
           VStack(spacing: 0) {
               // Header
@@ -54,27 +65,15 @@ struct ChatHistoryView: View {
                   HStack {
                       Spacer()
                       
-                      Menu {
-                          Button(action: {
-                              withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                  showingFilterPanel.toggle()
-                              }
-                          }) {
-                              Label("Filter Chats", systemImage: "slider.horizontal.2.square")
+                      // Filter button
+                      Button(action: {
+                          withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                              showingFilterPanel.toggle()
                           }
-                          
-                          Button(action: {
-                              // Start a new chat and close the history view
-                              chatManager.startNewChat()
-                              onDismiss()  // Use the passed in dismiss action
-                          }) {
-                              Label("New Chat", systemImage: "square.and.pencil")
-                          }
-                      } label: {
-                          Image(systemName: "ellipsis.circle")
-                              .font(.system(size: 22))
-                              .foregroundColor(styles.colors.text)
-                              .frame(width: 36, height: 36)
+                      }) {
+                          Image(systemName: "slider.horizontal.2.square")
+                              .font(.system(size: 20))
+                              .foregroundColor(showingFilterPanel || !searchTags.isEmpty || showStarredOnly || dateFilterType != .all ? styles.colors.accent : styles.colors.text)
                       }
                   }
                   .padding(.horizontal, styles.layout.paddingXL)
@@ -88,6 +87,9 @@ struct ChatHistoryView: View {
                       searchText: $searchText,
                       searchTags: $searchTags,
                       showStarredOnly: $showStarredOnly,
+                      dateFilterType: $dateFilterType,
+                      customStartDate: $customStartDate,
+                      customEndDate: $customEndDate,
                       onClearFilters: {
                           clearFilters()
                       }
@@ -137,6 +139,14 @@ struct ChatHistoryView: View {
                                   .buttonStyle(PlainButtonStyle())
                                   .padding(.horizontal, styles.layout.paddingL)
                                   .padding(.vertical, 4)
+                                  .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                      Button(role: .destructive, action: {
+                                          chatManager.deleteChat(chat)
+                                      }) {
+                                          Image(systemName: "trash")
+                                      }
+                                      .tint(.red)
+                                  }
                               }
                           }
                       }
@@ -145,6 +155,13 @@ struct ChatHistoryView: View {
                   }
                   .padding(.top, styles.headerPadding.top)
               }
+              // Add a tap gesture to dismiss keyboard when scrolling
+              .simultaneousGesture(
+                  DragGesture(minimumDistance: 5)
+                      .onChanged { _ in
+                          UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                      }
+              )
           }
       }
   }
@@ -153,6 +170,7 @@ struct ChatHistoryView: View {
       searchText = ""
       searchTags = []
       showStarredOnly = false
+      dateFilterType = .all
       
       withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
           showingFilterPanel = false
@@ -169,14 +187,48 @@ struct ChatHistoryView: View {
           
           // If we have search tags, check if any message in the chat contains the tags
           if !searchTags.isEmpty {
-              return chat.messages.contains { message in
+              let containsTag = chat.messages.contains { message in
                   searchTags.contains { tag in
                       message.text.lowercased().contains(tag.lowercased())
                   }
               }
+              if !containsTag {
+                  return false
+              }
           }
           
-          // If no filters are applied, show all chats
+          // Filter by date
+          let chatDate = chat.lastUpdatedAt
+          switch dateFilterType {
+          case .today:
+              if !Calendar.current.isDateInToday(chatDate) {
+                  return false
+              }
+          case .thisWeek:
+              let calendar = Calendar.current
+              let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date()))!
+              if chatDate < startOfWeek {
+                  return false
+              }
+          case .thisMonth:
+              let calendar = Calendar.current
+              let components = calendar.dateComponents([.year, .month], from: Date())
+              let startOfMonth = calendar.date(from: components)!
+              if chatDate < startOfMonth {
+                  return false
+              }
+          case .custom:
+              let calendar = Calendar.current
+              let startOfDay = calendar.startOfDay(for: customStartDate)
+              let endOfDay = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: customEndDate))!
+              if chatDate < startOfDay || chatDate >= endOfDay {
+                  return false
+              }
+          case .all:
+              // No date filtering
+              break
+          }
+          
           return true
       }
   }
@@ -194,14 +246,48 @@ struct ChatHistoryView: View {
               
               // If we have search tags, check if any message in the chat contains the tags
               if !searchTags.isEmpty {
-                  return chat.messages.contains { message in
+                  let containsTag = chat.messages.contains { message in
                       searchTags.contains { tag in
                           message.text.lowercased().contains(tag.lowercased())
                       }
                   }
+                  if !containsTag {
+                      return false
+                  }
               }
               
-              // If no filters are applied, show all chats
+              // Filter by date
+              let chatDate = chat.lastUpdatedAt
+              switch dateFilterType {
+              case .today:
+                  if !Calendar.current.isDateInToday(chatDate) {
+                      return false
+                  }
+              case .thisWeek:
+                  let calendar = Calendar.current
+                  let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date()))!
+                  if chatDate < startOfWeek {
+                      return false
+                  }
+              case .thisMonth:
+                  let calendar = Calendar.current
+                  let components = calendar.dateComponents([.year, .month], from: Date())
+                  let startOfMonth = calendar.date(from: components)!
+                  if chatDate < startOfMonth {
+                      return false
+                  }
+              case .custom:
+                  let calendar = Calendar.current
+                  let startOfDay = calendar.startOfDay(for: customStartDate)
+                  let endOfDay = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: customEndDate))!
+                  if chatDate < startOfDay || chatDate >= endOfDay {
+                      return false
+                  }
+              case .all:
+                  // No date filtering
+                  break
+              }
+              
               return true
           }
           
@@ -223,6 +309,7 @@ struct ChatHistoryItem: View {
                   .font(styles.typography.bodyFont)
                   .foregroundColor(styles.colors.text)
                   .lineLimit(1)
+                  .padding(.trailing, 8) // Add extra padding to the title
               
               Spacer()
               
@@ -259,7 +346,7 @@ struct ChatHistoryItem: View {
       .cornerRadius(styles.layout.radiusM)
       .overlay(
           RoundedRectangle(cornerRadius: styles.layout.radiusM)
-              .stroke(Color(hex: "#222222"), lineWidth: 1) // Same border as JournalView
+              .stroke(chat.isStarred ? styles.colors.accent : Color(hex: "#222222"), lineWidth: chat.isStarred ? 2 : 1)
       )
       .contentShape(Rectangle())
       .onLongPressGesture {
