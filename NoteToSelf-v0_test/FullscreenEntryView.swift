@@ -223,6 +223,9 @@ struct EditableFullscreenEntryView: View {
                             
                             // Mood selector button
                             Button(action: {
+                                // Dismiss keyboard when opening mood selector
+                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                     showMoodSelector.toggle()
                                 }

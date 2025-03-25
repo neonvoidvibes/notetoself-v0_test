@@ -346,66 +346,70 @@ struct FilterPanel: View {
 
 // Add a new component for multi-selection in the mood wheel
 struct MoodWheelFilterSelector: View {
-    @Binding var selectedMoods: Set<Mood>
-    @State private var tempSelectedMood: Mood = .neutral
-    
-    private let styles = UIStyles.shared
-    
-    var body: some View {
-        VStack(spacing: styles.layout.spacingM) {
-            // Mood wheel for selection
-            MoodWheel(selectedMood: $tempSelectedMood)
-                .onChange(of: tempSelectedMood) { _, newValue in
-                    // Toggle the selected mood in the set
-                    if selectedMoods.contains(newValue) {
-                        selectedMoods.remove(newValue)
-                    } else {
-                        selectedMoods.insert(newValue)
-                    }
-                }
-            
-            // Show currently selected moods as tags
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: styles.layout.spacingS) {
-                    ForEach(Array(selectedMoods), id: \.self) { mood in
-                        HStack(spacing: 4) {
-                            Text(mood.name)
-                                .font(styles.typography.bodySmall)
-                                .foregroundColor(styles.colors.text)
-                            
-                            Button(action: {
-                                selectedMoods.remove(mood)
-                            }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(styles.colors.textSecondary)
-                                    .font(.system(size: 12))
-                            }
-                        }
-                        .padding(.horizontal, styles.layout.spacingS)
-                        .padding(.vertical, 4)
-                        .background(
-                            RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                .fill(mood.color.opacity(0.3))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                .stroke(mood.color.opacity(0.5), lineWidth: 1)
-                        )
-                    }
-                }
-                .padding(.vertical, 2)
-            }
-            
-            // Clear all button
-            if !selectedMoods.isEmpty {
-                Button("Clear All") {
-                    selectedMoods.removeAll()
-                }
-                .font(styles.typography.bodySmall)
-                .foregroundColor(styles.colors.accent)
-            }
-        }
-    }
+  @Binding var selectedMoods: Set<Mood>
+  @State private var tempSelectedMood: Mood = .neutral
+  
+  private let styles = UIStyles.shared
+  
+  var body: some View {
+      VStack(spacing: styles.layout.spacingM) {
+          // Mood wheel for selection
+          MoodWheel(selectedMood: $tempSelectedMood)
+              .onChange(of: tempSelectedMood) { _, newValue in
+                  // Toggle the selected mood in the set
+                  if selectedMoods.contains(newValue) {
+                      selectedMoods.remove(newValue)
+                  } else {
+                      selectedMoods.insert(newValue)
+                  }
+              }
+              .onAppear {
+                  // Dismiss keyboard when wheel appears
+                  UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+              }
+          
+          // Show currently selected moods as tags
+          ScrollView(.horizontal, showsIndicators: false) {
+              HStack(spacing: styles.layout.spacingS) {
+                  ForEach(Array(selectedMoods), id: \.self) { mood in
+                      HStack(spacing: 4) {
+                          Text(mood.name)
+                              .font(styles.typography.bodySmall)
+                              .foregroundColor(styles.colors.text)
+                          
+                          Button(action: {
+                              selectedMoods.remove(mood)
+                          }) {
+                              Image(systemName: "xmark.circle.fill")
+                                  .foregroundColor(styles.colors.textSecondary)
+                                  .font(.system(size: 12))
+                          }
+                      }
+                      .padding(.horizontal, styles.layout.spacingS)
+                      .padding(.vertical, 4)
+                      .background(
+                          RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                              .fill(mood.color.opacity(0.3))
+                      )
+                      .overlay(
+                          RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                              .stroke(mood.color.opacity(0.5), lineWidth: 1)
+                      )
+                  }
+              }
+              .padding(.vertical, 2)
+          }
+          
+          // Clear all button
+          if !selectedMoods.isEmpty {
+              Button("Clear All") {
+                  selectedMoods.removeAll()
+              }
+              .font(styles.typography.bodySmall)
+              .foregroundColor(styles.colors.accent)
+          }
+      }
+  }
 }
 
 // Update the FilterTabButton to be more compact and visually distinct
