@@ -139,7 +139,7 @@ struct JournalView: View {
                         
                         // Inspiring prompt - only show when there are filtered entries and filter panel is closed
                         if !appState.journalEntries.isEmpty && !filteredEntries.isEmpty && !showingFilterPanel {
-                            VStack(alignment: .leading, spacing: styles.layout.spacingL) {
+                            VStack(alignment: .center, spacing: styles.layout.spacingL) {
                                 // Inspiring header with larger font
                                 Text("Your Journal")
                                     .font(styles.typography.headingFont)
@@ -150,12 +150,13 @@ struct JournalView: View {
                                 Text("Capture your thoughts, reflect on your journey.")
                                     .font(styles.typography.bodyLarge)
                                     .foregroundColor(styles.colors.accent)
+                                    .multilineTextAlignment(.center)
                             }
                             .padding(.horizontal, styles.layout.paddingXL)
                             .padding(.vertical, styles.layout.spacingXL * 1.5)
                             .padding(.top, 40) // Extra top padding for spaciousness
                             .padding(.bottom, 20) // Extra bottom padding
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(maxWidth: .infinity)
                             .background(
                                 // Subtle gradient background for the inspiring section
                                 LinearGradient(
