@@ -41,18 +41,26 @@ struct FullscreenEntryView: View {
                 // Main content
                 ScrollView {
                     VStack(alignment: .leading, spacing: styles.layout.spacingXL) {
-                        // Mood indicator
+                        // Header with date and mood
                         HStack(spacing: styles.layout.spacingM) {
-                            entry.mood.icon
-                                .font(.system(size: 32))
-                                .foregroundColor(entry.mood.color)
-                            
-                            Text(entry.mood.name)
-                                .font(styles.typography.title3)
-                                .foregroundColor(styles.colors.text)
-                            
                             Spacer()
                             
+                            // Mood pill - styled like in filter view
+                            Text(entry.mood.name)
+                                .font(styles.typography.caption)
+                                .foregroundColor(styles.colors.text)
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                        .fill(entry.mood.color.opacity(0.3))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                        .stroke(entry.mood.color.opacity(0.5), lineWidth: 1)
+                                )
+                            
+                            // Locked indicator if needed
                             if entry.isLocked {
                                 HStack(spacing: styles.layout.spacingS) {
                                     Image(systemName: "lock.fill")
