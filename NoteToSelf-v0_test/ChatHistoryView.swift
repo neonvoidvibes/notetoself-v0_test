@@ -15,6 +15,10 @@ struct ChatHistoryView: View {
   @State private var customStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
   @State private var customEndDate: Date = Date()
   
+  // Confirmation modal state
+  @State private var showingDeleteConfirmation = false
+  @State private var chatToDelete: Chat? = nil
+  
   // Access to shared styles
   private let styles = UIStyles.shared
   
@@ -99,7 +103,7 @@ struct ChatHistoryView: View {
               
               // Content
               ScrollView {
-                  VStack(alignment: .leading, spacing: 0) {
+                  LazyVStack(alignment: .leading, spacing: 0) {
                       // Extra top padding
                       Spacer()
                           .frame(height: 30)
@@ -126,27 +130,22 @@ struct ChatHistoryView: View {
                               
                               // Chats in this section
                               ForEach(chats) { chat in
-                                  Button(action: {
-                                      onSelectChat(chat)
-                                  }) {
-                                      ChatHistoryItem(
-                                          chat: chat,
-                                          onStar: {
+                                  SwipeableRow(
+                                      content: {
+                                          ChatHistoryItem(chat: chat, onStar: {
                                               chatManager.toggleStarChat(chat)
+                                          })
+                                          .onTapGesture {
+                                              onSelectChat(chat)
                                           }
-                                      )
-                                  }
-                                  .buttonStyle(PlainButtonStyle())
+                                      },
+                                      deleteAction: {
+                                          chatToDelete = chat
+                                          showingDeleteConfirmation = true
+                                      }
+                                  )
                                   .padding(.horizontal, styles.layout.paddingL)
                                   .padding(.vertical, 4)
-                                  .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                      Button(role: .destructive, action: {
-                                          chatManager.deleteChat(chat)
-                                      }) {
-                                          Image(systemName: "trash")
-                                      }
-                                      .tint(.red)
-                                  }
                               }
                           }
                       }
@@ -162,6 +161,26 @@ struct ChatHistoryView: View {
                           UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                       }
               )
+          }
+          
+          // Confirmation modal
+          if showingDeleteConfirmation, let chat = chatToDelete {
+              ConfirmationModal(
+                  title: "Delete Chat",
+                  message: "Are you sure you want to delete this chat? This action cannot be undone.",
+                  confirmText: "Delete",
+                  confirmAction: {
+                      chatManager.deleteChat(chat)
+                      showingDeleteConfirmation = false
+                      chatToDelete = nil
+                  },
+                  cancelAction: {
+                      showingDeleteConfirmation = false
+                      chatToDelete = nil
+                  },
+                  isDestructive: true
+              )
+              .animation(.spring(), value: showingDeleteConfirmation)
           }
       }
   }
@@ -359,5 +378,72 @@ struct ChatHistoryItem: View {
       formatter.dateFormat = "MMM d, h:mm a"
       return formatter.string(from: date)
   }
+}
+
+struct SwipeableRow<Content: View>: View {
+    let content: () -> Content
+    let deleteAction: () -> Void
+    
+    @State private var offset: CGFloat = 0
+    @State private var showingDelete = false
+    @State private var isDragging = false
+    
+    // Constants
+    private let deleteWidth: CGFloat = 80
+    private let deleteThreshold: CGFloat = 50
+    private let styles = UIStyles.shared
+    
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            // Delete button (right side)
+            Button(action: deleteAction) {
+                Image(systemName: "trash")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: deleteWidth, height: 80)
+                    .background(Color.red)
+                    .cornerRadius(styles.layout.radiusM)
+            }
+            .opacity(offset < 0 ? 1 : 0)
+            
+            // Content
+            content()
+                .offset(x: offset)
+                .gesture(
+                    DragGesture(minimumDistance: 10)
+                        .onChanged { gesture in
+                            isDragging = true
+                            
+                            // Only allow right-to-left swipe (negative values)
+                            // and limit the drag to deleteWidth
+                            let dragAmount = gesture.translation.width
+                            if dragAmount < 0 {
+                                offset = max(-deleteWidth, dragAmount)
+                                showingDelete = true
+                            } else if showingDelete {
+                                // Allow dragging back to original position
+                                offset = min(0, dragAmount)
+                            }
+                        }
+                        .onEnded { _ in
+                            isDragging = false
+                            
+                            withAnimation(.spring()) {
+                                if offset < -deleteThreshold {
+                                    // Keep delete button visible
+                                    offset = -deleteWidth
+                                    showingDelete = true
+                                } else {
+                                    // Reset position
+                                    offset = 0
+                                    showingDelete = false
+                                }
+                            }
+                        }
+                )
+                // This prevents tap gestures from being recognized during drag
+                .allowsHitTesting(!isDragging)
+        }
+    }
 }
 
