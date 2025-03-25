@@ -274,14 +274,19 @@ struct JournalView: View {
             }
         }
         .fullScreenCover(isPresented: $showingNewEntrySheet) {
-            EditableFullscreenEntryView(onSave: { text, mood in
-                let newEntry = JournalEntry(text: text, mood: mood, date: Date())
-                
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                    appState.journalEntries.insert(newEntry, at: 0)
-                    expandedEntryId = newEntry.id // Auto-expand new entry
-                }
-            })
+            // Use the same EditableFullscreenEntryView for new entries
+            EditableFullscreenEntryView(
+                initialMood: .neutral, 
+                onSave: { text, mood in
+                    let newEntry = JournalEntry(text: text, mood: mood, date: Date())
+            
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                        appState.journalEntries.insert(newEntry, at: 0)
+                        expandedEntryId = newEntry.id // Auto-expand new entry
+                    }
+                },
+                autoFocusText: true // Auto-focus for immediate typing
+            )
         }
         .fullScreenCover(item: $fullscreenEntry) { entry in
             FullscreenEntryView(
@@ -305,7 +310,8 @@ struct JournalView: View {
                 },
                 onDelete: {
                     deleteEntry(entry)
-                }
+                },
+                autoFocusText: true // Auto-focus for immediate editing with cursor at end
             )
         }
         .onAppear {

@@ -148,12 +148,14 @@ struct EditableFullscreenEntryView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var entryText: String
     @State private var selectedMood: Mood
+    @FocusState private var isTextFieldFocused: Bool
     
     // For new entries, date is set to now
     // For editing, we keep the original date
     private let date: Date
     private let isNewEntry: Bool
     private let isLocked: Bool
+    private let autoFocusText: Bool
     
     // Callback when saving
     var onSave: ((String, Mood) -> Void)?
@@ -163,7 +165,7 @@ struct EditableFullscreenEntryView: View {
     private let styles = UIStyles.shared
     
     // Initialize for new entry
-    init(initialMood: Mood = .neutral, onSave: ((String, Mood) -> Void)? = nil) {
+    init(initialMood: Mood = .neutral, onSave: ((String, Mood) -> Void)? = nil, autoFocusText: Bool = false) {
         self._entryText = State(initialValue: "")
         self._selectedMood = State(initialValue: initialMood)
         self.date = Date()
@@ -171,10 +173,11 @@ struct EditableFullscreenEntryView: View {
         self.isLocked = false
         self.onSave = onSave
         self.onDelete = nil
+        self.autoFocusText = autoFocusText
     }
     
     // Initialize for editing existing entry
-    init(entry: JournalEntry, onSave: ((String, Mood) -> Void)? = nil, onDelete: (() -> Void)? = nil) {
+    init(entry: JournalEntry, onSave: ((String, Mood) -> Void)? = nil, onDelete: (() -> Void)? = nil, autoFocusText: Bool = true) {
         self._entryText = State(initialValue: entry.text)
         self._selectedMood = State(initialValue: entry.mood)
         self.date = entry.date
@@ -182,6 +185,7 @@ struct EditableFullscreenEntryView: View {
         self.isLocked = entry.isLocked
         self.onSave = onSave
         self.onDelete = onDelete
+        self.autoFocusText = autoFocusText
     }
     
     var body: some View {
@@ -191,7 +195,7 @@ struct EditableFullscreenEntryView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Custom navigation bar
+                // Custom navigation bar - match the view mode exactly
                 HStack {
                     Button(action: {
                         dismiss()
@@ -199,33 +203,47 @@ struct EditableFullscreenEntryView: View {
                         HStack(spacing: styles.layout.spacingS) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 16, weight: .semibold))
-                            Text("Cancel")
+                            Text(isNewEntry ? "Cancel" : "Back")
                         }
                         .foregroundColor(styles.colors.accent)
                     }
                     
                     Spacer()
                     
-                    // Title
-                    Text(isNewEntry ? "New Entry" : "Edit Entry")
-                        .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
+                    // Show date for existing entries, title for new ones
+                    if isNewEntry {
+                        Text("New Entry")
+                            .font(styles.typography.title3)
+                            .foregroundColor(styles.colors.text)
+                    } else {
+                        Text(formatDate(date))
+                            .font(styles.typography.smallLabelFont)
+                            .foregroundColor(styles.colors.textSecondary)
+                    }
                     
                     Spacer()
                     
-                    // Save button
-                    Button(action: {
-                        if !entryText.isEmpty {
-                            onSave?(entryText, selectedMood)
-                            dismiss()
-                        }
-                    }) {
+                    // Save button only visible when editing
+                    if !isNewEntry || entryText.isEmpty {
+                        // Invisible placeholder for layout balance
                         Text("Save")
                             .font(styles.typography.bodyFont)
-                            .foregroundColor(styles.colors.accent)
+                            .foregroundColor(.clear)
+                    } else {
+                        // Actual save button
+                        Button(action: {
+                            if !entryText.isEmpty {
+                                onSave?(entryText, selectedMood)
+                                dismiss()
+                            }
+                        }) {
+                            Text("Save")
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(styles.colors.accent)
+                        }
+                        .disabled(entryText.isEmpty)
+                        .opacity(entryText.isEmpty ? 0.5 : 1.0)
                     }
-                    .disabled(entryText.isEmpty)
-                    .opacity(entryText.isEmpty ? 0.5 : 1.0)
                 }
                 .padding(.horizontal, styles.layout.paddingXL)
                 .padding(.top, styles.layout.topSafeAreaPadding)
@@ -234,116 +252,162 @@ struct EditableFullscreenEntryView: View {
                 // Main content
                 ScrollView {
                     VStack(alignment: .leading, spacing: styles.layout.spacingXL) {
-                        // Date display for existing entries
-                        if !isNewEntry {
-                            HStack {
-                                Spacer()
-                                Text(formatDate(date))
-                                    .font(styles.typography.smallLabelFont)
-                                    .foregroundColor(styles.colors.textSecondary)
-                            }
-                            .padding(.horizontal, styles.layout.paddingXL)
-                            .padding(.top, styles.layout.paddingM)
-                        }
-                        
-                        // Text editor
-                        ZStack(alignment: .topLeading) {
-                            TextEditor(text: $entryText)
-                                .font(styles.typography.bodyLarge)
-                                .foregroundColor(styles.colors.text)
-                                .padding(styles.layout.paddingM)
-                                .frame(minHeight: 200)
-                                .background(Color.clear)
-                                .scrollContentBackground(.hidden)
+                        // Header with mood and action buttons - match view mode exactly
+                        HStack(spacing: styles.layout.spacingM) {
+                            Spacer()
                             
-                            if entryText.isEmpty {
-                                Text("What's on your mind today?")
-                                    .font(styles.typography.bodyLarge)
-                                    .foregroundColor(styles.colors.placeholderText)
-                                    .padding(styles.layout.paddingM + 5)
+                            // Mood pill - styled like in filter view
+                            if !isNewEntry {
+                                Text(selectedMood.name)
+                                    .font(styles.typography.caption)
+                                    .foregroundColor(styles.colors.text)
+                                    .padding(.vertical, 6)
+                                    .padding(.horizontal, 12)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                            .fill(selectedMood.color.opacity(0.3))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                            .stroke(selectedMood.color.opacity(0.5), lineWidth: 1)
+                                    )
+                            }
+                            
+                            // Save button for existing entries
+                            if !isNewEntry {
+                                Button(action: {
+                                    if !entryText.isEmpty {
+                                        onSave?(entryText, selectedMood)
+                                        dismiss()
+                                    }
+                                }) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: styles.layout.iconSizeS))
+                                        Text("Save")
+                                            .font(styles.typography.caption)
+                                    }
+                                    .foregroundColor(styles.colors.accent)
+                                    .padding(.vertical, 6)
+                                    .padding(.horizontal, 12)
+                                    .background(styles.colors.secondaryBackground)
+                                    .cornerRadius(styles.layout.radiusM)
+                                }
+                                .disabled(entryText.isEmpty)
+                                .opacity(entryText.isEmpty ? 0.5 : 1.0)
+                            }
+                            
+                            // Delete button (if onDelete is provided)
+                            if !isNewEntry && onDelete != nil {
+                                Button(action: {
+                                    onDelete?()
+                                    dismiss()
+                                }) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "trash")
+                                            .font(.system(size: styles.layout.iconSizeS))
+                                        Text("Delete")
+                                            .font(styles.typography.caption)
+                                    }
+                                    .foregroundColor(styles.colors.textSecondary) // Gray instead of red
+                                    .padding(.vertical, 6)
+                                    .padding(.horizontal, 12)
+                                    .background(styles.colors.secondaryBackground)
+                                    .cornerRadius(styles.layout.radiusM)
+                                }
                             }
                         }
-                        .background(styles.colors.inputBackground)
-                        .cornerRadius(styles.layout.inputOuterCornerRadius)
                         .padding(.horizontal, styles.layout.paddingXL)
-                        .padding(.top, styles.layout.paddingM)
+                        .padding(.top, styles.layout.paddingL)
                         
-                        // Mood selector
-                        VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                            Text("How are you feeling?")
-                                .font(styles.typography.label)
-                                .foregroundColor(styles.colors.textSecondary)
-                                .padding(.horizontal, styles.layout.paddingXL)
-
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: styles.layout.spacingM) {
-                                    ForEach(Mood.allCases, id: \.self) { mood in
-                                        Button(action: {
-                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                                selectedMood = mood
-                                            }
-                                        }) {
-                                            VStack(spacing: styles.layout.spacingS) {
-                                                mood.icon
-                                                    .font(.system(size: styles.layout.iconSizeL))
-                                                    .foregroundColor(selectedMood == mood ? mood.color : styles.colors.textSecondary)
-                                                Text(mood.name)
-                                                    .font(styles.typography.caption)
-                                                    .foregroundColor(selectedMood == mood ? styles.colors.text : styles.colors.textSecondary)
-                                            }
-                                            .frame(width: 80)
-                                            .padding(.vertical, styles.layout.spacingM)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                                    .fill(selectedMood == mood ? styles.colors.secondaryBackground : styles.colors.appBackground)
-                                            )
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                                    .stroke(selectedMood == mood ? mood.color.opacity(0.5) : Color.clear, lineWidth: 1)
-                                            )
-                                            .scaleEffect(selectedMood == mood ? 1.05 : 1.0)
-                                        }
+                        // Text editor - styled to match the text display in view mode
+                        TextEditor(text: $entryText)
+                            .font(styles.typography.bodyLarge)
+                            .foregroundColor(styles.colors.text)
+                            .lineSpacing(8)
+                            .padding(.horizontal, styles.layout.paddingXL - 5) // Adjust padding to match text view
+                            .frame(minHeight: 200)
+                            .background(Color.clear)
+                            .scrollContentBackground(.hidden)
+                            .focused($isTextFieldFocused)
+                            .overlay(
+                                Group {
+                                    if entryText.isEmpty {
+                                        Text("What's on your mind today?")
+                                            .font(styles.typography.bodyLarge)
+                                            .foregroundColor(styles.colors.placeholderText)
+                                            .padding(.horizontal, styles.layout.paddingXL)
+                                            .padding(.top, 8)
+                                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                                            .allowsHitTesting(false)
                                     }
                                 }
-                                .padding(.horizontal, styles.layout.paddingXL)
-                            }
-                            
-                            // Delete button for editing (not for new entries)
-                            if !isNewEntry && onDelete != nil {
-                                HStack {
-                                    Spacer()
-                                    Button(action: {
-                                        onDelete?()
-                                        dismiss()
-                                    }) {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "trash")
-                                                .font(.system(size: styles.layout.iconSizeS))
-                                            Text("Delete Entry")
-                                                .font(styles.typography.bodySmall)
+                            )
+                        
+                        // Mood selector - only show when creating a new entry
+                        if isNewEntry {
+                            VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                                Text("How are you feeling?")
+                                    .font(styles.typography.label)
+                                    .foregroundColor(styles.colors.textSecondary)
+                                    .padding(.horizontal, styles.layout.paddingXL)
+
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: styles.layout.spacingM) {
+                                        ForEach(Mood.allCases, id: \.self) { mood in
+                                            Button(action: {
+                                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                                    selectedMood = mood
+                                                }
+                                            }) {
+                                                VStack(spacing: styles.layout.spacingS) {
+                                                    mood.icon
+                                                        .font(.system(size: styles.layout.iconSizeL))
+                                                        .foregroundColor(selectedMood == mood ? mood.color : styles.colors.textSecondary)
+                                                    Text(mood.name)
+                                                        .font(styles.typography.caption)
+                                                        .foregroundColor(selectedMood == mood ? styles.colors.text : styles.colors.textSecondary)
+                                                }
+                                                .frame(width: 80)
+                                                .padding(.vertical, styles.layout.spacingM)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                                        .fill(selectedMood == mood ? styles.colors.secondaryBackground : styles.colors.appBackground)
+                                                )
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                                        .stroke(selectedMood == mood ? mood.color.opacity(0.5) : Color.clear, lineWidth: 1)
+                                                )
+                                                .scaleEffect(selectedMood == mood ? 1.05 : 1.0)
+                                            }
                                         }
-                                        .foregroundColor(styles.colors.textSecondary)
-                                        .padding(.vertical, 8)
-                                        .padding(.horizontal, 16)
-                                        .background(styles.colors.secondaryBackground)
-                                        .cornerRadius(styles.layout.radiusM)
                                     }
                                     .padding(.horizontal, styles.layout.paddingXL)
-                                    .padding(.top, styles.layout.spacingL)
                                 }
                             }
+                            .padding(.top, styles.layout.spacingL)
                         }
-                        .padding(.top, styles.layout.spacingL)
                         
                         Spacer(minLength: 100)
                     }
                 }
                 .onTapGesture {
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    // Only dismiss keyboard if we tap outside the text editor
+                    if !isTextFieldFocused {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
                 }
             }
         }
         .preferredColorScheme(.dark)
+        .onAppear {
+            // Auto-focus the text field and position cursor at the end
+            if autoFocusText {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    isTextFieldFocused = true
+                }
+            }
+        }
     }
     
     private func formatDate(_ date: Date) -> String {
