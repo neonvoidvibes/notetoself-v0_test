@@ -33,7 +33,7 @@ enum Mood: String, CaseIterable, Codable {
     // Low arousal, negative valence (blue to red)
     case bored, depressed, sad
     // High arousal, negative valence (red to yellow)
-    case stressed, angry, tense
+    case anxious, angry, stressed // Updated: "stressed" to "anxious", "tense" to "stressed"
     // Center
     case neutral
     
@@ -48,9 +48,9 @@ enum Mood: String, CaseIterable, Codable {
         case .bored: return "Bored"
         case .depressed: return "Depressed"
         case .sad: return "Sad"
-        case .stressed: return "Stressed"
+        case .anxious: return "Anxious" // Updated from "Stressed"
         case .angry: return "Angry"
-        case .tense: return "Tense"
+        case .stressed: return "Stressed" // Updated from "Tense"
         case .neutral: return "Neutral"
         }
     }
@@ -66,9 +66,9 @@ enum Mood: String, CaseIterable, Codable {
         case .bored: return "hourglass"
         case .depressed: return "cloud.rain"
         case .sad: return "cloud.rain"
-        case .stressed: return "exclamationmark.triangle"
+        case .anxious: return "exclamationmark.triangle" // Updated from "Stressed"
         case .angry: return "flame"
-        case .tense: return "bolt"
+        case .stressed: return "bolt" // Updated from "Tense"
         case .neutral: return "face.dashed"
         }
     }
@@ -88,9 +88,9 @@ enum Mood: String, CaseIterable, Codable {
         case .depressed: return Color(hex: "#9933FF")
         case .sad: return Color(hex: "#CC33FF")
         // High arousal, negative valence (red to yellow)
-        case .stressed: return Color(hex: "#FF3399")
+        case .anxious: return Color(hex: "#FF3399") // Updated from "Stressed"
         case .angry: return Color(hex: "#FF3333")
-        case .tense: return Color(hex: "#FF9900")
+        case .stressed: return Color(hex: "#FF9900") // Updated from "Tense"
         // Center
         case .neutral: return Color(hex: "#CCCCCC")
         }
@@ -104,10 +104,10 @@ enum Mood: String, CaseIterable, Codable {
     var valence: Int {
         switch self {
         case .happy, .excited, .alert: return 3
-        case .content, .relaxed, .tense: return 2
+        case .content, .relaxed, .stressed: return 2
         case .calm, .angry: return 1
         case .neutral: return 0
-        case .bored, .stressed: return -1
+        case .bored, .anxious: return -1 // Updated from "Stressed"
         case .depressed: return -2
         case .sad: return -3
         }
@@ -115,8 +115,8 @@ enum Mood: String, CaseIterable, Codable {
     
     var arousal: Int {
         switch self {
-        case .alert, .tense, .angry: return 3
-        case .excited, .stressed: return 2
+        case .alert, .stressed, .angry: return 3 // Updated from "Tense"
+        case .excited, .anxious: return 2 // Updated from "Stressed"
         case .happy, .sad: return 1
         case .neutral: return 0
         case .content, .depressed: return -1
@@ -131,9 +131,9 @@ enum Mood: String, CaseIterable, Codable {
         case (3, 1): return .happy
         case (3, 2): return .excited
         case (2, 3): return .alert
-        case (1, 3): return .tense
+        case (1, 3): return .stressed // Updated from "Tense"
         case (-1, 3): return .angry
-        case (-2, 2): return .stressed
+        case (-2, 2): return .anxious // Updated from "Stressed"
         case (-3, 1): return .sad
         case (-2, -1): return .depressed
         case (-1, -2): return .bored
@@ -235,7 +235,7 @@ class AppState: ObservableObject {
             ),
             JournalEntry(
                 text: "Started the new project today. Excited about the possibilities but also feeling a bit overwhelmed by the scope.",
-                mood: .stressed,
+                mood: .anxious, // Updated from "Stressed"
                 date: calendar.date(byAdding: .day, value: -2, to: Date())!,
                 intensity: 1
             ),
