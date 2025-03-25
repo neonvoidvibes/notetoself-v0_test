@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ChatHistoryView: View {
     @EnvironmentObject var appState: AppState
-    @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled: Bool
     @ObservedObject var chatManager: ChatManager
     var onSelectChat: (Chat) -> Void
     
@@ -29,35 +28,38 @@ struct ChatHistoryView: View {
                             .padding(.top, 40)
                     } else {
                         ForEach(groupedChats, id: \.0) { section, chats in
-                            // Section header
-                            HStack {
-                                Text(section)
-                                    .font(styles.typography.title3)
-                                    .foregroundColor(styles.colors.text)
-                                    .padding(.vertical, 10)
-                                
-                                Spacer()
-                            }
-                            .padding(.horizontal, styles.layout.paddingL)
-                            .padding(.top, 20)
-                            .padding(.bottom, 4)
+                            // Section header with explicit padding to match other elements
+                            Text(section)
+                                .font(styles.typography.title3)
+                                .foregroundColor(styles.colors.text)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.leading, 20) // Explicit value to match other elements
+                                .padding(.vertical, 10)
+                                .padding(.top, 20)
+                                .padding(.bottom, 4)
                             
                             // Chats in this section
                             ForEach(chats) { chat in
-                                ChatHistoryItem(chat: chat)
-                                    .padding(.horizontal, styles.layout.paddingL)
-                                    .padding(.vertical, 4)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        onSelectChat(chat)
-                                    }
+                                ZStack {
+                                    // The chat item
+                                    ChatHistoryItem(chat: chat)
+                                    
+                                    // Transparent overlay for tap
+                                    Color.clear
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            print("Chat tapped: \(chat.title)")
+                                            onSelectChat(chat)
+                                        }
+                                }
+                                .padding(.horizontal, 20) // Explicit value to match other elements
+                                .padding(.vertical, 4)
                             }
                         }
                     }
                 }
                 .padding(.top, styles.headerPadding.top)
             }
-            .disabled(mainScrollingDisabled)
         }
     }
 }

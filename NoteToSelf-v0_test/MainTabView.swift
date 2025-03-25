@@ -498,7 +498,7 @@ struct MainTabView: View {
           .offset(x: chatHistoryOffset)
           .zIndex(2)
       }
-      .environment(\.mainScrollingDisabled, showingSettings || isSwipingSettings || showingChatHistory)
+      // IMPORTANT: Remove the mainScrollingDisabled environment variable to allow scrolling
       .environment(\.settingsScrollingDisabled, isSwipingSettings)
       .environmentObject(appState)
       .environmentObject(chatManager)
