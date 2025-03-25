@@ -116,7 +116,7 @@ struct DateGroupSectionHeader: View {
         HStack {
             Text(title)
                 .font(styles.typography.title3)
-                .foregroundColor(styles.colors.accent)
+                .foregroundColor(styles.colors.text)
                 .padding(.vertical, 10)
             
             Spacer()

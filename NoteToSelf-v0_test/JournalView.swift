@@ -150,18 +150,6 @@ struct JournalView: View {
                                 Text("Capture your thoughts, reflect on your journey.")
                                     .font(styles.typography.bodyLarge)
                                     .foregroundColor(styles.colors.accent)
-                                    .padding(.bottom, styles.layout.spacingM)
-                                
-                                // Daily prompt
-                                VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                                    Text("Today's Reflection")
-                                        .font(styles.typography.smallLabelFont)
-                                        .foregroundColor(styles.colors.accent)
-                                    
-                                    Text("What's one small or big thing on your mind right now?")
-                                        .font(styles.typography.bodyFont)
-                                        .foregroundColor(styles.colors.textSecondary)
-                                }
                             }
                             .padding(.horizontal, styles.layout.paddingXL)
                             .padding(.vertical, styles.layout.spacingXL * 1.5)
