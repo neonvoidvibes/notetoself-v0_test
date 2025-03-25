@@ -10,7 +10,7 @@ struct MoodWheel: View {
     private let styles = UIStyles.shared
     
     // Constants for wheel dimensions
-    private let wheelDiameter: CGFloat = 280
+    private let wheelDiameter: CGFloat = 260 // Reduced from 280 to make wheel slightly smaller
     private let centerDiameter: CGFloat = 100
     private let intensityRingThickness: CGFloat = 45
     
@@ -34,13 +34,10 @@ struct MoodWheel: View {
                     .font(styles.typography.title3)
                     .foregroundColor(styles.colors.text)
                 
-                Text("Tap on the wheel to select your dominant mood")
-                    .font(styles.typography.bodySmall)
-                    .foregroundColor(styles.colors.textSecondary)
-                    .multilineTextAlignment(.center)
+                
             }
             
-            // Mood wheel
+            // Mood wheel with extra padding
             ZStack {
                 // Background circle with gradient - dimmed when a mood is selected
                 CircleMoodBackground(isDimmed: selectedMood != .neutral)
@@ -74,10 +71,9 @@ struct MoodWheel: View {
                     )
                 }
                 
-                // Center neutral zone
+                // Center neutral zone - always white background
                 Circle()
-                    .fill(selectedMood == .neutral ? 
-                          Color.white : Color(hex: "#333333").opacity(0.7))
+                    .fill(Color.white)
                     .frame(width: centerDiameter, height: centerDiameter)
                     .overlay(
                         Circle()
@@ -85,17 +81,17 @@ struct MoodWheel: View {
                                    lineWidth: selectedMood == .neutral ? 3 : 1)
                     )
                 
-                // Center label for selected mood
+                // Center label for selected mood - always black text
                 VStack(spacing: 2) { // Reduced spacing for better centering
                     Text(selectedMood.name)
                         .font(styles.typography.smallLabelFont) // Even smaller font
-                        .foregroundColor(selectedMood == .neutral ? Color.black : Color.white)
+                        .foregroundColor(Color.black) // Always black text
                         .fontWeight(.bold)
                     
                     if selectedMood != .neutral {
                         Text(intensityText(selectedIntensity))
                             .font(styles.typography.caption)
-                            .foregroundColor(selectedMood == .neutral ? Color.black.opacity(0.7) : Color.white.opacity(0.7))
+                            .foregroundColor(Color.black.opacity(0.7)) // Always black text with opacity
                     }
                 }
                 .frame(width: centerDiameter, height: centerDiameter)
@@ -117,65 +113,71 @@ struct MoodWheel: View {
                                 isDragging = false
                             }
                     )
+                    // Prevent taps on the wheel from propagating to parent views
+                    .onTapGesture {
+                        // Do nothing, just capture the tap to prevent closing
+                    }
                 
                 // Add model labels outside the wheel
                 Group {
                     // Top: "Awake"
                     Text("Awake")
-                        .font(styles.typography.caption)
+                        .font(styles.typography.bodyFont)
+                        .fontWeight(.bold) // Added bold
                         .foregroundColor(styles.colors.textSecondary)
-                        .position(x: wheelDiameter/2, y: 0)
+                        .position(x: wheelDiameter/2, y: -20) // Closer to wheel
                     
                     // Bottom: "Quiet"
                     Text("Quiet")
-                        .font(styles.typography.caption)
+                        .font(styles.typography.bodyFont)
+                        .fontWeight(.bold) // Added bold
                         .foregroundColor(styles.colors.textSecondary)
-                        .position(x: wheelDiameter/2, y: wheelDiameter)
+                        .position(x: wheelDiameter/2, y: wheelDiameter + 20) // Closer to wheel
                     
-                    // Left: "Negative"
-                    Text("Negative")
-                        .font(styles.typography.caption)
+                    // Left: "-" (was "Negative")
+                    Text("-")
+                        .font(styles.typography.headingFont)
                         .foregroundColor(styles.colors.textSecondary)
-                        .position(x: 0, y: wheelDiameter/2)
+                        .position(x: -35, y: wheelDiameter/2) // Increased left padding from -20 to -35
                     
-                    // Right: "Positive"
-                    Text("Positive")
-                        .font(styles.typography.caption)
+                    // Right: "+" (was "Positive")
+                    Text("+")
+                        .font(styles.typography.headingFont)
                         .foregroundColor(styles.colors.textSecondary)
-                        .position(x: wheelDiameter, y: wheelDiameter/2)
+                        .position(x: wheelDiameter + 35, y: wheelDiameter/2) // Increased right padding from +20 to +35
                 }
             }
             .frame(width: wheelDiameter, height: wheelDiameter)
-            .padding(.vertical, styles.layout.paddingL)
+            .padding(.top, 30) // Added more top padding
+            .padding(.bottom, 30) // Added more bottom padding
             
         }
         .padding(styles.layout.paddingL)
     }
     
-    // Update mood mapping to rotate 45 degrees clockwise (1.5 segments)
+    
     private func moodForSegment(_ index: Int) -> Mood {
-        // Adjusted to rotate 45 degrees clockwise
-        // The wheel is now oriented with 45° at the right (1:30 o'clock position), going clockwise
+        // Keep colors in their current positions but adjust mood labels
         switch index {
         // Right side and bottom-right quadrant
-        case 0: return .happy     // 0-30° (1 o'clock)
-        case 1: return .content   // 30-60° (2 o'clock)
-        case 2: return .relaxed   // 60-90° (3 o'clock)
+        case 0: return .excited   // 0-30° (1 o'clock)
+        case 1: return .happy     // 30-60° (2 o'clock)
+        case 2: return .content   // 60-90° (3 o'clock)
         
         // Bottom-right and bottom quadrant
-        case 3: return .calm      // 90-120° (4 o'clock)
-        case 4: return .bored     // 120-150° (5 o'clock)
-        case 5: return .depressed // 150-180° (6 o'clock)
+        case 3: return .relaxed   // 90-120° (4 o'clock)
+        case 4: return .calm      // 120-150° (5 o'clock)
+        case 5: return .bored     // 150-180° (6 o'clock)
         
         // Bottom-left quadrant
-        case 6: return .sad       // 180-210° (7 o'clock)
-        case 7: return .anxious   // 210-240° (8 o'clock) - Changed from "Stressed"
-        case 8: return .angry     // 240-270° (9 o'clock)
+        case 6: return .depressed // 180-210° (7 o'clock)
+        case 7: return .sad       // 210-240° (8 o'clock)
+        case 8: return .anxious   // 240-270° (9 o'clock) - Changed from "Stressed"
         
         // Top-left and top quadrant
-        case 9: return .stressed  // 270-300° (10 o'clock) - Changed from "Tense"
-        case 10: return .alert    // 300-330° (11 o'clock)
-        case 11: return .excited  // 330-360° (12 o'clock)
+        case 9: return .angry     // 270-300° (10 o'clock)
+        case 10: return .stressed // 300-330° (11 o'clock) - Changed from "Tense"
+        case 11: return .alert    // 330-360° (12 o'clock)
         
         default: return .neutral
         }
