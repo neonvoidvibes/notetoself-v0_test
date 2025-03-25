@@ -160,7 +160,7 @@ struct MoodWheel: View {
         // Calculate coordinates relative to center
         let center = CGPoint(x: wheelDiameter/2, y: wheelDiameter/2)
         let relativeX = location.x - center.x
-        let relativeY = -(location.y - center.y) // Invert Y to match mathematical coordinate system
+        let relativeY = location.y - center.y
         
         // Calculate distance from center
         let distance = sqrt(relativeX * relativeX + relativeY * relativeY)
@@ -177,14 +177,52 @@ struct MoodWheel: View {
             return
         }
         
-        // Calculate angle from 0-360 degrees (mathematical convention)
-        var angle = atan2(relativeY, relativeX) * 180 / .pi
-        if angle < 0 {
-            angle += 360
+        // COMPLETELY DIFFERENT APPROACH: Use direct quadrant and position detection
+        
+        // Determine which quadrant we're in
+        let quadrant: Int
+        if relativeX >= 0 && relativeY <= 0 {
+            quadrant = 1 // Top-right
+        } else if relativeX >= 0 && relativeY > 0 {
+            quadrant = 2 // Bottom-right
+        } else if relativeX < 0 && relativeY > 0 {
+            quadrant = 3 // Bottom-left
+        } else {
+            quadrant = 4 // Top-left
         }
         
-        // Calculate segment (0-11) based on angle
-        let segment = Int((angle.truncatingRemainder(dividingBy: 360)) / 30)
+        // Calculate angle within quadrant (0-90 degrees)
+        let angleInQuadrant: Double
+        switch quadrant {
+        case 1:
+            angleInQuadrant = abs(atan(relativeY / relativeX) * 180 / .pi)
+        case 2:
+            angleInQuadrant = abs(atan(relativeX / relativeY) * 180 / .pi)
+        case 3:
+            angleInQuadrant = abs(atan(relativeY / relativeX) * 180 / .pi)
+        case 4:
+            angleInQuadrant = abs(atan(relativeX / relativeY) * 180 / .pi)
+        default:
+            angleInQuadrant = 0
+        }
+        
+        // Determine which third of the quadrant we're in (0, 1, or 2)
+        let thirdOfQuadrant = Int(angleInQuadrant / 30)
+        
+        // Map to segment index (0-11)
+        let segment: Int
+        switch quadrant {
+        case 1:
+            segment = thirdOfQuadrant // 0, 1, 2
+        case 2:
+            segment = 3 + thirdOfQuadrant // 3, 4, 5
+        case 3:
+            segment = 6 + thirdOfQuadrant // 6, 7, 8
+        case 4:
+            segment = 9 + thirdOfQuadrant // 9, 10, 11
+        default:
+            segment = 0
+        }
         
         // Calculate intensity (1-3) based on distance from center
         let availableRadius = (wheelDiameter - centerDiameter) / 2
