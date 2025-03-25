@@ -23,11 +23,6 @@ struct ReflectionsView: View {
             // Background - using standard black background for the view itself
             styles.colors.appBackground
                 .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    isInputFocused = false
-                    expandedMessageId = nil
-                }
             
             VStack(spacing: 0) {
                 // Header
@@ -125,10 +120,12 @@ struct ReflectionsView: View {
                     .onAppear {
                         scrollToBottom(proxy: scrollView)
                     }
-                    // Tap gesture to dismiss keyboard and collapse any expanded message
+                    .contentShape(Rectangle())
                     .onTapGesture {
-                        isInputFocused = false
-                        expandedMessageId = nil
+                        // Only dismiss keyboard and collapse message if we're not tapping on a message
+                        if expandedMessageId == nil {
+                            isInputFocused = false
+                        }
                     }
                 }
                 
@@ -362,6 +359,7 @@ struct ChatBubble: View {
                         .clipShape(ChatBubbleShape(isUser: false))
                         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
                         .contentShape(Rectangle())
+                        // Removed padding outside the bubble
                         .onTapGesture {
                             onTap()
                         }
