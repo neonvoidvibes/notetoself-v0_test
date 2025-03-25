@@ -1,7 +1,5 @@
 import SwiftUI
 
-//Use `JournalEntryFormContent` as shared component for both new entries and editing existing entries
-
 struct JournalView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled: Bool
@@ -200,14 +198,6 @@ struct JournalView: View {
                                                 expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
                                             }
                                         },
-                                        onEdit: {
-                                            if !entry.isLocked {
-                                                editingEntry = entry
-                                            }
-                                        },
-                                        onDelete: {
-                                            deleteEntry(entry)
-                                        },
                                         onExpand: {
                                             fullscreenEntry = entry
                                         }
@@ -283,8 +273,8 @@ struct JournalView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingNewEntrySheet) {
-            NewEntryView(onSave: { text, mood in
+        .fullScreenCover(isPresented: $showingNewEntrySheet) {
+            EditableFullscreenEntryView(onSave: { text, mood in
                 let newEntry = JournalEntry(text: text, mood: mood, date: Date())
                 
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
@@ -292,21 +282,36 @@ struct JournalView: View {
                     expandedEntryId = newEntry.id // Auto-expand new entry
                 }
             })
-            // Presentation detents moved to EntryFormView for consistency
         }
-        .sheet(item: $editingEntry) { entry in
-            EditEntryView(entry: entry, onSave: { updatedText, updatedMood in
-                updateEntry(entry, newText: updatedText, newMood: updatedMood)
-            })
-            // Presentation detents moved to EntryFormView for consistency
+        .fullScreenCover(item: $fullscreenEntry) { entry in
+            FullscreenEntryView(
+                entry: entry,
+                onEdit: {
+                    // Only allow editing if not locked
+                    if !entry.isLocked {
+                        editingEntry = entry
+                    }
+                },
+                onDelete: {
+                    deleteEntry(entry)
+                }
+            )
+        }
+        .fullScreenCover(item: $editingEntry) { entry in
+            EditableFullscreenEntryView(
+                entry: entry,
+                onSave: { updatedText, updatedMood in
+                    updateEntry(entry, newText: updatedText, newMood: updatedMood)
+                },
+                onDelete: {
+                    deleteEntry(entry)
+                }
+            )
         }
         .onAppear {
             if expandedEntryId == nil, let firstEntry = appState.journalEntries.first {
                 expandedEntryId = firstEntry.id
             }
-        }
-        .fullScreenCover(item: $fullscreenEntry) { entry in
-            FullscreenEntryView(entry: entry)
         }
     }
     
@@ -315,6 +320,16 @@ struct JournalView: View {
             _ = withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 appState.journalEntries.remove(at: index)
             }
+        }
+        
+        // Clear the fullscreen entry if it's the one being deleted
+        if fullscreenEntry?.id == entry.id {
+            fullscreenEntry = nil
+        }
+        
+        // Clear the editing entry if it's the one being deleted
+        if editingEntry?.id == entry.id {
+            editingEntry = nil
         }
     }
     
@@ -329,6 +344,11 @@ struct JournalView: View {
             
             withAnimation {
                 appState.journalEntries[index] = updatedEntry
+            }
+            
+            // Update the fullscreen entry if it's the one being edited
+            if fullscreenEntry?.id == entry.id {
+                fullscreenEntry = updatedEntry
             }
         }
     }
@@ -345,8 +365,6 @@ struct JournalEntryCard: View {
     let entry: JournalEntry
     let isExpanded: Bool
     let onTap: () -> Void
-    let onEdit: () -> Void
-    let onDelete: () -> Void
     let onExpand: () -> Void
     
     private let styles = UIStyles.shared
@@ -408,7 +426,7 @@ struct JournalEntryCard: View {
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
                 
-                // Action buttons for expand, edit and delete
+                // Action buttons - only Expand button now
                 HStack {
                     Spacer()
                     
@@ -426,32 +444,6 @@ struct JournalEntryCard: View {
                         .background(styles.colors.secondaryBackground)
                         .cornerRadius(styles.layout.radiusM)
                     }
-                    
-                    if !entry.isLocked {
-                        Button(action: onEdit) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "pencil")
-                                    .font(.system(size: styles.layout.iconSizeS))
-                                Text("Edit")
-                                    .font(styles.typography.smallLabelFont)
-                            }
-                            .foregroundColor(styles.colors.accent)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(styles.colors.secondaryBackground)
-                            .cornerRadius(styles.layout.radiusM)
-                        }
-                    }
-                    
-                    Button(action: onDelete) {
-                        Image(systemName: "trash")
-                            .font(.system(size: styles.layout.iconSizeS))
-                    }
-                    .foregroundColor(styles.colors.error)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(styles.colors.secondaryBackground)
-                    .cornerRadius(styles.layout.radiusM)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 16)
@@ -472,16 +464,6 @@ struct JournalEntryCard: View {
         .contextMenu {
             Button(action: onExpand) {
                 Label("Expand", systemImage: "arrow.up.left.and.arrow.down.right")
-            }
-            
-            if !entry.isLocked {
-                Button(action: onEdit) {
-                    Label("Edit", systemImage: "pencil")
-                }
-            }
-            
-            Button(role: .destructive, action: onDelete) {
-                Label("Delete", systemImage: "trash")
             }
         }
     }
@@ -504,41 +486,6 @@ struct JournalEntryCard: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
         return formatter.string(from: date)
-    }
-}
-
-struct EditEntryView: View {
-    let entry: JournalEntry
-    let onSave: (String, Mood) -> Void
-    
-    @State private var entryText: String
-    @State private var selectedMood: Mood
-    @Environment(\.dismiss) private var dismiss
-    
-    // Access to shared styles
-    private let styles = UIStyles.shared
-    
-    init(entry: JournalEntry, onSave: @escaping (String, Mood) -> Void) {
-        self.entry = entry
-        self.onSave = onSave
-        _entryText = State(initialValue: entry.text)
-        _selectedMood = State(initialValue: entry.mood)
-    }
-    
-    var body: some View {
-        EntryFormView(
-            title: "Edit Note",
-            onSave: {
-                onSave(entryText, selectedMood)
-                dismiss()
-            },
-            saveButtonEnabled: !entryText.isEmpty
-        ) {
-            JournalEntryFormContent(
-                entryText: $entryText,
-                selectedMood: $selectedMood
-            )
-        }
     }
 }
 
