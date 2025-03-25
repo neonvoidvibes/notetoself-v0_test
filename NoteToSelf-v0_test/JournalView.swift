@@ -21,6 +21,9 @@ struct JournalView: View {
     @State private var customStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
     @State private var customEndDate: Date = Date()
     
+    // Add this state variable after the other @State variables in JournalView:
+    @State private var fullscreenEntry: JournalEntry? = nil
+    
     // Access to shared styles
     private let styles = UIStyles.shared
     
@@ -204,6 +207,9 @@ struct JournalView: View {
                                         },
                                         onDelete: {
                                             deleteEntry(entry)
+                                        },
+                                        onExpand: {
+                                            fullscreenEntry = entry
                                         }
                                     )
                                     .transition(.opacity.combined(with: .move(edge: .top)))
@@ -299,6 +305,9 @@ struct JournalView: View {
                 expandedEntryId = firstEntry.id
             }
         }
+        .fullScreenCover(item: $fullscreenEntry) { entry in
+            FullscreenEntryView(entry: entry)
+        }
     }
     
     private func deleteEntry(_ entry: JournalEntry) {
@@ -338,6 +347,7 @@ struct JournalEntryCard: View {
     let onTap: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
+    let onExpand: () -> Void
     
     private let styles = UIStyles.shared
     
@@ -398,9 +408,24 @@ struct JournalEntryCard: View {
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
                 
-                // Action buttons for edit and delete
+                // Action buttons for expand, edit and delete
                 HStack {
                     Spacer()
+                    
+                    // Expand button
+                    Button(action: onExpand) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: styles.layout.iconSizeS))
+                            Text("Expand")
+                                .font(styles.typography.smallLabelFont)
+                        }
+                        .foregroundColor(styles.colors.accent)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(styles.colors.secondaryBackground)
+                        .cornerRadius(styles.layout.radiusM)
+                    }
                     
                     if !entry.isLocked {
                         Button(action: onEdit) {
@@ -445,11 +470,16 @@ struct JournalEntryCard: View {
             onTap()
         }
         .contextMenu {
+            Button(action: onExpand) {
+                Label("Expand", systemImage: "arrow.up.left.and.arrow.down.right")
+            }
+            
             if !entry.isLocked {
                 Button(action: onEdit) {
                     Label("Edit", systemImage: "pencil")
                 }
             }
+            
             Button(role: .destructive, action: onDelete) {
                 Label("Delete", systemImage: "trash")
             }
