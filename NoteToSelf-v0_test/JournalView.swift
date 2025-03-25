@@ -160,11 +160,11 @@ struct JournalView: View {
                                       .font(styles.typography.bodyFont)
                                       .foregroundColor(styles.colors.text)
                                       .padding(.top, 60) // Ample top padding
-                                  
+                              
                                   Text("Try adjusting your filters")
                                       .font(styles.typography.bodySmall)
                                       .foregroundColor(styles.colors.textSecondary)
-                                  
+                              
                                   Button("Clear Filters") {
                                       clearFilters(closePanel: true) // Close panel when clearing filters
                                   }
@@ -176,7 +176,7 @@ struct JournalView: View {
                                       .font(styles.typography.headingFont)
                                       .foregroundColor(styles.colors.text)
                                       .padding(.top, 60) // Ample top padding
-                                  
+                              
                                   Text("Tap the + button to add your first entry.")
                                       .font(styles.typography.bodyFont)
                                       .foregroundColor(styles.colors.textSecondary)
@@ -231,6 +231,11 @@ struct JournalView: View {
                             lastScrollPosition = value
                         }
                     }
+                    .simultaneousGesture(
+                        TapGesture().onEnded {
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        }
+                    )
                 }
             }
             

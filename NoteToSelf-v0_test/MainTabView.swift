@@ -138,6 +138,9 @@ struct MainTabView: View {
             }
     }
     
+    // Add a new state variable to track keyboard visibility
+    @State private var isKeyboardVisible = false
+    
     var body: some View {
         ZStack {
             // Background - conditional based on nav area state and selected tab
@@ -228,98 +231,102 @@ struct MainTabView: View {
                 
                 // Bottom sheet / tab bar - using GeometryReader for precise positioning
                 GeometryReader { geometry in
-                    VStack(spacing: 0) {
-                        // Chevron button - positioned at the very top with no spacing
-                        Button(action: {
-                            withAnimation(styles.animation.bottomSheetAnimation) {
-                                bottomSheetExpanded.toggle()
-                            }
-                        }) {
-                            HStack {
-                                Spacer()
-                                Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(Color.white) // Always white for better contrast
-                                Spacer()
-                            }
-                            .frame(height: peekHeight)
-                            .contentShape(Rectangle())
-                            .padding(.bottom, bottomSheetExpanded ? 16 : 8) // More padding below the chevron
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        // Tab buttons - only shown when expanded
-                        if bottomSheetExpanded {
-                            HStack(spacing: 0) {
-                                Spacer()
-                                NavigationTabButton(
-                                    icon: "book.pages.fill",
-                                    title: "Journal",
-                                    isSelected: selectedTab == 0
-                                ) {
-                                    withAnimation(styles.animation.tabSwitchAnimation) {
-                                        selectedTab = 0
-                                    }
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                        withAnimation(styles.animation.bottomSheetAnimation) {
-                                            bottomSheetExpanded = false
-                                            bottomSheetOffset = peekHeight - fullSheetHeight
-                                        }
-                                    }
+                    if !isKeyboardVisible {
+                        VStack(spacing: 0) {
+                            // Chevron button - positioned at the very top with no spacing
+                            Button(action: {
+                                withAnimation(styles.animation.bottomSheetAnimation) {
+                                    bottomSheetExpanded.toggle()
                                 }
-                                Spacer()
-                                NavigationTabButton(
-                                    icon: "chart.bar.fill",
-                                    title: "Insights",
-                                    isSelected: selectedTab == 1
-                                ) {
-                                    withAnimation(styles.animation.tabSwitchAnimation) {
-                                        selectedTab = 1
-                                    }
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                        withAnimation(styles.animation.bottomSheetAnimation) {
-                                            bottomSheetExpanded = false
-                                            bottomSheetOffset = peekHeight - fullSheetHeight
-                                        }
-                                    }
+                            }) {
+                                HStack {
+                                    Spacer()
+                                    Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(Color.white) // Always white for better contrast
+                                    Spacer()
                                 }
-                                Spacer()
-                                NavigationTabButton(
-                                    icon: "bubble.left.fill",
-                                    title: "Reflect",
-                                    isSelected: selectedTab == 2
-                                ) {
-                                    withAnimation(styles.animation.tabSwitchAnimation) {
-                                        selectedTab = 2
-                                    }
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                        withAnimation(styles.animation.bottomSheetAnimation) {
-                                            bottomSheetExpanded = false
-                                            bottomSheetOffset = peekHeight - fullSheetHeight
-                                        }
-                                    }
-                                }
-                                Spacer()
+                                .frame(height: peekHeight)
+                                .contentShape(Rectangle())
+                                .padding(.bottom, bottomSheetExpanded ? 16 : 8) // More padding below the chevron
                             }
-                            .padding(.vertical, 12)
-                            .padding(.bottom, 8)
-                            .frame(height: fullSheetHeight - peekHeight)
-                        }
-                    }
-                    .frame(width: geometry.size.width, height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
-                    .background(
-                        Group {
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            // Tab buttons - only shown when expanded
                             if bottomSheetExpanded {
-                                // Make the nav area background transparent to let the main gradient show through
-                                Color.clear
-                            } else {
-                                // Use reflectionsNavBackground for Reflections tab, black for others
-                                selectedTab == 2 ? styles.colors.reflectionsNavBackground : styles.colors.appBackground
+                                HStack(spacing: 0) {
+                                    Spacer()
+                                    NavigationTabButton(
+                                        icon: "book.pages.fill",
+                                        title: "Journal",
+                                        isSelected: selectedTab == 0
+                                    ) {
+                                        withAnimation(styles.animation.tabSwitchAnimation) {
+                                            selectedTab = 0
+                                        }
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                            withAnimation(styles.animation.bottomSheetAnimation) {
+                                                bottomSheetExpanded = false
+                                                bottomSheetOffset = peekHeight - fullSheetHeight
+                                            }
+                                        }
+                                    }
+                                    Spacer()
+                                    NavigationTabButton(
+                                        icon: "chart.bar.fill",
+                                        title: "Insights",
+                                        isSelected: selectedTab == 1
+                                    ) {
+                                        withAnimation(styles.animation.tabSwitchAnimation) {
+                                            selectedTab = 1
+                                        }
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                            withAnimation(styles.animation.bottomSheetAnimation) {
+                                                bottomSheetExpanded = false
+                                                bottomSheetOffset = peekHeight - fullSheetHeight
+                                            }
+                                        }
+                                    }
+                                    Spacer()
+                                    NavigationTabButton(
+                                        icon: "bubble.left.fill",
+                                        title: "Reflect",
+                                        isSelected: selectedTab == 2
+                                    ) {
+                                        withAnimation(styles.animation.tabSwitchAnimation) {
+                                            selectedTab = 2
+                                        }
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                            withAnimation(styles.animation.bottomSheetAnimation) {
+                                                bottomSheetExpanded = false
+                                                bottomSheetOffset = peekHeight - fullSheetHeight
+                                            }
+                                        }
+                                    }
+                                    Spacer()
+                                }
+                                .padding(.vertical, 12)
+                                .padding(.bottom, 8)
+                                .frame(height: fullSheetHeight - peekHeight)
                             }
                         }
-                    )
+                        .frame(width: geometry.size.width, height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
+                        .background(
+                            Group {
+                                if bottomSheetExpanded {
+                                    // Make the nav area background transparent to let the main gradient show through
+                                    Color.clear
+                                } else {
+                                    // Use reflectionsNavBackground for Reflections tab, black for others
+                                    selectedTab == 2 ? styles.colors.reflectionsNavBackground : styles.colors.appBackground
+                                }
+                            }
+                        )
+                    }
                 }
-                .frame(height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
+                .frame(height: isKeyboardVisible ? 0 : (bottomSheetExpanded ? fullSheetHeight : peekHeight))
+                .opacity(isKeyboardVisible ? 0 : 1)
+                .animation(.easeInOut(duration: 0.25), value: isKeyboardVisible)
                 .gesture(bottomSheetDrag)
             }
             .disabled(isSwipingSettings)
@@ -412,7 +419,21 @@ struct MainTabView: View {
                     }
                 }
             }
+            
+            // Add keyboard observers
+            NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { _ in
+                withAnimation {
+                    isKeyboardVisible = true
+                }
+            }
+            
+            NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in
+                withAnimation {
+                    isKeyboardVisible = false
+                }
+            }
         }
+        .environment(\.keyboardVisible, isKeyboardVisible)
     }
 }
 
@@ -425,6 +446,18 @@ extension EnvironmentValues {
     var bottomSheetExpanded: Bool {
         get { self[BottomSheetExpandedKey.self] }
         set { self[BottomSheetExpandedKey.self] = newValue }
+    }
+}
+
+// Add a new environment key for keyboard visibility
+private struct KeyboardVisibleKey: EnvironmentKey {
+    static let defaultValue: Bool = false
+}
+
+extension EnvironmentValues {
+    var keyboardVisible: Bool {
+        get { self[KeyboardVisibleKey.self] }
+        set { self[KeyboardVisibleKey.self] = newValue }
     }
 }
 

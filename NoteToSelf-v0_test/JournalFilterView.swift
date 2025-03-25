@@ -55,7 +55,7 @@ struct FilterPanel: View {
                         .foregroundColor(styles.colors.accent)
                 }
                 
-                Spacer()
+                Spacer(minLength: 20) // Reduced spacer with minimum length to bring elements closer
                 
                 Text("\(searchTags.count + selectedMoods.count + (dateFilterType != .all ? 1 : 0)) active filters")
                     .font(styles.typography.bodySmall)
@@ -68,6 +68,11 @@ struct FilterPanel: View {
         .cornerRadius(styles.layout.radiusL)
         .shadow(color: Color.black.opacity(0.3), radius: 15, x: 0, y: 8)
         .padding(.horizontal, styles.layout.paddingL)
+        .contentShape(Rectangle()) // Make the entire filter panel tappable
+        .onTapGesture {
+            // Dismiss keyboard when tapping anywhere in the filter panel
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
     }
     
     private var keywordsTab: some View {
@@ -92,7 +97,8 @@ struct FilterPanel: View {
                 .disabled(searchText.isEmpty)
                 .opacity(searchText.isEmpty ? 0.5 : 1.0)
             }
-            
+            .contentShape(Rectangle()) // Ensure the HStack can receive tap gestures
+        
             // Tags display
             if !searchTags.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {

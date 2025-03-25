@@ -21,7 +21,13 @@ struct ReflectionsView: View {
     var body: some View {
         ZStack {
             // Background - using standard black background for the view itself
-            styles.colors.appBackground.ignoresSafeArea()
+            styles.colors.appBackground
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    isInputFocused = false
+                    expandedMessageId = nil
+                }
             
             VStack(spacing: 0) {
                 // Header
@@ -204,10 +210,7 @@ struct ReflectionsView: View {
             }
         }
         // Tap gesture to dismiss keyboard when tapping anywhere in the view
-        .onTapGesture {
-            isInputFocused = false
-            expandedMessageId = nil
-        }
+        
         .alert(isPresented: $showingSubscriptionPrompt) {
             Alert(
                 title: Text("Daily Limit Reached"),
@@ -345,7 +348,7 @@ struct ChatBubble: View {
                                 .foregroundColor(isCopied ? styles.colors.accent : Color.gray.opacity(0.9))
                         }
                         .padding(.trailing, 8)
-                        .padding(.top, 0) // Reduced top padding to copy icon
+                        .padding(.top, 3) // Reduced top padding to copy icon
                         .transition(.opacity)
                     }
                 }
