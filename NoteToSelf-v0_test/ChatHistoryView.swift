@@ -13,52 +13,52 @@ struct ChatHistoryView: View {
             styles.colors.menuBackground
                 .ignoresSafeArea()
             
-            ScrollView(.vertical, showsIndicators: true) {
-                VStack(spacing: 0) {
-                    // Extra top padding
-                    Spacer()
-                        .frame(height: 30)
-                    
-                    // Group chats by time period
-                    let groupedChats = chatManager.groupChatsByTimePeriod()
-                    
-                    if groupedChats.isEmpty {
-                        Text("No chat history yet")
-                            .foregroundColor(styles.colors.textSecondary)
-                            .padding(.top, 40)
-                    } else {
-                        ForEach(groupedChats, id: \.0) { section, chats in
-                            // Section header with explicit padding to match other elements
-                            Text(section)
-                                .font(styles.typography.title3)
-                                .foregroundColor(styles.colors.text)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.leading, 20) // Explicit value to match other elements
-                                .padding(.vertical, 10)
-                                .padding(.top, 20)
-                                .padding(.bottom, 4)
-                            
-                            // Chats in this section
-                            ForEach(chats) { chat in
-                                ZStack {
-                                    // The chat item
-                                    ChatHistoryItem(chat: chat)
-                                    
-                                    // Transparent overlay for tap
-                                    Color.clear
-                                        .contentShape(Rectangle())
-                                        .onTapGesture {
-                                            print("Chat tapped: \(chat.title)")
-                                            onSelectChat(chat)
-                                        }
+            VStack(spacing: 0) {
+                // Content
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        // Extra top padding
+                        Spacer()
+                            .frame(height: 30)
+                        
+                        // Group chats by time period
+                        let groupedChats = chatManager.groupChatsByTimePeriod()
+                        
+                        if groupedChats.isEmpty {
+                            Text("No chat history yet")
+                                .foregroundColor(styles.colors.textSecondary)
+                                .padding(.top, 40)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        } else {
+                            ForEach(groupedChats, id: \.0) { section, chats in
+                                // Section header - aligned with text inside cards
+                                Text(section)
+                                    .font(styles.typography.title3)
+                                    .foregroundColor(styles.colors.text)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.leading, styles.layout.paddingL + styles.layout.paddingM) // Align with text inside cards
+                                    .padding(.trailing, styles.layout.paddingL)
+                                    .padding(.top, 20)
+                                    .padding(.bottom, 10)
+                                
+                                // Chats in this section
+                                ForEach(chats) { chat in
+                                    Button(action: {
+                                        onSelectChat(chat)
+                                    }) {
+                                        ChatHistoryItem(chat: chat)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .padding(.horizontal, styles.layout.paddingL)
+                                    .padding(.vertical, 4)
                                 }
-                                .padding(.horizontal, 20) // Explicit value to match other elements
-                                .padding(.vertical, 4)
                             }
                         }
+                        
+                        Spacer(minLength: 50)
                     }
+                    .padding(.top, styles.headerPadding.top)
                 }
-                .padding(.top, styles.headerPadding.top)
             }
         }
     }
@@ -99,9 +99,13 @@ struct ChatHistoryItem: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding(styles.layout.paddingM)
+        .padding(styles.layout.paddingM) // Restored original padding
         .background(styles.colors.secondaryBackground)
         .cornerRadius(styles.layout.radiusM)
+        .overlay(
+            RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                .stroke(Color(hex: "#222222"), lineWidth: 1) // Same border as JournalView
+        )
     }
     
     private func formatDate(_ date: Date) -> String {
