@@ -27,6 +27,7 @@ struct FullscreenEntryView: View {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 16, weight: .semibold))
                             Text("Back")
+                                .font(styles.typography.bodyFont)
                         }
                         .foregroundColor(styles.colors.accent)
                     }
@@ -83,38 +84,30 @@ struct FullscreenEntryView: View {
                                 }
                             }
                             
-                            // Delete button (if onDelete is provided)
+                            // Delete button (if onDelete is provided) - icon only
                             if onDelete != nil {
                                 Button(action: {
                                     onDelete?()
                                 }) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "trash")
-                                            .font(.system(size: styles.layout.iconSizeS))
-                                        Text("Delete")
-                                            .font(styles.typography.caption)
-                                    }
-                                    .foregroundColor(styles.colors.textSecondary) // Gray instead of red
+                                    Image(systemName: "trash")
+                                        .font(.system(size: styles.layout.iconSizeS))
+                                        .foregroundColor(styles.colors.textSecondary)
+                                        .padding(.vertical, 6)
+                                        .padding(.horizontal, 12)
+                                        .background(styles.colors.secondaryBackground)
+                                        .cornerRadius(styles.layout.radiusM)
+                                }
+                            }
+                            
+                            // Locked indicator if needed - icon only
+                            if entry.isLocked {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(styles.colors.textSecondary)
                                     .padding(.vertical, 6)
                                     .padding(.horizontal, 12)
                                     .background(styles.colors.secondaryBackground)
                                     .cornerRadius(styles.layout.radiusM)
-                                }
-                            }
-                            
-                            // Locked indicator if needed
-                            if entry.isLocked {
-                                HStack(spacing: styles.layout.spacingS) {
-                                    Image(systemName: "lock.fill")
-                                        .font(.system(size: 14))
-                                    Text("Locked")
-                                }
-                                .font(styles.typography.caption)
-                                .foregroundColor(styles.colors.textSecondary)
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 12)
-                                .background(styles.colors.secondaryBackground)
-                                .cornerRadius(styles.layout.radiusM)
                             }
                         }
                         .padding(.horizontal, styles.layout.paddingXL)
@@ -149,6 +142,7 @@ struct EditableFullscreenEntryView: View {
     @State private var entryText: String
     @State private var selectedMood: Mood
     @FocusState private var isTextFieldFocused: Bool
+    @State private var showMoodSelector: Bool = false
     
     // For new entries, date is set to now
     // For editing, we keep the original date
@@ -204,46 +198,17 @@ struct EditableFullscreenEntryView: View {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 16, weight: .semibold))
                             Text(isNewEntry ? "Cancel" : "Back")
+                                .font(styles.typography.bodyFont)
                         }
                         .foregroundColor(styles.colors.accent)
                     }
                     
                     Spacer()
                     
-                    // Show date for existing entries, title for new ones
-                    if isNewEntry {
-                        Text("New Entry")
-                            .font(styles.typography.title3)
-                            .foregroundColor(styles.colors.text)
-                    } else {
-                        Text(formatDate(date))
-                            .font(styles.typography.smallLabelFont)
-                            .foregroundColor(styles.colors.textSecondary)
-                    }
-                    
-                    Spacer()
-                    
-                    // Save button only visible when editing
-                    if !isNewEntry || entryText.isEmpty {
-                        // Invisible placeholder for layout balance
-                        Text("Save")
-                            .font(styles.typography.bodyFont)
-                            .foregroundColor(.clear)
-                    } else {
-                        // Actual save button
-                        Button(action: {
-                            if !entryText.isEmpty {
-                                onSave?(entryText, selectedMood)
-                                dismiss()
-                            }
-                        }) {
-                            Text("Save")
-                                .font(styles.typography.bodyFont)
-                                .foregroundColor(styles.colors.accent)
-                        }
-                        .disabled(entryText.isEmpty)
-                        .opacity(entryText.isEmpty ? 0.5 : 1.0)
-                    }
+                    // Show date for all entries
+                    Text(formatDate(date))
+                        .font(styles.typography.smallLabelFont)
+                        .foregroundColor(styles.colors.textSecondary)
                 }
                 .padding(.horizontal, styles.layout.paddingXL)
                 .padding(.top, styles.layout.topSafeAreaPadding)
@@ -256,8 +221,12 @@ struct EditableFullscreenEntryView: View {
                         HStack(spacing: styles.layout.spacingM) {
                             Spacer()
                             
-                            // Mood pill - styled like in filter view
-                            if !isNewEntry {
+                            // Mood selector button
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    showMoodSelector.toggle()
+                                }
+                            }) {
                                 Text(selectedMood.name)
                                     .font(styles.typography.caption)
                                     .foregroundColor(styles.colors.text)
@@ -273,52 +242,68 @@ struct EditableFullscreenEntryView: View {
                                     )
                             }
                             
-                            // Save button for existing entries
-                            if !isNewEntry {
-                                Button(action: {
-                                    if !entryText.isEmpty {
-                                        onSave?(entryText, selectedMood)
-                                        dismiss()
-                                    }
-                                }) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: styles.layout.iconSizeS))
-                                        Text("Save")
-                                            .font(styles.typography.caption)
-                                    }
-                                    .foregroundColor(styles.colors.accent)
-                                    .padding(.vertical, 6)
-                                    .padding(.horizontal, 12)
-                                    .background(styles.colors.secondaryBackground)
-                                    .cornerRadius(styles.layout.radiusM)
-                                }
-                                .disabled(entryText.isEmpty)
-                                .opacity(entryText.isEmpty ? 0.5 : 1.0)
-                            }
-                            
-                            // Delete button (if onDelete is provided)
+                            // Delete button (if onDelete is provided) - icon only
                             if !isNewEntry && onDelete != nil {
                                 Button(action: {
                                     onDelete?()
                                     dismiss()
                                 }) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "trash")
-                                            .font(.system(size: styles.layout.iconSizeS))
-                                        Text("Delete")
-                                            .font(styles.typography.caption)
-                                    }
-                                    .foregroundColor(styles.colors.textSecondary) // Gray instead of red
-                                    .padding(.vertical, 6)
-                                    .padding(.horizontal, 12)
-                                    .background(styles.colors.secondaryBackground)
-                                    .cornerRadius(styles.layout.radiusM)
+                                    Image(systemName: "trash")
+                                        .font(.system(size: styles.layout.iconSizeS))
+                                        .foregroundColor(styles.colors.textSecondary)
+                                        .padding(.vertical, 6)
+                                        .padding(.horizontal, 12)
+                                        .background(styles.colors.secondaryBackground)
+                                        .cornerRadius(styles.layout.radiusM)
                                 }
                             }
                         }
                         .padding(.horizontal, styles.layout.paddingXL)
                         .padding(.top, styles.layout.paddingL)
+                        
+                        // Mood selector panel - simplified
+                        if showMoodSelector {
+                            VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                                // Grid layout for mood selection - no icons, no header text
+                                LazyVGrid(columns: [
+                                    GridItem(.adaptive(minimum: 80, maximum: 100), spacing: 8)
+                                ], spacing: 8) {
+                                    ForEach(Mood.allCases, id: \.self) { mood in
+                                        Button(action: {
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                                selectedMood = mood
+                                                showMoodSelector = false
+                                            }
+                                        }) {
+                                            Text(mood.name)
+                                                .font(styles.typography.caption)
+                                                .foregroundColor(selectedMood == mood ? styles.colors.text : styles.colors.textSecondary)
+                                                .padding(.vertical, 6)
+                                                .padding(.horizontal, 8)
+                                                .frame(maxWidth: .infinity)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                                        .fill(selectedMood == mood ? 
+                                                              mood.color.opacity(0.3) : 
+                                                              styles.colors.secondaryBackground)
+                                                )
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                                        .stroke(selectedMood == mood ? 
+                                                                mood.color.opacity(0.5) : 
+                                                                Color.clear, lineWidth: 1)
+                                                )
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, styles.layout.paddingXL)
+                            .padding(.vertical, styles.layout.paddingM)
+                            .background(styles.colors.secondaryBackground)
+                            .cornerRadius(styles.layout.radiusL)
+                            .padding(.horizontal, styles.layout.paddingXL)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
                         
                         // Text editor - styled to match the text display in view mode
                         TextEditor(text: $entryText)
@@ -344,50 +329,6 @@ struct EditableFullscreenEntryView: View {
                                 }
                             )
                         
-                        // Mood selector - only show when creating a new entry
-                        if isNewEntry {
-                            VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                                Text("How are you feeling?")
-                                    .font(styles.typography.label)
-                                    .foregroundColor(styles.colors.textSecondary)
-                                    .padding(.horizontal, styles.layout.paddingXL)
-
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: styles.layout.spacingM) {
-                                        ForEach(Mood.allCases, id: \.self) { mood in
-                                            Button(action: {
-                                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                                    selectedMood = mood
-                                                }
-                                            }) {
-                                                VStack(spacing: styles.layout.spacingS) {
-                                                    mood.icon
-                                                        .font(.system(size: styles.layout.iconSizeL))
-                                                        .foregroundColor(selectedMood == mood ? mood.color : styles.colors.textSecondary)
-                                                    Text(mood.name)
-                                                        .font(styles.typography.caption)
-                                                        .foregroundColor(selectedMood == mood ? styles.colors.text : styles.colors.textSecondary)
-                                                }
-                                                .frame(width: 80)
-                                                .padding(.vertical, styles.layout.spacingM)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                                        .fill(selectedMood == mood ? styles.colors.secondaryBackground : styles.colors.appBackground)
-                                                )
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                                        .stroke(selectedMood == mood ? mood.color.opacity(0.5) : Color.clear, lineWidth: 1)
-                                                )
-                                                .scaleEffect(selectedMood == mood ? 1.05 : 1.0)
-                                            }
-                                        }
-                                    }
-                                    .padding(.horizontal, styles.layout.paddingXL)
-                                }
-                            }
-                            .padding(.top, styles.layout.spacingL)
-                        }
-                        
                         Spacer(minLength: 100)
                     }
                 }
@@ -396,6 +337,41 @@ struct EditableFullscreenEntryView: View {
                     if !isTextFieldFocused {
                         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                     }
+                    
+                    // Close mood selector if open
+                    if showMoodSelector {
+                        withAnimation {
+                            showMoodSelector = false
+                        }
+                    }
+                }
+            }
+            
+            // Save button at bottom right
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        if !entryText.isEmpty {
+                            onSave?(entryText, selectedMood)
+                            dismiss()
+                        }
+                    }) {
+                        Text("Save")
+                            .font(styles.typography.bodyFont)
+                            .foregroundColor(.black)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 20)
+                            .background(
+                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                    .fill(styles.colors.accent)
+                            )
+                    }
+                    .disabled(entryText.isEmpty)
+                    .opacity(entryText.isEmpty ? 0.5 : 1.0)
+                    .padding(.trailing, 24)
+                    .padding(.bottom, 24)
                 }
             }
         }
@@ -403,7 +379,7 @@ struct EditableFullscreenEntryView: View {
         .onAppear {
             // Auto-focus the text field and position cursor at the end
             if autoFocusText {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     isTextFieldFocused = true
                 }
             }

@@ -292,8 +292,10 @@ struct JournalView: View {
             FullscreenEntryView(
                 entry: entry,
                 onEdit: {
-                    // Only allow editing if not locked
-                    if !entry.isLocked {
+                    // Dismiss the fullscreen view first, then set the editing entry
+                    fullscreenEntry = nil
+                    // Small delay to ensure smooth transition
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         editingEntry = entry
                     }
                 },
