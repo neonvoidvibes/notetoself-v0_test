@@ -474,7 +474,7 @@ struct JournalEntryCard: View {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.up.left.and.arrow.down.right")
                                 .font(.system(size: styles.layout.iconSizeS))
-                            Text("Expand")
+                            Text("View")
                                 .font(styles.typography.smallLabelFont)
                         }
                         .foregroundColor(styles.colors.accent)
@@ -502,7 +502,7 @@ struct JournalEntryCard: View {
         }
         .contextMenu {
             Button(action: onExpand) {
-                Label("Expand", systemImage: "arrow.up.left.and.arrow.down.right")
+                Label("View", systemImage: "arrow.up.left.and.arrow.down.right")
             }
         }
     }
