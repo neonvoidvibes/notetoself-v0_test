@@ -24,6 +24,14 @@ struct ReflectionsView: View {
             styles.colors.appBackground
                 .ignoresSafeArea()
             
+            // Add a tap gesture to the entire view to dismiss keyboard
+            Color.clear
+                .contentShape(Rectangle())
+                .ignoresSafeArea()
+                .onTapGesture {
+                    isInputFocused = false
+                }
+            
             VStack(spacing: 0) {
                 // Header
                 ZStack(alignment: .center) {
@@ -120,13 +128,21 @@ struct ReflectionsView: View {
                     .onAppear {
                         scrollToBottom(proxy: scrollView)
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        // Only dismiss keyboard and collapse message if we're not tapping on a message
-                        if expandedMessageId == nil {
-                            isInputFocused = false
-                        }
-                    }
+                    // Add a clear background with content shape and tap gesture
+                    .background(
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                isInputFocused = false
+                            }
+                    )
+                    // Add a drag gesture to detect scrolling
+                    .simultaneousGesture(
+                        DragGesture(minimumDistance: 5)
+                            .onChanged { _ in
+                                isInputFocused = false
+                            }
+                    )
                 }
                 
                 // Message input container - only shown when bottom sheet is closed
@@ -206,8 +222,6 @@ struct ReflectionsView: View {
                 }
             }
         }
-        // Tap gesture to dismiss keyboard when tapping anywhere in the view
-        
         .alert(isPresented: $showingSubscriptionPrompt) {
             Alert(
                 title: Text("Daily Limit Reached"),
@@ -295,11 +309,13 @@ struct ReflectionsView: View {
     }
 }
 
+// Update the ChatBubble view to ensure taps on messages also dismiss the keyboard
 struct ChatBubble: View {
     let message: ChatMessage
     let isExpanded: Bool
     let onTap: () -> Void
     @State private var isCopied: Bool = false
+    @Environment(\.colorScheme) private var colorScheme
     
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -313,13 +329,15 @@ struct ChatBubble: View {
                     Text(message.text)
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.userBubbleText)
-                        .padding(styles.layout.paddingM) // Reverted to original padding
+                        .padding(styles.layout.paddingM)
                         .background(styles.colors.userBubbleColor)
                         .clipShape(ChatBubbleShape(isUser: true))
                         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
                         .contentShape(Rectangle())
-                        .padding(.vertical, 8) // Moved padding outside the bubble
+                        .padding(.vertical, 8)
                         .onTapGesture {
+                            // Dismiss keyboard first, then handle the tap
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                             onTap()
                         }
                     
@@ -345,7 +363,7 @@ struct ChatBubble: View {
                                 .foregroundColor(isCopied ? styles.colors.accent : Color.gray.opacity(0.9))
                         }
                         .padding(.trailing, 8)
-                        .padding(.top, 3) // Reduced top padding to copy icon
+                        .padding(.top, 3)
                         .transition(.opacity)
                     }
                 }
@@ -354,13 +372,13 @@ struct ChatBubble: View {
                     Text(message.text)
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.assistantBubbleText)
-                        // Removed horizontal padding
                         .background(styles.colors.assistantBubbleColor)
                         .clipShape(ChatBubbleShape(isUser: false))
                         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
                         .contentShape(Rectangle())
-                        // Removed padding outside the bubble
                         .onTapGesture {
+                            // Dismiss keyboard first, then handle the tap
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                             onTap()
                         }
                     
@@ -386,7 +404,7 @@ struct ChatBubble: View {
                                 .foregroundColor(isCopied ? styles.colors.accent : Color.gray.opacity(0.9))
                         }
                         .padding(.leading, 8)
-                        .padding(.top, 6) // Added top padding to copy icon
+                        .padding(.top, 6)
                         .transition(.opacity)
                     }
                 }

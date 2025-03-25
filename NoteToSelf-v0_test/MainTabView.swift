@@ -257,7 +257,7 @@ struct MainTabView: View {
                                 HStack(spacing: 0) {
                                     Spacer()
                                     NavigationTabButton(
-                                        icon: "book.pages.fill",
+                                        icon: "pencil",
                                         title: "Journal",
                                         isSelected: selectedTab == 0
                                     ) {
