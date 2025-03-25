@@ -136,15 +136,17 @@ struct MoodWheel: View {
                     
                     // Left: "-" (was "Negative")
                     Text("-")
-                        .font(styles.typography.bodyFont) // Smaller font
+                        .font(styles.typography.wheelplusminus)
+                        .fontWeight(.bold) // Added bold
                         .foregroundColor(styles.colors.textSecondary)
-                        .position(x: -45, y: wheelDiameter/2) // Reverted back to original position
+                        .position(x: -18, y: wheelDiameter/2) // Reverted back to original position
                     
                     // Right: "+" (was "Positive")
                     Text("+")
-                        .font(styles.typography.bodyFont) // Smaller font
+                        .font(styles.typography.wheelplusminus)
+                        .fontWeight(.bold) // Added bold
                         .foregroundColor(styles.colors.textSecondary)
-                        .position(x: wheelDiameter + 45, y: wheelDiameter/2) // Reverted back to original position
+                        .position(x: wheelDiameter + 18, y: wheelDiameter/2) // Reverted back to original position
                 }
             }
             .frame(width: wheelDiameter, height: wheelDiameter)

@@ -95,7 +95,9 @@ struct Typography {
     let title3: Font = Font.system(size: 20, weight: .semibold, design: .monospaced)
     let largeTitle: Font = Font.system(size: 34, weight: .bold, design: .monospaced)
     let navLabel: Font = Font.system(size: 10, weight: .medium, design: .monospaced)
-    let moodLabel: Font = Font.system(size: 14, weight: .medium, design: .monospaced) // New font for mood labels
+    let moodLabel: Font = Font.system(size: 14, weight: .medium, design: .monospaced)
+    let wheelplusminus: Font = Font.system(size: 24, weight: .medium, design: .monospaced)
+
 }
 let typography = Typography()
 
