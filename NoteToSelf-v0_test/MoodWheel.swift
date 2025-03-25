@@ -120,27 +120,30 @@ struct MoodWheel: View {
         .padding(styles.layout.paddingL)
     }
     
+    // Update comments to reflect correct orientation
     private func moodForSegment(_ index: Int) -> Mood {
+        // Adjusted to ensure correct mood placement around the wheel
+        // The wheel is oriented with 0° at the right (3 o'clock position), going clockwise
         switch index {
-        // Bottom-right (0° = right, going clockwise)
-        case 0: return .content
-        case 1: return .relaxed
-        case 2: return .calm
+        // Right side (0°) and bottom-right quadrant (0-90°)
+        case 0: return .content  // 0-30° (right)
+        case 1: return .relaxed  // 30-60° (bottom-right)
+        case 2: return .calm     // 60-90° (bottom-right)
         
-        // Bottom-left quadrant
-        case 3: return .bored
-        case 4: return .depressed
-        case 5: return .sad
+        // Bottom-left quadrant (90-180°)
+        case 3: return .bored    // 90-120° (bottom)
+        case 4: return .depressed // 120-150° (bottom-left)
+        case 5: return .sad      // 150-180° (left)
         
-        // Top-left quadrant
-        case 6: return .stressed
-        case 7: return .angry
-        case 8: return .tense
+        // Top-left quadrant (180-270°)
+        case 6: return .stressed // 180-210° (top-left)
+        case 7: return .angry    // 210-240° (top-left)
+        case 8: return .tense    // 240-270° (top)
         
-        // Top-right quadrant
-        case 9: return .alert
-        case 10: return .excited
-        case 11: return .happy
+        // Top-right quadrant (270-360°)
+        case 9: return .alert    // 270-300° (top-right)
+        case 10: return .excited // 300-330° (top-right)
+        case 11: return .happy   // 330-360° (right)
         
         default: return .neutral
         }
@@ -342,7 +345,7 @@ struct AngularArc: Shape {
     }
 }
 
-// Circle mood background with dimming option
+// Update the CircleMoodBackground to align colors with mood placements
 struct CircleMoodBackground: View {
     var isDimmed: Bool = false
     
@@ -352,28 +355,28 @@ struct CircleMoodBackground: View {
                 .fill(
                     AngularGradient(
                         gradient: Gradient(colors: [
-                            // Top right (0-90 degrees)
-                            Color(hex: "#99FF33"), // Excited
-                            Color(hex: "#66FF66"), // Happy
-                            Color(hex: "#33FFCC"), // Content
+                            // Right side (0°) and bottom-right quadrant (0-90°)
+                            Color(hex: "#33FFCC"), // Content (0-30°)
+                            Color(hex: "#33CCFF"), // Relaxed (30-60°)
+                            Color(hex: "#3399FF"), // Calm (60-90°)
                             
-                            // Bottom right (90-180 degrees)
-                            Color(hex: "#33CCFF"), // Relaxed
-                            Color(hex: "#3399FF"), // Calm
-                            Color(hex: "#6666FF"), // Bored
+                            // Bottom-left quadrant (90-180°)
+                            Color(hex: "#6666FF"), // Bored (90-120°)
+                            Color(hex: "#9933FF"), // Depressed (120-150°)
+                            Color(hex: "#CC33FF"), // Sad (150-180°)
                             
-                            // Bottom left (180-270 degrees)
-                            Color(hex: "#9933FF"), // Depressed
-                            Color(hex: "#CC33FF"), // Sad
-                            Color(hex: "#FF3399"), // Stressed
+                            // Top-left quadrant (180-270°)
+                            Color(hex: "#FF3399"), // Stressed (180-210°)
+                            Color(hex: "#FF3333"), // Angry (210-240°)
+                            Color(hex: "#FF9900"), // Tense (240-270°)
                             
-                            // Top left (270-360 degrees)
-                            Color(hex: "#FF3333"), // Angry
-                            Color(hex: "#FF9900"), // Tense
-                            Color(hex: "#CCFF00"), // Alert
+                            // Top-right quadrant (270-360°)
+                            Color(hex: "#CCFF00"), // Alert (270-300°)
+                            Color(hex: "#99FF33"), // Excited (300-330°)
+                            Color(hex: "#66FF66"), // Happy (330-360°)
                             
-                            // Back to start
-                            Color(hex: "#99FF33")  // Excited
+                            // Back to start (for smooth gradient)
+                            Color(hex: "#33FFCC")  // Content (0°)
                         ]),
                         center: .center,
                         startAngle: .degrees(0),
