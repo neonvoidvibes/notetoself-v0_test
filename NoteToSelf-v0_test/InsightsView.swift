@@ -382,7 +382,7 @@ struct MoodChartSection: View {
                 case .happy: moodValue = 4
                 case .excited: moodValue = 5
                 case .neutral: moodValue = 3
-                case .distressed: moodValue = 2
+                case .stressed: moodValue = 2
                 case .sad: moodValue = 1
                 default: moodValue = 3 // Default to neutral for other moods
                 }
