@@ -24,41 +24,122 @@ struct JournalEntry: Identifiable, Codable {
 // MARK: - Mood Enum
 
 enum Mood: String, CaseIterable, Codable {
-    case happy, neutral, sad, anxious, excited
+    // High arousal, positive valence (yellow to green)
+    case alert, excited, happy
+    // Low arousal, positive valence (green to blue)
+    case content, relaxed, calm
+    // Low arousal, negative valence (blue to red)
+    case bored, depressed, sad
+    // High arousal, negative valence (red to yellow)
+    case distressed, angry, tense
+    // Center
+    case neutral
     
     var name: String {
         switch self {
-        case .happy: return "Happy"
-        case .neutral: return "Neutral"
-        case .sad: return "Sad"
-        case .anxious: return "Anxious"
+        case .alert: return "Alert"
         case .excited: return "Excited"
+        case .happy: return "Happy"
+        case .content: return "Content"
+        case .relaxed: return "Relaxed"
+        case .calm: return "Calm"
+        case .bored: return "Bored"
+        case .depressed: return "Depressed"
+        case .sad: return "Sad"
+        case .distressed: return "Distressed"
+        case .angry: return "Angry"
+        case .tense: return "Tense"
+        case .neutral: return "Neutral"
         }
     }
     
     var systemIconName: String {
         switch self {
-        case .happy: return "face.smiling"
-        case .neutral: return "face.dashed"
-        case .sad: return "cloud.rain"
-        case .anxious: return "exclamationmark.triangle"
+        case .alert: return "exclamationmark.circle"
         case .excited: return "star"
+        case .happy: return "face.smiling"
+        case .content: return "heart"
+        case .relaxed: return "leaf"
+        case .calm: return "water.waves"
+        case .bored: return "hourglass"
+        case .depressed: return "cloud.rain"
+        case .sad: return "cloud.rain"
+        case .distressed: return "exclamationmark.triangle"
+        case .angry: return "flame"
+        case .tense: return "bolt"
+        case .neutral: return "face.dashed"
         }
     }
     
     var color: Color {
-        let styles = UIStyles.shared
         switch self {
-        case .happy: return styles.colors.moodHappy
-        case .neutral: return styles.colors.moodNeutral
-        case .sad: return styles.colors.moodSad
-        case .anxious: return styles.colors.moodAnxious
-        case .excited: return styles.colors.moodExcited
+        // High arousal, positive valence (yellow to green)
+        case .alert: return Color(hex: "#CCFF00")
+        case .excited: return Color(hex: "#99FF33")
+        case .happy: return Color(hex: "#66FF66")
+        // Low arousal, positive valence (green to blue)
+        case .content: return Color(hex: "#33FFCC")
+        case .relaxed: return Color(hex: "#33CCFF")
+        case .calm: return Color(hex: "#3399FF")
+        // Low arousal, negative valence (blue to red)
+        case .bored: return Color(hex: "#6666FF")
+        case .depressed: return Color(hex: "#9933FF")
+        case .sad: return Color(hex: "#CC33FF")
+        // High arousal, negative valence (red to yellow)
+        case .distressed: return Color(hex: "#FF3399")
+        case .angry: return Color(hex: "#FF3333")
+        case .tense: return Color(hex: "#FF9900")
+        // Center
+        case .neutral: return Color(hex: "#CCCCCC")
         }
     }
     
     var icon: some View {
         Image(systemName: systemIconName)
+    }
+    
+    // Add properties for the circumplex model
+    var valence: Int {
+        switch self {
+        case .happy, .excited, .alert: return 3
+        case .content, .relaxed, .tense: return 2
+        case .calm, .angry: return 1
+        case .neutral: return 0
+        case .bored, .distressed: return -1
+        case .depressed: return -2
+        case .sad: return -3
+        }
+    }
+    
+    var arousal: Int {
+        switch self {
+        case .alert, .tense, .angry: return 3
+        case .excited, .distressed: return 2
+        case .happy, .sad: return 1
+        case .neutral: return 0
+        case .content, .depressed: return -1
+        case .relaxed, .bored: return -2
+        case .calm: return -3
+        }
+    }
+    
+    // Get mood from valence and arousal coordinates
+    static func fromCoordinates(valence: Int, arousal: Int) -> Mood {
+        switch (valence, arousal) {
+        case (3, 1): return .happy
+        case (3, 2): return .excited
+        case (2, 3): return .alert
+        case (1, 3): return .tense
+        case (-1, 3): return .angry
+        case (-2, 2): return .distressed
+        case (-3, 1): return .sad
+        case (-2, -1): return .depressed
+        case (-1, -2): return .bored
+        case (1, -3): return .calm
+        case (2, -2): return .relaxed
+        case (3, -1): return .content
+        default: return .neutral
+        }
     }
 }
 
@@ -150,7 +231,7 @@ class AppState: ObservableObject {
             ),
             JournalEntry(
                 text: "Started the new project today. Excited about the possibilities but also feeling a bit overwhelmed by the scope.",
-                mood: .anxious,
+                mood: .distressed,
                 date: calendar.date(byAdding: .day, value: -2, to: Date())!
             ),
             JournalEntry(
@@ -168,3 +249,4 @@ class AppState: ObservableObject {
         ]
     }
 }
+

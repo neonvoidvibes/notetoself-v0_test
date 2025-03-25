@@ -17,12 +17,23 @@ struct Colors {
     let tertiaryBackground: Color = Color(hex: "#313131")
     let quaternaryBackground: Color = Color(hex: "#555555")
     
-    // Mood colors
-    let moodHappy: Color = Color(red: 1.0, green: 0.84, blue: 0.0)
-    let moodNeutral: Color = Color.gray
-    let moodSad: Color = Color.blue
-    let moodAnxious: Color = Color(red: 0.8, green: 0.0, blue: 0.0)
-    let moodExcited: Color = Color.orange
+    // Mood colors - updated for Russell's Circumplex Model
+    let moodHappy: Color = Color(hex: "#66FF66")
+    let moodNeutral: Color = Color(hex: "#CCCCCC")
+    let moodSad: Color = Color(hex: "#CC33FF")
+    let moodAnxious: Color = Color(hex: "#FF3399") // Renamed to distressed in the model
+    let moodExcited: Color = Color(hex: "#99FF33")
+    
+    // Additional mood colors from the circumplex model
+    let moodAlert: Color = Color(hex: "#CCFF00")
+    let moodContent: Color = Color(hex: "#33FFCC")
+    let moodRelaxed: Color = Color(hex: "#33CCFF")
+    let moodCalm: Color = Color(hex: "#3399FF")
+    let moodBored: Color = Color(hex: "#6666FF")
+    let moodDepressed: Color = Color(hex: "#9933FF")
+    let moodDistressed: Color = Color(hex: "#FF3399")
+    let moodAngry: Color = Color(hex: "#FF3333")
+    let moodTense: Color = Color(hex: "#FF9900")
     
     let inputBackground: Color = Color(hex: "#111111")
     let inputFieldInnerBackground: Color = Color.clear

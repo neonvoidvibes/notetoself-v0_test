@@ -261,48 +261,14 @@ struct EditableFullscreenEntryView: View {
                         .padding(.horizontal, styles.layout.paddingXL)
                         .padding(.top, styles.layout.paddingL)
                         
-                        // Mood selector panel - simplified
+                        // Mood wheel selector panel
                         if showMoodSelector {
-                            VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                                // Grid layout for mood selection - no icons, no header text
-                                LazyVGrid(columns: [
-                                    GridItem(.adaptive(minimum: 80, maximum: 100), spacing: 8)
-                                ], spacing: 8) {
-                                    ForEach(Mood.allCases, id: \.self) { mood in
-                                        Button(action: {
-                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                                selectedMood = mood
-                                                showMoodSelector = false
-                                            }
-                                        }) {
-                                            Text(mood.name)
-                                                .font(styles.typography.caption)
-                                                .foregroundColor(selectedMood == mood ? styles.colors.text : styles.colors.textSecondary)
-                                                .padding(.vertical, 6)
-                                                .padding(.horizontal, 8)
-                                                .frame(maxWidth: .infinity)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                                        .fill(selectedMood == mood ? 
-                                                              mood.color.opacity(0.3) : 
-                                                              styles.colors.secondaryBackground)
-                                                )
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                                        .stroke(selectedMood == mood ? 
-                                                                mood.color.opacity(0.5) : 
-                                                                Color.clear, lineWidth: 1)
-                                                )
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, styles.layout.paddingXL)
-                            .padding(.vertical, styles.layout.paddingM)
-                            .background(styles.colors.secondaryBackground)
-                            .cornerRadius(styles.layout.radiusL)
-                            .padding(.horizontal, styles.layout.paddingXL)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
+                            MoodWheel(selectedMood: $selectedMood)
+                                .padding(.horizontal, styles.layout.paddingM)
+                                .background(styles.colors.secondaryBackground)
+                                .cornerRadius(styles.layout.radiusL)
+                                .padding(.horizontal, styles.layout.paddingXL)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
                         }
                         
                         // Text editor - styled to match the text display in view mode
