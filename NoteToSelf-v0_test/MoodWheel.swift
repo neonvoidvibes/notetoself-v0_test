@@ -209,86 +209,96 @@ struct CircleMoodBackground: View {
   }
 }
 
-// Completely revised MoodLabel with consistent spacing and selection styling
+// Completely revised MoodLabel with fixed positioning
 struct MoodLabel: View {
-  let mood: Mood
-  let wheelRadius: CGFloat
-  let centerRadius: CGFloat
-  let isSelected: Bool
-  
-  private let styles = UIStyles.shared
-  
-  var body: some View {
-      let position = calculatePosition(mood: mood, wheelRadius: wheelRadius, centerRadius: centerRadius)
-      
-      return Text(mood.name)
-          .font(styles.typography.moodLabel) // Using the new larger font size
-          .foregroundColor(isSelected ? Color.black : Color.white)
-          .padding(.horizontal, 8)
-          .padding(.vertical, 4)
-          .background(
-              isSelected ? 
-                  Color.white : 
-                  Color(hex: "#333333").opacity(0.7)
-          )
-          .cornerRadius(4)
-          .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
-          .position(position)
-          .eraseToAnyView()
-  }
-  
-  // Calculate precise positions for each mood with consistent spacing
-  private func calculatePosition(mood: Mood, wheelRadius: CGFloat, centerRadius: CGFloat) -> CGPoint {
-      let center = CGPoint(x: wheelRadius, y: wheelRadius)
-      
-      // For neutral mood, place it at the center
-      if mood == .neutral {
-          return center
-      }
-      
-      // For other moods, use a consistent radial placement
-      // Use a radius multiplier of 0.85 to push labels closer to the edge
-      let radiusMultiplier: CGFloat = 0.85
-      let radius = wheelRadius * radiusMultiplier
-      
-      // Calculate angle based on mood position in the circumplex
-      let angle = calculateAngle(for: mood)
-      
-      // Convert angle to x,y coordinates
-      let x = center.x + radius * cos(angle)
-      let y = center.y - radius * sin(angle) // Negate y to match SwiftUI coordinate system
-      
-      return CGPoint(x: x, y: y)
-  }
-  
-  // Calculate the angle for each mood to ensure even spacing
-  private func calculateAngle(for mood: Mood) -> CGFloat {
-      // Define angles in radians (0 = right, π/2 = top, π = left, 3π/2 = bottom)
-      switch mood {
-      // Top left quadrant (negative valence, positive arousal)
-      case .stressed: return 2.35 // ~135 degrees
-      case .angry: return 2.09 // ~120 degrees
-      case .tense: return 1.83 // ~105 degrees
-          
-      // Top right quadrant (positive valence, positive arousal)
-      case .alert: return 1.31 // ~75 degrees
-      case .excited: return 1.05 // ~60 degrees
-      case .happy: return 0.79 // ~45 degrees
-          
-      // Bottom right quadrant (positive valence, negative arousal)
-      case .content: return 0.52 // ~30 degrees
-      case .relaxed: return 0.26 // ~15 degrees
-      case .calm: return 6.02 // ~345 degrees
-          
-      // Bottom left quadrant (negative valence, negative arousal)
-      case .bored: return 5.50 // ~315 degrees
-      case .depressed: return 5.24 // ~300 degrees
-      case .sad: return 4.97 // ~285 degrees
-          
-      // Neutral (center) - not used in this function but included for completeness
-      case .neutral: return 0
-      }
-  }
+    let mood: Mood
+    let wheelRadius: CGFloat
+    let centerRadius: CGFloat
+    let isSelected: Bool
+    
+    private let styles = UIStyles.shared
+    
+    var body: some View {
+        // Skip rendering if it's neutral - we'll handle it separately
+        if mood == .neutral {
+            return Text(mood.name)
+                .font(styles.typography.moodLabel)
+                .foregroundColor(isSelected ? Color.black : Color.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    isSelected ? 
+                        Color.white : 
+                        Color(hex: "#333333").opacity(0.7)
+                )
+                .cornerRadius(4)
+                .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                .position(x: wheelRadius, y: wheelRadius)
+                .eraseToAnyView()
+        }
+        
+        // Get fixed position based on mood
+        let position = fixedPositionForMood(mood: mood, wheelRadius: wheelRadius)
+        
+        return Text(mood.name)
+            .font(styles.typography.moodLabel)
+            .foregroundColor(isSelected ? Color.black : Color.white)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                isSelected ? 
+                    Color.white : 
+                    Color(hex: "#333333").opacity(0.7)
+            )
+            .cornerRadius(4)
+            .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+            .position(position)
+            .eraseToAnyView()
+    }
+    
+    // Use fixed positions for each mood to ensure proper spacing
+    private func fixedPositionForMood(mood: Mood, wheelRadius: CGFloat) -> CGPoint {
+        let center = CGPoint(x: wheelRadius, y: wheelRadius)
+        let radius = wheelRadius * 0.78 // Reduced from 0.85 to pull labels in slightly
+        
+        switch mood {
+        // Top left quadrant (negative valence, positive arousal)
+        case .stressed:
+            return CGPoint(x: center.x - radius * 0.7, y: center.y - radius * 0.7)
+        case .angry:
+            return CGPoint(x: center.x - radius * 0.25, y: center.y - radius * 0.95)
+        case .tense:
+            return CGPoint(x: center.x + radius * 0.25, y: center.y - radius * 0.95)
+            
+        // Top right quadrant (positive valence, positive arousal)
+        case .alert:
+            return CGPoint(x: center.x + radius * 0.7, y: center.y - radius * 0.7)
+        case .excited:
+            return CGPoint(x: center.x + radius * 0.95, y: center.y - radius * 0.25)
+        case .happy:
+            return CGPoint(x: center.x + radius * 0.95, y: center.y + radius * 0.25)
+            
+        // Bottom right quadrant (positive valence, negative arousal)
+        case .content:
+            return CGPoint(x: center.x + radius * 0.7, y: center.y + radius * 0.7)
+        case .relaxed:
+            return CGPoint(x: center.x + radius * 0.25, y: center.y + radius * 0.95)
+        case .calm:
+            return CGPoint(x: center.x - radius * 0.25, y: center.y + radius * 0.95)
+            
+        // Bottom left quadrant (negative valence, negative arousal)
+        case .bored:
+            return CGPoint(x: center.x - radius * 0.7, y: center.y + radius * 0.7)
+        case .depressed:
+            return CGPoint(x: center.x - radius * 0.95, y: center.y + radius * 0.25)
+        case .sad:
+            return CGPoint(x: center.x - radius * 0.95, y: center.y - radius * 0.25)
+            
+        // Neutral (center) - handled separately
+        case .neutral:
+            return center
+        }
+    }
 }
 
 // Helper extension to erase view type
