@@ -35,6 +35,19 @@ struct JournalView: View {
         )
     }
     
+    // Function to clear all filters and optionally close the filter panel
+    private func clearFilters(closePanel: Bool = false) {
+        searchText = ""
+        searchTags = []
+        selectedMoods = []
+        dateFilterType = .all
+        
+        if closePanel {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                showingFilterPanel = false
+            }
+        }
+    }
     
     var body: some View {
         ZStack {
@@ -106,10 +119,7 @@ struct JournalView: View {
                         customStartDate: $customStartDate,
                         customEndDate: $customEndDate,
                         onClearFilters: {
-                            searchText = ""
-                            searchTags = []
-                            selectedMoods = []
-                            dateFilterType = .all
+                            clearFilters()
                         }
                     )
                     .transition(.move(edge: .top).combined(with: .opacity))
@@ -126,8 +136,8 @@ struct JournalView: View {
                         }
                         .frame(height: 0)
                         
-                        // Inspiring prompt
-                        if !appState.journalEntries.isEmpty {
+                        // Inspiring prompt - only show when there are filtered entries and filter panel is closed
+                        if !appState.journalEntries.isEmpty && !filteredEntries.isEmpty && !showingFilterPanel {
                             VStack(alignment: .leading, spacing: styles.layout.spacingS) {
                                 Text("Today's Reflection")
                                     .font(styles.typography.smallLabelFont)
@@ -140,48 +150,42 @@ struct JournalView: View {
                             }
                             .padding(.horizontal, 20)
                             .padding(.bottom, styles.layout.spacingM)
-                            .padding(.top, styles.layout.spacingS)
+                            .padding(.top, 20) // Added proper top padding
                         }
                         
                         if filteredEntries.isEmpty {
-                            VStack(spacing: 16) {
-                                Spacer()
-                                
-                                if !searchTags.isEmpty || !selectedMoods.isEmpty || dateFilterType != .all {
-                                    Text("No matching entries")
-                                        .font(styles.typography.headingFont)
-                                        .foregroundColor(styles.colors.text)
-                                    
-                                    Text("Try adjusting your filters")
-                                        .font(styles.typography.bodyFont)
-                                        .foregroundColor(styles.colors.textSecondary)
-                                    
-                                    Button("Clear Filters") {
-                                        searchText = ""
-                                        searchTags = []
-                                        selectedMoods = []
-                                        dateFilterType = .all
-                                    }
-                                    .buttonStyle(UIStyles.SecondaryButtonStyle(
-                                        colors: styles.colors,
-                                        typography: styles.typography,
-                                        layout: styles.layout
-                                    ))
-                                    .padding(.top, 16)
-                                } else {
-                                    Text("No journal entries yet.")
-                                        .font(styles.typography.headingFont)
-                                        .foregroundColor(styles.colors.text)
-                                    
-                                    Text("Tap the + button to add your first entry.")
-                                        .font(styles.typography.bodyFont)
-                                        .foregroundColor(styles.colors.textSecondary)
-                                }
-                                
-                                Spacer()
-                            }
-                            .frame(minHeight: UIScreen.main.bounds.height * 0.7)
-                            .padding()
+                          VStack(alignment: .center, spacing: 16) {
+                              if !searchTags.isEmpty || !selectedMoods.isEmpty || dateFilterType != .all {
+                                  Text("No Matching Entries")
+                                      .font(styles.typography.bodyFont)
+                                      .foregroundColor(styles.colors.text)
+                                      .padding(.top, 60) // Ample top padding
+                                  
+                                  Text("Try adjusting your filters")
+                                      .font(styles.typography.bodySmall)
+                                      .foregroundColor(styles.colors.textSecondary)
+                                  
+                                  Button("Clear Filters") {
+                                      clearFilters(closePanel: true) // Close panel when clearing filters
+                                  }
+                                  .font(styles.typography.bodyFont)
+                                  .foregroundColor(styles.colors.accent)
+                                  .padding(.top, 8)
+                              } else {
+                                  Text("No journal entries yet.")
+                                      .font(styles.typography.headingFont)
+                                      .foregroundColor(styles.colors.text)
+                                      .padding(.top, 60) // Ample top padding
+                                  
+                                  Text("Tap the + button to add your first entry.")
+                                      .font(styles.typography.bodyFont)
+                                      .foregroundColor(styles.colors.textSecondary)
+                              }
+                              
+                              Spacer() // Push content to the top
+                          }
+                          .frame(maxWidth: .infinity)
+                          .padding()
                         } else {
                             LazyVStack(spacing: styles.layout.radiusM) {
                                 ForEach(filteredEntries) { entry in
