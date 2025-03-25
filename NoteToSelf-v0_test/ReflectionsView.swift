@@ -52,7 +52,7 @@ struct ReflectionsView: View {
                             .frame(width: 20, height: 3)
                     }
                     
-                    // Menu button on left and clear button on right
+                    // Menu button on left and filter/history buttons on right
                     HStack {
                         Button(action: {
                             NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
@@ -76,13 +76,13 @@ struct ReflectionsView: View {
                         
                         Spacer()
                         
-                        // Chat history button on right
+                        // Chat history button
                         Button {
                             // Show chat history via MainTabView
                             showChatHistory()
                         } label: {
-                            Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90") // Keep this exact name
-                                .font(.system(size: 24))
+                            Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                                .font(.system(size: 20))
                                 .foregroundColor(styles.colors.text)
                         }
                     }
@@ -95,7 +95,7 @@ struct ReflectionsView: View {
                 ScrollViewReader { scrollView in
                     ScrollView {
                         LazyVStack(spacing: styles.layout.spacingL) {
-                            ForEach(chatManager.currentChat.messages) { message in
+                            ForEach(filteredMessages) { message in
                                 ChatBubble(
                                     message: message,
                                     isExpanded: expandedMessageId == message.id,
@@ -110,6 +110,13 @@ struct ReflectionsView: View {
                                     }
                                 )
                                 .id(message.id)
+                                .swipeActions(edge: .trailing) {
+                                    Button(role: .destructive) {
+                                        chatManager.deleteMessage(message)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
                             }
                             
                             if isTyping {
@@ -240,6 +247,10 @@ struct ReflectionsView: View {
         }
     }
     
+    private var filteredMessages: [ChatMessage] {
+        chatManager.currentChat.messages
+    }
+    
     // Simplified scrolling function
     private func scrollToBottom(proxy: ScrollViewProxy) {
         proxy.scrollTo("BottomAnchor")
@@ -315,110 +326,110 @@ struct ReflectionsView: View {
     }
 }
 
-// Update the ChatBubble view to ensure taps on messages also dismiss the keyboard
+// Remove the onStar callback from ChatBubble since we're moving that functionality to chat level
 struct ChatBubble: View {
-    let message: ChatMessage
-    let isExpanded: Bool
-    let onTap: () -> Void
-    @State private var isCopied: Bool = false
-    @Environment(\.colorScheme) private var colorScheme
-    
-    // Access to shared styles
-    private let styles = UIStyles.shared
-    
-    var body: some View {
-        HStack {
-            if message.isUser {
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(message.text)
-                        .font(styles.typography.bodyFont)
-                        .foregroundColor(styles.colors.userBubbleText)
-                        .padding(styles.layout.paddingM)
-                        .background(styles.colors.userBubbleColor)
-                        .clipShape(ChatBubbleShape(isUser: true))
-                        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
-                        .contentShape(Rectangle())
-                        .padding(.vertical, 8)
-                        .onTapGesture {
-                            // Dismiss keyboard first, then handle the tap
-                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                            onTap()
-                        }
-                    
-                    if isExpanded {
-                        Button(action: {
-                            // Copy to clipboard
-                            UIPasteboard.general.string = message.text
-                            
-                            // Show confirmation
-                            withAnimation {
-                                isCopied = true
-                            }
-                            
-                            // Reset after delay
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                withAnimation {
-                                    isCopied = false
-                                }
-                            }
-                        }) {
-                            Image(systemName: isCopied ? "checkmark" : "rectangle.on.rectangle")
-                                .font(.system(size: 16))
-                                .foregroundColor(isCopied ? styles.colors.accent : Color.gray.opacity(0.9))
-                        }
-                        .padding(.trailing, 8)
-                        .padding(.top, 3)
-                        .transition(.opacity)
-                    }
-                }
-            } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(message.text)
-                        .font(styles.typography.bodyFont)
-                        .foregroundColor(styles.colors.assistantBubbleText)
-                        .background(styles.colors.assistantBubbleColor)
-                        .clipShape(ChatBubbleShape(isUser: false))
-                        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            // Dismiss keyboard first, then handle the tap
-                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                            onTap()
-                        }
-                    
-                    if isExpanded {
-                        Button(action: {
-                            // Copy to clipboard
-                            UIPasteboard.general.string = message.text
-                            
-                            // Show confirmation
-                            withAnimation {
-                                isCopied = true
-                            }
-                            
-                            // Reset after delay
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                withAnimation {
-                                    isCopied = false
-                                }
-                            }
-                        }) {
-                            Image(systemName: isCopied ? "checkmark" : "rectangle.on.rectangle")
-                                .font(.system(size: 16))
-                                .foregroundColor(isCopied ? styles.colors.accent : Color.gray.opacity(0.9))
-                        }
-                        .padding(.leading, 8)
-                        .padding(.top, 6)
-                        .transition(.opacity)
-                    }
-                }
-                
-                Spacer()
-            }
-        }
-    }
+  let message: ChatMessage
+  let isExpanded: Bool
+  let onTap: () -> Void
+  @State private var isCopied: Bool = false
+  @Environment(\.colorScheme) private var colorScheme
+  
+  // Access to shared styles
+  private let styles = UIStyles.shared
+  
+  var body: some View {
+      HStack {
+          if message.isUser {
+              Spacer()
+              
+              VStack(alignment: .trailing, spacing: 4) {
+                  Text(message.text)
+                      .font(styles.typography.bodyFont)
+                      .foregroundColor(styles.colors.userBubbleText)
+                      .padding(styles.layout.paddingM)
+                      .background(styles.colors.userBubbleColor)
+                      .clipShape(ChatBubbleShape(isUser: true))
+                      .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                      .contentShape(Rectangle())
+                      .padding(.vertical, 8)
+                      .onTapGesture {
+                          // Dismiss keyboard first, then handle the tap
+                          UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                          onTap()
+                      }
+                  
+                  if isExpanded {
+                      Button(action: {
+                          // Copy to clipboard
+                          UIPasteboard.general.string = message.text
+                          
+                          // Show confirmation
+                          withAnimation {
+                              isCopied = true
+                          }
+                          
+                          // Reset after delay
+                          DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                              withAnimation {
+                                  isCopied = false
+                              }
+                          }
+                      }) {
+                          Image(systemName: isCopied ? "checkmark" : "rectangle.on.rectangle")
+                              .font(.system(size: 16))
+                              .foregroundColor(isCopied ? styles.colors.accent : Color.gray.opacity(0.9))
+                      }
+                      .padding(.trailing, 8)
+                      .padding(.top, 3)
+                      .transition(.opacity)
+                  }
+              }
+          } else {
+              VStack(alignment: .leading, spacing: 4) {
+                  Text(message.text)
+                      .font(styles.typography.bodyFont)
+                      .foregroundColor(styles.colors.assistantBubbleText)
+                      .background(styles.colors.assistantBubbleColor)
+                      .clipShape(ChatBubbleShape(isUser: false))
+                      .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                      .contentShape(Rectangle())
+                      .onTapGesture {
+                          // Dismiss keyboard first, then handle the tap
+                          UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                          onTap()
+                      }
+                  
+                  if isExpanded {
+                      Button(action: {
+                          // Copy to clipboard
+                          UIPasteboard.general.string = message.text
+                          
+                          // Show confirmation
+                          withAnimation {
+                              isCopied = true
+                          }
+                          
+                          // Reset after delay
+                          DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                              withAnimation {
+                                  isCopied = false
+                              }
+                          }
+                      }) {
+                          Image(systemName: isCopied ? "checkmark" : "rectangle.on.rectangle")
+                              .font(.system(size: 16))
+                              .foregroundColor(isCopied ? styles.colors.accent : Color.gray.opacity(0.9))
+                      }
+                      .padding(.leading, 8)
+                      .padding(.top, 6)
+                      .transition(.opacity)
+                  }
+              }
+              
+              Spacer()
+          }
+      }
+  }
 }
 
 struct ChatBubbleShape: Shape {

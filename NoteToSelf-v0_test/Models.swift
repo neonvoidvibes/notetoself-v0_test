@@ -152,12 +152,14 @@ struct ChatMessage: Identifiable, Codable {
   let text: String
   let isUser: Bool
   let date: Date
+  var isStarred: Bool
   
-  init(id: UUID = UUID(), text: String, isUser: Bool, date: Date = Date()) {
+  init(id: UUID = UUID(), text: String, isUser: Bool, date: Date = Date(), isStarred: Bool = false) {
       self.id = id
       self.text = text
       self.isUser = isUser
       self.date = date
+      self.isStarred = isStarred
   }
 }
 
@@ -248,10 +250,10 @@ class AppState: ObservableObject {
         ]
         
         chatMessages = [
-            ChatMessage(text: "I've been feeling stressed about my upcoming presentation. Any advice?", isUser: true),
-            ChatMessage(text: "It's natural to feel stressed about presentations. Try breaking your preparation into smaller tasks and practice in front of a mirror or a trusted friend. Remember that being prepared is the best way to reduce anxiety.", isUser: false),
-            ChatMessage(text: "That's helpful. I'll try to practice more.", isUser: true),
-            ChatMessage(text: "Great plan. Also, remember to take deep breaths before you start. Is there a specific part of the presentation that concerns you most?", isUser: false)
+            ChatMessage(text: "I've been feeling stressed about my upcoming presentation. Any advice?", isUser: true, isStarred: false),
+            ChatMessage(text: "It's natural to feel stressed about presentations. Try breaking your preparation into smaller tasks and practice in front of a mirror or a trusted friend. Remember that being prepared is the best way to reduce anxiety.", isUser: false, isStarred: false),
+            ChatMessage(text: "That's helpful. I'll try to practice more.", isUser: true, isStarred: false),
+            ChatMessage(text: "Great plan. Also, remember to take deep breaths before you start. Is there a specific part of the presentation that concerns you most?", isUser: false, isStarred: false)
         ]
     }
 }

@@ -7,13 +7,15 @@ struct Chat: Identifiable, Codable {
     let createdAt: Date
     var lastUpdatedAt: Date
     var title: String
+    var isStarred: Bool // Add this property
     
-    init(id: UUID = UUID(), messages: [ChatMessage] = [], createdAt: Date = Date(), lastUpdatedAt: Date = Date(), title: String = "New Chat") {
+    init(id: UUID = UUID(), messages: [ChatMessage] = [], createdAt: Date = Date(), lastUpdatedAt: Date = Date(), title: String = "New Chat", isStarred: Bool = false) {
         self.id = id
         self.messages = messages
         self.createdAt = createdAt
         self.lastUpdatedAt = lastUpdatedAt
         self.title = title
+        self.isStarred = isStarred
     }
     
     // Generate a title based on the first user message
@@ -44,11 +46,8 @@ class ChatManager: ObservableObject {
         loadChats()
         
         // Add a sample chat if there are no chats (easily removable for production)
-        // Remove or comment out the sample chat creation in init() since we're now doing it in MainTabView
-        // Comment out or remove this block:
-        /*
         if chats.isEmpty {
-            // Create a sample chat with the mock messages from AppState
+            // Create a sample chat with the mock messages
             let sampleMessages = [
                 ChatMessage(text: "I've been feeling stressed about my upcoming presentation. Any advice?", isUser: true),
                 ChatMessage(text: "It's natural to feel stressed about presentations. Try breaking your preparation into smaller tasks and practice in front of a mirror or a trusted friend. Remember that being prepared is the best way to reduce anxiety.", isUser: false),
@@ -65,7 +64,6 @@ class ChatManager: ObservableObject {
             chats.append(sampleChat)
             saveChats()
         }
-        */
     }
     
     // Add a message to the current chat
@@ -244,6 +242,36 @@ class ChatManager: ObservableObject {
         }
         
         return sortedSections
+    }
+    
+    // Toggle star status for a message
+    func toggleStarMessage(_ message: ChatMessage) {
+        if let index = currentChat.messages.firstIndex(where: { $0.id == message.id }) {
+            currentChat.messages[index].isStarred.toggle()
+            saveChats()
+        }
+    }
+
+    // Delete a message
+    func deleteMessage(_ message: ChatMessage) {
+        if let index = currentChat.messages.firstIndex(where: { $0.id == message.id }) {
+            currentChat.messages.remove(at: index)
+            saveChats()
+        }
+    }
+    
+    // Add a method to toggle star status for an entire chat
+    func toggleStarChat(_ chat: Chat) {
+        if let index = chats.firstIndex(where: { $0.id == chat.id }) {
+            chats[index].isStarred.toggle()
+            
+            // If we're toggling the current chat, update it too
+            if currentChat.id == chat.id {
+                currentChat.isStarred.toggle()
+            }
+            
+            saveChats()
+        }
     }
 }
 

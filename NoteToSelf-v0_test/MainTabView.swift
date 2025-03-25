@@ -419,55 +419,7 @@ struct MainTabView: View {
           // Chat History overlay
           ZStack(alignment: .top) {
               VStack(spacing: 0) {
-                  // Header with title and close button
-                  ZStack(alignment: .center) {
-                      // Title truly centered
-                      VStack(spacing: 8) {
-                          Text("Chat History")
-                              .font(styles.typography.title1)
-                              .foregroundColor(styles.colors.text)
-                          
-                          Rectangle()
-                              .fill(styles.colors.accent)
-                              .frame(width: 20, height: 3)
-                      }
-                      
-                      // Left-aligned back button and right-aligned new chat button
-                      HStack {
-                          // Back button (double chevron left) at left side
-                          Button(action: {
-                              withAnimation(.easeInOut(duration: 0.3)) {
-                                  showingChatHistory = false
-                                  chatHistoryOffset = screenWidth
-                              }
-                          }) {
-                              Image(systemName: "chevron.left.2")
-                                  .font(.system(size: 20, weight: .bold))
-                                  .foregroundColor(styles.colors.accent)
-                                  .frame(width: 36, height: 36)
-                          }
-                          
-                          Spacer()
-                          
-                          // New chat button on right side
-                          Button(action: {
-                              // Start a new chat and close the history view
-                              chatManager.startNewChat()
-                              withAnimation(.easeInOut(duration: 0.3)) {
-                                  showingChatHistory = false
-                                  chatHistoryOffset = screenWidth
-                              }
-                          }) {
-                              Image(systemName: "square.and.pencil")
-                                  .font(.system(size: 20, weight: .bold))
-                                  .foregroundColor(Color.white)
-                                  .frame(width: 36, height: 36)
-                          }
-                      }
-                      .padding(.horizontal, styles.layout.paddingXL)
-                  }
-                  .padding(.top, 8) // Same top padding as other views
-                  .padding(.bottom, 8)
+                  // The header is now handled inside ChatHistoryView
                   
                   // Actual Chat History content
                   ChatHistoryView(chatManager: chatManager, onSelectChat: { selectedChat in
@@ -485,6 +437,12 @@ struct MainTabView: View {
                           withAnimation {
                               selectedTab = 2
                           }
+                      }
+                  }, onDismiss: {
+                      // Close the chat history view
+                      withAnimation(.easeInOut(duration: 0.3)) {
+                          showingChatHistory = false
+                          chatHistoryOffset = screenWidth
                       }
                   })
                   .background(styles.colors.menuBackground)
