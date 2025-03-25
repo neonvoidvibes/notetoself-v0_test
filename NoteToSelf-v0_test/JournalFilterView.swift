@@ -170,8 +170,8 @@ struct FilterPanel: View {
     
     private var dateTab: some View {
         VStack(spacing: styles.layout.spacingS) {
-            // Date filter options
-            ForEach(DateFilterType.allCases) { filterType in
+            // Regular date filter options
+            ForEach(DateFilterType.allCases.filter { $0 != .custom }, id: \.self) { filterType in
                 Button(action: {
                     dateFilterType = filterType
                 }) {
@@ -179,9 +179,9 @@ struct FilterPanel: View {
                         Text(filterType.rawValue)
                             .font(styles.typography.bodySmall)
                             .foregroundColor(styles.colors.text)
-                        
+                    
                         Spacer()
-                        
+                    
                         if dateFilterType == filterType {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(styles.colors.accent)
@@ -197,42 +197,82 @@ struct FilterPanel: View {
                 }
             }
             
-            // Custom date range - more compact
-            if dateFilterType == .custom {
-                VStack(spacing: styles.layout.spacingXS) {
+            // Custom date range as a special expandable option
+            Button(action: {
+                dateFilterType = .custom
+            }) {
+                VStack(spacing: 0) {
+                    // Header row
                     HStack {
-                        Text("Start:")
-                            .font(styles.typography.caption)
-                            .foregroundColor(styles.colors.textSecondary)
-                            .frame(width: 40, alignment: .leading)
-                        
-                        DatePicker("", selection: $customStartDate, displayedComponents: .date)
-                            .datePickerStyle(CompactDatePickerStyle())
-                            .labelsHidden()
+                        Text(DateFilterType.custom.rawValue)
+                            .font(styles.typography.bodySmall)
                             .foregroundColor(styles.colors.text)
-                            .accentColor(styles.colors.accent)
-                            .scaleEffect(0.9)
-                            .frame(maxHeight: 30)
+                        
+                        Spacer()
+                        
+                        if dateFilterType == .custom {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(styles.colors.accent)
+                                .font(.system(size: 14))
+                        }
                     }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
                     
-                    HStack {
-                        Text("End:")
-                            .font(styles.typography.caption)
-                            .foregroundColor(styles.colors.textSecondary)
-                            .frame(width: 40, alignment: .leading)
+                    // Expanded content when selected
+                    if dateFilterType == .custom {
+                        Divider()
+                            .background(styles.colors.divider)
+                            .padding(.horizontal, 8)
                         
-                        DatePicker("", selection: $customEndDate, displayedComponents: .date)
-                            .datePickerStyle(CompactDatePickerStyle())
-                            .labelsHidden()
-                            .foregroundColor(styles.colors.text)
-                            .accentColor(styles.colors.accent)
-                            .scaleEffect(0.9)
-                            .frame(maxHeight: 30)
+                        VStack(alignment: .leading, spacing: 2) { // Reduced spacing between rows
+                            // Start date row with padding above
+                            HStack(alignment: .center) {
+                                Text("Start:")
+                                    .font(styles.typography.caption)
+                                    .foregroundColor(styles.colors.textSecondary)
+                                    .frame(width: 50, alignment: .leading)
+                                    .padding(.leading, 12) // Same padding as Custom Range text
+                                
+                                DatePicker("", selection: $customStartDate, displayedComponents: .date)
+                                    .datePickerStyle(CompactDatePickerStyle())
+                                    .labelsHidden()
+                                    .foregroundColor(styles.colors.text)
+                                    .accentColor(styles.colors.accent)
+                                    .scaleEffect(0.9)
+                                    .frame(maxHeight: 30)
+                                
+                                Spacer()
+                            }
+                            .padding(.top, 8) // Added padding above Start row
+                            .padding(.bottom, 2) // Minimal padding between rows
+                            
+                            // End date row
+                            HStack(alignment: .center) {
+                                Text("End:")
+                                    .font(styles.typography.caption)
+                                    .foregroundColor(styles.colors.textSecondary)
+                                    .frame(width: 50, alignment: .leading)
+                                    .padding(.leading, 12) // Same padding as Custom Range text
+                                
+                                DatePicker("", selection: $customEndDate, displayedComponents: .date)
+                                    .datePickerStyle(CompactDatePickerStyle())
+                                    .labelsHidden()
+                                    .foregroundColor(styles.colors.text)
+                                    .accentColor(styles.colors.accent)
+                                    .scaleEffect(0.9)
+                                    .frame(maxHeight: 30)
+                                
+                                Spacer()
+                            }
+                            .padding(.bottom, 8) // Bottom padding for the container
+                        }
                     }
                 }
-                .padding(styles.layout.paddingS)
-                .background(styles.colors.secondaryBackground)
-                .cornerRadius(styles.layout.radiusM)
+                .background(
+                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                        .fill(dateFilterType == .custom ? styles.colors.secondaryBackground : styles.colors.appBackground)
+                )
             }
         }
     }
