@@ -139,19 +139,46 @@ struct JournalView: View {
                         
                         // Inspiring prompt - only show when there are filtered entries and filter panel is closed
                         if !appState.journalEntries.isEmpty && !filteredEntries.isEmpty && !showingFilterPanel {
-                            VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                                Text("Today's Reflection")
-                                    .font(styles.typography.smallLabelFont)
-                                    .foregroundColor(styles.colors.accent)
+                            VStack(alignment: .leading, spacing: styles.layout.spacingL) {
+                                // Inspiring header with larger font
+                                Text("Your Journal")
+                                    .font(styles.typography.headingFont)
+                                    .foregroundColor(styles.colors.text)
+                                    .padding(.bottom, 4)
                                 
-                                Text("What's one small or big thing on your mind right now?")
-                                    .font(styles.typography.bodyFont)
-                                    .foregroundColor(styles.colors.textSecondary)
-                                    .padding(.bottom, styles.layout.spacingS)
+                                // Inspiring quote with larger font
+                                Text("Capture your thoughts, reflect on your journey.")
+                                    .font(styles.typography.bodyLarge)
+                                    .foregroundColor(styles.colors.accent)
+                                    .padding(.bottom, styles.layout.spacingM)
+                                
+                                // Daily prompt
+                                VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                                    Text("Today's Reflection")
+                                        .font(styles.typography.smallLabelFont)
+                                        .foregroundColor(styles.colors.accent)
+                                    
+                                    Text("What's one small or big thing on your mind right now?")
+                                        .font(styles.typography.bodyFont)
+                                        .foregroundColor(styles.colors.textSecondary)
+                                }
                             }
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, styles.layout.spacingM)
-                            .padding(.top, 20) // Added proper top padding
+                            .padding(.horizontal, styles.layout.paddingXL)
+                            .padding(.vertical, styles.layout.spacingXL * 1.5)
+                            .padding(.top, 40) // Extra top padding for spaciousness
+                            .padding(.bottom, 20) // Extra bottom padding
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                // Subtle gradient background for the inspiring section
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        styles.colors.appBackground,
+                                        styles.colors.appBackground.opacity(0.9)
+                                    ]),
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
                         }
                         
                         if filteredEntries.isEmpty {
