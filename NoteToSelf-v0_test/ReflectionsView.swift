@@ -15,6 +15,9 @@ struct ReflectionsView: View {
     @State private var textEditorHeight: CGFloat = 30
     @State private var expandedMessageId: UUID? = nil
     
+    // Function to show chat history from MainTabView
+    var showChatHistory: () -> Void
+    
     // Access to shared styles
     private let styles = UIStyles.shared
     
@@ -70,10 +73,10 @@ struct ReflectionsView: View {
                         
                         Spacer()
                         
-                        // Clear conversation button on right
+                        // Chat history button on right
                         Button {
-                            // Clear conversation logic
-                            appState.chatMessages = []
+                            // Show chat history via MainTabView
+                            showChatHistory()
                         } label: {
                             Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90") // Keep this exact name
                                 .font(.system(size: 24))
