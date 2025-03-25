@@ -136,15 +136,15 @@ struct MoodWheel: View {
                     
                     // Left: "-" (was "Negative")
                     Text("-")
-                        .font(styles.typography.headingFont)
+                        .font(styles.typography.bodyFont) // Smaller font
                         .foregroundColor(styles.colors.textSecondary)
-                        .position(x: -35, y: wheelDiameter/2) // Increased left padding from -20 to -35
+                        .position(x: -45, y: wheelDiameter/2) // Increased left padding from -35 to -45
                     
                     // Right: "+" (was "Positive")
                     Text("+")
-                        .font(styles.typography.headingFont)
+                        .font(styles.typography.bodyFont) // Smaller font
                         .foregroundColor(styles.colors.textSecondary)
-                        .position(x: wheelDiameter + 35, y: wheelDiameter/2) // Increased right padding from +20 to +35
+                        .position(x: wheelDiameter + 45, y: wheelDiameter/2) // Increased right padding from +35 to +45
                 }
             }
             .frame(width: wheelDiameter, height: wheelDiameter)
@@ -157,27 +157,26 @@ struct MoodWheel: View {
     
     
     private func moodForSegment(_ index: Int) -> Mood {
-        // Keep colors in their current positions but adjust mood labels
         switch index {
-        // Right side and bottom-right quadrant
-        case 0: return .excited   // 0-30° (1 o'clock)
-        case 1: return .happy     // 30-60° (2 o'clock)
-        case 2: return .content   // 60-90° (3 o'clock)
-        
         // Bottom-right and bottom quadrant
-        case 3: return .relaxed   // 90-120° (4 o'clock)
-        case 4: return .calm      // 120-150° (5 o'clock)
-        case 5: return .bored     // 150-180° (6 o'clock)
+        case 0: return .content   // 90-120° (4 o'clock)
+        case 1: return .relaxed   // 120-150° (5 o'clock)
+        case 2: return .calm      // 150-180° (6 o'clock)
         
         // Bottom-left quadrant
-        case 6: return .depressed // 180-210° (7 o'clock)
-        case 7: return .sad       // 210-240° (8 o'clock)
-        case 8: return .anxious   // 240-270° (9 o'clock) - Changed from "Stressed"
+        case 3: return .bored     // 180-210° (7 o'clock)
+        case 4: return .depressed // 210-240° (8 o'clock)
+        case 5: return .sad       // 240-270° (9 o'clock)
         
         // Top-left and top quadrant
-        case 9: return .angry     // 270-300° (10 o'clock)
-        case 10: return .stressed // 300-330° (11 o'clock) - Changed from "Tense"
-        case 11: return .alert    // 330-360° (12 o'clock)
+        case 6: return .anxious   // 270-300° (10 o'clock)
+        case 7: return .angry    // 300-330° (11 o'clock)
+        case 8: return .stressed // 330-360° (12 o'clock)
+
+        // Right side and bottom-right quadrant
+        case 9: return .alert    // 0-30° (1 o'clock)
+        case 10: return .excited  // 30-60° (2 o'clock)
+        case 11: return .happy    // 60-90° (3 o'clock)
         
         default: return .neutral
         }
@@ -398,20 +397,18 @@ struct CircleMoodBackground: View {
                 .fill(
                     AngularGradient(
                         gradient: Gradient(colors: [
-                            // Rotated 45 degrees clockwise
-                            // Starting from 1 o'clock position (happy) and going clockwise
-                            Color(hex: "#66FF66"), // Happy (0-30°)
-                            Color(hex: "#33FFCC"), // Content (30-60°)
-                            Color(hex: "#33CCFF"), // Relaxed (60-90°)
-                            Color(hex: "#3399FF"), // Calm (90-120°)
-                            Color(hex: "#6666FF"), // Bored (120-150°)
-                            Color(hex: "#9933FF"), // Depressed (150-180°)
-                            Color(hex: "#CC33FF"), // Sad (180-210°)
-                            Color(hex: "#FF3399"), // Anxious (210-240°)
-                            Color(hex: "#FF3333"), // Angry (240-270°)
-                            Color(hex: "#FF9900"), // Stressed (270-300°)
-                            Color(hex: "#CCFF00"), // Alert (300-330°)
-                            Color(hex: "#99FF33"), // Excited (330-360°)
+                            Color(hex: "#66FF66"), // Happy - 60-90° (3 o'clock)
+                            Color(hex: "#33FFCC"), // Content - 90-120° (4 o'clock)
+                            Color(hex: "#33CCFF"), // Relaxed - 120-150° (5 o'clock)
+                            Color(hex: "#3399FF"), // Calm - 150-180° (6 o'clock)
+                            Color(hex: "#6666FF"), // Bored - 180-210° (7 o'clock)
+                            Color(hex: "#9933FF"), // Depressed - 210-240° (8 o'clock)
+                            Color(hex: "#CC33FF"), // Sad - 240-270° (9 o'clock)
+                            Color(hex: "#FF3399"), // Anxious - 270-300° (10 o'clock)
+                            Color(hex: "#FF3333"), // Angry - 300-330° (11 o'clock)
+                            Color(hex: "#FF9900"), // Stressed - 330-360° (12 o'clock)
+                            Color(hex: "#CCFF00"), // Alert - 0-30° (1 o'clock)
+                            Color(hex: "#99FF33"), // Excited - 30-60° (2 o'clock)
                             
                             // Back to start (for smooth gradient)
                             Color(hex: "#66FF66")  // Happy (0°)
