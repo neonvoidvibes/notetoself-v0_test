@@ -252,12 +252,17 @@ struct MainTabView: View {
                                   bottomSheetExpanded.toggle()
                               }
                           }) {
-                              HStack {
-                                  Spacer()
+                              VStack(spacing: 4) { // Add spacing for the text
                                   Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
                                       .font(.system(size: 18, weight: .bold))
                                       .foregroundColor(Color.white) // Always white for better contrast
-                                  Spacer()
+                                  
+                                  // Add Navigation text below the chevron, only when not expanded
+                                  if !bottomSheetExpanded {
+                                      Text("Navigation")
+                                          .font(.system(size: 10, weight: .regular, design: .monospaced))
+                                          .foregroundColor(styles.colors.accent)
+                                  }
                               }
                               .frame(height: peekHeight)
                               .contentShape(Rectangle())

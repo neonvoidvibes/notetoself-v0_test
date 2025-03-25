@@ -22,6 +22,7 @@ struct SettingsView: View {
                     // Subscription section
                     SubscriptionSection(subscriptionTier: appState.subscriptionTier)
                         .transition(.scale.combined(with: .opacity))
+                        .padding(.top, 20) // Add padding at the top to make it less cramped
                     
                     // Notifications section
                     NotificationsSection(
@@ -398,3 +399,4 @@ struct SettingsView_Previews: PreviewProvider {
             .environmentObject(AppState())
     }
 }
+
