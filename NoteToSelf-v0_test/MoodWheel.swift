@@ -138,13 +138,13 @@ struct MoodWheel: View {
                     Text("-")
                         .font(styles.typography.bodyFont) // Smaller font
                         .foregroundColor(styles.colors.textSecondary)
-                        .position(x: -45, y: wheelDiameter/2) // Increased left padding from -35 to -45
+                        .position(x: -45, y: wheelDiameter/2) // Reverted back to original position
                     
                     // Right: "+" (was "Positive")
                     Text("+")
                         .font(styles.typography.bodyFont) // Smaller font
                         .foregroundColor(styles.colors.textSecondary)
-                        .position(x: wheelDiameter + 45, y: wheelDiameter/2) // Increased right padding from +35 to +45
+                        .position(x: wheelDiameter + 45, y: wheelDiameter/2) // Reverted back to original position
                 }
             }
             .frame(width: wheelDiameter, height: wheelDiameter)
