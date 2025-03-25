@@ -121,27 +121,26 @@ struct MoodWheel: View {
     }
     
     private func moodForSegment(_ index: Int) -> Mood {
-        // Adjusted to ensure 3 moods per quadrant
         switch index {
-        // Top-right quadrant (0-30, 30-60, 60-90 degrees)
-        case 0: return .excited
-        case 1: return .happy
-        case 2: return .content
+        // Bottom-right (0° = right, going clockwise)
+        case 0: return .content
+        case 1: return .relaxed
+        case 2: return .calm
         
-        // Bottom-right quadrant (90-120, 120-150, 150-180 degrees)
-        case 3: return .relaxed
-        case 4: return .calm
-        case 5: return .bored
+        // Bottom-left quadrant
+        case 3: return .bored
+        case 4: return .depressed
+        case 5: return .sad
         
-        // Bottom-left quadrant (180-210, 210-240, 240-270 degrees)
-        case 6: return .depressed
-        case 7: return .sad
-        case 8: return .stressed
+        // Top-left quadrant
+        case 6: return .stressed
+        case 7: return .angry
+        case 8: return .tense
         
-        // Top-left quadrant (270-300, 300-330, 330-360 degrees)
-        case 9: return .angry
-        case 10: return .tense
-        case 11: return .alert
+        // Top-right quadrant
+        case 9: return .alert
+        case 10: return .excited
+        case 11: return .happy
         
         default: return .neutral
         }
