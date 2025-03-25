@@ -334,26 +334,48 @@ struct EditableFullscreenEntryView: View {
                 Spacer()
                 HStack {
                     Spacer()
-                    Button(action: {
-                        if !entryText.isEmpty {
-                            onSave?(entryText, selectedMood, selectedIntensity) // Pass the actual intensity
-                            dismiss()
+                    if showMoodSelector {
+                        // Confirm button for mood selection
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                showMoodSelector = false
+                            }
+                        }) {
+                            Text("Confirm")
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(.black)
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 20)
+                                .background(
+                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                        .fill(styles.colors.accent)
+                                )
                         }
-                    }) {
-                        Text("Save")
-                            .font(styles.typography.bodyFont)
-                            .foregroundColor(.black)
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 20)
-                            .background(
-                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                    .fill(styles.colors.accent)
-                            )
+                        .padding(.trailing, 24)
+                        .padding(.bottom, 24)
+                    } else {
+                        // Regular save button
+                        Button(action: {
+                            if !entryText.isEmpty {
+                                onSave?(entryText, selectedMood, selectedIntensity) // Pass the actual intensity
+                                dismiss()
+                            }
+                        }) {
+                            Text("Save")
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(.black)
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 20)
+                                .background(
+                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                        .fill(styles.colors.accent)
+                                )
+                        }
+                        .disabled(entryText.isEmpty)
+                        .opacity(entryText.isEmpty ? 0.5 : 1.0)
+                        .padding(.trailing, 24)
+                        .padding(.bottom, 24)
                     }
-                    .disabled(entryText.isEmpty)
-                    .opacity(entryText.isEmpty ? 0.5 : 1.0)
-                    .padding(.trailing, 24)
-                    .padding(.bottom, 24)
                 }
             }
         }
