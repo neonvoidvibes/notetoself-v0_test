@@ -239,6 +239,9 @@ struct ReflectionsView: View {
                         }
                         .padding(.vertical, styles.layout.paddingM)
                         .padding(.horizontal, styles.layout.paddingL)
+                                                    
+                            // Add padding at the bottom to ensure content doesn't get cut off
+                            Spacer().frame(height: 40)
                     }
                     .background(
                         styles.colors.reflectionsNavBackground
