@@ -2,7 +2,7 @@ import SwiftUI
 
 struct MoodWheel: View {
     @Binding var selectedMood: Mood
-    @State private var selectedIntensity: Int = 2 // Default: medium intensity
+    @Binding var selectedIntensity: Int
     @State private var isDragging: Bool = false
     @State private var dragLocation: CGPoint = .zero
     
@@ -13,6 +13,18 @@ struct MoodWheel: View {
     private let wheelDiameter: CGFloat = 280
     private let centerDiameter: CGFloat = 100
     private let intensityRingThickness: CGFloat = 45
+    
+    // For cases where we don't need to bind the intensity externally
+    init(selectedMood: Binding<Mood>) {
+        self._selectedMood = selectedMood
+        self._selectedIntensity = .constant(2)
+    }
+    
+    // For cases where we want to bind both mood and intensity
+    init(selectedMood: Binding<Mood>, selectedIntensity: Binding<Int>) {
+        self._selectedMood = selectedMood
+        self._selectedIntensity = selectedIntensity
+    }
     
     var body: some View {
         VStack(spacing: styles.layout.spacingM) {
@@ -108,14 +120,6 @@ struct MoodWheel: View {
             .frame(width: wheelDiameter, height: wheelDiameter)
             .padding(.vertical, styles.layout.paddingL)
             
-            // Color indicator
-            RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                .fill(selectedMood.color)
-                .frame(width: 60, height: 24)
-                .overlay(
-                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                )
         }
         .padding(styles.layout.paddingL)
     }
@@ -154,7 +158,16 @@ struct MoodWheel: View {
         case 1: return "Slight"
         case 2: return "Moderate"
         case 3: return "Strong"
-        default: return ""
+        default: return "Moderate"
+        }
+    }
+    
+    // Add a new function for formatted display text that can be used elsewhere
+    func formattedMoodText(_ mood: Mood, intensity: Int) -> String {
+        switch intensity {
+        case 1: return "A little \(mood.name.lowercased())"
+        case 3: return "Very \(mood.name.lowercased())"
+        default: return mood.name
         }
     }
     

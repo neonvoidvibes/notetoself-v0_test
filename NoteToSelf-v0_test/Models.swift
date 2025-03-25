@@ -7,12 +7,14 @@ struct JournalEntry: Identifiable, Codable {
     let text: String
     let mood: Mood
     let date: Date
+    let intensity: Int
     
-    init(id: UUID = UUID(), text: String, mood: Mood, date: Date) {
+    init(id: UUID = UUID(), text: String, mood: Mood, date: Date, intensity: Int = 2) {
         self.id = id
         self.text = text
         self.mood = mood
         self.date = date
+        self.intensity = intensity
     }
     
     var isLocked: Bool {
@@ -222,22 +224,26 @@ class AppState: ObservableObject {
             JournalEntry(
                 text: "Completed the new design for the journaling app today. Really proud of how the dark theme turned out.",
                 mood: .happy,
-                date: Date()
+                date: Date(),
+                intensity: 3
             ),
             JournalEntry(
                 text: "Worked on wireframes all day. Feeling a bit drained but making good progress.",
                 mood: .neutral,
-                date: calendar.date(byAdding: .day, value: -1, to: Date())!
+                date: calendar.date(byAdding: .day, value: -1, to: Date())!,
+                intensity: 2
             ),
             JournalEntry(
                 text: "Started the new project today. Excited about the possibilities but also feeling a bit overwhelmed by the scope.",
                 mood: .stressed,
-                date: calendar.date(byAdding: .day, value: -2, to: Date())!
+                date: calendar.date(byAdding: .day, value: -2, to: Date())!,
+                intensity: 1
             ),
             JournalEntry(
                 text: "Taking a short break from work to recharge. Spent the day hiking and it was exactly what I needed.",
                 mood: .happy,
-                date: calendar.date(byAdding: .day, value: -7, to: Date())!
+                date: calendar.date(byAdding: .day, value: -7, to: Date())!,
+                intensity: 2
             )
         ]
         

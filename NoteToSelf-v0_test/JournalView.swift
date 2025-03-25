@@ -277,9 +277,9 @@ struct JournalView: View {
             // Use the same EditableFullscreenEntryView for new entries
             EditableFullscreenEntryView(
                 initialMood: .neutral, 
-                onSave: { text, mood in
-                    let newEntry = JournalEntry(text: text, mood: mood, date: Date())
-            
+                onSave: { text, mood, intensity in
+                    let newEntry = JournalEntry(text: text, mood: mood, date: Date(), intensity: intensity)
+
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                         appState.journalEntries.insert(newEntry, at: 0)
                         expandedEntryId = newEntry.id // Auto-expand new entry
@@ -307,8 +307,8 @@ struct JournalView: View {
         .fullScreenCover(item: $editingEntry) { entry in
             EditableFullscreenEntryView(
                 entry: entry,
-                onSave: { updatedText, updatedMood in
-                    updateEntry(entry, newText: updatedText, newMood: updatedMood)
+                onSave: { updatedText, updatedMood, updatedIntensity in
+                    updateEntry(entry, newText: updatedText, newMood: updatedMood, intensity: updatedIntensity)
                 },
                 onDelete: {
                     deleteEntry(entry)
@@ -341,13 +341,14 @@ struct JournalView: View {
         }
     }
     
-    private func updateEntry(_ entry: JournalEntry, newText: String, newMood: Mood) {
+    private func updateEntry(_ entry: JournalEntry, newText: String, newMood: Mood, intensity: Int) {
         if let index = appState.journalEntries.firstIndex(where: { $0.id == entry.id }) {
             let updatedEntry = JournalEntry(
                 id: entry.id,
                 text: newText,
                 mood: newMood,
-                date: entry.date
+                date: entry.date,
+                intensity: intensity
             )
             
             withAnimation {
@@ -397,12 +398,20 @@ struct JournalEntryCard: View {
                 Spacer()
                 
                 HStack(spacing: 12) {
-                    // Mood icon with subtle animation
-                    entry.mood.icon
-                        .foregroundColor(entry.mood.color)
-                        .font(.system(size: 20))
-                        .scaleEffect(isExpanded ? 1.1 : 1.0)
-                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
+                    // Mood icon and formatted text
+                    HStack(spacing: 4) {
+                        entry.mood.icon
+                            .foregroundColor(entry.mood.color)
+                            .font(.system(size: 20))
+                            .scaleEffect(isExpanded ? 1.1 : 1.0)
+                        
+                        if isExpanded {
+                            Text(formattedMoodText(entry.mood, intensity: entry.intensity))
+                                .font(styles.typography.caption)
+                                .foregroundColor(entry.mood.color)
+                        }
+                    }
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
                     
                     // Lock icon if needed (only when expanded)
                     if isExpanded && entry.isLocked {
@@ -494,6 +503,14 @@ struct JournalEntryCard: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
         return formatter.string(from: date)
+    }
+
+    private func formattedMoodText(_ mood: Mood, intensity: Int = 2) -> String {
+        switch intensity {
+        case 1: return "A little \(mood.name.lowercased())"
+        case 3: return "Very \(mood.name.lowercased())"
+        default: return mood.name
+        }
     }
 }
 

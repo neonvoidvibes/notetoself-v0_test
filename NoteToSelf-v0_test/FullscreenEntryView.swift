@@ -50,8 +50,8 @@ struct FullscreenEntryView: View {
                         HStack(spacing: styles.layout.spacingM) {
                             Spacer()
                             
-                            // Mood pill - styled like in filter view
-                            Text(entry.mood.name)
+                            // Mood pill with formatted intensity
+                            Text(formattedMoodText(entry.mood, intensity: entry.intensity))
                                 .font(styles.typography.caption)
                                 .foregroundColor(styles.colors.text)
                                 .padding(.vertical, 6)
@@ -134,6 +134,14 @@ struct FullscreenEntryView: View {
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
+
+    private func formattedMoodText(_ mood: Mood, intensity: Int = 2) -> String {
+        switch intensity {
+        case 1: return "A little \(mood.name.lowercased())"
+        case 3: return "Very \(mood.name.lowercased())"
+        default: return mood.name
+        }
+    }
 }
 
 // MARK: - Editable Fullscreen Entry View
@@ -143,6 +151,7 @@ struct EditableFullscreenEntryView: View {
     @State private var selectedMood: Mood
     @FocusState private var isTextFieldFocused: Bool
     @State private var showMoodSelector: Bool = false
+    @State private var selectedIntensity: Int
     
     // For new entries, date is set to now
     // For editing, we keep the original date
@@ -152,16 +161,17 @@ struct EditableFullscreenEntryView: View {
     private let autoFocusText: Bool
     
     // Callback when saving
-    var onSave: ((String, Mood) -> Void)?
+    var onSave: ((String, Mood, Int) -> Void)?
     var onDelete: (() -> Void)?
     
     // Access to shared styles
     private let styles = UIStyles.shared
     
     // Initialize for new entry
-    init(initialMood: Mood = .neutral, onSave: ((String, Mood) -> Void)? = nil, autoFocusText: Bool = false) {
+    init(initialMood: Mood = .neutral, onSave: ((String, Mood, Int) -> Void)? = nil, autoFocusText: Bool = false) {
         self._entryText = State(initialValue: "")
         self._selectedMood = State(initialValue: initialMood)
+        self._selectedIntensity = State(initialValue: 2) // Default to moderate
         self.date = Date()
         self.isNewEntry = true
         self.isLocked = false
@@ -171,9 +181,10 @@ struct EditableFullscreenEntryView: View {
     }
     
     // Initialize for editing existing entry
-    init(entry: JournalEntry, onSave: ((String, Mood) -> Void)? = nil, onDelete: (() -> Void)? = nil, autoFocusText: Bool = true) {
+    init(entry: JournalEntry, onSave: ((String, Mood, Int) -> Void)? = nil, onDelete: (() -> Void)? = nil, autoFocusText: Bool = true) {
         self._entryText = State(initialValue: entry.text)
         self._selectedMood = State(initialValue: entry.mood)
+        self._selectedIntensity = State(initialValue: entry.intensity)
         self.date = entry.date
         self.isNewEntry = false
         self.isLocked = entry.isLocked
@@ -230,7 +241,7 @@ struct EditableFullscreenEntryView: View {
                                     showMoodSelector.toggle()
                                 }
                             }) {
-                                Text(selectedMood.name)
+                                Text(formattedMoodText(selectedMood, intensity: selectedIntensity))
                                     .font(styles.typography.caption)
                                     .foregroundColor(styles.colors.text)
                                     .padding(.vertical, 6)
@@ -266,12 +277,14 @@ struct EditableFullscreenEntryView: View {
                         
                         // Mood wheel selector panel
                         if showMoodSelector {
-                            MoodWheel(selectedMood: $selectedMood)
-                                .padding(.horizontal, styles.layout.paddingM)
-                                .background(styles.colors.secondaryBackground)
-                                .cornerRadius(styles.layout.radiusL)
-                                .padding(.horizontal, styles.layout.paddingXL)
-                                .transition(.opacity.combined(with: .move(edge: .top)))
+                            VStack {
+                                MoodWheel(selectedMood: $selectedMood, selectedIntensity: $selectedIntensity)
+                                    .padding(.horizontal, styles.layout.spacingM)
+                            }
+                            .background(styles.colors.secondaryBackground)
+                            .cornerRadius(styles.layout.radiusL)
+                            .padding(.horizontal, styles.layout.paddingXL)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                         }
                         
                         // Text editor - styled to match the text display in view mode
@@ -323,7 +336,7 @@ struct EditableFullscreenEntryView: View {
                     Spacer()
                     Button(action: {
                         if !entryText.isEmpty {
-                            onSave?(entryText, selectedMood)
+                            onSave?(entryText, selectedMood, selectedIntensity) // Pass the actual intensity
                             dismiss()
                         }
                     }) {
@@ -360,6 +373,14 @@ struct EditableFullscreenEntryView: View {
         formatter.dateStyle = .long
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+
+    private func formattedMoodText(_ mood: Mood, intensity: Int = 2) -> String {
+        switch intensity {
+        case 1: return "A little \(mood.name.lowercased())"
+        case 3: return "Very \(mood.name.lowercased())"
+        default: return mood.name
+        }
     }
 }
 
