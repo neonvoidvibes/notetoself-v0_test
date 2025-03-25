@@ -11,7 +11,7 @@ struct MoodWheel: View {
     
     // Constants for wheel dimensions
     private let wheelDiameter: CGFloat = 280
-    private let centerDiameter: CGFloat = 100 // Increased from 80
+    private let centerDiameter: CGFloat = 100
     private let intensityRingThickness: CGFloat = 45
     
     var body: some View {
@@ -30,8 +30,8 @@ struct MoodWheel: View {
             
             // Mood wheel
             ZStack {
-                // Background circle with gradient
-                CircleMoodBackground()
+                // Background circle with gradient - dimmed when a mood is selected
+                CircleMoodBackground(isDimmed: selectedMood != .neutral)
                 
                 // Draw segment dividing lines
                 ForEach(0..<12) { index in
@@ -69,7 +69,8 @@ struct MoodWheel: View {
                     .frame(width: centerDiameter, height: centerDiameter)
                     .overlay(
                         Circle()
-                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                            .stroke(selectedMood == .neutral ? Color.white.opacity(0.8) : Color.white.opacity(0.3), 
+                                   lineWidth: selectedMood == .neutral ? 3 : 1)
                     )
                 
                 // Center label for selected mood
@@ -159,9 +160,9 @@ struct MoodWheel: View {
         // Calculate coordinates relative to center
         let center = CGPoint(x: wheelDiameter/2, y: wheelDiameter/2)
         let relativeX = location.x - center.x
-        let relativeY = center.y - location.y // FIXED: Correct calculation for Y
+        let relativeY = -(location.y - center.y) // Invert Y to match mathematical coordinate system
         
-        // Calculate distance from center and angle
+        // Calculate distance from center
         let distance = sqrt(relativeX * relativeX + relativeY * relativeY)
         
         // Check if tap is in neutral zone
@@ -176,15 +177,14 @@ struct MoodWheel: View {
             return
         }
         
-        // Calculate angle from 0-360 degrees
+        // Calculate angle from 0-360 degrees (mathematical convention)
         var angle = atan2(relativeY, relativeX) * 180 / .pi
         if angle < 0 {
             angle += 360
         }
         
         // Calculate segment (0-11) based on angle
-        // No offset needed now, we're aligning with standard angles
-        let segment = Int(angle / 30)
+        let segment = Int((angle.truncatingRemainder(dividingBy: 360)) / 30)
         
         // Calculate intensity (1-3) based on distance from center
         let availableRadius = (wheelDiameter - centerDiameter) / 2
@@ -237,6 +237,27 @@ struct MoodSegment: View {
         let endAngle = startAngle + segmentAngle
         
         ZStack {
+            // Full segment highlight with white border when selected
+            if isSelected {
+                // Full segment with white border
+                AngularArc(
+                    startAngle: .degrees(startAngle),
+                    endAngle: .degrees(endAngle),
+                    innerRadius: innerRadius,
+                    outerRadius: outerRadius
+                )
+                .stroke(Color.white, lineWidth: 3)
+                
+                // Background for the entire segment
+                AngularArc(
+                    startAngle: .degrees(startAngle),
+                    endAngle: .degrees(endAngle),
+                    innerRadius: innerRadius,
+                    outerRadius: outerRadius
+                )
+                .fill(mood.color.opacity(0.2))
+            }
+            
             // Ring 1 (innermost intensity)
             if isSelected && selectedIntensity >= 1 {
                 AngularArc(
@@ -245,7 +266,7 @@ struct MoodSegment: View {
                     innerRadius: innerRadius,
                     outerRadius: innerRadius + (outerRadius - innerRadius) * 0.33
                 )
-                .fill(mood.color.opacity(selectedIntensity == 1 ? 0.7 : 0.4))
+                .fill(mood.color.opacity(selectedIntensity == 1 ? 0.8 : 0.5))
             }
             
             // Ring 2 (middle intensity)
@@ -256,7 +277,7 @@ struct MoodSegment: View {
                     innerRadius: innerRadius + (outerRadius - innerRadius) * 0.33,
                     outerRadius: innerRadius + (outerRadius - innerRadius) * 0.66
                 )
-                .fill(mood.color.opacity(selectedIntensity == 2 ? 0.7 : 0.4))
+                .fill(mood.color.opacity(selectedIntensity == 2 ? 0.8 : 0.5))
             }
             
             // Ring 3 (outermost intensity)
@@ -267,7 +288,7 @@ struct MoodSegment: View {
                     innerRadius: innerRadius + (outerRadius - innerRadius) * 0.66,
                     outerRadius: outerRadius
                 )
-                .fill(mood.color.opacity(0.7))
+                .fill(mood.color.opacity(0.8))
             }
         }
     }
@@ -321,8 +342,10 @@ struct AngularArc: Shape {
     }
 }
 
-// Circle mood background (unchanged)
+// Circle mood background with dimming option
 struct CircleMoodBackground: View {
+    var isDimmed: Bool = false
+    
     var body: some View {
         ZStack {
             Circle()
@@ -357,6 +380,7 @@ struct CircleMoodBackground: View {
                         endAngle: .degrees(360)
                     )
                 )
+                .opacity(isDimmed ? 0.3 : 1.0) // Dim when a mood is selected
                 .overlay(
                     Circle()
                         .stroke(Color.white.opacity(0.3), lineWidth: 1)
