@@ -216,20 +216,27 @@ struct JournalView: View {
                           .padding()
                         } else {
                             LazyVStack(spacing: styles.layout.radiusM) {
-                                ForEach(filteredEntries) { entry in
-                                    JournalEntryCard(
-                                        entry: entry,
-                                        isExpanded: expandedEntryId == entry.id,
-                                        onTap: {
-                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                                expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
+                                let groupedEntries = JournalDateGrouping.groupEntriesByTimePeriod(filteredEntries)
+                                
+                                ForEach(groupedEntries, id: \.0) { section, entries in
+                                    DateGroupSectionHeader(title: section)
+                                        .id("header-\(section)")
+                                    
+                                    ForEach(entries) { entry in
+                                        JournalEntryCard(
+                                            entry: entry,
+                                            isExpanded: expandedEntryId == entry.id,
+                                            onTap: {
+                                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                                    expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
+                                                }
+                                            },
+                                            onExpand: {
+                                                fullscreenEntry = entry
                                             }
-                                        },
-                                        onExpand: {
-                                            fullscreenEntry = entry
-                                        }
-                                    )
-                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                                        )
+                                        .transition(.opacity.combined(with: .move(edge: .top)))
+                                    }
                                 }
                             }
                             .padding(.horizontal, 20)
