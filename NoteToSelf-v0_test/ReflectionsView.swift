@@ -15,6 +15,9 @@ struct ReflectionsView: View {
     @State private var textEditorHeight: CGFloat = 30
     @State private var expandedMessageId: UUID? = nil
     
+    // Chat manager for handling chat history
+    @ObservedObject var chatManager: ChatManager
+    
     // Function to show chat history from MainTabView
     var showChatHistory: () -> Void
     
@@ -92,7 +95,7 @@ struct ReflectionsView: View {
                 ScrollViewReader { scrollView in
                     ScrollView {
                         LazyVStack(spacing: styles.layout.spacingL) {
-                            ForEach(appState.chatMessages) { message in
+                            ForEach(chatManager.currentChat.messages) { message in
                                 ChatBubble(
                                     message: message,
                                     isExpanded: expandedMessageId == message.id,
@@ -122,7 +125,7 @@ struct ReflectionsView: View {
                         .padding(.vertical, styles.layout.paddingL)
                         .padding(.bottom, 20) // Reduced spacing at the bottom
                     }
-                    .onChange(of: appState.chatMessages.count) { _, _ in
+                    .onChange(of: chatManager.currentChat.messages.count) { _, _ in
                         scrollToBottom(proxy: scrollView)
                     }
                     .onChange(of: isTyping) { _, _ in
@@ -265,13 +268,13 @@ struct ReflectionsView: View {
         let messageToSend = messageText
         messageText = "" // Clear input field immediately
         
+        // Add message to chat manager
+        chatManager.addMessage(userMessage)
+        
         // Reset text editor height
         withAnimation(.easeInOut(duration: 0.1)) {
             textEditorHeight = 30
         }
-        
-        // Add message without animation
-        appState.chatMessages.append(userMessage)
         
         // Increment usage counter for free tier
         if appState.subscriptionTier == .free {
@@ -289,8 +292,8 @@ struct ReflectionsView: View {
             let responseText = generateResponse(to: messageToSend)
             let aiMessage = ChatMessage(text: responseText, isUser: false)
             
-            // Add message without animation
-            appState.chatMessages.append(aiMessage)
+            // Add AI message to chat manager
+            chatManager.addMessage(aiMessage)
         }
     }
     

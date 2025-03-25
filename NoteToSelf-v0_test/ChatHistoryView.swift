@@ -3,6 +3,8 @@ import SwiftUI
 struct ChatHistoryView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled: Bool
+    @ObservedObject var chatManager: ChatManager
+    var onSelectChat: (Chat) -> Void
     
     // Access to shared styles
     private let styles = UIStyles.shared
@@ -13,19 +15,45 @@ struct ChatHistoryView: View {
                 .ignoresSafeArea()
             
             ScrollView(.vertical, showsIndicators: true) {
-                VStack(spacing: styles.layout.spacingXL) {
-                    // Chat history items will go here
-                    ForEach(appState.chatMessages) { message in
-                        ChatHistoryItem(message: message)
-                    }
+                VStack(spacing: 0) {
+                    // Extra top padding
+                    Spacer()
+                        .frame(height: 30)
                     
-                    if appState.chatMessages.isEmpty {
+                    // Group chats by time period
+                    let groupedChats = chatManager.groupChatsByTimePeriod()
+                    
+                    if groupedChats.isEmpty {
                         Text("No chat history yet")
                             .foregroundColor(styles.colors.textSecondary)
                             .padding(.top, 40)
+                    } else {
+                        ForEach(groupedChats, id: \.0) { section, chats in
+                            // Section header
+                            HStack {
+                                Text(section)
+                                    .font(styles.typography.title3)
+                                    .foregroundColor(styles.colors.text)
+                                    .padding(.vertical, 10)
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 20)
+                            .padding(.bottom, 4)
+                            
+                            // Chats in this section
+                            ForEach(chats) { chat in
+                                ChatHistoryItem(chat: chat)
+                                    .onTapGesture {
+                                        onSelectChat(chat)
+                                    }
+                                    .padding(.horizontal, styles.layout.paddingL)
+                                    .padding(.vertical, 4)
+                            }
+                        }
                     }
                 }
-                .padding(.horizontal, styles.layout.paddingL)
                 .padding(.top, styles.headerPadding.top)
             }
             .disabled(mainScrollingDisabled)
@@ -34,28 +62,39 @@ struct ChatHistoryView: View {
 }
 
 struct ChatHistoryItem: View {
-    let message: ChatMessage
+    let chat: Chat
     private let styles = UIStyles.shared
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(message.isUser ? "You" : "AI")
-                    .font(styles.typography.bodySmall)
-                    .foregroundColor(message.isUser ? styles.colors.accent : styles.colors.textSecondary)
+                Text(chat.title)
+                    .font(styles.typography.bodyFont)
+                    .foregroundColor(styles.colors.text)
+                    .lineLimit(1)
                 
                 Spacer()
                 
-                Text(formatDate(message.date))
+                Text(formatDate(chat.lastUpdatedAt))
                     .font(styles.typography.caption)
                     .foregroundColor(styles.colors.textSecondary)
             }
             
-            Text(message.text)
-                .font(styles.typography.bodyFont)
-                .foregroundColor(styles.colors.text)
-                .lineLimit(2)
-                .truncationMode(.tail)
+            // Show the last message if available
+            if let lastMessage = chat.messages.last {
+                HStack(spacing: 2) {
+                    Text(lastMessage.isUser ? "You: " : "AI: ")
+                        .font(styles.typography.bodySmall)
+                        .foregroundColor(lastMessage.isUser ? styles.colors.accent : styles.colors.textSecondary)
+                    
+                    Text(lastMessage.text)
+                        .font(styles.typography.bodySmall)
+                        .foregroundColor(styles.colors.textSecondary)
+                        .lineLimit(2)
+                        .truncationMode(.tail)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
         .padding(styles.layout.paddingM)
         .background(styles.colors.secondaryBackground)

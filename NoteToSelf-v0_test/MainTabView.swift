@@ -3,6 +3,7 @@ import Combine
 
 struct MainTabView: View {
   @StateObject private var appState = AppState()
+  @StateObject private var chatManager = ChatManager()
   @State private var selectedTab = 0
   
   // Settings-related states
@@ -195,6 +196,7 @@ struct MainTabView: View {
                       ReflectionsView(tabBarOffset: .constant(0),
                        lastScrollPosition: .constant(0),
                        tabBarVisible: .constant(true),
+                       chatManager: chatManager,
                        showChatHistory: {
                            withAnimation(.easeInOut(duration: 0.3)) {
                                showingChatHistory = true
@@ -430,7 +432,7 @@ struct MainTabView: View {
                               .frame(width: 20, height: 3)
                       }
                       
-                      // Left-aligned icons
+                      // Left-aligned back button and right-aligned new chat button
                       HStack {
                           // Back button (double chevron left) at left side
                           Button(action: {
@@ -445,17 +447,22 @@ struct MainTabView: View {
                                   .frame(width: 36, height: 36)
                           }
                           
-                          // New chat button next to back button
+                          Spacer()
+                          
+                          // New chat button on right side
                           Button(action: {
-                              // New chat action will be implemented later
+                              // Start a new chat and close the history view
+                              chatManager.startNewChat()
+                              withAnimation(.easeInOut(duration: 0.3)) {
+                                  showingChatHistory = false
+                                  chatHistoryOffset = screenWidth
+                              }
                           }) {
                               Image(systemName: "square.and.pencil")
                                   .font(.system(size: 20, weight: .bold))
-                                  .foregroundColor(styles.colors.accent)
+                                  .foregroundColor(Color.white)
                                   .frame(width: 36, height: 36)
                           }
-                          
-                          Spacer()
                       }
                       .padding(.horizontal, styles.layout.paddingXL)
                   }
@@ -463,8 +470,24 @@ struct MainTabView: View {
                   .padding(.bottom, 8)
                   
                   // Actual Chat History content
-                  ChatHistoryView()
-                      .background(styles.colors.menuBackground)
+                  ChatHistoryView(chatManager: chatManager, onSelectChat: { selectedChat in
+                      // Load the selected chat
+                      chatManager.loadChat(selectedChat)
+                      
+                      // Close the chat history view
+                      withAnimation(.easeInOut(duration: 0.3)) {
+                          showingChatHistory = false
+                          chatHistoryOffset = screenWidth
+                      }
+                      
+                      // Make sure we're on the Reflections tab
+                      if selectedTab != 2 {
+                          withAnimation {
+                              selectedTab = 2
+                          }
+                      }
+                  })
+                  .background(styles.colors.menuBackground)
               }
               .background(styles.colors.menuBackground)
               .zIndex(100)
@@ -478,6 +501,7 @@ struct MainTabView: View {
       .environment(\.mainScrollingDisabled, showingSettings || isSwipingSettings || showingChatHistory)
       .environment(\.settingsScrollingDisabled, isSwipingSettings)
       .environmentObject(appState)
+      .environmentObject(chatManager)
       .preferredColorScheme(.dark)
       .onAppear {
           bottomSheetOffset = peekHeight - fullSheetHeight

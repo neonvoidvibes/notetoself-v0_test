@@ -147,18 +147,18 @@ enum Mood: String, CaseIterable, Codable {
 
 // MARK: - Chat Message Model
 
-struct ChatMessage: Identifiable {
-    let id: UUID
-    let text: String
-    let isUser: Bool
-    let date: Date
-    
-    init(id: UUID = UUID(), text: String, isUser: Bool, date: Date = Date()) {
-        self.id = id
-        self.text = text
-        self.isUser = isUser
-        self.date = date
-    }
+struct ChatMessage: Identifiable, Codable {
+  let id: UUID
+  let text: String
+  let isUser: Bool
+  let date: Date
+  
+  init(id: UUID = UUID(), text: String, isUser: Bool, date: Date = Date()) {
+      self.id = id
+      self.text = text
+      self.isUser = isUser
+      self.date = date
+  }
 }
 
 // MARK: - Subscription Status
