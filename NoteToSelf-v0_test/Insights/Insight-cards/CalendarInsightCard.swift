@@ -15,7 +15,7 @@ struct CalendarInsightCard: View {
         Button(action: {
             isExpanded = true
         }) {
-            styles.card(
+            styles.enhancedCard(
                 VStack(spacing: styles.layout.spacingM) {
                     // Month navigation
                     HStack {
@@ -73,10 +73,17 @@ struct CalendarInsightCard: View {
                             }
                         }
                     }
+                    
+                    // Add a simple insight about the month's activity
+                    Text(generateMonthlyInsight())
+                        .font(styles.typography.bodySmall)
+                        .foregroundColor(styles.colors.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, styles.layout.spacingS)
+                        .lineLimit(2)
                 }
-                .padding(styles.layout.paddingL)
+                .padding(styles.layout.cardInnerPadding)
             )
-            .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $isExpanded) {
@@ -88,6 +95,34 @@ struct CalendarInsightCard: View {
                 ),
                 entries: entries
             )
+        }
+    }
+    
+    // Add this method to generate insights about the month's activity
+    private func generateMonthlyInsight() -> String {
+        let calendar = Calendar.current
+        let monthEntries = entries.filter { entry in
+            let entryComponents = calendar.dateComponents([.year, .month], from: entry.date)
+            let selectedComponents = calendar.dateComponents([.year, .month], from: selectedMonth)
+            return entryComponents.year == selectedComponents.year && entryComponents.month == selectedComponents.month
+        }
+        
+        if monthEntries.isEmpty {
+            return "No entries for this month yet. Each entry helps build your personal timeline."
+        }
+        
+        let daysInMonth = calendar.range(of: .day, in: .month, for: selectedMonth)!.count
+        let percentage = Int(Double(monthEntries.count) / Double(daysInMonth) * 100)
+        
+        if calendar.isDateInToday(selectedMonth) || calendar.isDate(selectedMonth, equalTo: Date(), toGranularity: .month) {
+            // Current month
+            return "You've journaled \(monthEntries.count) days this month (\(percentage)% coverage)."
+        } else {
+            // Past or future month
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMMM"
+            let monthName = formatter.string(from: selectedMonth)
+            return "You journaled \(monthEntries.count) days in \(monthName) (\(percentage)% of the month)."
         }
     }
     

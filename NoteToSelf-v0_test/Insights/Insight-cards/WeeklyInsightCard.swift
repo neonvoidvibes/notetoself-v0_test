@@ -73,7 +73,7 @@ struct WeeklyInsightCard: View {
         Button(action: {
             isExpanded = true
         }) {
-            styles.card(
+            styles.enhancedCard(
                 VStack(spacing: styles.layout.spacingM) {
                     HStack {
                         Text("Weekly Patterns")
@@ -108,26 +108,24 @@ struct WeeklyInsightCard: View {
                         }
                         .chartYScale(domain: 0...5)
                         .chartYAxis {
-                            AxisMarks(values: [1, 2, 3, 4, 5]) { value in
+                            AxisMarks(values: [1, 3, 5]) { value in
                                 AxisValueLabel {
                                     switch value.index {
-                                    case 0: Text("Sad").font(styles.typography.caption)
-                                    case 1: Text("Anxious").font(styles.typography.caption)
-                                    case 2: Text("Neutral").font(styles.typography.caption)
-                                    case 3: Text("Happy").font(styles.typography.caption)
-                                    case 4: Text("Excited").font(styles.typography.caption)
+                                    case 0: Text("Low").font(styles.typography.caption)
+                                    case 1: Text("Neutral").font(styles.typography.caption)
+                                    case 2: Text("High").font(styles.typography.caption)
                                     default: Text("")
                                     }
                                 }
                             }
                         }
-                        .frame(height: 180)
+                        .frame(height: 160)
                     } else {
                         // Fallback for iOS 15
                         Text("Weekly mood chart requires iOS 16 or later")
                             .font(styles.typography.bodyFont)
                             .foregroundColor(styles.colors.textSecondary)
-                            .frame(height: 180)
+                            .frame(height: 160)
                             .frame(maxWidth: .infinity)
                     }
                     
@@ -137,13 +135,13 @@ struct WeeklyInsightCard: View {
                         .foregroundColor(styles.colors.textSecondary)
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .lineLimit(subscriptionTier == .premium ? nil : 2)
+                        .lineLimit(subscriptionTier == .premium ? 3 : 2)
                     
                     if subscriptionTier == .free {
                         HStack {
                             Spacer()
                             
-                            Text("Upgrade for detailed insights")
+                            Text("Unlock Detailed Pattern Analysis")
                                 .font(styles.typography.caption)
                                 .foregroundColor(styles.colors.accent)
                             
@@ -153,9 +151,8 @@ struct WeeklyInsightCard: View {
                         }
                     }
                 }
-                .padding(styles.layout.paddingL)
+                .padding(styles.layout.cardInnerPadding)
             )
-            .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $isExpanded) {
@@ -172,7 +169,7 @@ struct WeeklyInsightCard: View {
     
     private func generateInsightText() -> String {
         guard !weeklyEntries.isEmpty else {
-            return "No journal entries this week. Start journaling to see your weekly patterns."
+            return "Add entries throughout the week to discover your day-to-day patterns."
         }
         
         // Find best and worst days
@@ -182,51 +179,20 @@ struct WeeklyInsightCard: View {
         
         var insightText = ""
         
-        if let bestDay = bestDay {
-            insightText += "Your mood tends to be highest on \(bestDay.weekday)s. "
-        }
-        
-        if let worstDay = worstDay {
-            insightText += "You typically feel less positive on \(worstDay.weekday)s. "
+        if let bestDay = bestDay, let worstDay = worstDay, bestDay.weekday != worstDay.weekday {
+            insightText = "\(bestDay.weekday)s tend to be your best days, while \(worstDay.weekday)s are typically more challenging."
+        } else if let bestDay = bestDay {
+            insightText = "Your mood is often highest on \(bestDay.weekday)s. What makes these days special?"
+        } else if let worstDay = worstDay {
+            insightText = "You typically feel less positive on \(worstDay.weekday)s. Consider what factors might be affecting you."
         }
         
         // Add more detailed insights for premium users
-        if subscriptionTier == .premium {
-            // Check for patterns
-            let weekdayValues = weekdayMoodData.map { $0.mood }
-            let weekdayIndices = weekdayMoodData.indices.filter { weekdayMoodData[$0].mood > 0 }
-            
-            if weekdayIndices.count >= 3 {
-                // Check for upward trend
-                var isUpwardTrend = true
-                for i in 1..<weekdayIndices.count {
-                    if weekdayValues[weekdayIndices[i]] <= weekdayValues[weekdayIndices[i-1]] {
-                        isUpwardTrend = false
-                        break
-                    }
-                }
-                
-                // Check for downward trend
-                var isDownwardTrend = true
-                for i in 1..<weekdayIndices.count {
-                    if weekdayValues[weekdayIndices[i]] >= weekdayValues[weekdayIndices[i-1]] {
-                        isDownwardTrend = false
-                        break
-                    }
-                }
-                
-                if isUpwardTrend {
-                    insightText += "Your mood has been improving throughout the week. "
-                } else if isDownwardTrend {
-                    insightText += "Your mood has been declining throughout the week. "
-                }
-            }
-            
-            // Add recommendations
-            insightText += "Consider planning enjoyable activities for your lower mood days and reflecting on what makes your better days special."
+        if subscriptionTier == .premium && !insightText.isEmpty {
+            insightText += " Planning activities based on these patterns can help optimize your well-being."
         }
         
-        return insightText
+        return insightText.isEmpty ? "Your weekly patterns will become clearer as you add more entries." : insightText
     }
 }
 

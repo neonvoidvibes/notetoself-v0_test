@@ -77,7 +77,7 @@ var body: some View {
                 }
                 .frame(height: 0)
                 
-                VStack(spacing: styles.layout.spacingXL) {
+                VStack(spacing: styles.layout.cardSpacing) {
                     // TOGGLE FOR SUBSCRIPTION TIER - FOR TESTING ONLY
                     // Comment out this section when not needed
                     HStack {
@@ -95,16 +95,24 @@ var body: some View {
                     .padding(.horizontal, styles.layout.paddingXL)
                     .padding(.top, 8)
                     
+                    // Highlights Section - Featured Insights
+                    styles.sectionHeader("Today's Highlights")
+                    
                     // Weekly Summary Card (pinned at top if fresh)
                     if isWeeklySummaryFresh {
                         WeeklySummaryInsightCard(entries: appState.journalEntries)
                             .padding(.horizontal, styles.layout.paddingXL)
                     }
                     
-                    // Basic Analytics (Foundation Cards)
+                    // Foundation Cards Section
+                    styles.sectionHeader("Your Progress")
+                    
                     // 1. Streak Card
                     StreakInsightCard(streak: appState.currentStreak)
                         .padding(.horizontal, styles.layout.paddingXL)
+                    
+                    // Mood Analysis Section
+                    styles.sectionHeader("Mood Analysis")
                     
                     // 2. Mood Trends Card
                     MoodTrendsInsightCard(entries: appState.journalEntries)
@@ -113,6 +121,9 @@ var body: some View {
                     // 3. Monthly Calendar Card
                     CalendarInsightCard(selectedMonth: $selectedMonth, entries: appState.journalEntries)
                         .padding(.horizontal, styles.layout.paddingXL)
+                    
+                    // Reflection Section
+                    styles.sectionHeader("Reflection & Insights")
                     
                     // Chat Card (The Bridge)
                     ChatInsightCard()
@@ -128,7 +139,9 @@ var body: some View {
                     WeeklyInsightCard(entries: appState.journalEntries)
                         .padding(.horizontal, styles.layout.paddingXL)
                     
-                    // Mood & Behavioral Patterns
+                    // Patterns & Recommendations Section
+                    styles.sectionHeader("Patterns & Recommendations")
+                    
                     // Writing Consistency Card
                     WritingConsistencyInsightCard(entries: appState.journalEntries)
                         .padding(.horizontal, styles.layout.paddingXL)
@@ -141,20 +154,6 @@ var body: some View {
                     RecommendationsInsightCard(entries: appState.journalEntries)
                         .padding(.horizontal, styles.layout.paddingXL)
                         .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
-                    
-                    // Note: TopicAnalysisInsightCard and SentimentAnalysisInsightCard are kept in the codebase
-                    // but not displayed in the main view. They could be added to an "Advanced Insights" section
-                    // in the future or made available through a different UI path.
-                    
-                    // Advanced Analytics (Premium Features)
-                    // Topic Analysis Card (Premium)
-                    //TopicAnalysisInsightCard(entries: appState.journalEntries, subscriptionTier: appState.subscriptionTier)
-                    //    .padding(.horizontal, styles.layout.paddingXL)
-                    
-                    // Sentiment Analysis Card (Premium)
-                    //SentimentAnalysisInsightCard(entries: appState.journalEntries, subscriptionTier: appState.subscriptionTier)
-                    //    .padding(.horizontal, styles.layout.paddingXL)
-                    //    .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
                 }
             }
             .coordinateSpace(name: "scrollView")

@@ -7,7 +7,7 @@ static let shared = UIStyles()
 struct Colors {
     let appBackground: Color = Color(hex: "#000000")
     let cardBackground: Color = Color("CardBackground")
-    let accent: Color = Color(hex: "#7479FF")
+    let accent: Color = Color(hex: "#FFFF00")
     let secondaryAccent: Color = Color(hex: "#989898")
     let text: Color = Color(hex: "#FFFFFF")
     let textSecondary: Color = Color(hex: "#999999")
@@ -98,6 +98,10 @@ struct Typography {
     let moodLabel: Font = Font.system(size: 14, weight: .medium, design: .monospaced)
     let wheelplusminus: Font = Font.system(size: 24, weight: .medium, design: .monospaced)
 
+    // New properties for section headers and improved typography
+    let sectionHeader: Font = Font.system(size: 18, weight: .semibold, design: .monospaced)
+    let insightValue: Font = Font.system(size: 24, weight: .bold, design: .monospaced)
+    let insightCaption: Font = Font.system(size: 14, weight: .medium, design: .monospaced)
 }
 let typography = Typography()
 
@@ -137,6 +141,16 @@ struct Layout {
     let mainContentCornerRadius: CGFloat = 40 // Corner radius for the main content card
     
     let inputAreaHeight: CGFloat = 40 // Fixed height for input area
+
+    // New properties for improved card spacing and styling
+    let cardSpacing: CGFloat = 32       // Increased spacing between cards (was using spacingXL = 24)
+    let cardInnerPadding: CGFloat = 24  // Increased inner padding for cards (was paddingL = 20)
+    let cardShadowRadius: CGFloat = 8   // Reduced shadow radius (was 15)
+    let cardShadowOpacity: CGFloat = 0.15 // Reduced shadow opacity (was 0.2)
+    
+    // Section header spacing
+    let sectionHeaderSpacing: CGFloat = 16
+    let sectionBottomSpacing: CGFloat = 24
 }
 let layout = Layout()
 
@@ -236,6 +250,41 @@ func bottomSheet<Content: View>(_ content: Content) -> some View {
     content
         .background(colors.bottomSheetBackground)
         .cornerRadius(layout.bottomSheetCornerRadius)
+}
+
+// Add this new function to the UIStyles struct for consistent card styling
+// MARK: - Enhanced Card Style Helper
+func enhancedCard<Content: View>(_ content: Content, isPrimary: Bool = false) -> some View {
+    content
+        .background(colors.cardBackground)
+        .cornerRadius(layout.radiusL)
+        .shadow(
+            color: Color.black.opacity(layout.cardShadowOpacity),
+            radius: layout.cardShadowRadius,
+            x: 0,
+            y: isPrimary ? 6 : 4
+        )
+}
+
+// Add this new component for section headers
+// MARK: - Section Header
+func sectionHeader(_ title: String) -> some View {
+    VStack(spacing: layout.spacingXS) {
+        HStack {
+            Text(title)
+                .font(typography.sectionHeader)
+                .foregroundColor(colors.text)
+            
+            Spacer()
+        }
+        
+        Rectangle()
+            .fill(colors.accent.opacity(0.3))
+            .frame(height: 1)
+    }
+    .padding(.horizontal, layout.paddingXL)
+    .padding(.top, layout.sectionHeaderSpacing)
+    .padding(.bottom, layout.spacingS)
 }
 }
 

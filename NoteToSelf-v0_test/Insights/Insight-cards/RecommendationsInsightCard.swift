@@ -93,11 +93,12 @@ struct RecommendationsInsightCard: View {
         return results
     }
     
+    // Update the RecommendationsInsightCard to use the enhanced card style and improved content
     var body: some View {
         Button(action: {
             isExpanded = true
         }) {
-            styles.card(
+            styles.enhancedCard(
                 ZStack {
                     VStack(spacing: styles.layout.spacingM) {
                         HStack {
@@ -138,7 +139,7 @@ struct RecommendationsInsightCard: View {
                                     .foregroundColor(styles.colors.accent)
                                     .font(.system(size: 12))
                             } else {
-                                Text("Upgrade for More Recommendations")
+                                Text("Unlock More Personalized Tips")
                                     .font(styles.typography.caption)
                                     .foregroundColor(styles.colors.accent)
                                 
@@ -148,7 +149,7 @@ struct RecommendationsInsightCard: View {
                             }
                         }
                     }
-                    .padding(styles.layout.paddingL)
+                    .padding(styles.layout.cardInnerPadding)
                     
                     // Blur overlay for free users
                     if subscriptionTier == .free && recommendations.count > 1 {
@@ -171,7 +172,6 @@ struct RecommendationsInsightCard: View {
                     }
                 }
             )
-            .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $isExpanded) {
@@ -194,6 +194,7 @@ struct Recommendation: Identifiable {
     let icon: String
 }
 
+// Update the RecommendationRow to be more visually appealing
 struct RecommendationRow: View {
     let recommendation: Recommendation
     private let styles = UIStyles.shared
@@ -204,23 +205,24 @@ struct RecommendationRow: View {
             ZStack {
                 Circle()
                     .fill(styles.colors.tertiaryBackground)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 40, height: 40)
                 
                 Image(systemName: recommendation.icon)
                     .foregroundColor(styles.colors.accent)
-                    .font(.system(size: 16))
+                    .font(.system(size: 18))
             }
             
             // Content
             VStack(alignment: .leading, spacing: 4) {
                 Text(recommendation.title)
-                    .font(styles.typography.bodyLarge)
+                    .font(styles.typography.insightCaption)
                     .foregroundColor(styles.colors.text)
                 
                 Text(recommendation.description)
                     .font(styles.typography.bodyFont)
                     .foregroundColor(styles.colors.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(2)
             }
         }
     }

@@ -66,7 +66,7 @@ struct WeeklySummaryInsightCard: View {
         Button(action: {
             isExpanded = true
         }) {
-            styles.card(
+            styles.enhancedCard(
                 VStack(spacing: styles.layout.spacingM) {
                     // Header with badge for fresh summaries
                     HStack {
@@ -77,7 +77,7 @@ struct WeeklySummaryInsightCard: View {
                         if isFresh {
                             Text("NEW")
                                 .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.white)
+                                .foregroundColor(.black)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
                                 .background(styles.colors.accent)
@@ -93,7 +93,7 @@ struct WeeklySummaryInsightCard: View {
                     
                     // Period
                     Text(summaryPeriod)
-                        .font(styles.typography.bodyFont)
+                        .font(styles.typography.insightCaption)
                         .foregroundColor(styles.colors.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
@@ -105,7 +105,7 @@ struct WeeklySummaryInsightCard: View {
                                 .foregroundColor(styles.colors.textSecondary)
                             
                             Text("\(entryCount)")
-                                .font(styles.typography.bodyLarge)
+                                .font(styles.typography.insightValue)
                                 .foregroundColor(styles.colors.text)
                         }
                         
@@ -137,19 +137,19 @@ struct WeeklySummaryInsightCard: View {
                                 .foregroundColor(styles.colors.textSecondary)
                             
                             Text("\(averageWordCount)")
-                                .font(styles.typography.bodyLarge)
+                                .font(styles.typography.insightValue)
                                 .foregroundColor(styles.colors.text)
                         }
                     }
                     .padding(.vertical, styles.layout.spacingS)
                     
-                    // Summary text
+                    // Summary text - more conversational and focused
                     Text(generateSummaryText())
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.textSecondary)
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .lineLimit(3)
+                        .lineLimit(2)
                     
                     // View more button
                     HStack {
@@ -164,9 +164,9 @@ struct WeeklySummaryInsightCard: View {
                             .font(.system(size: 12))
                     }
                 }
-                .padding(styles.layout.paddingL)
+                .padding(styles.layout.cardInnerPadding),
+                isPrimary: isFresh // Make it primary if it's fresh
             )
-            .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $isExpanded) {
@@ -181,20 +181,21 @@ struct WeeklySummaryInsightCard: View {
         }
     }
     
+    // Update the generateSummaryText method to be more conversational and focused
     private func generateSummaryText() -> String {
         guard !weeklyEntries.isEmpty else {
-            return "No journal entries this week. Start journaling to see your weekly summary."
+            return "No entries yet this week. Start journaling to build your personal insights."
         }
         
         let moodPhrase: String
         if let mood = dominantMood {
             switch mood {
             case .happy, .excited, .content, .relaxed, .calm:
-                moodPhrase = "You've been feeling predominantly \(mood.name.lowercased()) this week."
+                moodPhrase = "You've been mostly \(mood.name.lowercased()) this week - that's great!"
             case .sad, .depressed, .anxious, .stressed:
-                moodPhrase = "You've been experiencing some \(mood.name.lowercased()) feelings this week."
+                moodPhrase = "You've experienced some \(mood.name.lowercased()) feelings this week."
             case .angry:
-                moodPhrase = "You've expressed some anger in your entries this week."
+                moodPhrase = "You've expressed some frustration in your entries this week."
             case .bored:
                 moodPhrase = "You've mentioned feeling bored several times this week."
             default:
@@ -206,14 +207,14 @@ struct WeeklySummaryInsightCard: View {
         
         let consistencyPhrase: String
         if entryCount >= 5 {
-            consistencyPhrase = "You've been very consistent with your journaling."
+            consistencyPhrase = "Your consistent journaling is building a great reflection habit."
         } else if entryCount >= 3 {
-            consistencyPhrase = "You've been fairly consistent with your journaling."
+            consistencyPhrase = "You're developing a good journaling rhythm."
         } else {
-            consistencyPhrase = "Try to journal more regularly to build the habit."
+            consistencyPhrase = "Adding more entries will help reveal deeper patterns."
         }
         
-        return "\(moodPhrase) \(consistencyPhrase) Your entries averaged \(averageWordCount) words, which helps provide deeper insights into your thoughts and feelings."
+        return "\(moodPhrase) \(consistencyPhrase)"
     }
 }
 

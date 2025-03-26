@@ -54,11 +54,12 @@ struct MoodTrendsInsightCard: View {
         return result
     }
     
+    // Update the MoodTrendsInsightCard to use the enhanced card style and improved content
     var body: some View {
         Button(action: {
             isExpanded = true
         }) {
-            styles.card(
+            styles.enhancedCard(
                 VStack(spacing: styles.layout.spacingM) {
                     HStack {
                         Text("Mood Trends")
@@ -66,6 +67,10 @@ struct MoodTrendsInsightCard: View {
                             .foregroundColor(styles.colors.text)
                         
                         Spacer()
+                        
+                        Image(systemName: "chart.xyaxis.line")
+                            .foregroundColor(styles.colors.accent)
+                            .font(.system(size: styles.layout.iconSizeL))
                     }
                     
                     if #available(iOS 16.0, *) {
@@ -96,21 +101,19 @@ struct MoodTrendsInsightCard: View {
                         }
                         .chartYScale(domain: 1...5)
                         .chartYAxis {
-                            AxisMarks(values: [1, 2, 3, 4, 5]) { value in
+                            AxisMarks(values: [1, 3, 5]) { value in
                                 AxisValueLabel {
                                     switch value.index {
-                                    case 0: Text("Sad").font(styles.typography.caption)
-                                    case 1: Text("Anxious").font(styles.typography.caption)
-                                    case 2: Text("Neutral").font(styles.typography.caption)
-                                    case 3: Text("Happy").font(styles.typography.caption)
-                                    case 4: Text("Excited").font(styles.typography.caption)
+                                    case 0: Text("Low").font(styles.typography.caption)
+                                    case 1: Text("Neutral").font(styles.typography.caption)
+                                    case 2: Text("High").font(styles.typography.caption)
                                     default: Text("")
                                     }
                                 }
                             }
                         }
                         .chartXAxis {
-                            AxisMarks(values: .stride(by: .day, count: 2)) { value in
+                            AxisMarks(values: .stride(by: .day, count: 4)) { value in
                                 AxisValueLabel {
                                     if let date = value.as(Date.self) {
                                         Text(formatDate(date))
@@ -119,25 +122,26 @@ struct MoodTrendsInsightCard: View {
                                 }
                             }
                         }
-                        .frame(height: 200)
+                        .frame(height: 180)
                     } else {
                         // Fallback for iOS 15
                         Text("Mood chart requires iOS 16 or later")
                             .font(styles.typography.bodyFont)
                             .foregroundColor(styles.colors.textSecondary)
-                            .frame(height: 200)
+                            .frame(height: 180)
                             .frame(maxWidth: .infinity)
                     }
                     
-                    Text("Track your mood patterns over time to identify trends and triggers.")
+                    // More conversational and focused insight text
+                    Text(generateTrendInsight())
                         .font(styles.typography.bodySmall)
                         .foregroundColor(styles.colors.textSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.top, styles.layout.spacingS)
+                        .lineLimit(2)
                 }
-                .padding(styles.layout.paddingL)
+                .padding(styles.layout.cardInnerPadding)
             )
-            .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $isExpanded) {
@@ -149,6 +153,52 @@ struct MoodTrendsInsightCard: View {
                 ),
                 entries: entries
             )
+        }
+    }
+    
+    // Add this method to generate more personalized trend insights
+    private func generateTrendInsight() -> String {
+        let validPoints = moodData.filter { $0.value > 0 }
+        
+        if validPoints.count < 3 {
+            return "Add more entries to reveal your mood patterns over time."
+        }
+        
+        // Check for upward trend
+        var isUpward = true
+        var isDownward = true
+        var isStable = true
+        
+        for i in 1..<validPoints.count {
+            if validPoints[i].value <= validPoints[i-1].value {
+                isUpward = false
+            }
+            if validPoints[i].value >= validPoints[i-1].value {
+                isDownward = false
+            }
+            if abs(validPoints[i].value - validPoints[i-1].value) > 1 {
+                isStable = false
+            }
+        }
+        
+        if isUpward {
+            return "Your mood has been improving recently. What positive changes have you made?"
+        } else if isDownward {
+            return "Your mood has been trending downward. Consider what factors might be affecting you."
+        } else if isStable {
+            return "Your mood has been relatively stable. This consistency can help you feel grounded."
+        } else {
+            // Calculate average mood
+            let sum = validPoints.reduce(0) { $0 + $1.value }
+            let avg = sum / Double(validPoints.count)
+            
+            if avg > 3.5 {
+                return "Your overall mood has been positive, with some natural variations."
+            } else if avg < 2.5 {
+                return "Your overall mood has been lower recently. Self-care might be helpful."
+            } else {
+                return "Your mood has varied naturally around a balanced center."
+            }
         }
     }
     

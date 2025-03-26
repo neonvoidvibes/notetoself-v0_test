@@ -11,32 +11,27 @@ struct ChatInsightCard: View {
         let calendar = Calendar.current
         let recentEntries = appState.journalEntries
             .filter { calendar.isDateInToday($0.date) || calendar.isDateInYesterday($0.date) }
-        
+    
         if let mostRecent = recentEntries.first {
             // Generate insight based on most recent entry
             let moodPhrase: String
             switch mostRecent.mood {
             case .happy, .excited, .content, .relaxed, .calm:
-                moodPhrase = "I notice you've been feeling \(mostRecent.mood.name.lowercased()). That's wonderful!"
+                moodPhrase = "I notice you've been feeling \(mostRecent.mood.name.lowercased()) lately. That's wonderful! What's contributing to this positive state?"
             case .sad, .depressed, .anxious, .stressed:
-                moodPhrase = "I see you've been feeling \(mostRecent.mood.name.lowercased()). Would you like to talk about it?"
+                moodPhrase = "I see you've been feeling \(mostRecent.mood.name.lowercased()). I'm here to listen if you'd like to explore what might be affecting you."
             case .angry:
-                moodPhrase = "I notice you expressed some anger in your recent entry. Would you like to explore what triggered this?"
+                moodPhrase = "I notice you expressed some frustration recently. Sometimes talking through what triggered this can help provide clarity."
             case .bored:
-                moodPhrase = "You mentioned feeling bored. Would you like to discuss some activities that might energize you?"
+                moodPhrase = "You mentioned feeling bored. Would exploring some new activities or perspectives help energize you?"
             default:
-                moodPhrase = "I noticed your recent journal entry. Would you like to reflect on it together?"
+                moodPhrase = "I noticed your recent journal entry. Let's reflect on what's been on your mind."
             }
-            
-            let wordCount = mostRecent.text.split(separator: " ").count
-            let lengthPhrase = wordCount > 100 ? 
-                "You wrote quite a detailed entry. I'd love to hear more about what's on your mind." : 
-                "Would you like to expand on your thoughts from your recent entry?"
-            
-            return "\(moodPhrase) \(lengthPhrase)"
+        
+            return moodPhrase
         } else {
             // No recent entries
-            return "How are you feeling today? I'm here to help you reflect on your thoughts and emotions."
+            return "How are you feeling today? Taking a moment to check in with yourself can provide valuable insights."
         }
     }
     
@@ -49,7 +44,7 @@ struct ChatInsightCard: View {
                 userInfo: ["tabIndex": 2]
             )
         }) {
-            styles.card(
+            styles.enhancedCard(
                 VStack(spacing: styles.layout.spacingM) {
                     HStack {
                         Text("Reflection Prompt")
@@ -109,13 +104,14 @@ struct ChatInsightCard: View {
                                     )
                             )
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .lineLimit(3)
                     }
                     
                     // Call-to-action
                     HStack {
                         Spacer()
                         
-                        Text("Tap to continue this conversation")
+                        Text("Continue this conversation")
                             .font(styles.typography.caption)
                             .foregroundColor(styles.colors.accent)
                             .padding(.top, styles.layout.spacingS)
@@ -125,9 +121,8 @@ struct ChatInsightCard: View {
                             .font(.system(size: 14))
                     }
                 }
-                .padding(styles.layout.paddingL)
+                .padding(styles.layout.cardInnerPadding)
             )
-            .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
         }
         .buttonStyle(PlainButtonStyle())
     }
