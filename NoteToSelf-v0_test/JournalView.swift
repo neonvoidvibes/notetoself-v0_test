@@ -141,7 +141,7 @@ struct JournalView: View {
                         if !appState.journalEntries.isEmpty && !filteredEntries.isEmpty && !showingFilterPanel {
                             VStack(alignment: .center, spacing: styles.layout.spacingL) {
                                 // Inspiring header with larger font
-                                Text("Your Journal")
+                                Text("My Journal")
                                     .font(styles.typography.headingFont)
                                     .foregroundColor(styles.colors.text)
                                     .padding(.bottom, 4)

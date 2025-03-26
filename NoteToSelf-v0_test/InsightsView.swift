@@ -3,6 +3,7 @@ import Charts
 
 struct InsightsView: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var chatManager: ChatManager
     @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled: Bool
     @State private var selectedMonth: Date = Date()
     @Binding var tabBarOffset: CGFloat
@@ -14,6 +15,12 @@ struct InsightsView: View {
     
     // Add this state variable to InsightsView
     @State private var selectedInsight: InsightDetail? = nil
+    
+    // Check if weekly summary is fresh (generated in the past 24 hours)
+    private var isWeeklySummaryFresh: Bool {
+        // For demo purposes, we'll consider it fresh if there's an entry from today
+        return appState.journalEntries.contains { Calendar.current.isDateInToday($0.date) }
+    }
     
 var body: some View {
     ZStack {
@@ -88,18 +95,40 @@ var body: some View {
                     .padding(.horizontal, styles.layout.paddingXL)
                     .padding(.top, 8)
                     
-                    // Current Streak Card
+                    // Weekly Summary Card (pinned at top if fresh)
+                    if isWeeklySummaryFresh {
+                        WeeklySummaryInsightCard(entries: appState.journalEntries)
+                            .padding(.horizontal, styles.layout.paddingXL)
+                    }
+                    
+                    // Basic Analytics (Foundation Cards)
+                    // 1. Streak Card
                     StreakInsightCard(streak: appState.currentStreak)
                         .padding(.horizontal, styles.layout.paddingXL)
                     
-                    // Monthly Calendar Card
-                    CalendarInsightCard(selectedMonth: $selectedMonth, entries: appState.journalEntries)
-                        .padding(.horizontal, styles.layout.paddingXL)
-                    
-                    // Mood Trends Card
+                    // 2. Mood Trends Card
                     MoodTrendsInsightCard(entries: appState.journalEntries)
                         .padding(.horizontal, styles.layout.paddingXL)
                     
+                    // 3. Monthly Calendar Card
+                    CalendarInsightCard(selectedMonth: $selectedMonth, entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingXL)
+                    
+                    // Chat Card (The Bridge)
+                    ChatInsightCard()
+                        .padding(.horizontal, styles.layout.paddingXL)
+                    
+                    // Weekly Summary Card (if not fresh, show below chat)
+                    if !isWeeklySummaryFresh {
+                        WeeklySummaryInsightCard(entries: appState.journalEntries)
+                            .padding(.horizontal, styles.layout.paddingXL)
+                    }
+                    
+                    // Weekly Insight Card
+                    WeeklyInsightCard(entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingXL)
+                    
+                    // Mood & Behavioral Patterns
                     // Writing Consistency Card
                     WritingConsistencyInsightCard(entries: appState.journalEntries)
                         .padding(.horizontal, styles.layout.paddingXL)
@@ -112,6 +141,11 @@ var body: some View {
                     WordCountInsightCard(entries: appState.journalEntries)
                         .padding(.horizontal, styles.layout.paddingXL)
                     
+                    // Recommendations Card
+                    RecommendationsInsightCard(entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingXL)
+                    
+                    // Advanced Analytics (Premium Features)
                     // Topic Analysis Card (Premium)
                     TopicAnalysisInsightCard(entries: appState.journalEntries, subscriptionTier: appState.subscriptionTier)
                         .padding(.horizontal, styles.layout.paddingXL)
@@ -141,6 +175,16 @@ var body: some View {
     }
     .sheet(item: $selectedInsight) { insight in
         InsightDetailView(insight: insight, entries: appState.journalEntries)
+    }
+    .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToTab"))) { notification in
+        if let userInfo = notification.userInfo, let tabIndex = userInfo["tabIndex"] as? Int {
+            // Post a notification to switch to the specified tab
+            NotificationCenter.default.post(
+                name: NSNotification.Name("SwitchTab"),
+                object: nil,
+                userInfo: ["tabIndex": tabIndex]
+            )
+        }
     }
 }
 }
@@ -654,6 +698,7 @@ struct InsightsView_Previews: PreviewProvider {
             tabBarVisible: .constant(true)
         )
         .environmentObject(appState)
+        .environmentObject(ChatManager())
     }
 }
 
