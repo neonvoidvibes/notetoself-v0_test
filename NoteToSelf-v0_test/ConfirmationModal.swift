@@ -67,7 +67,7 @@ struct ConfirmationModal: View {
                 .padding(.top, 10)
             }
             .padding(24)
-            .background(styles.colors.cardBackground)
+            .background(styles.colors.menuBackground)
             .cornerRadius(styles.layout.radiusL)
             .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 10)
             .padding(.horizontal, 40)
