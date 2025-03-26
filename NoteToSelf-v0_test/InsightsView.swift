@@ -144,16 +144,21 @@ var body: some View {
                     // Recommendations Card
                     RecommendationsInsightCard(entries: appState.journalEntries)
                         .padding(.horizontal, styles.layout.paddingXL)
+                        .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
+                    
+                    // Note: TopicAnalysisInsightCard and SentimentAnalysisInsightCard are kept in the codebase
+                    // but not displayed in the main view. They could be added to an "Advanced Insights" section
+                    // in the future or made available through a different UI path.
                     
                     // Advanced Analytics (Premium Features)
                     // Topic Analysis Card (Premium)
-                    TopicAnalysisInsightCard(entries: appState.journalEntries, subscriptionTier: appState.subscriptionTier)
-                        .padding(.horizontal, styles.layout.paddingXL)
+                    //TopicAnalysisInsightCard(entries: appState.journalEntries, subscriptionTier: appState.subscriptionTier)
+                    //    .padding(.horizontal, styles.layout.paddingXL)
                     
                     // Sentiment Analysis Card (Premium)
-                    SentimentAnalysisInsightCard(entries: appState.journalEntries, subscriptionTier: appState.subscriptionTier)
-                        .padding(.horizontal, styles.layout.paddingXL)
-                        .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
+                    //SentimentAnalysisInsightCard(entries: appState.journalEntries, subscriptionTier: appState.subscriptionTier)
+                    //    .padding(.horizontal, styles.layout.paddingXL)
+                    //    .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
                 }
             }
             .coordinateSpace(name: "scrollView")
