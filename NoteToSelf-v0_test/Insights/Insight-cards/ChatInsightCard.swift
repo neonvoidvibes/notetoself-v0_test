@@ -3,6 +3,7 @@ import SwiftUI
 struct ChatInsightCard: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var chatManager: ChatManager
+    @State private var isExpanded: Bool = false
     private let styles = UIStyles.shared
     
     // This would ideally come from an AI model analyzing journal entries
@@ -36,15 +37,10 @@ struct ChatInsightCard: View {
     }
     
     var body: some View {
-        Button(action: {
-            // Switch to the Reflections tab
-            NotificationCenter.default.post(
-                name: NSNotification.Name("SwitchToTab"),
-                object: nil,
-                userInfo: ["tabIndex": 2]
-            )
-        }) {
-            styles.enhancedCard(
+        styles.expandableCard(
+            isExpanded: $isExpanded,
+            content: {
+                // Preview content
                 VStack(spacing: styles.layout.spacingM) {
                     HStack {
                         Text("Reflection Prompt")
@@ -106,25 +102,120 @@ struct ChatInsightCard: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .lineLimit(3)
                     }
+                }
+            },
+            detailContent: {
+                // Expanded detail content
+                VStack(spacing: styles.layout.spacingL) {
+                    Divider()
+                        .background(styles.colors.tertiaryBackground)
+                        .padding(.vertical, 8)
                     
-                    // Call-to-action
-                    HStack {
-                        Spacer()
+                    // Full message
+                    Text(insightMessage)
+                        .font(styles.typography.bodyFont)
+                        .foregroundColor(styles.colors.text)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    // Reflection prompts
+                    VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                        Text("Reflection Questions")
+                            .font(styles.typography.title3)
+                            .foregroundColor(styles.colors.text)
                         
-                        Text("Continue this conversation")
-                            .font(styles.typography.caption)
-                            .foregroundColor(styles.colors.accent)
-                            .padding(.top, styles.layout.spacingS)
-                        
-                        Image(systemName: "arrow.right.circle.fill")
-                            .foregroundColor(styles.colors.accent)
-                            .font(.system(size: 14))
+                        ForEach(generateReflectionPrompts(), id: \.self) { prompt in
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "circle.fill")
+                                    .foregroundColor(styles.colors.accent)
+                                    .font(.system(size: 8))
+                                    .padding(.top, 6)
+                                
+                                Text(prompt)
+                                    .font(styles.typography.bodyFont)
+                                    .foregroundColor(styles.colors.textSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                    
+                    // Call-to-action button
+                    Button(action: {
+                        // Switch to the Reflections tab
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("SwitchToTab"),
+                            object: nil,
+                            userInfo: ["tabIndex": 2]
+                        )
+                    }) {
+                        Text("Continue This Conversation")
+                            .font(styles.typography.bodyFont)
+                            .foregroundColor(.white)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                    .fill(styles.colors.accent)
+                            )
                     }
                 }
-                .padding(styles.layout.cardInnerPadding)
-            )
+            }
+        )
+    }
+    
+    // Helper method to generate reflection prompts based on recent entries
+    private func generateReflectionPrompts() -> [String] {
+        let calendar = Calendar.current
+        let recentEntries = appState.journalEntries
+            .filter { calendar.isDateInToday($0.date) || calendar.isDateInYesterday($0.date) }
+        
+        if let mostRecent = recentEntries.first {
+            // Generate prompts based on most recent entry mood
+            switch mostRecent.mood {
+            case .happy, .excited, .content, .relaxed, .calm:
+                return [
+                    "What specific events or factors contributed to your positive mood?",
+                    "How might you intentionally create more moments like this in the future?",
+                    "What strengths or resources are you drawing on during this positive period?"
+                ]
+            case .sad, .depressed:
+                return [
+                    "What thoughts or situations might be contributing to these feelings?",
+                    "What has helped you navigate similar feelings in the past?",
+                    "What small step could you take today to support your well-being?"
+                ]
+            case .anxious, .stressed:
+                return [
+                    "What specific concerns or uncertainties are you facing right now?",
+                    "What aspects of the situation are within your control, and which aren't?",
+                    "What coping strategies have been effective for you in the past?"
+                ]
+            case .angry:
+                return [
+                    "What underlying needs or values might this frustration be pointing to?",
+                    "How might you address this situation in a way that aligns with your values?",
+                    "What perspective might help you view this situation differently?"
+                ]
+            case .bored:
+                return [
+                    "What activities have engaged you deeply in the past?",
+                    "What new skill or interest have you been curious about exploring?",
+                    "How might this feeling of boredom be guiding you toward something important?"
+                ]
+            default:
+                return [
+                    "What patterns have you noticed in your thoughts or feelings lately?",
+                    "What would be most supportive for you right now?",
+                    "What insights from past experiences might be relevant to your current situation?"
+                ]
+            }
+        } else {
+            // General prompts if no recent entries
+            return [
+                "What's been on your mind lately that might be worth exploring?",
+                "What patterns have you noticed in your mood or energy levels?",
+                "What would you like to focus on or prioritize in the coming days?"
+            ]
         }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 

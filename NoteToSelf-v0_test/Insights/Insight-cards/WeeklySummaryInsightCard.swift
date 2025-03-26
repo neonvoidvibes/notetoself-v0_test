@@ -63,10 +63,11 @@ struct WeeklySummaryInsightCard: View {
     }
     
     var body: some View {
-        Button(action: {
-            isExpanded = true
-        }) {
-            styles.enhancedCard(
+        styles.expandableCard(
+            isExpanded: $isExpanded,
+            isPrimary: isFresh,
+            content: {
+                // Preview content
                 VStack(spacing: styles.layout.spacingM) {
                     // Header with badge for fresh summaries
                     HStack {
@@ -150,35 +151,131 @@ struct WeeklySummaryInsightCard: View {
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .lineLimit(2)
+                }
+            },
+            detailContent: {
+                // Expanded detail content
+                VStack(spacing: styles.layout.spacingL) {
+                    Divider()
+                        .background(styles.colors.tertiaryBackground)
+                        .padding(.vertical, 8)
                     
-                    // View more button
-                    HStack {
-                        Spacer()
+                    // Detailed weekly stats
+                    VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                        Text("Weekly Insights")
+                            .font(styles.typography.title3)
+                            .foregroundColor(styles.colors.text)
                         
-                        Text("View Full Summary")
-                            .font(styles.typography.caption)
-                            .foregroundColor(styles.colors.accent)
+                        Text(generateDetailedSummary())
+                            .font(styles.typography.bodyFont)
+                            .foregroundColor(styles.colors.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    
+                    // Entry breakdown by day
+                    VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                        Text("Daily Breakdown")
+                            .font(styles.typography.title3)
+                            .foregroundColor(styles.colors.text)
                         
-                        Image(systemName: "chevron.right")
-                            .foregroundColor(styles.colors.accent)
-                            .font(.system(size: 12))
+                        ForEach(daysOfWeek(), id: \.self) { day in
+                            DailyEntryRow(
+                                day: day,
+                                entry: entryForDay(day),
+                                styles: styles
+                            )
+                        }
+                    }
+                    
+                    // Weekly themes
+                    if let themes = identifyWeeklyThemes() {
+                        VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                            Text("Weekly Themes")
+                                .font(styles.typography.title3)
+                                .foregroundColor(styles.colors.text)
+                            
+                            Text(themes)
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(styles.colors.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
-                .padding(styles.layout.cardInnerPadding),
-                isPrimary: isFresh // Make it primary if it's fresh
-            )
+            }
+        )
+    }
+    
+    // Helper methods for expanded content
+    private func daysOfWeek() -> [Date] {
+        let calendar = Calendar.current
+        let today = Date()
+        let weekday = calendar.component(.weekday, from: today)
+        let startOfWeek = calendar.date(byAdding: .day, value: -(weekday - 1), to: today)!
+        
+        return (0..<7).map { day in
+            calendar.date(byAdding: .day, value: day, to: startOfWeek)!
         }
-        .buttonStyle(PlainButtonStyle())
-        .sheet(isPresented: $isExpanded) {
-            InsightDetailView(
-                insight: InsightDetail(
-                    type: .weeklySummary,
-                    title: "Weekly Summary",
-                    data: weeklyEntries
-                ),
-                entries: entries
-            )
+    }
+    
+    private func entryForDay(_ date: Date) -> JournalEntry? {
+        let calendar = Calendar.current
+        return entries.first { entry in
+            calendar.isDate(entry.date, inSameDayAs: date)
         }
+    }
+    
+    private func generateDetailedSummary() -> String {
+        guard !weeklyEntries.isEmpty else {
+            return "You haven't made any entries this week yet. Starting a journaling habit can help you track your moods, thoughts, and experiences over time."
+        }
+        
+        let moodPhrase: String
+        if let mood = dominantMood {
+            switch mood {
+            case .happy, .excited, .content, .relaxed, .calm:
+                moodPhrase = "Your predominant mood this week has been \(mood.name.lowercased()), which suggests you're experiencing a period of positive emotions and well-being."
+            case .sad, .depressed, .anxious, .stressed:
+                moodPhrase = "You've been feeling predominantly \(mood.name.lowercased()) this week. Remember that emotions are temporary and it's okay to seek support when needed."
+            case .angry:
+                moodPhrase = "Frustration has been a common theme in your entries this week. Consider what might be triggering these feelings and whether there are constructive ways to address the underlying issues."
+            case .bored:
+                moodPhrase = "You've mentioned feeling bored several times this week. This might be an opportunity to explore new activities or revisit interests you've enjoyed in the past."
+            default:
+                moodPhrase = "Your mood has shown variety this week, reflecting the natural complexity of emotional experience."
+            }
+        } else {
+            moodPhrase = "Your mood has varied throughout the week, showing the natural ebb and flow of emotions."
+        }
+        
+        let consistencyPhrase: String
+        if entryCount >= 5 {
+            consistencyPhrase = "You've been remarkably consistent with your journaling this week, with \(entryCount) entries. This regular practice helps build self-awareness and provides valuable insights into your patterns over time."
+        } else if entryCount >= 3 {
+            consistencyPhrase = "You've made \(entryCount) entries this week, showing a good commitment to your journaling practice. This consistency helps you track patterns and changes in your thoughts and feelings."
+        } else {
+            consistencyPhrase = "You've made \(entryCount) entries so far this week. Even occasional journaling provides valuable snapshots of your experiences and emotions."
+        }
+        
+        let expressionPhrase: String
+        if averageWordCount > 100 {
+            expressionPhrase = "Your entries have been quite detailed (averaging \(averageWordCount) words), suggesting you're taking time for deep reflection."
+        } else if averageWordCount > 50 {
+            expressionPhrase = "Your entries have been moderately detailed (averaging \(averageWordCount) words), providing a good balance of reflection and brevity."
+        } else {
+            expressionPhrase = "Your entries have been concise (averaging \(averageWordCount) words), capturing your thoughts efficiently."
+        }
+        
+        return "\(moodPhrase) \(consistencyPhrase) \(expressionPhrase)"
+    }
+    
+    private func identifyWeeklyThemes() -> String? {
+        guard weeklyEntries.count >= 3 else {
+            return nil
+        }
+        
+        // In a real app, this would use NLP to identify common themes
+        // For demo purposes, we'll return a placeholder
+        return "Based on your entries this week, common themes include personal reflection, daily routines, and social interactions. Journaling about these areas helps build awareness of what matters most to you."
     }
     
     // Update the generateSummaryText method to be more conversational and focused
@@ -215,6 +312,59 @@ struct WeeklySummaryInsightCard: View {
         }
         
         return "\(moodPhrase) \(consistencyPhrase)"
+    }
+}
+
+// Helper view for daily entry rows in expanded view
+struct DailyEntryRow: View {
+    let day: Date
+    let entry: JournalEntry?
+    let styles: UIStyles
+    
+    var body: some View {
+        HStack(spacing: styles.layout.spacingM) {
+            // Day label
+            Text(formatDay(day))
+                .font(styles.typography.bodyFont)
+                .foregroundColor(styles.colors.text)
+                .frame(width: 80, alignment: .leading)
+            
+            // Entry indicator
+            if let entry = entry {
+                HStack {
+                    Circle()
+                        .fill(entry.mood.color)
+                        .frame(width: 12, height: 12)
+                    
+                    Text(entry.mood.name)
+                        .font(styles.typography.bodySmall)
+                        .foregroundColor(styles.colors.text)
+                    
+                    Spacer()
+                    
+                    Text("\(entry.text.split(separator: " ").count) words")
+                        .font(styles.typography.caption)
+                        .foregroundColor(styles.colors.textSecondary)
+                }
+                .padding(8)
+                .background(styles.colors.tertiaryBackground.opacity(0.5))
+                .cornerRadius(styles.layout.radiusM)
+            } else {
+                Text("No entry")
+                    .font(styles.typography.bodySmall)
+                    .foregroundColor(styles.colors.textSecondary)
+                    .padding(8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(styles.colors.tertiaryBackground.opacity(0.3))
+                    .cornerRadius(styles.layout.radiusM)
+            }
+        }
+    }
+    
+    private func formatDay(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE"
+        return formatter.string(from: date)
     }
 }
 
