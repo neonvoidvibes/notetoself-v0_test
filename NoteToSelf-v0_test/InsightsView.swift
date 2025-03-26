@@ -137,10 +137,6 @@ var body: some View {
                     MoodDistributionInsightCard(entries: appState.journalEntries)
                         .padding(.horizontal, styles.layout.paddingXL)
                     
-                    // Word Count Card
-                    WordCountInsightCard(entries: appState.journalEntries)
-                        .padding(.horizontal, styles.layout.paddingXL)
-                    
                     // Recommendations Card
                     RecommendationsInsightCard(entries: appState.journalEntries)
                         .padding(.horizontal, styles.layout.paddingXL)
