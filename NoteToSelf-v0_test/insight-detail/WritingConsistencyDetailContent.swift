@@ -112,7 +112,10 @@ struct ConsistencyStatsView: View {
     }
     
     private var bestMonth: (month: Int, count: Int)? {
-        entriesByMonth.max { $0.value < $1.value }
+        if let best = entriesByMonth.max(by: { $0.value < $1.value }) {
+            return (month: best.key, count: best.value)
+        }
+        return nil
     }
     
     private var averageEntriesPerMonth: Double {
