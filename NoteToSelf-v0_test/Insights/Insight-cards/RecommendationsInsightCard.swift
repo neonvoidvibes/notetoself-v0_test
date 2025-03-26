@@ -95,10 +95,10 @@ struct RecommendationsInsightCard: View {
     
     // Update the RecommendationsInsightCard to use the enhanced card style and improved content
     var body: some View {
-        Button(action: {
-            isExpanded = true
-        }) {
-            styles.enhancedCard(
+        styles.expandableCard(
+            isExpanded: $isExpanded,
+            content: {
+                // Preview content
                 ZStack {
                     VStack(spacing: styles.layout.spacingM) {
                         HStack {
@@ -125,31 +125,7 @@ struct RecommendationsInsightCard: View {
                             
                             RecommendationRow(recommendation: recommendations[1])
                         }
-                        
-                        // View more button or upgrade prompt
-                        HStack {
-                            Spacer()
-                            
-                            if subscriptionTier == .premium {
-                                Text("View All Recommendations")
-                                    .font(styles.typography.caption)
-                                    .foregroundColor(styles.colors.accent)
-                                
-                                Image(systemName: "chevron.right")
-                                    .foregroundColor(styles.colors.accent)
-                                    .font(.system(size: 12))
-                            } else {
-                                Text("Unlock More Personalized Tips")
-                                    .font(styles.typography.caption)
-                                    .foregroundColor(styles.colors.accent)
-                                
-                                Image(systemName: "lock.fill")
-                                    .foregroundColor(styles.colors.accent)
-                                    .font(.system(size: 12))
-                            }
-                        }
                     }
-                    .padding(styles.layout.cardInnerPadding)
                     
                     // Blur overlay for free users
                     if subscriptionTier == .free && recommendations.count > 1 {
@@ -171,19 +147,59 @@ struct RecommendationsInsightCard: View {
                         .allowsHitTesting(false)
                     }
                 }
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-        .sheet(isPresented: $isExpanded) {
-            InsightDetailView(
-                insight: InsightDetail(
-                    type: .recommendations,
-                    title: "Recommendations",
-                    data: recommendations
-                ),
-                entries: entries
-            )
-        }
+            },
+            detailContent: {
+                // Expanded detail content
+                VStack(spacing: styles.layout.spacingL) {
+                    // Introduction
+                    VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                        Text("Personalized Recommendations")
+                            .font(styles.typography.title3)
+                            .foregroundColor(styles.colors.text)
+                        
+                        Text("Based on your journal entries, here are some suggestions that might support your well-being and personal growth.")
+                            .font(styles.typography.bodyFont)
+                            .foregroundColor(styles.colors.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    
+                    // All recommendations
+                    VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                        ForEach(recommendations) { recommendation in
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Image(systemName: recommendation.icon)
+                                        .foregroundColor(styles.colors.accent)
+                                        .font(.system(size: 20))
+                                        .frame(width: 24, height: 24)
+                                    
+                                    Text(recommendation.title)
+                                        .font(styles.typography.bodyLarge)
+                                        .foregroundColor(styles.colors.text)
+                                }
+                                
+                                Text(recommendation.description)
+                                    .font(styles.typography.bodyFont)
+                                    .foregroundColor(styles.colors.textSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .padding(.leading, 32)
+                            }
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 12)
+                            .background(styles.colors.tertiaryBackground.opacity(0.3))
+                            .cornerRadius(styles.layout.radiusM)
+                        }
+                    }
+                    
+                    // Disclaimer
+                    Text("These recommendations are generated based on patterns in your journal entries and are not a substitute for professional advice.")
+                        .font(styles.typography.caption)
+                        .foregroundColor(styles.colors.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 8)
+                }
+            }
+        )
     }
 }
 

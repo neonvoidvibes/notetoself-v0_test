@@ -94,10 +94,6 @@ struct WritingConsistencyInsightCard: View {
             detailContent: {
                 // Expanded detail content
                 VStack(spacing: styles.layout.spacingL) {
-                    Divider()
-                        .background(styles.colors.tertiaryBackground)
-                        .padding(.vertical, 8)
-                    
                     // Monthly consistency analysis
                     VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                         Text("Monthly Analysis")

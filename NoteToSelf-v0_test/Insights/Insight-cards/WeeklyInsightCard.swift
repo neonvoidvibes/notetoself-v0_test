@@ -79,151 +79,147 @@ struct WeeklyInsightCard: View {
                         Text("Weekly Patterns")
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
-                        
-                        Spacer()
-                        
-                        Image(systemName: "chart.xyaxis.line")
-                            .foregroundColor(styles.colors.accent)
-                            .font(.system(size: styles.layout.iconSizeL))
-                    }
                     
-                    if #available(iOS 16.0, *) {
-                        Chart {
-                            ForEach(weekdayMoodData, id: \.weekday) { dataPoint in
-                                if dataPoint.mood > 0 {
-                                    BarMark(
-                                        x: .value("Weekday", dataPoint.weekday),
-                                        y: .value("Mood", dataPoint.mood)
+                    Spacer()
+                    
+                    Image(systemName: "chart.xyaxis.line")
+                        .foregroundColor(styles.colors.accent)
+                        .font(.system(size: styles.layout.iconSizeL))
+                }
+                
+                if #available(iOS 16.0, *) {
+                    Chart {
+                        ForEach(weekdayMoodData, id: \.weekday) { dataPoint in
+                            if dataPoint.mood > 0 {
+                                BarMark(
+                                    x: .value("Weekday", dataPoint.weekday),
+                                    y: .value("Mood", dataPoint.mood)
+                                )
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [styles.colors.accent, styles.colors.accent.opacity(0.7)],
+                                        startPoint: .top,
+                                        endPoint: .bottom
                                     )
-                                    .foregroundStyle(
-                                        LinearGradient(
-                                            colors: [styles.colors.accent, styles.colors.accent.opacity(0.7)],
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
-                                    )
-                                    .cornerRadius(4)
+                                )
+                                .cornerRadius(4)
+                            }
+                        }
+                    }
+                    .chartYScale(domain: 0...5)
+                    .chartYAxis {
+                        AxisMarks(values: [1, 3, 5]) { value in
+                            AxisValueLabel {
+                                switch value.index {
+                                case 0: Text("Low").font(styles.typography.caption)
+                                case 1: Text("Neutral").font(styles.typography.caption)
+                                case 2: Text("High").font(styles.typography.caption)
+                                default: Text("")
                                 }
                             }
                         }
-                        .chartYScale(domain: 0...5)
-                        .chartYAxis {
-                            AxisMarks(values: [1, 3, 5]) { value in
-                                AxisValueLabel {
-                                    switch value.index {
-                                    case 0: Text("Low").font(styles.typography.caption)
-                                    case 1: Text("Neutral").font(styles.typography.caption)
-                                    case 2: Text("High").font(styles.typography.caption)
-                                    default: Text("")
-                                    }
-                                }
-                            }
-                        }
-                        .frame(height: 160)
-                    } else {
-                        // Fallback for iOS 15
-                        Text("Weekly mood chart requires iOS 16 or later")
-                            .font(styles.typography.bodyFont)
-                            .foregroundColor(styles.colors.textSecondary)
-                            .frame(height: 160)
-                            .frame(maxWidth: .infinity)
                     }
-                    
-                    // Insight text - brief for free users, more detailed for premium
-                    Text(generateInsightText())
+                    .frame(height: 160)
+                } else {
+                    // Fallback for iOS 15
+                    Text("Weekly mood chart requires iOS 16 or later")
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.textSecondary)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .lineLimit(subscriptionTier == .premium ? 3 : 2)
+                        .frame(height: 160)
+                        .frame(maxWidth: .infinity)
                 }
-            },
-            detailContent: {
-                // Expanded detail content
-                VStack(spacing: styles.layout.spacingL) {
-                    Divider()
-                        .background(styles.colors.tertiaryBackground)
-                        .padding(.vertical, 8)
+                
+                // Insight text - brief for free users, more detailed for premium
+                Text(generateInsightText())
+                    .font(styles.typography.bodyFont)
+                    .foregroundColor(styles.colors.textSecondary)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .lineLimit(subscriptionTier == .premium ? 3 : 2)
+            }
+        },
+        detailContent: {
+            // Expanded detail content
+            VStack(spacing: styles.layout.spacingL) {
+                // Weekly mood analysis
+                VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                    Text("Weekly Mood Analysis")
+                        .font(styles.typography.title3)
+                        .foregroundColor(styles.colors.text)
                     
-                    // Weekly mood analysis
-                    VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                        Text("Weekly Mood Analysis")
-                            .font(styles.typography.title3)
-                            .foregroundColor(styles.colors.text)
-                        
-                        Text(generateDetailedWeeklyAnalysis())
-                            .font(styles.typography.bodyFont)
-                            .foregroundColor(styles.colors.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    Text(generateDetailedWeeklyAnalysis())
+                        .font(styles.typography.bodyFont)
+                        .foregroundColor(styles.colors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                
+                // Day-by-day breakdown
+                VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                    Text("Day-by-Day Breakdown")
+                        .font(styles.typography.title3)
+                        .foregroundColor(styles.colors.text)
                     
-                    // Day-by-day breakdown
-                    VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                        Text("Day-by-Day Breakdown")
-                            .font(styles.typography.title3)
-                            .foregroundColor(styles.colors.text)
-                        
-                        ForEach(weekdayMoodData.filter { $0.mood > 0 }, id: \.weekday) { dataPoint in
-                            HStack {
-                                Text(dataPoint.weekday)
-                                    .font(styles.typography.bodyFont)
-                                    .foregroundColor(styles.colors.text)
-                                    .frame(width: 50, alignment: .leading)
-                                
-                                GeometryReader { geometry in
-                                    ZStack(alignment: .leading) {
-                                        // Background
-                                        Rectangle()
-                                            .fill(styles.colors.tertiaryBackground)
-                                            .cornerRadius(styles.layout.radiusM)
-                                        
-                                        // Fill
-                                        Rectangle()
-                                            .fill(
-                                                LinearGradient(
-                                                    colors: [styles.colors.accent, styles.colors.accent.opacity(0.7)],
-                                                    startPoint: .leading,
-                                                    endPoint: .trailing
-                                                )
+                    ForEach(weekdayMoodData.filter { $0.mood > 0 }, id: \.weekday) { dataPoint in
+                        HStack {
+                            Text(dataPoint.weekday)
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(styles.colors.text)
+                                .frame(width: 50, alignment: .leading)
+                            
+                            GeometryReader { geometry in
+                                ZStack(alignment: .leading) {
+                                    // Background
+                                    Rectangle()
+                                        .fill(styles.colors.tertiaryBackground)
+                                        .cornerRadius(styles.layout.radiusM)
+                                    
+                                    // Fill
+                                    Rectangle()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [styles.colors.accent, styles.colors.accent.opacity(0.7)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
                                             )
-                                            .cornerRadius(styles.layout.radiusM)
-                                            .frame(width: geometry.size.width * CGFloat(dataPoint.mood / 5.0))
-                                        
-                                        // Label
-                                        Text(moodValueToText(dataPoint.mood))
-                                            .font(styles.typography.caption)
-                                            .foregroundColor(styles.colors.text)
-                                            .padding(.leading, 8)
-                                    }
+                                        )
+                                        .cornerRadius(styles.layout.radiusM)
+                                        .frame(width: geometry.size.width * CGFloat(dataPoint.mood / 5.0))
+                                    
+                                    // Label
+                                    Text(moodValueToText(dataPoint.mood))
+                                        .font(styles.typography.caption)
+                                        .foregroundColor(styles.colors.text)
+                                        .padding(.leading, 8)
                                 }
-                                .frame(height: 24)
                             }
+                            .frame(height: 24)
                         }
                     }
+                }
+                
+                // Recommendations based on patterns
+                VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                    Text("Recommendations")
+                        .font(styles.typography.title3)
+                        .foregroundColor(styles.colors.text)
                     
-                    // Recommendations based on patterns
-                    VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                        Text("Recommendations")
-                            .font(styles.typography.title3)
-                            .foregroundColor(styles.colors.text)
-                        
-                        ForEach(generateRecommendations(), id: \.self) { recommendation in
-                            HStack(alignment: .top, spacing: 12) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(styles.colors.accent)
-                                    .font(.system(size: 16))
-                                
-                                Text(recommendation)
-                                    .font(styles.typography.bodyFont)
-                                    .foregroundColor(styles.colors.textSecondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
+                    ForEach(generateRecommendations(), id: \.self) { recommendation in
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(styles.colors.accent)
+                                .font(.system(size: 16))
+                            
+                            Text(recommendation)
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(styles.colors.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 }
             }
-        )
-    }
+        }
+    )
+}
     
     // Helper methods for expanded content
     private func moodValueToText(_ value: Double) -> String {

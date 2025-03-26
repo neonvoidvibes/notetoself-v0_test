@@ -74,7 +74,7 @@ struct WeeklySummaryInsightCard: View {
                         Text("Weekly Summary")
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
-                        
+                    
                         if isFresh {
                             Text("NEW")
                                 .font(.system(size: 10, weight: .bold))
@@ -84,43 +84,43 @@ struct WeeklySummaryInsightCard: View {
                                 .background(styles.colors.accent)
                                 .cornerRadius(4)
                         }
-                        
+                    
                         Spacer()
-                        
+                    
                         Image(systemName: "calendar.badge.clock")
                             .foregroundColor(styles.colors.accent)
                             .font(.system(size: styles.layout.iconSizeL))
                     }
-                    
+                
                     // Period
                     Text(summaryPeriod)
                         .font(styles.typography.insightCaption)
                         .foregroundColor(styles.colors.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    
+                
                     // Summary stats
                     HStack(spacing: styles.layout.spacingXL) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Entries")
                                 .font(styles.typography.caption)
                                 .foregroundColor(styles.colors.textSecondary)
-                            
+                        
                             Text("\(entryCount)")
                                 .font(styles.typography.insightValue)
                                 .foregroundColor(styles.colors.text)
                         }
-                        
+                    
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Dominant Mood")
                                 .font(styles.typography.caption)
                                 .foregroundColor(styles.colors.textSecondary)
-                            
+                        
                             HStack(spacing: 4) {
                                 if let mood = dominantMood {
                                     Circle()
                                         .fill(mood.color)
                                         .frame(width: 12, height: 12)
-                                    
+                                
                                     Text(mood.name)
                                         .font(styles.typography.bodyLarge)
                                         .foregroundColor(styles.colors.text)
@@ -131,19 +131,19 @@ struct WeeklySummaryInsightCard: View {
                                 }
                             }
                         }
-                        
+                    
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Avg. Words")
                                 .font(styles.typography.caption)
                                 .foregroundColor(styles.colors.textSecondary)
-                            
+                        
                             Text("\(averageWordCount)")
                                 .font(styles.typography.insightValue)
                                 .foregroundColor(styles.colors.text)
                         }
                     }
                     .padding(.vertical, styles.layout.spacingS)
-                    
+                
                     // Summary text - more conversational and focused
                     Text(generateSummaryText())
                         .font(styles.typography.bodyFont)
@@ -156,28 +156,24 @@ struct WeeklySummaryInsightCard: View {
             detailContent: {
                 // Expanded detail content
                 VStack(spacing: styles.layout.spacingL) {
-                    Divider()
-                        .background(styles.colors.tertiaryBackground)
-                        .padding(.vertical, 8)
-                    
                     // Detailed weekly stats
                     VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                         Text("Weekly Insights")
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
-                        
+                    
                         Text(generateDetailedSummary())
                             .font(styles.typography.bodyFont)
                             .foregroundColor(styles.colors.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    
+                
                     // Entry breakdown by day
                     VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                         Text("Daily Breakdown")
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
-                        
+                    
                         ForEach(daysOfWeek(), id: \.self) { day in
                             DailyEntryRow(
                                 day: day,
@@ -186,14 +182,14 @@ struct WeeklySummaryInsightCard: View {
                             )
                         }
                     }
-                    
+                
                     // Weekly themes
                     if let themes = identifyWeeklyThemes() {
                         VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                             Text("Weekly Themes")
                                 .font(styles.typography.title3)
                                 .foregroundColor(styles.colors.text)
-                            
+                        
                             Text(themes)
                                 .font(styles.typography.bodyFont)
                                 .foregroundColor(styles.colors.textSecondary)

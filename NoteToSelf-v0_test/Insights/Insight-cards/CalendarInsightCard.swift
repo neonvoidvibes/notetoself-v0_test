@@ -86,10 +86,6 @@ struct CalendarInsightCard: View {
             detailContent: {
                 // Expanded detail content
                 VStack(spacing: styles.layout.spacingL) {
-                    Divider()
-                        .background(styles.colors.tertiaryBackground)
-                        .padding(.vertical, 8)
-                    
                     // Monthly statistics
                     VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                         Text("Monthly Statistics")

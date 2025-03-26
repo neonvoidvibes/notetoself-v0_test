@@ -46,9 +46,9 @@ struct ChatInsightCard: View {
                         Text("Reflection Prompt")
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
-                        
+                    
                         Spacer()
-                        
+                    
                         Image(systemName: "bubble.left.fill")
                             .foregroundColor(styles.colors.accent)
                             .font(.system(size: styles.layout.iconSizeL))
@@ -70,12 +70,12 @@ struct ChatInsightCard: View {
                                     )
                                 )
                                 .frame(width: 36, height: 36)
-                            
-                            Image(systemName: "sparkles")
-                                .foregroundColor(.white)
-                                .font(.system(size: 16))
-                        }
                         
+                        Image(systemName: "sparkles")
+                            .foregroundColor(.white)
+                            .font(.system(size: 16))
+                        }
+                    
                         // Message bubble with gradient border
                         Text(insightMessage)
                             .font(styles.typography.bodyFont)
@@ -107,29 +107,25 @@ struct ChatInsightCard: View {
             detailContent: {
                 // Expanded detail content
                 VStack(spacing: styles.layout.spacingL) {
-                    Divider()
-                        .background(styles.colors.tertiaryBackground)
-                        .padding(.vertical, 8)
-                    
                     // Full message
                     Text(insightMessage)
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.text)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    
+                
                     // Reflection prompts
                     VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                         Text("Reflection Questions")
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
-                        
+                    
                         ForEach(generateReflectionPrompts(), id: \.self) { prompt in
                             HStack(alignment: .top, spacing: 12) {
                                 Image(systemName: "circle.fill")
                                     .foregroundColor(styles.colors.accent)
                                     .font(.system(size: 8))
                                     .padding(.top, 6)
-                                
+                            
                                 Text(prompt)
                                     .font(styles.typography.bodyFont)
                                     .foregroundColor(styles.colors.textSecondary)
@@ -137,7 +133,7 @@ struct ChatInsightCard: View {
                             }
                         }
                     }
-                    
+                
                     // Call-to-action button
                     Button(action: {
                         // Switch to the Reflections tab
