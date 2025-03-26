@@ -286,6 +286,41 @@ func sectionHeader(_ title: String) -> some View {
     .padding(.top, layout.sectionHeaderSpacing)
     .padding(.bottom, layout.spacingS)
 }
+
+// Add these methods to the UIStyles struct to support expandable cards
+
+// Method for creating expandable cards with preview/detail views
+func expandableCard<Content: View, DetailContent: View>(
+    isExpanded: Binding<Bool>,
+    isPrimary: Bool = false,
+    @ViewBuilder content: @escaping () -> Content,
+    @ViewBuilder detailContent: @escaping () -> DetailContent
+) -> some View {
+    ExpandableCard(
+        content: content,
+        detailContent: detailContent,
+        isExpanded: isExpanded,
+        colors: self.colors,
+        typography: self.typography,
+        layout: self.layout,
+        isPrimary: isPrimary
+    )
+}
+
+// Method for creating card headers with consistent styling
+func cardHeader(title: String, icon: String) -> some View {
+    HStack {
+        Text(title)
+            .font(typography.title3)
+            .foregroundColor(colors.text)
+        
+        Spacer()
+        
+        Image(systemName: icon)
+            .foregroundColor(colors.accent)
+            .font(.system(size: layout.iconSizeL))
+    }
+}
 }
 
 extension Color {

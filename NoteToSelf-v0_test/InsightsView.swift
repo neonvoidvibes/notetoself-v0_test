@@ -13,9 +13,6 @@ struct InsightsView: View {
     // Access to shared styles
     private let styles = UIStyles.shared
     
-    // Add this state variable to InsightsView
-    @State private var selectedInsight: InsightDetail? = nil
-    
     // Check if weekly summary is fresh (generated in the past 24 hours)
     private var isWeeklySummaryFresh: Bool {
         // For demo purposes, we'll consider it fresh if there's an entry from today
@@ -172,9 +169,6 @@ var body: some View {
                 }
             }
         }
-    }
-    .sheet(item: $selectedInsight) { insight in
-        InsightDetailView(insight: insight, entries: appState.journalEntries)
     }
     .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToTab"))) { notification in
         if let userInfo = notification.userInfo, let tabIndex = userInfo["tabIndex"] as? Int {

@@ -14,9 +14,6 @@
 		6483FD412D9499B400E8EA20 /* Exceptions for "NoteToSelf-v0_test" folder in "NoteToSelf-v0_test" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				"Insights/Insight-Cards/SentimentAnalysisInsightCard.swift",
-				"Insights/Insight-Cards/TopicAnalysisInsightCard.swift",
-				"Insights/Insight-Cards/WordCountInsightCard.swift",
 				"Insights/Insight-Detail-Hide/SentimentAnalysisDetailContent.swift",
 				"Insights/Insight-Detail-Hide/TopicAnalysisDetailContent.swift",
 				"Insights/Insight-Detail-Hide/WordCountDetailContent.swift",
