@@ -7,7 +7,7 @@ static let shared = UIStyles()
 struct Colors {
     let appBackground: Color = Color(hex: "#000000")
     let cardBackground: Color = Color("CardBackground")
-    let accent: Color = Color(hex: "#FFFF00")
+    let accent: Color = Color(hex: "#7479FF")
     let secondaryAccent: Color = Color(hex: "#989898")
     let text: Color = Color(hex: "#FFFFFF")
     let textSecondary: Color = Color(hex: "#999999")
