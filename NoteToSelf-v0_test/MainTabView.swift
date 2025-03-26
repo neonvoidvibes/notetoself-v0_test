@@ -515,28 +515,16 @@ struct MainTabView: View {
   }
 }
 
-// Add environment key for bottom sheet expanded state
-private struct BottomSheetExpandedKey: EnvironmentKey {
-  static let defaultValue: Bool = false
-}
-
-extension EnvironmentValues {
-  var bottomSheetExpanded: Bool {
-      get { self[BottomSheetExpandedKey.self] }
-      set { self[BottomSheetExpandedKey.self] = newValue }
-  }
-}
-
 // Add a new environment key for keyboard visibility
 private struct KeyboardVisibleKey: EnvironmentKey {
-  static let defaultValue: Bool = false
+static let defaultValue: Bool = false
 }
 
 extension EnvironmentValues {
-  var keyboardVisible: Bool {
-      get { self[KeyboardVisibleKey.self] }
-      set { self[KeyboardVisibleKey.self] = newValue }
-  }
+var keyboardVisible: Bool {
+    get { self[KeyboardVisibleKey.self] }
+    set { self[KeyboardVisibleKey.self] = newValue }
+}
 }
 
 struct NavigationTabButton: View {

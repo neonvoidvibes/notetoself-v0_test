@@ -4,7 +4,7 @@ import Charts
 struct InsightsView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var chatManager: ChatManager
-    @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled: Bool
+    @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled
     @State private var selectedMonth: Date = Date()
     @Binding var tabBarOffset: CGFloat
     @Binding var lastScrollPosition: CGFloat

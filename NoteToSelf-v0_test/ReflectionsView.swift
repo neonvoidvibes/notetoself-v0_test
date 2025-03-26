@@ -2,15 +2,14 @@ import SwiftUI
 
 struct ReflectionsView: View {
     @EnvironmentObject var appState: AppState
-    @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled: Bool
+    @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled
+    @Environment(\.bottomSheetExpanded) private var bottomSheetExpanded
     @State private var messageText: String = ""
     @State private var isTyping: Bool = false
     @State private var showingSubscriptionPrompt: Bool = false
     @Binding var tabBarOffset: CGFloat
     @Binding var lastScrollPosition: CGFloat
     @Binding var tabBarVisible: Bool
-    // Add environment property to access bottom sheet state
-    @Environment(\.bottomSheetExpanded) private var bottomSheetExpanded: Bool
     @FocusState private var isInputFocused: Bool
     @State private var textEditorHeight: CGFloat = 30
     @State private var expandedMessageId: UUID? = nil
@@ -142,7 +141,7 @@ struct ReflectionsView: View {
                         }
                         .padding(.horizontal, styles.layout.paddingL)
                         .padding(.vertical, styles.layout.paddingL)
-                        .padding(.bottom, 20) // Reduced spacing at the bottom
+                        .padding(.bottom, 20) // Keep original padding
                     }
                     .onChange(of: chatManager.currentChat.messages.count) { _, _ in
                         scrollToBottom(proxy: scrollView)
@@ -172,81 +171,89 @@ struct ReflectionsView: View {
                 
                 // Message input container - only shown when bottom sheet is closed
                 if !bottomSheetExpanded {
-                    VStack(spacing: 0) {
-                        HStack(alignment: .bottom, spacing: styles.layout.spacingM) {
-                            // Input field with dynamic height
-                            ZStack(alignment: .topLeading) {
-                                if messageText.isEmpty && !isTyping {
-                                    Text("Ask anything")
-                                        .font(styles.typography.bodyFont)
-                                        .foregroundColor(styles.colors.placeholderText)
-                                        .padding(.leading, 8)
-                                        .padding(.top, 8)
-                                }
-                                
-                                GeometryReader { geometry in
-                                    TextEditor(text: isTyping ? .constant("") : $messageText)
-                                        .font(styles.typography.bodyFont)
-                                        .padding(4)
-                                        .background(Color.clear)
-                                        .foregroundColor(isTyping ? styles.colors.textDisabled : styles.colors.text)
-                                        .frame(height: textEditorHeight)
-                                        .colorScheme(.dark)
-                                        .disabled(isTyping)
-                                        .scrollContentBackground(.hidden)
-                                        .focused($isInputFocused)
-                                        .onChange(of: messageText) { _, newValue in
-                                            // Calculate if text would wrap based on available width
-                                            let availableWidth = geometry.size.width - 16 // Subtract padding
-                                            let font = UIFont.monospacedSystemFont(ofSize: 16, weight: .regular)
-                                            let attributes = [NSAttributedString.Key.font: font]
-                                            let size = (newValue as NSString).size(withAttributes: attributes)
-                                            
-                                            withAnimation(.easeInOut(duration: 0.1)) {
-                                                if size.width > availableWidth || newValue.contains("\n") {
-                                                    textEditorHeight = 60 // Expand to two rows
-                                                } else {
-                                                    textEditorHeight = 30 // Single row
-                                                }
-                                            }
-                                        }
-                                }
-                                .frame(height: textEditorHeight)
-                            }
-                            .padding(8)
-                            .background(styles.colors.reflectionsNavBackground)
-                            .cornerRadius(20)
-                            
-                            // Send button - fixed position
-                            Button(action: sendMessage) {
-                                if isTyping {
-                                    // Stop button
-                                    Image(systemName: "stop.fill")
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(styles.colors.appBackground)
-                                } else {
-                                    // Send button
-                                    Image(systemName: "arrow.up")
-                                        .font(.system(size: 24, weight: .bold))
-                                        .foregroundColor(styles.colors.appBackground)
-                                }
-                            }
-                            .frame(width: 40, height: 40)
-                            .background(styles.colors.accent)
-                            .clipShape(Circle())
-                            .disabled(messageText.isEmpty && !isTyping)
-                            .opacity((messageText.isEmpty && !isTyping) ? 0.5 : 1.0)
-                        }
-                        .padding(.vertical, styles.layout.paddingM)
-                        .padding(.horizontal, styles.layout.paddingL)
-                                                    
-                            // Add padding at the bottom to ensure content doesn't get cut off
-                            Spacer().frame(height: 40)
-                    }
-                    .background(
+                    ZStack {
+                        // Extended background that fills any potential gaps
                         styles.colors.reflectionsNavBackground
                             .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight]))
-                    )
+                            .edgesIgnoringSafeArea(.bottom)
+                        
+                        VStack(spacing: 0) {
+                            // Reduced spacing - no negative spacer
+                            
+                            HStack(alignment: .bottom, spacing: styles.layout.spacingM) {
+                                // Input field with dynamic height
+                                ZStack(alignment: .topLeading) {
+                                    if messageText.isEmpty && !isTyping {
+                                        Text("Ask anything")
+                                            .font(styles.typography.bodyFont)
+                                            .foregroundColor(styles.colors.placeholderText)
+                                            .padding(.leading, 8)
+                                            .padding(.top, 8)
+                                    }
+                                    
+                                    GeometryReader { geometry in
+                                        TextEditor(text: isTyping ? .constant("") : $messageText)
+                                            .font(styles.typography.bodyFont)
+                                            .padding(4)
+                                            .background(Color.clear)
+                                            .foregroundColor(isTyping ? styles.colors.textDisabled : styles.colors.text)
+                                            .frame(height: textEditorHeight)
+                                            .colorScheme(.dark)
+                                            .disabled(isTyping)
+                                            .scrollContentBackground(.hidden)
+                                            .focused($isInputFocused)
+                                            .onChange(of: messageText) { _, newValue in
+                                                // Calculate if text would wrap based on available width
+                                                let availableWidth = geometry.size.width - 16 // Subtract padding
+                                                let font = UIFont.monospacedSystemFont(ofSize: 16, weight: .regular)
+                                                let attributes = [NSAttributedString.Key.font: font]
+                                                let size = (newValue as NSString).size(withAttributes: attributes)
+                                                
+                                                withAnimation(.easeInOut(duration: 0.1)) {
+                                                    if size.width > availableWidth || newValue.contains("\n") {
+                                                        textEditorHeight = 60 // Expand to two rows
+                                                    } else {
+                                                        textEditorHeight = 30 // Single row
+                                                    }
+                                                }
+                                            }
+                                    }
+                                    .frame(height: textEditorHeight)
+                                }
+                                .padding(8)
+                                .background(styles.colors.reflectionsNavBackground)
+                                .cornerRadius(20)
+                                
+                                // Send button - fixed position
+                                Button(action: sendMessage) {
+                                    if isTyping {
+                                        // Stop button
+                                        Image(systemName: "stop.fill")
+                                            .font(.system(size: 18, weight: .bold))
+                                            .foregroundColor(styles.colors.appBackground)
+                                    } else {
+                                        // Send button
+                                        Image(systemName: "arrow.up")
+                                            .font(.system(size: 24, weight: .bold))
+                                            .foregroundColor(styles.colors.appBackground)
+                                    }
+                                }
+                                .frame(width: 40, height: 40)
+                                .background(styles.colors.accent)
+                                .clipShape(Circle())
+                                .disabled(messageText.isEmpty && !isTyping)
+                                .opacity((messageText.isEmpty && !isTyping) ? 0.5 : 1.0)
+                            }
+                            // Reduced vertical padding
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, styles.layout.paddingL)
+                            
+                            // Minimal bottom padding
+                            Spacer().frame(height: 5)
+                        }
+                        // Move the entire input container up slightly
+                        .padding(.bottom, 5)
+                    }
                 }
             }
         }

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
-    @Environment(\.settingsScrollingDisabled) private var settingsScrollingDisabled: Bool
+    @Environment(\.settingsScrollingDisabled) private var settingsScrollingDisabled
     @State private var notificationTime: Date = Date()
     @State private var notificationsEnabled: Bool = false
     

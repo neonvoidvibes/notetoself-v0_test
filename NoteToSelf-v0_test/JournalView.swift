@@ -2,7 +2,7 @@ import SwiftUI
 
 struct JournalView: View {
     @EnvironmentObject var appState: AppState
-    @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled: Bool
+    @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled
     @State private var showingNewEntrySheet = false
     @State private var expandedEntryId: UUID? = nil
     @State private var editingEntry: JournalEntry? = nil
@@ -141,7 +141,7 @@ struct JournalView: View {
                         if !appState.journalEntries.isEmpty && !filteredEntries.isEmpty && !showingFilterPanel {
                             VStack(alignment: .center, spacing: styles.layout.spacingL) {
                                 // Inspiring header with larger font
-                                Text("My Journal")
+                                Text("Your Journal")
                                     .font(styles.typography.headingFont)
                                     .foregroundColor(styles.colors.text)
                                     .padding(.bottom, 4)
