@@ -12,6 +12,9 @@ struct InsightsView: View {
     // Access to shared styles
     private let styles = UIStyles.shared
     
+    // Add this state variable to InsightsView
+    @State private var selectedInsight: InsightDetail? = nil
+    
 var body: some View {
     ZStack {
         styles.colors.appBackground.ignoresSafeArea()
@@ -68,21 +71,54 @@ var body: some View {
                 .frame(height: 0)
                 
                 VStack(spacing: styles.layout.spacingXL) {
-                    // Current Streak
-                    StreakCard(streak: appState.currentStreak)
-                        .padding(.horizontal, styles.layout.paddingL)
+                    // TOGGLE FOR SUBSCRIPTION TIER - FOR TESTING ONLY
+                    // Comment out this section when not needed
+                    HStack {
+                        Text("Subscription Mode:")
+                            .font(styles.typography.bodySmall)
+                            .foregroundColor(styles.colors.textSecondary)
+                        
+                        Picker("", selection: $appState.subscriptionTier) {
+                            Text("Free").tag(SubscriptionTier.free)
+                            Text("Premium").tag(SubscriptionTier.premium)
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(width: 200)
+                    }
+                    .padding(.horizontal, styles.layout.paddingXL)
+                    .padding(.top, 8)
                     
-                    // Monthly Calendar
-                    MonthlyCalendarSection(selectedMonth: $selectedMonth, entries: appState.journalEntries)
-                        .padding(.horizontal, styles.layout.paddingL)
+                    // Current Streak Card
+                    StreakInsightCard(streak: appState.currentStreak)
+                        .padding(.horizontal, styles.layout.paddingXL)
                     
-                    // Mood Chart
-                    MoodChartSection(entries: appState.journalEntries)
-                        .padding(.horizontal, styles.layout.paddingL)
+                    // Monthly Calendar Card
+                    CalendarInsightCard(selectedMonth: $selectedMonth, entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingXL)
                     
-                    // Advanced Analytics (Subscription Gated)
-                    AdvancedAnalyticsSection(subscriptionTier: appState.subscriptionTier)
-                        .padding(.horizontal, styles.layout.paddingL)
+                    // Mood Trends Card
+                    MoodTrendsInsightCard(entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingXL)
+                    
+                    // Writing Consistency Card
+                    WritingConsistencyInsightCard(entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingXL)
+                    
+                    // Mood Distribution Card
+                    MoodDistributionInsightCard(entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingXL)
+                    
+                    // Word Count Card
+                    WordCountInsightCard(entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingXL)
+                    
+                    // Topic Analysis Card (Premium)
+                    TopicAnalysisInsightCard(entries: appState.journalEntries, subscriptionTier: appState.subscriptionTier)
+                        .padding(.horizontal, styles.layout.paddingXL)
+                    
+                    // Sentiment Analysis Card (Premium)
+                    SentimentAnalysisInsightCard(entries: appState.journalEntries, subscriptionTier: appState.subscriptionTier)
+                        .padding(.horizontal, styles.layout.paddingXL)
                         .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
                 }
             }
@@ -102,6 +138,9 @@ var body: some View {
                 }
             }
         }
+    }
+    .sheet(item: $selectedInsight) { insight in
+        InsightDetailView(insight: insight, entries: appState.journalEntries)
     }
 }
 }
