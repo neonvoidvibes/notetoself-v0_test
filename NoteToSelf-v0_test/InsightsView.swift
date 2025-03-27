@@ -180,6 +180,7 @@ var body: some View {
                     
                     // Recommendations Card
                     RecommendationsInsightCard(entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingXL)
                         .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
                 }
             }
