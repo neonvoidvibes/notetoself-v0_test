@@ -105,6 +105,39 @@ struct ReflectionsView: View {
               // Chat messages
               ScrollViewReader { scrollView in
                   ScrollView {
+                      // Inspiring prompt - only show when chat is empty
+                      if filteredMessages.isEmpty {
+                          VStack(alignment: .center, spacing: styles.layout.spacingL) {
+                              // Inspiring header with larger font
+                              Text("My Reflections")
+                                  .font(styles.typography.headingFont)
+                                  .foregroundColor(styles.colors.text)
+                                  .padding(.bottom, 4)
+                              
+                              // Inspiring quote with larger font
+                              Text("Ask questions, find clarity.")
+                                  .font(styles.typography.bodyLarge)
+                                  .foregroundColor(styles.colors.accent)
+                                  .multilineTextAlignment(.center)
+                          }
+                          .padding(.horizontal, styles.layout.paddingXL)
+                          .padding(.vertical, styles.layout.spacingXL * 1.5)
+                          .padding(.top, 80) // Extra top padding for spaciousness
+                          .padding(.bottom, 40) // Extra bottom padding
+                          .frame(maxWidth: .infinity)
+                          .background(
+                              // Subtle gradient background for the inspiring section
+                              LinearGradient(
+                                  gradient: Gradient(colors: [
+                                      styles.colors.appBackground,
+                                      styles.colors.appBackground.opacity(0.9)
+                                  ]),
+                                  startPoint: .top,
+                                  endPoint: .bottom
+                              )
+                          )
+                      }
+                      
                       LazyVStack(spacing: styles.layout.spacingL) {
                           ForEach(filteredMessages) { message in
                               ChatBubble(

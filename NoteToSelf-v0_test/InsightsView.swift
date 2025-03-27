@@ -83,15 +83,15 @@ var body: some View {
                         .padding(.bottom, 4)
                     
                     // Inspiring quote with larger font
-                    Text("Discover patterns, understand your journey.")
+                    Text("Discover patterns, make better choices.")
                         .font(styles.typography.bodyLarge)
                         .foregroundColor(styles.colors.accent)
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, styles.layout.paddingXL)
                 .padding(.vertical, styles.layout.spacingXL * 1.5)
-                .padding(.top, 40) // Extra top padding for spaciousness
-                .padding(.bottom, 20) // Extra bottom padding
+                .padding(.top, 80) // Extra top padding for spaciousness
+                .padding(.bottom, 40) // Extra bottom padding
                 .frame(maxWidth: .infinity)
                 .background(
                     // Subtle gradient background for the inspiring section
