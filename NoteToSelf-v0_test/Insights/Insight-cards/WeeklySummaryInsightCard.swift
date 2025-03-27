@@ -86,10 +86,6 @@ struct WeeklySummaryInsightCard: View {
                         }
                     
                         Spacer()
-                    
-                        Image(systemName: "calendar.badge.clock")
-                            .foregroundColor(styles.colors.accent)
-                            .font(.system(size: styles.layout.iconSizeL))
                     }
                 
                     // Period

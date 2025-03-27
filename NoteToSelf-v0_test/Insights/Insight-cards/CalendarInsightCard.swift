@@ -19,9 +19,6 @@ struct CalendarInsightCard: View {
                 VStack(spacing: styles.layout.spacingM) {
                     // Month navigation
                     HStack {
-                        Text("Monthly Activity")
-                            .font(styles.typography.title3)
-                            .foregroundColor(styles.colors.text)
                         
                         Spacer()
                         

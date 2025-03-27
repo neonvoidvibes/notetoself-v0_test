@@ -61,7 +61,13 @@ struct MoodTrendsInsightCard: View {
             content: {
                 // Preview content
                 VStack(spacing: styles.layout.spacingM) {
-                    styles.cardHeader(title: "Mood Trends", icon: "chart.xyaxis.line")
+                    HStack {
+                        Text("Mood Trends")
+                            .font(styles.typography.title3)
+                            .foregroundColor(styles.colors.text)
+                        
+                        Spacer()
+                    }
                     
                     if #available(iOS 16.0, *) {
                         Chart {

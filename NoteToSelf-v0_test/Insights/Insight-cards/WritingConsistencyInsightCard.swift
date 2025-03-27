@@ -45,10 +45,6 @@ struct WritingConsistencyInsightCard: View {
                             .foregroundColor(styles.colors.text)
                         
                         Spacer()
-                        
-                        Image(systemName: "calendar.badge.clock")
-                            .foregroundColor(styles.colors.accent)
-                            .font(.system(size: styles.layout.iconSizeL))
                     }
                     
                     // Consistency bar

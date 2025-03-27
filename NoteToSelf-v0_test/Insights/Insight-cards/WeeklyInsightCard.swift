@@ -82,9 +82,6 @@ struct WeeklyInsightCard: View {
                     
                     Spacer()
                     
-                    Image(systemName: "chart.xyaxis.line")
-                        .foregroundColor(styles.colors.accent)
-                        .font(.system(size: styles.layout.iconSizeL))
                 }
                 
                 if #available(iOS 16.0, *) {

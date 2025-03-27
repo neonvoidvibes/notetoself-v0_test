@@ -48,10 +48,6 @@ struct ChatInsightCard: View {
                             .foregroundColor(styles.colors.text)
                     
                         Spacer()
-                    
-                        Image(systemName: "bubble.left.fill")
-                            .foregroundColor(styles.colors.accent)
-                            .font(.system(size: styles.layout.iconSizeL))
                     }
                     
                     // AI Assistant message with a unique styling

@@ -107,10 +107,6 @@ struct RecommendationsInsightCard: View {
                                 .foregroundColor(styles.colors.text)
                             
                             Spacer()
-                            
-                            Image(systemName: "lightbulb.fill")
-                                .foregroundColor(styles.colors.accent)
-                                .font(.system(size: styles.layout.iconSizeL))
                         }
                         
                         // Show one recommendation for free users, more for premium

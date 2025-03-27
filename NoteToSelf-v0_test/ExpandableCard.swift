@@ -55,20 +55,13 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: layout.radiusL)
                         .strokeBorder(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    isPrimary ? colors.accent.opacity(0.5) : colors.tertiaryBackground.opacity(0.5),
-                                    isPrimary ? colors.accent.opacity(0.2) : colors.tertiaryBackground.opacity(0.2)
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
+                            colors.tertiaryBackground.opacity(0.5),
                             lineWidth: 1
                         )
                 )
         )
         .shadow(
-            color: isPrimary ? colors.accent.opacity(0.15) : Color.black.opacity(0.08),
+            color: Color.black.opacity(0.08),
             radius: 8,
             x: 0,
             y: 4
