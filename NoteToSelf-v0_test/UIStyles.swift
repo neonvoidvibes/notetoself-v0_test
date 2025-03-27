@@ -138,7 +138,7 @@ struct Layout {
     let bottomSheetIndicatorWidth: CGFloat = 40 // Width of the handle indicator
     let bottomSheetIndicatorHeight: CGFloat = 4 // Height of the handle indicator
     let bottomSheetCornerRadius: CGFloat = 24 // Corner radius of the bottom sheet
-    let mainContentCornerRadius: CGFloat = 40 // Corner radius for the main content card
+    let mainContentCornerRadius: CGFloat = 20 // Corner radius for the main content card
     
     let inputAreaHeight: CGFloat = 40 // Fixed height for input area
 
