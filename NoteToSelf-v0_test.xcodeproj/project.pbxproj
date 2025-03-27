@@ -10,24 +10,9 @@
 		6483FB4C2D8E9E5100E8EA20 /* NoteToSelf-v0_test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NoteToSelf-v0_test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		6483FD412D9499B400E8EA20 /* Exceptions for "NoteToSelf-v0_test" folder in "NoteToSelf-v0_test" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Insights/Insight-Detail-Hide/SentimentAnalysisDetailContent.swift",
-				"Insights/Insight-Detail-Hide/TopicAnalysisDetailContent.swift",
-				"Insights/Insight-Detail-Hide/WordCountDetailContent.swift",
-			);
-			target = 6483FB4B2D8E9E5100E8EA20 /* NoteToSelf-v0_test */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		6483FB4E2D8E9E5100E8EA20 /* NoteToSelf-v0_test */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				6483FD412D9499B400E8EA20 /* Exceptions for "NoteToSelf-v0_test" folder in "NoteToSelf-v0_test" target */,
-			);
 			path = "NoteToSelf-v0_test";
 			sourceTree = "<group>";
 		};

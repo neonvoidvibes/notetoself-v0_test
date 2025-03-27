@@ -62,7 +62,7 @@ struct MoodTrendsInsightCard: View {
                 // Preview content
                 VStack(spacing: styles.layout.spacingM) {
                     HStack {
-                        Text("Mood Trends")
+                        Text("Mood Analysis")
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
                         

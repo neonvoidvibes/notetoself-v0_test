@@ -43,7 +43,7 @@ struct ChatInsightCard: View {
                 // Preview content
                 VStack(spacing: styles.layout.spacingM) {
                     HStack {
-                        Text("Reflection Prompt")
+                        Text("AI Reflection")
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
                     

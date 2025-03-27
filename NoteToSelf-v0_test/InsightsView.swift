@@ -123,65 +123,53 @@ var body: some View {
                     .padding(.horizontal, styles.layout.paddingXL)
                     .padding(.top, 8)
                     
-                    // Highlights Section - Featured Insights
+                    // Today's Highlights Section
                     styles.sectionHeader("Today's Highlights")
-                    
-                    // Weekly Summary Card (pinned at top if fresh)
-                    if isWeeklySummaryFresh {
-                        WeeklySummaryInsightCard(entries: appState.journalEntries)
-                            .padding(.horizontal, styles.layout.paddingXL)
-                    }
-                    
-                    // Foundation Cards Section
-                    styles.sectionHeader("Your Progress")
                     
                     // 1. Streak Card
                     StreakInsightCard(streak: appState.currentStreak)
                         .padding(.horizontal, styles.layout.paddingXL)
                     
-                    // Mood Analysis Section
-                    styles.sectionHeader("Mood Analysis")
-                    
-                    // 2. Mood Trends Card
-                    MoodTrendsInsightCard(entries: appState.journalEntries)
+                    // Weekly Summary Card
+                    WeeklySummaryInsightCard(entries: appState.journalEntries)
                         .padding(.horizontal, styles.layout.paddingXL)
                     
-                    // 3. Monthly Calendar Card
-                    CalendarInsightCard(selectedMonth: $selectedMonth, entries: appState.journalEntries)
-                        .padding(.horizontal, styles.layout.paddingXL)
+                    // Deeper Insights Section
+                    styles.sectionHeader("Deeper Insights")
                     
-                    // Reflection Section
-                    styles.sectionHeader("Reflection & Insights")
-                    
-                    // Chat Card (The Bridge)
+                    // AI Reflection Card
                     ChatInsightCard()
                         .padding(.horizontal, styles.layout.paddingXL)
+                        .accessibilityLabel("AI Reflection")
                     
-                    // Weekly Summary Card (if not fresh, show below chat)
-                    if !isWeeklySummaryFresh {
-                        WeeklySummaryInsightCard(entries: appState.journalEntries)
-                            .padding(.horizontal, styles.layout.paddingXL)
-                    }
-                    
-                    // Weekly Insight Card
-                    WeeklyInsightCard(entries: appState.journalEntries)
+                    // Mood Analysis Card
+                    MoodTrendsInsightCard(entries: appState.journalEntries)
                         .padding(.horizontal, styles.layout.paddingXL)
-                    
-                    // Patterns & Recommendations Section
-                    styles.sectionHeader("Patterns & Recommendations")
-                    
-                    // Writing Consistency Card
-                    WritingConsistencyInsightCard(entries: appState.journalEntries)
-                        .padding(.horizontal, styles.layout.paddingXL)
-                    
-                    // Mood Distribution Card
-                    MoodDistributionInsightCard(entries: appState.journalEntries)
-                        .padding(.horizontal, styles.layout.paddingXL)
+                        .accessibilityLabel("Mood Analysis")
                     
                     // Recommendations Card
                     RecommendationsInsightCard(entries: appState.journalEntries)
                         .padding(.horizontal, styles.layout.paddingXL)
                         .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
+                    
+                    // Hidden cards - commented out but kept for reference
+                    /*
+                    // Calendar Card - integrated with Current Streak
+                    CalendarInsightCard(selectedMonth: $selectedMonth, entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingXL)
+                    
+                    // Weekly Insight Card - moved to hide folder
+                    WeeklyInsightCard(entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingXL)
+                    
+                    // Writing Consistency Card - moved to hide folder
+                    WritingConsistencyInsightCard(entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingXL)
+                    
+                    // Mood Distribution Card - moved to hide folder
+                    MoodDistributionInsightCard(entries: appState.journalEntries)
+                        .padding(.horizontal, styles.layout.paddingXL)
+                    */
                 }
             }
             .coordinateSpace(name: "scrollView")
