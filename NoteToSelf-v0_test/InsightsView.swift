@@ -74,6 +74,37 @@ var body: some View {
                 }
                 .frame(height: 0)
                 
+                // Inspiring prompt section
+                VStack(alignment: .center, spacing: styles.layout.spacingL) {
+                    // Inspiring header with larger font
+                    Text("My Insights")
+                        .font(styles.typography.headingFont)
+                        .foregroundColor(styles.colors.text)
+                        .padding(.bottom, 4)
+                    
+                    // Inspiring quote with larger font
+                    Text("Discover patterns, understand your journey.")
+                        .font(styles.typography.bodyLarge)
+                        .foregroundColor(styles.colors.accent)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, styles.layout.paddingXL)
+                .padding(.vertical, styles.layout.spacingXL * 1.5)
+                .padding(.top, 40) // Extra top padding for spaciousness
+                .padding(.bottom, 20) // Extra bottom padding
+                .frame(maxWidth: .infinity)
+                .background(
+                    // Subtle gradient background for the inspiring section
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            styles.colors.appBackground,
+                            styles.colors.appBackground.opacity(0.9)
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                
                 VStack(spacing: styles.layout.cardSpacing) {
                     // TOGGLE FOR SUBSCRIPTION TIER - FOR TESTING ONLY
                     // Comment out this section when not needed
@@ -149,7 +180,6 @@ var body: some View {
                     
                     // Recommendations Card
                     RecommendationsInsightCard(entries: appState.journalEntries)
-                        .padding(.horizontal, styles.layout.paddingXL)
                         .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
                 }
             }
