@@ -109,7 +109,7 @@ struct ReflectionsView: View {
                       if filteredMessages.isEmpty {
                           VStack(alignment: .center, spacing: styles.layout.spacingL) {
                               // Inspiring header with larger font
-                              Text("My Reflections")
+                              Text("My AI")
                                   .font(styles.typography.headingFont)
                                   .foregroundColor(styles.colors.text)
                                   .padding(.bottom, 4)
