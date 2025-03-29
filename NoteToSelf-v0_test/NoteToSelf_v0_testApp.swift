@@ -73,6 +73,7 @@ struct NoteToSelf_v0_testApp: App {
                     print("Migrating Journal Entries...")
                     for entry in appState.journalEntries {
                         let embedding = generateEmbedding(for: entry.text)
+                        // Add await here
                         try await databaseService.saveJournalEntry(entry, embedding: embedding)
                         // Add a small delay to avoid overwhelming CPU/DB if needed
                         // try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
@@ -85,6 +86,7 @@ struct NoteToSelf_v0_testApp: App {
                     for chat in chatManager.chats {
                         for message in chat.messages {
                             let embedding = generateEmbedding(for: message.text)
+                             // Add await here
                             try await databaseService.saveChatMessage(message, chatId: chat.id, embedding: embedding)
                             migratedMessageCount += 1
                             // Add a small delay if needed
