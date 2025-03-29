@@ -427,16 +427,21 @@ struct JournalView: View {
         if fullscreenEntry?.id == entry.id { fullscreenEntry = nil }
         if editingEntry?.id == entry.id { editingEntry = nil }
 
-        // --- Add Database Deletion ---
-        // Task { // Run DB operations in background
-        //     do {
-        //         try await databaseService.deleteJournalEntry(id: entry.id)
-        //         print("✅ Successfully deleted journal entry \(entry.id) from DB.")
-        //     } catch {
-        //         print("‼️ Error deleting journal entry \(entry.id) from DB: \(error)")
-        //         // Handle error - maybe re-add to AppState or show alert?
-        //     }
-        // }
+        // --- Delete from Database ---
+        Task { // Run DB delete in the background
+            do {
+                try databaseService.deleteJournalEntry(id: entry.id) // Call the new DB service method
+                print("✅ Successfully deleted journal entry \(entry.id) from DB.")
+            } catch {
+                print("‼️ Error deleting journal entry \(entry.id) from DB: \(error)")
+                // --- Error Handling Strategy ---
+                // If DB delete fails, the UI already removed the item.
+                // Option 1: Do nothing (UI and DB are out of sync). Not ideal.
+                // Option 2: Show an error alert to the user.
+                // Option 3 (Complex): Try to re-insert the item into AppState to match DB.
+                // For now, just log the error. Consider adding user feedback later.
+            }
+        }
     }
 
     // TODO: Modify updateEntry to call saveJournalEntry via DatabaseService (Done inside the .fullScreenCover modifier now)
