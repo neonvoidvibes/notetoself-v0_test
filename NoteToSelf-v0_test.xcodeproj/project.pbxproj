@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		64F78A932D9787AD00925FE8 /* Libsql in Frameworks */ = {isa = PBXBuildFile; productRef = 64F78A922D9787AD00925FE8 /* Libsql */; };
+		64F78B3A2D989BD700925FE8 /* OpenAI in Frameworks */ = {isa = PBXBuildFile; productRef = 64F78B392D989BD700925FE8 /* OpenAI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +28,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				64F78B3A2D989BD700925FE8 /* OpenAI in Frameworks */,
 				64F78A932D9787AD00925FE8 /* Libsql in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -72,6 +74,7 @@
 			name = "NoteToSelf-v0_test";
 			packageProductDependencies = (
 				64F78A922D9787AD00925FE8 /* Libsql */,
+				64F78B392D989BD700925FE8 /* OpenAI */,
 			);
 			productName = "NoteToSelf-v0_test";
 			productReference = 6483FB4C2D8E9E5100E8EA20 /* NoteToSelf-v0_test.app */;
@@ -103,6 +106,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				64F78A912D9787AD00925FE8 /* XCRemoteSwiftPackageReference "libsql-swift" */,
+				64F78B382D989BD700925FE8 /* XCRemoteSwiftPackageReference "swift-openai-responses" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6483FB4D2D8E9E5100E8EA20 /* Products */;
@@ -353,6 +357,14 @@
 				minimumVersion = 0.3.0;
 			};
 		};
+		64F78B382D989BD700925FE8 /* XCRemoteSwiftPackageReference "swift-openai-responses" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/m1guelpf/swift-openai-responses.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -365,6 +377,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 64F78A912D9787AD00925FE8 /* XCRemoteSwiftPackageReference "libsql-swift" */;
 			productName = Libsql;
+		};
+		64F78B392D989BD700925FE8 /* OpenAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 64F78B382D989BD700925FE8 /* XCRemoteSwiftPackageReference "swift-openai-responses" */;
+			productName = OpenAI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
