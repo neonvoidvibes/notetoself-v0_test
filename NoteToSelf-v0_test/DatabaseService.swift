@@ -176,7 +176,64 @@ class DatabaseService: ObservableObject {
         }
     }
 
-    // TODO: Add deleteChatMessage function
+    /// Deletes all ChatMessages associated with a given chatId.
+    func deleteChatFromDB(id: UUID) throws {
+        let sql = "DELETE FROM ChatMessages WHERE chatId = ?;"
+        let params: [Value] = [.text(id.uuidString)]
+        do {
+            _ = try self.connection.execute(sql, params)
+            print("Attempted delete for all messages in Chat ID: \(id.uuidString)")
+            // Note: If a separate 'Chats' table existed, we'd delete the chat record here too.
+        } catch {
+            print("‼️ Error deleting Chat \(id.uuidString): \(error)")
+            throw DatabaseError.deleteFailed("Failed to delete Chat \(id.uuidString): \(error.localizedDescription)")
+        }
+    }
+
+    /// Deletes a single ChatMessage from the database based on its ID.
+    func deleteMessageFromDB(id: UUID) throws {
+        let sql = "DELETE FROM ChatMessages WHERE id = ?;"
+        let params: [Value] = [.text(id.uuidString)]
+        do {
+            _ = try self.connection.execute(sql, params)
+            print("Attempted delete for ChatMessage ID: \(id.uuidString)")
+        } catch {
+            print("‼️ Error deleting ChatMessage \(id.uuidString): \(error)")
+            throw DatabaseError.deleteFailed("Failed to delete ChatMessage \(id.uuidString): \(error.localizedDescription)")
+        }
+    }
+
+    // --- Update Operations ---
+
+    /// Toggles the 'isStarred' status for all messages within a specific chat.
+    /// Note: This assumes the Chat's starred status applies to all its messages.
+    func toggleChatStarInDB(id: UUID, isStarred: Bool) throws {
+        let sql = "UPDATE ChatMessages SET isStarred = ? WHERE chatId = ?;"
+        let params: [Value] = [.integer(isStarred ? 1 : 0), .text(id.uuidString)]
+        do {
+            _ = try self.connection.execute(sql, params)
+            print("Attempted toggle star (\(isStarred)) for all messages in Chat ID: \(id.uuidString)")
+        } catch {
+            print("‼️ Error toggling star for Chat \(id.uuidString): \(error)")
+            // Consider a more specific error type if needed
+            throw DatabaseError.saveDataFailed("Failed to toggle star for Chat \(id.uuidString): \(error.localizedDescription)")
+        }
+    }
+
+    /// Toggles the 'isStarred' status for a single ChatMessage.
+    func toggleMessageStarInDB(id: UUID, isStarred: Bool) throws {
+        let sql = "UPDATE ChatMessages SET isStarred = ? WHERE id = ?;"
+        let params: [Value] = [.integer(isStarred ? 1 : 0), .text(id.uuidString)]
+        do {
+            _ = try self.connection.execute(sql, params)
+            print("Attempted toggle star (\(isStarred)) for ChatMessage ID: \(id.uuidString)")
+        } catch {
+            print("‼️ Error toggling star for ChatMessage \(id.uuidString): \(error)")
+            // Consider a more specific error type if needed
+            throw DatabaseError.saveDataFailed("Failed to toggle star for ChatMessage \(id.uuidString): \(error.localizedDescription)")
+        }
+    }
+
 
     // --- Search Operations ---
     func findSimilarJournalEntries(to queryVector: [Float], limit: Int = 5) throws -> [JournalEntry] {
@@ -243,6 +300,96 @@ class DatabaseService: ObservableObject {
             }
             return results
         } catch { throw DatabaseError.queryFailed("Find ChatMessages: \(error.localizedDescription)") }
+    }
+
+    // --- Load Operations ---
+
+    /// Loads all JournalEntries from the database.
+    func loadAllJournalEntries() throws -> [JournalEntry] {
+        let sql = "SELECT id, text, mood, date, intensity FROM JournalEntries ORDER BY date DESC;"
+        // No parameters needed for this query
+
+        do {
+            let rows = try self.connection.query(sql) // Use self.connection
+            var results: [JournalEntry] = []
+            for row in rows {
+                guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
+                      let text = try? row.getString(1),
+                      let moodStr = try? row.getString(2), let mood = Mood(rawValue: moodStr),
+                      let dateTimestamp = try? row.getInt(3), let intensityInt = try? row.getInt(4)
+                else {
+                    print("Warning: Failed to decode JournalEntry row during loadAll: \(row)")
+                    // Consider throwing a decoding error or logging more details
+                    continue // Skip this row
+                }
+                let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
+                results.append(JournalEntry(id: id, text: text, mood: mood, date: date, intensity: Int(intensityInt)))
+            }
+            print("Loaded \(results.count) journal entries from DB.")
+            return results
+        } catch {
+            print("‼️ Error loading all JournalEntries: \(error)")
+            throw DatabaseError.queryFailed("Load All JournalEntries: \(error.localizedDescription)")
+        }
+    }
+
+    /// Loads all Chats by querying messages and reconstructing Chat objects.
+    func loadAllChats() throws -> [Chat] {
+        // Query all messages, ordered by chatId and then date to facilitate grouping and reconstruction
+        let sql = "SELECT id, chatId, text, isUser, date, isStarred FROM ChatMessages ORDER BY chatId ASC, date ASC;"
+
+        do {
+            let rows = try self.connection.query(sql)
+            var messagesByChatId: [UUID: [ChatMessage]] = [:]
+
+            // Group messages by chatId
+            for row in rows {
+                guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
+                      let chatIdStr = try? row.getString(1), let chatId = UUID(uuidString: chatIdStr),
+                      let text = try? row.getString(2),
+                      let isUserInt = try? row.getInt(3),
+                      let dateTimestamp = try? row.getInt(4),
+                      let isStarredInt = try? row.getInt(5)
+                else {
+                    print("Warning: Failed to decode ChatMessage row during loadAllChats grouping: \(row)")
+                    continue // Skip this row
+                }
+                let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
+                let message = ChatMessage(id: id, text: text, isUser: isUserInt == 1, date: date, isStarred: isStarredInt == 1)
+
+                if messagesByChatId[chatId] == nil {
+                    messagesByChatId[chatId] = []
+                }
+                messagesByChatId[chatId]?.append(message)
+            }
+
+            // Reconstruct Chat objects
+            var chats: [Chat] = []
+            for (chatId, messages) in messagesByChatId {
+                guard !messages.isEmpty else { continue } // Should not happen if query is correct
+
+                // Sort messages just in case (though query should handle it)
+                let sortedMessages = messages.sorted { $0.date < $1.date }
+
+                let createdAt = sortedMessages.first!.date
+                let lastUpdatedAt = sortedMessages.last!.date
+                // Default isStarred to false for the Chat object for now, as it's not stored directly.
+                // Title generation will happen after creation.
+                var chat = Chat(id: chatId, messages: sortedMessages, createdAt: createdAt, lastUpdatedAt: lastUpdatedAt, isStarred: false)
+                chat.generateTitle() // Generate title based on the first user message
+                chats.append(chat)
+            }
+
+            // Sort the final list of chats by last updated date (newest first)
+            chats.sort { $0.lastUpdatedAt > $1.lastUpdatedAt }
+
+            print("Loaded and reconstructed \(chats.count) chats from DB messages.")
+            return chats
+
+        } catch {
+            print("‼️ Error loading all Chats: \(error)")
+            throw DatabaseError.queryFailed("Load All Chats: \(error.localizedDescription)")
+        }
     }
 
     // TODO: Add methods for loading specific items, etc. as needed later.

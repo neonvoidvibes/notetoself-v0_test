@@ -26,10 +26,39 @@ struct NoteToSelf_v0_testApp: App {
             .environmentObject(databaseService)
             .preferredColorScheme(.dark)
             .onAppear {
+                // Run migration first if needed (this runs async)
                 runInitialMigrationIfNeeded()
+
+                // Then load initial data from DB for AppState
+                // This should run after potential migration finishes,
+                // but for simplicity, we run it here. If migration is slow,
+                // the initial load might fetch data before migration completes.
+                // A more robust solution might use completion handlers or async/await.
+                // For now, load directly.
+                loadInitialAppStateData()
             }
     }
     } // End of body Scene
+
+    // --- Load Initial AppState Data ---
+    private func loadInitialAppStateData() {
+        Task { // Run loading in a background task
+            do {
+                let entries = try databaseService.loadAllJournalEntries()
+                // Switch back to main thread to update @Published property
+                await MainActor.run {
+                    appState.journalEntries = entries
+                    print("Successfully loaded \(entries.count) journal entries into AppState.")
+                }
+            } catch {
+                print("‼️ ERROR loading initial journal entries into AppState: \(error)")
+                // Handle error appropriately, maybe show an alert or load empty state
+                await MainActor.run {
+                     appState.journalEntries = [] // Ensure it's empty on error
+                }
+            }
+        }
+    }
 
     // --- Migration Logic ---
     private func runInitialMigrationIfNeeded() {

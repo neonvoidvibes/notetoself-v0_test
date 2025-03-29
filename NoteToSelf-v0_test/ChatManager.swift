@@ -37,43 +37,16 @@ class ChatManager: ObservableObject {
     @Published var chats: [Chat] = []
     @Published var currentChat: Chat
 
-    private let userDefaultsKey = "savedChats"
+    // UserDefaults key is no longer needed
     private let databaseService: DatabaseService // Add DatabaseService dependency
 
-    // Update init to accept DatabaseService
+    // Update init to accept DatabaseService and load from DB
     init(databaseService: DatabaseService) {
         self.databaseService = databaseService // Store the service
-
-        // Initialize with a new empty chat
+        // Initialize with a new empty chat before loading
         self.currentChat = Chat()
-
-        // Load saved chats (from UserDefaults for now)
-        loadChats()
-
-        // Add a sample chat if there are no chats (easily removable for production)
-        if chats.isEmpty {
-            // Create a sample chat with the mock messages
-            let sampleMessages = [
-                ChatMessage(text: "I've been feeling stressed about my upcoming presentation. Any advice?", isUser: true),
-                ChatMessage(text: "It's natural to feel stressed about presentations. Try breaking your preparation into smaller tasks and practice in front of a mirror or a trusted friend. Remember that being prepared is the best way to reduce anxiety.", isUser: false),
-                ChatMessage(text: "That's helpful. I'll try to practice more.", isUser: true),
-                ChatMessage(text: "Great plan. Also, remember to take deep breaths before you start. Is there a specific part of the presentation that concerns you most?", isUser: false)
-            ]
-
-            var sampleChat = Chat(
-                messages: sampleMessages,
-                createdAt: Date().addingTimeInterval(-3600), // 1 hour ago
-                lastUpdatedAt: Date().addingTimeInterval(-1800) // 30 minutes ago
-            )
-            sampleChat.generateTitle()
-            chats.append(sampleChat)
-            // Note: Sample data won't be saved to DB here, only UserDefaults.
-            // Migration step will handle existing data later.
-            saveChats() // Save initial state (including sample) to UserDefaults
-        }
-        // Note: Initial data migration from UserDefaults to DB will be handled separately.
-        // This init assumes DB might be empty or partially populated initially.
-        // The loadChats() still reads from UserDefaults as per Plan Phase 3, Option A.
+        // Load chats from the database asynchronously
+        loadChatsFromDB()
     }
 
     // Add a message to the current chat AND save to DB
@@ -100,20 +73,22 @@ class ChatManager: ObservableObject {
             }
         }
 
-        // 4. Auto-save to UserDefaults (as per Plan Phase 3, Option A)
-        saveChats()
+        // 4. Update local state for the main list if the chat already exists
+        if let index = chats.firstIndex(where: { $0.id == currentChat.id }) {
+            chats[index] = currentChat
+            // Re-sort if needed, although adding a message keeps it recent
+            chats.sort { $0.lastUpdatedAt > $1.lastUpdatedAt }
+        } else {
+            // If it's a new chat (first message), add it to the list
+            chats.insert(currentChat, at: 0) // Add to the beginning as it's the newest
+        }
     }
 
     // Start a new chat
     func startNewChat() {
-        // Save current chat to UserDefaults if it has messages
-        if !currentChat.messages.isEmpty {
-            if !chats.contains(where: { $0.id == currentChat.id }) {
-                chats.append(currentChat)
-            }
-            saveChats() // Save to UserDefaults
-            // Note: DB saving happens message-by-message in addMessage
-        }
+        // No need to explicitly save the old chat here anymore,
+        // as messages were saved to DB individually.
+        // Just ensure the UI reflects the new empty chat.
 
         // Create a new chat
         currentChat = Chat()
@@ -134,48 +109,46 @@ class ChatManager: ObservableObject {
             currentChat = Chat()
         }
 
-        saveChats() // Save changes to UserDefaults
-        // Need to add DB deletion logic later
-    }
-
-    // Save all chats to UserDefaults
-    private func saveChats() {
-        // Make sure current chat is in the list if it has messages
-        if !currentChat.messages.isEmpty {
-            // Update existing chat or add new one
-            if let index = chats.firstIndex(where: { $0.id == currentChat.id }) {
-                chats[index] = currentChat
-            } else {
-                // Only append if it's truly a new chat being saved
-                // This check might be redundant if startNewChat handles adding correctly
-                 if !chats.contains(where: { $0.id == currentChat.id }) {
-                    chats.append(currentChat)
-                 }
+        // Call database service to delete chat messages
+        Task {
+            do {
+                try await databaseService.deleteChatFromDB(id: chat.id)
+                print("Successfully deleted chat \(chat.id) from DB.")
+            } catch {
+                print("‼️ Error deleting chat \(chat.id) from DB: \(error)")
+                // Consider adding error handling for the UI
             }
         }
-
-        // Sort chats by last updated date (newest first)
-        chats.sort { $0.lastUpdatedAt > $1.lastUpdatedAt }
-
-        // Save to UserDefaults
-        if let encoded = try? JSONEncoder().encode(chats) {
-            UserDefaults.standard.set(encoded, forKey: userDefaultsKey)
-        }
     }
 
-    // Load chats from UserDefaults
-    private func loadChats() {
-        if let savedChats = UserDefaults.standard.data(forKey: userDefaultsKey) {
-            if let decodedChats = try? JSONDecoder().decode([Chat].self, from: savedChats) {
-                chats = decodedChats
-                // If chats were loaded, set currentChat to the most recent one if available
-                // Otherwise, keep the new empty chat created in init
-                if let mostRecentChat = chats.first {
-                    currentChat = mostRecentChat
+    // Load chats from Database asynchronously
+    private func loadChatsFromDB() {
+        Task { // Run in a background task
+            do {
+                let loadedChats = try databaseService.loadAllChats()
+                // Switch back to main thread to update @Published properties
+                await MainActor.run {
+                    self.chats = loadedChats
+                    // Set currentChat to the most recent one if available, otherwise keep the new empty one
+                    if let mostRecentChat = loadedChats.first {
+                        self.currentChat = mostRecentChat
+                    } else {
+                        // Ensure currentChat is a fresh empty one if DB is empty
+                        self.currentChat = Chat()
+                    }
+                    print("Successfully loaded \(loadedChats.count) chats into ChatManager from DB.")
+                }
+            } catch {
+                print("‼️ ERROR loading chats into ChatManager from DB: \(error)")
+                // Handle error appropriately, maybe show an alert or load empty state
+                await MainActor.run {
+                    self.chats = [] // Ensure chats is empty on error
+                    self.currentChat = Chat() // Ensure currentChat is empty on error
                 }
             }
         }
     }
+
 
     // Group chats by time period (similar to JournalDateGrouping)
     func groupChatsByTimePeriod() -> [(String, [Chat])] {
@@ -273,20 +246,75 @@ class ChatManager: ObservableObject {
     // Toggle star status for a message
     // TODO: Update this later in Phase 5 to update DB as well
     func toggleStarMessage(_ message: ChatMessage) {
-        if let index = currentChat.messages.firstIndex(where: { $0.id == message.id }) {
-            currentChat.messages[index].isStarred.toggle()
-            saveChats() // Save to UserDefaults
-            // Need to add DB update logic later
+        if let chatIndex = chats.firstIndex(where: { $0.id == currentChat.id }),
+           let messageIndex = chats[chatIndex].messages.firstIndex(where: { $0.id == message.id }) {
+            
+            chats[chatIndex].messages[messageIndex].isStarred.toggle()
+            currentChat = chats[chatIndex] // Ensure currentChat reflects the change
+            let newStarStatus = chats[chatIndex].messages[messageIndex].isStarred
+
+            // Call database service to update star status
+            Task {
+                do {
+                    try await databaseService.toggleMessageStarInDB(id: message.id, isStarred: newStarStatus)
+                    print("Successfully toggled star for message \(message.id) in DB to \(newStarStatus).")
+                } catch {
+                    print("‼️ Error toggling star for message \(message.id) in DB: \(error)")
+                    // Revert UI change on error? Or show alert?
+                    // await MainActor.run { chats[chatIndex].messages[messageIndex].isStarred.toggle() }
+                }
+            }
+        } else if let messageIndex = currentChat.messages.firstIndex(where: { $0.id == message.id }) {
+             // If the chat wasn't in the main list yet
+             currentChat.messages[messageIndex].isStarred.toggle()
+             let newStarStatus = currentChat.messages[messageIndex].isStarred
+             // Call database service to update star status
+             Task {
+                 do {
+                     try await databaseService.toggleMessageStarInDB(id: message.id, isStarred: newStarStatus)
+                     print("Successfully toggled star for message \(message.id) (current chat only) in DB to \(newStarStatus).")
+                 } catch {
+                     print("‼️ Error toggling star for message \(message.id) (current chat only) in DB: \(error)")
+                     // Revert UI change on error?
+                     // await MainActor.run { currentChat.messages[messageIndex].isStarred.toggle() }
+                 }
+             }
         }
     }
 
     // Delete a message
     // TODO: Update this later in Phase 5 to delete from DB as well
     func deleteMessage(_ message: ChatMessage) {
-        if let index = currentChat.messages.firstIndex(where: { $0.id == message.id }) {
-            currentChat.messages.remove(at: index)
-            saveChats() // Save to UserDefaults
-            // Need to add DB deletion logic later
+        if let chatIndex = chats.firstIndex(where: { $0.id == currentChat.id }),
+           let messageIndex = chats[chatIndex].messages.firstIndex(where: { $0.id == message.id }) {
+            
+            chats[chatIndex].messages.remove(at: messageIndex)
+            currentChat = chats[chatIndex] // Ensure currentChat reflects the change
+
+            // Call database service to delete message
+            Task {
+                do {
+                    try await databaseService.deleteMessageFromDB(id: message.id)
+                    print("Successfully deleted message \(message.id) from DB.")
+                } catch {
+                    print("‼️ Error deleting message \(message.id) from DB: \(error)")
+                    // Consider adding error handling for the UI (e.g., re-inserting the message)
+                }
+            }
+        } else if let messageIndex = currentChat.messages.firstIndex(where: { $0.id == message.id }) {
+            // If the chat wasn't in the main list yet
+            let messageToDeleteId = currentChat.messages[messageIndex].id
+            currentChat.messages.remove(at: messageIndex)
+            // Call database service to delete message
+            Task {
+                do {
+                    try await databaseService.deleteMessageFromDB(id: messageToDeleteId)
+                    print("Successfully deleted message \(messageToDeleteId) (current chat only) from DB.")
+                } catch {
+                    print("‼️ Error deleting message \(messageToDeleteId) (current chat only) from DB: \(error)")
+                    // Consider adding error handling for the UI
+                }
+            }
         }
     }
 
@@ -300,9 +328,24 @@ class ChatManager: ObservableObject {
             if currentChat.id == chat.id {
                 currentChat.isStarred.toggle()
             }
+            let newStarStatus = chats[index].isStarred
 
-            saveChats() // Save to UserDefaults
-            // Need to add DB update logic later
+            // Call database service to update star status for all messages in the chat
+            Task {
+                do {
+                    try await databaseService.toggleChatStarInDB(id: chat.id, isStarred: newStarStatus)
+                    print("Successfully toggled star for chat \(chat.id) in DB to \(newStarStatus).")
+                } catch {
+                    print("‼️ Error toggling star for chat \(chat.id) in DB: \(error)")
+                    // Revert UI change on error? Or show alert?
+                    // await MainActor.run {
+                    //     if let revertIndex = chats.firstIndex(where: { $0.id == chat.id }) {
+                    //         chats[revertIndex].isStarred.toggle()
+                    //         if currentChat.id == chat.id { currentChat.isStarred.toggle() }
+                    //     }
+                    // }
+                }
+            }
         }
     }
 }
