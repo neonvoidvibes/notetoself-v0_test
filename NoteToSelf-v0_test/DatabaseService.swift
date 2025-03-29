@@ -62,7 +62,6 @@ class DatabaseService: ObservableObject {
         print("Setting up database schema and indexes...")
         do {
             // --- Table Creation ---
-            // JournalEntries Table
             _ = try self.connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS JournalEntries (
@@ -71,12 +70,10 @@ class DatabaseService: ObservableObject {
                     mood TEXT NOT NULL,
                     date INTEGER NOT NULL,      -- Unix timestamp (Int64)
                     intensity INTEGER NOT NULL,
-                    embedding F32_BLOB(\(self.embeddingDimension)) -- Use self.embeddingDimension
+                    embedding FLOAT32(\(self.embeddingDimension)) -- Try FLOAT32(512) syntax directly
                 );
                 """
             )
-
-            // ChatMessages Table
             _ = try self.connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS ChatMessages (
@@ -85,28 +82,29 @@ class DatabaseService: ObservableObject {
                     text TEXT NOT NULL,
                     isUser INTEGER NOT NULL,    -- Boolean as Int64 (0 or 1)
                     date INTEGER NOT NULL,      -- Unix timestamp (Int64)
-                    isStarred INTEGER NOT NULL, -- Boolean as Int64 (0 or 1)
-                    embedding F32_BLOB(\(self.embeddingDimension)) -- Use self.embeddingDimension
+                    isStarred INTEGER NOT NULL,
+                    embedding FLOAT32(\(self.embeddingDimension)) -- Try FLOAT32(512) syntax directly
                 );
                 """
             )
             print("Database tables checked/created.")
 
             // --- Index Creation ---
-            // Journal Entry Index
+            // Explicitly pass dimension to the index: 'dim=...'
+            // Revert index creation to basic form - hoping dimension is inferred from column
             _ = try self.connection.execute(
                 """
                 CREATE INDEX IF NOT EXISTS journal_embedding_idx
                 ON JournalEntries( libsql_vector_idx(embedding) );
-                """
+                """ // Removed explicit dimension parameter
             )
-
-            // Chat Message Index
+            // Explicitly pass dimension to the index: 'dim=...'
+            // Revert index creation to basic form - hoping dimension is inferred from column
             _ = try self.connection.execute(
                 """
                 CREATE INDEX IF NOT EXISTS chat_embedding_idx
                 ON ChatMessages( libsql_vector_idx(embedding) );
-                """
+                """ // Removed explicit dimension parameter
             )
             print("Vector indexes checked/created.")
 
@@ -122,22 +120,24 @@ class DatabaseService: ObservableObject {
     func saveJournalEntry(_ entry: JournalEntry, embedding: [Float]?) throws {
         let sql: String
         let params: [Value]
-
-        // Use the global embeddingToJson helper function defined below the class
-        let helperEmbeddingToJson = embeddingToJson // Local reference to avoid ambiguity if needed
+        let helperEmbeddingToJson = embeddingToJson // Local ref to global helper
 
         if let validEmbedding = embedding, validEmbedding.count == self.embeddingDimension {
-            let embJSON = helperEmbeddingToJson(validEmbedding) // Use helper
+            let embJSON = helperEmbeddingToJson(validEmbedding)
+            let safeEmbJSON = embJSON.replacingOccurrences(of: "'", with: "''") // Basic escaping
+
+            // Using interpolation for vector32 for debugging
             sql = """
                 INSERT OR REPLACE INTO JournalEntries (id, text, mood, date, intensity, embedding)
-                VALUES (?, ?, ?, ?, ?, vector32(?));
+                VALUES (?, ?, ?, ?, ?, vector32('\(safeEmbJSON)'));
                 """
             params = [
                 .text(entry.id.uuidString), .text(entry.text), .text(entry.mood.rawValue),
-                .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity)),
-                .text(embJSON)
+                .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity))
             ]
+             guard params.count == 5 else { throw DatabaseError.saveDataFailed("Param count mismatch (JournalEntry/Embed)") }
         } else {
+            // Handle missing or mismatched embedding
             if embedding != nil { print("Warning: Dimension mismatch for JournalEntry \(entry.id). Saving without embedding.") }
             else { print("Warning: Saving JournalEntry \(entry.id) without embedding (nil).") }
             sql = """
@@ -148,30 +148,40 @@ class DatabaseService: ObservableObject {
                 .text(entry.id.uuidString), .text(entry.text), .text(entry.mood.rawValue),
                 .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity))
             ]
+             guard params.count == 5 else { throw DatabaseError.saveDataFailed("Param count mismatch (JournalEntry/NoEmbed)") }
         }
-        do { _ = try self.connection.execute(sql, params) }
-        catch { throw DatabaseError.saveDataFailed("JournalEntry \(entry.id): \(error.localizedDescription)") }
+
+        do {
+            _ = try self.connection.execute(sql, params)
+            print("Database execute call completed for JournalEntry \(entry.id).")
+        } catch {
+            // Catch any error from execute
+            print("‼️ Error saving JournalEntry \(entry.id): \(error)")
+            throw DatabaseError.saveDataFailed("JournalEntry \(entry.id): \(error.localizedDescription)")
+        }
     }
 
     func saveChatMessage(_ message: ChatMessage, chatId: UUID, embedding: [Float]?) throws {
         let sql: String
         let params: [Value]
+        let helperEmbeddingToJson = embeddingToJson // Local ref to global helper
 
-        // Use the global embeddingToJson helper function defined below the class
-        let helperEmbeddingToJson = embeddingToJson
-
-        if let validEmbedding = embedding, validEmbedding.count == self.embeddingDimension {
+         if let validEmbedding = embedding, validEmbedding.count == self.embeddingDimension {
             let embJSON = helperEmbeddingToJson(validEmbedding)
+            let safeEmbJSON = embJSON.replacingOccurrences(of: "'", with: "''") // Basic escaping
+
+            // Using interpolation for vector32 for debugging
             sql = """
                 INSERT OR REPLACE INTO ChatMessages (id, chatId, text, isUser, date, isStarred, embedding)
-                VALUES (?, ?, ?, ?, ?, ?, vector32(?));
+                VALUES (?, ?, ?, ?, ?, ?, vector32('\(safeEmbJSON)'));
                 """
             params = [
                 .text(message.id.uuidString), .text(chatId.uuidString), .text(message.text),
                 .integer(message.isUser ? 1 : 0), .integer(Int64(message.date.timeIntervalSince1970)),
-                .integer(message.isStarred ? 1 : 0), .text(embJSON)
+                .integer(message.isStarred ? 1 : 0)
             ]
-        } else {
+             guard params.count == 6 else { throw DatabaseError.saveDataFailed("Param count mismatch (ChatMessage/Embed)") }
+         } else {
              if embedding != nil { print("Warning: Dimension mismatch for ChatMessage \(message.id). Saving without embedding.") }
              else { print("Warning: Saving ChatMessage \(message.id) without embedding (nil).") }
              sql = """
@@ -183,9 +193,17 @@ class DatabaseService: ObservableObject {
                  .integer(message.isUser ? 1 : 0), .integer(Int64(message.date.timeIntervalSince1970)),
                  .integer(message.isStarred ? 1 : 0)
              ]
+              guard params.count == 6 else { throw DatabaseError.saveDataFailed("Param count mismatch (ChatMessage/NoEmbed)") }
+         }
+
+        do {
+            _ = try self.connection.execute(sql, params)
+            print("Database execute call completed for ChatMessage \(message.id).")
+        } catch {
+            // Catch any error from execute
+            print("‼️ Error saving ChatMessage \(message.id): \(error)")
+            throw DatabaseError.saveDataFailed("ChatMessage \(message.id): \(error.localizedDescription)")
         }
-        do { _ = try self.connection.execute(sql, params) }
-        catch { throw DatabaseError.saveDataFailed("ChatMessage \(message.id): \(error.localizedDescription)") }
     }
 
     // --- Search Operations ---
@@ -194,7 +212,6 @@ class DatabaseService: ObservableObject {
         guard queryVector.count == self.embeddingDimension else {
              throw DatabaseError.dimensionMismatch(expected: self.embeddingDimension, actual: queryVector.count)
         }
-        // Use the global embeddingToJson helper function defined below the class
         let queryJSON = embeddingToJson(queryVector)
         let sql = """
             SELECT E.id, E.text, E.mood, E.date, E.intensity
@@ -227,7 +244,6 @@ class DatabaseService: ObservableObject {
          guard queryVector.count == self.embeddingDimension else {
               throw DatabaseError.dimensionMismatch(expected: self.embeddingDimension, actual: queryVector.count)
          }
-         // Use the global embeddingToJson helper function defined below the class
          let queryJSON = embeddingToJson(queryVector)
          let sql = """
              SELECT M.id, M.chatId, M.text, M.isUser, M.date, M.isStarred
@@ -257,9 +273,6 @@ class DatabaseService: ObservableObject {
         } catch { throw DatabaseError.queryFailed("Find ChatMessages: \(error.localizedDescription)") }
     }
 
-    // MARK: - Utility (Private Helper - Moved outside class now)
-    // Removed private func embeddingToJson from here
-
     // TODO: Add methods for deleting, loading specific items, etc. as needed later.
 
 } // --- End of DatabaseService class ---
@@ -285,7 +298,7 @@ private struct EmbeddingModelProvider {
 }
 
 /// Generates a sentence embedding for the given text using NLEmbedding (iOS 16+).
-// Made this function internal (default access) by removing fileprivate
+// Made this function internal (default access)
 func generateEmbedding(for text: String) -> [Float]? {
     guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
     if #available(iOS 16.0, *) {
@@ -298,7 +311,7 @@ func generateEmbedding(for text: String) -> [Float]? {
 }
 
 /// Converts a list of Float numbers into a JSON array string for libSQL's vector32 function.
-// Made this function internal (default access) by removing fileprivate
+// Made this function internal (default access)
 func embeddingToJson(_ embedding: [Float]) -> String {
     let numberStrings = embedding.map { String(format: "%.8f", $0) }
     return "[" + numberStrings.joined(separator: ",") + "]"
