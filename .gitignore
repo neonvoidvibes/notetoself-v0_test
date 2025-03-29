@@ -1,0 +1,65 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# Xcode
+*.xcodeproj/*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/
+*.xcuserdata
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData/
+build/
+Build/
+*build/
+*.app
+*.ipa
+*.dSYM/
+*.xcscheme
+
+# Swift Package Manager
+.swiftpm/
+Packages/
+
+# CocoaPods
+Pods/
+*.lock
+
+# Secrets / Configuration Files (Add your specific files here)
+Config.plist
+.env
+
+# Carthage
+Carthage/Build
+Carthage/Checkouts
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Other temporary files
+*.swp
+*~
+*.bak
+*.tmp
+
+# Crashlytics
+*.[cC][rR][aA][sS][hH]
+*.crash
+
+# Realm
+*.realm.lock
+*.realm.note
+*.realm.management/
