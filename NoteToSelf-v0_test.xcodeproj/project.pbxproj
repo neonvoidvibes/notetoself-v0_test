@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		64F78A932D9787AD00925FE8 /* Libsql in Frameworks */ = {isa = PBXBuildFile; productRef = 64F78A922D9787AD00925FE8 /* Libsql */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		6483FB4C2D8E9E5100E8EA20 /* NoteToSelf-v0_test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NoteToSelf-v0_test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				64F78A932D9787AD00925FE8 /* Libsql in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -59,12 +64,14 @@
 			buildRules = (
 			);
 			dependencies = (
+				64F78A952D9787E600925FE8 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				6483FB4E2D8E9E5100E8EA20 /* NoteToSelf-v0_test */,
 			);
 			name = "NoteToSelf-v0_test";
 			packageProductDependencies = (
+				64F78A922D9787AD00925FE8 /* Libsql */,
 			);
 			productName = "NoteToSelf-v0_test";
 			productReference = 6483FB4C2D8E9E5100E8EA20 /* NoteToSelf-v0_test.app */;
@@ -94,6 +101,9 @@
 			);
 			mainGroup = 6483FB432D8E9E5100E8EA20;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				64F78A912D9787AD00925FE8 /* XCRemoteSwiftPackageReference "libsql-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6483FB4D2D8E9E5100E8EA20 /* Products */;
 			projectDirPath = "";
@@ -123,6 +133,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		64F78A952D9787E600925FE8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 64F78A942D9787E600925FE8 /* Libsql */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		6483FB582D8E9E5300E8EA20 /* Debug */ = {
@@ -326,6 +343,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		64F78A912D9787AD00925FE8 /* XCRemoteSwiftPackageReference "libsql-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tursodatabase/libsql-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.3.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		64F78A922D9787AD00925FE8 /* Libsql */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 64F78A912D9787AD00925FE8 /* XCRemoteSwiftPackageReference "libsql-swift" */;
+			productName = Libsql;
+		};
+		64F78A942D9787E600925FE8 /* Libsql */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 64F78A912D9787AD00925FE8 /* XCRemoteSwiftPackageReference "libsql-swift" */;
+			productName = Libsql;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 6483FB442D8E9E5100E8EA20 /* Project object */;
 }
