@@ -125,7 +125,8 @@ class ChatManager: ObservableObject {
     private func loadChatsFromDB() {
         Task { // Run in a background task
             do {
-                let loadedChats = try databaseService.loadAllChats()
+                // Fix: Add await since loadAllChats is async
+                let loadedChats = try await databaseService.loadAllChats()
                 // Switch back to main thread to update @Published properties
                 // No await needed since there's no async operation within the closure
                 MainActor.run {
