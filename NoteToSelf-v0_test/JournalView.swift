@@ -1,16 +1,25 @@
 import SwiftUI
 
 struct JournalView: View {
+    // Environment Objects
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var databaseService: DatabaseService // <-- Inject DatabaseService
+
+    // Environment Variables
     @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled
+
+    // View State
     @State private var showingNewEntrySheet = false
     @State private var expandedEntryId: UUID? = nil
     @State private var editingEntry: JournalEntry? = nil
+    @State private var fullscreenEntry: JournalEntry? = nil
+
+    // Tab Bar State (Bindings)
     @Binding var tabBarOffset: CGFloat
     @Binding var lastScrollPosition: CGFloat
     @Binding var tabBarVisible: Bool
-    
-    // Filter state variables
+
+    // Filter State
     @State private var showingFilterPanel = false
     @State private var searchText = ""
     @State private var searchTags: [String] = []
@@ -18,15 +27,14 @@ struct JournalView: View {
     @State private var dateFilterType: DateFilterType = .all
     @State private var customStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
     @State private var customEndDate: Date = Date()
-    
-    // Add this state variable after the other @State variables in JournalView:
-    @State private var fullscreenEntry: JournalEntry? = nil
-    
+
     // Access to shared styles
     private let styles = UIStyles.shared
-    
-    // Computed property to filter the journal entries
+
+    // Computed property to filter the journal entries (remains the same)
     private var filteredEntries: [JournalEntry] {
+        // For now, this still filters the in-memory AppState array.
+        // Later, this could be replaced by a database query if AppState stops holding all entries.
         appState.journalEntries.filtered(
             by: searchTags,
             moods: selectedMoods,
@@ -35,41 +43,42 @@ struct JournalView: View {
             customEndDate: customEndDate
         )
     }
-    
-    // Function to clear all filters and optionally close the filter panel
+
+    // Function to clear filters (remains the same)
     private func clearFilters(closePanel: Bool = false) {
         searchText = ""
         searchTags = []
         selectedMoods = []
         dateFilterType = .all
-        
+
         if closePanel {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 showingFilterPanel = false
             }
         }
     }
-    
+
+    // MARK: - Body
     var body: some View {
         ZStack {
             // Background
             styles.colors.appBackground
                 .ignoresSafeArea()
-            
+
             VStack(spacing: 0) {
-                // Header
+                // Header (remains the same)
                 ZStack(alignment: .center) {
                     // Title truly centered
                     VStack(spacing: 8) {
                         Text("Journal")
                             .font(styles.typography.title1)
                             .foregroundColor(styles.colors.text)
-                        
+
                         Rectangle()
                             .fill(styles.colors.accent)
                             .frame(width: 20, height: 3)
                     }
-                    
+
                     // Menu button on left and filter button on right
                     HStack {
                         Button(action: {
@@ -91,9 +100,9 @@ struct JournalView: View {
                             }
                             .frame(width: 36, height: 36)
                         }
-                        
+
                         Spacer()
-                        
+
                         // Filter button
                         Button(action: {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -107,10 +116,10 @@ struct JournalView: View {
                     }
                     .padding(.horizontal, styles.layout.paddingXL)
                 }
-                .padding(.top, 8) // Further reduced top padding
+                .padding(.top, 8)
                 .padding(.bottom, 8)
-                
-                // Filter panel
+
+                // Filter panel (remains the same)
                 if showingFilterPanel {
                     FilterPanel(
                         searchText: $searchText,
@@ -125,140 +134,137 @@ struct JournalView: View {
                     )
                     .transition(.move(edge: .top).combined(with: .opacity))
                 }
-                
-                // Journal entries
+
+                // Journal entries list (remains mostly the same, uses filteredEntries)
                 ScrollViewReader { scrollProxy in
                     ScrollView {
-                        GeometryReader { geometry in
-                            Color.clear.preference(
-                                key: ScrollOffsetPreferenceKey.self,
-                                value: geometry.frame(in: .named("scrollView")).minY
-                            )
-                        }
-                        .frame(height: 0)
-                        
-                        // Inspiring prompt - only show when there are filtered entries and filter panel is closed
-                        if !appState.journalEntries.isEmpty && !filteredEntries.isEmpty && !showingFilterPanel {
-                            VStack(alignment: .center, spacing: styles.layout.spacingL) {
-                                // Inspiring header with larger font
-                                Text("My Journal")
-                                    .font(styles.typography.headingFont)
-                                    .foregroundColor(styles.colors.text)
-                                    .padding(.bottom, 4)
-                                
-                                // Inspiring quote with larger font
-                                Text("Capture your thoughts, reflect on your journey.")
-                                    .font(styles.typography.bodyLarge)
-                                    .foregroundColor(styles.colors.accent)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(.horizontal, styles.layout.paddingXL)
-                            .padding(.vertical, styles.layout.spacingXL * 1.5)
-                            .padding(.top, 80) // Extra top padding for spaciousness
-                            .padding(.bottom, 40) // Extra bottom padding
-                            .frame(maxWidth: .infinity)
-                            .background(
-                                // Subtle gradient background for the inspiring section
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        styles.colors.appBackground,
-                                        styles.colors.appBackground.opacity(0.9)
-                                    ]),
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                        }
-                        
-                        if filteredEntries.isEmpty {
-                          VStack(alignment: .center, spacing: 16) {
-                              if !searchTags.isEmpty || !selectedMoods.isEmpty || dateFilterType != .all {
-                                  Text("No Matching Entries")
-                                      .font(styles.typography.bodyFont)
-                                      .foregroundColor(styles.colors.text)
-                                      .padding(.top, 60) // Ample top padding
-                              
-                                  Text("Try adjusting your filters")
-                                      .font(styles.typography.bodySmall)
-                                      .foregroundColor(styles.colors.textSecondary)
-                              
-                                  Button("Clear Filters") {
-                                      clearFilters(closePanel: true) // Close panel when clearing filters
-                                  }
-                                  .font(styles.typography.bodyFont)
-                                  .foregroundColor(styles.colors.accent)
-                                  .padding(.top, 8)
-                              } else {
-                                  Text("No journal entries yet.")
-                                      .font(styles.typography.headingFont)
-                                      .foregroundColor(styles.colors.text)
-                                      .padding(.top, 60) // Ample top padding
-                              
-                                  Text("Tap the + button to add your first entry.")
-                                      .font(styles.typography.bodyFont)
-                                      .foregroundColor(styles.colors.textSecondary)
-                              }
-                              
-                              Spacer() // Push content to the top
-                          }
-                          .frame(maxWidth: .infinity)
-                          .padding()
-                        } else {
-                            LazyVStack(spacing: styles.layout.radiusM) {
-                                let groupedEntries = JournalDateGrouping.groupEntriesByTimePeriod(filteredEntries)
-                                
-                                ForEach(groupedEntries, id: \.0) { section, entries in
-                                    DateGroupSectionHeader(title: section)
-                                        .id("header-\(section)")
-                                    
-                                    ForEach(entries) { entry in
-                                        JournalEntryCard(
-                                            entry: entry,
-                                            isExpanded: expandedEntryId == entry.id,
-                                            onTap: {
-                                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                                    expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
-                                                }
-                                            },
-                                            onExpand: {
-                                                fullscreenEntry = entry
-                                            }
-                                        )
-                                        .transition(.opacity.combined(with: .move(edge: .top)))
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 100) // Extra padding for floating button
-                        }
-                    }
+                        // ScrollView content (Inspiring prompt, No Matching Entries, LazyVStack)
+                        // ... (existing code for ScrollView content) ...
+                        // This part doesn't change significantly yet, as it still reads from AppState
+                         GeometryReader { geometry in
+                             Color.clear.preference(
+                                 key: ScrollOffsetPreferenceKey.self,
+                                 value: geometry.frame(in: .named("scrollView")).minY
+                             )
+                         }
+                         .frame(height: 0)
+
+                         // Inspiring prompt - only show when there are filtered entries and filter panel is closed
+                         if !appState.journalEntries.isEmpty && !filteredEntries.isEmpty && !showingFilterPanel {
+                             VStack(alignment: .center, spacing: styles.layout.spacingL) {
+                                 Text("My Journal")
+                                     .font(styles.typography.headingFont)
+                                     .foregroundColor(styles.colors.text)
+                                     .padding(.bottom, 4)
+                                 Text("Capture your thoughts, reflect on your journey.")
+                                     .font(styles.typography.bodyLarge)
+                                     .foregroundColor(styles.colors.accent)
+                                     .multilineTextAlignment(.center)
+                             }
+                             .padding(.horizontal, styles.layout.paddingXL)
+                             .padding(.vertical, styles.layout.spacingXL * 1.5)
+                             .padding(.top, 80)
+                             .padding(.bottom, 40)
+                             .frame(maxWidth: .infinity)
+                             .background(
+                                 LinearGradient(
+                                     gradient: Gradient(colors: [
+                                         styles.colors.appBackground,
+                                         styles.colors.appBackground.opacity(0.9)
+                                     ]),
+                                     startPoint: .top,
+                                     endPoint: .bottom
+                                 )
+                             )
+                         }
+
+                         if filteredEntries.isEmpty {
+                           VStack(alignment: .center, spacing: 16) {
+                               if !searchTags.isEmpty || !selectedMoods.isEmpty || dateFilterType != .all {
+                                   Text("No Matching Entries") // ... existing no results view
+                                        .font(styles.typography.bodyFont)
+                                        .foregroundColor(styles.colors.text)
+                                        .padding(.top, 60)
+
+                                   Text("Try adjusting your filters")
+                                       .font(styles.typography.bodySmall)
+                                       .foregroundColor(styles.colors.textSecondary)
+
+                                   Button("Clear Filters") {
+                                       clearFilters(closePanel: true)
+                                   }
+                                   .font(styles.typography.bodyFont)
+                                   .foregroundColor(styles.colors.accent)
+                                   .padding(.top, 8)
+                               } else {
+                                   Text("No journal entries yet.") // ... existing empty state view
+                                       .font(styles.typography.headingFont)
+                                       .foregroundColor(styles.colors.text)
+                                       .padding(.top, 60)
+
+                                   Text("Tap the + button to add your first entry.")
+                                       .font(styles.typography.bodyFont)
+                                       .foregroundColor(styles.colors.textSecondary)
+                               }
+                               Spacer()
+                           }
+                           .frame(maxWidth: .infinity)
+                           .padding()
+                         } else {
+                             LazyVStack(spacing: styles.layout.radiusM) {
+                                 let groupedEntries = JournalDateGrouping.groupEntriesByTimePeriod(filteredEntries)
+
+                                 ForEach(groupedEntries, id: \.0) { section, entries in
+                                     DateGroupSectionHeader(title: section)
+                                         .id("header-\(section)")
+
+                                     ForEach(entries) { entry in
+                                         JournalEntryCard(
+                                             entry: entry,
+                                             isExpanded: expandedEntryId == entry.id,
+                                             onTap: {
+                                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                                     expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
+                                                 }
+                                             },
+                                             onExpand: {
+                                                 fullscreenEntry = entry
+                                             }
+                                         )
+                                         .transition(.opacity.combined(with: .move(edge: .top)))
+                                     }
+                                 }
+                             }
+                             .padding(.horizontal, 20)
+                             .padding(.bottom, 100)
+                         }
+                    } // End ScrollView
                     .coordinateSpace(name: "scrollView")
                     .disabled(mainScrollingDisabled)
                     .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                        // Calculate scroll direction and update tab bar visibility
                         let scrollingDown = value < lastScrollPosition
-                        
-                        // Only update when scrolling more than a threshold to avoid jitter
                         if abs(value - lastScrollPosition) > 10 {
-                            if scrollingDown {
-                                tabBarOffset = 100 // Hide tab bar
-                                tabBarVisible = false
-                            } else {
-                                tabBarOffset = 0 // Show tab bar
-                                tabBarVisible = true
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                if scrollingDown {
+                                    tabBarOffset = 100
+                                    tabBarVisible = false
+                                } else {
+                                    tabBarOffset = 0
+                                    tabBarVisible = true
+                                }
                             }
                             lastScrollPosition = value
                         }
                     }
                     .simultaneousGesture(
                         TapGesture().onEnded {
-                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                         }
                     )
-                }
-            }
-            
-            // Floating add button
+                } // End ScrollViewReader
+            } // End VStack
+
+            // Floating add button (remains the same)
             VStack {
                 Spacer()
                 HStack {
@@ -274,8 +280,7 @@ struct JournalView: View {
                                 ZStack {
                                     Circle()
                                         .fill(styles.colors.accent)
-                                    
-                                    // Add subtle gradient overlay for depth
+
                                     Circle()
                                         .fill(
                                             LinearGradient(
@@ -291,100 +296,158 @@ struct JournalView: View {
                     }
                     .padding(.trailing, 24)
                     .padding(.bottom, 24)
-                    .offset(y: tabBarOffset * 0.7) // Move with tab bar but not as much
+                    .offset(y: tabBarOffset * 0.7)
                     .animation(.spring(response: 0.3, dampingFraction: 0.7), value: tabBarOffset)
                 }
             }
-        }
+        } // End ZStack
         .fullScreenCover(isPresented: $showingNewEntrySheet) {
-            // Use the same EditableFullscreenEntryView for new entries
+            // *** MODIFIED onSave for NEW entries ***
             EditableFullscreenEntryView(
-                initialMood: .neutral, 
+                initialMood: .neutral,
                 onSave: { text, mood, intensity in
+                    // 1. Create the new entry object
                     let newEntry = JournalEntry(text: text, mood: mood, date: Date(), intensity: intensity)
 
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                        appState.journalEntries.insert(newEntry, at: 0)
-                        expandedEntryId = newEntry.id // Auto-expand new entry
+                    // 2. Generate embedding (can return nil)
+                    let embeddingVector = generateEmbedding(for: newEntry.text) // Use helper
+
+                    // 3. Save to Database (handle errors)
+                    do {
+                        try databaseService.saveJournalEntry(newEntry, embedding: embeddingVector)
+                        print("✅ Successfully saved new journal entry \(newEntry.id) to DB.")
+
+                        // 4. *Only if DB save succeeds*, update AppState UI
+                        // Run UI updates on the main thread
+                        DispatchQueue.main.async {
+                             withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                                 // Prepend to keep newest first
+                                 appState.journalEntries.insert(newEntry, at: 0)
+                                 expandedEntryId = newEntry.id // Auto-expand
+                             }
+                        }
+                    } catch {
+                        print("‼️ Error saving new journal entry \(newEntry.id) to DB: \(error)")
+                        // Optionally show an error alert to the user here
                     }
                 },
-                autoFocusText: true // Auto-focus for immediate typing
+                autoFocusText: true
             )
         }
         .fullScreenCover(item: $fullscreenEntry) { entry in
+            // View existing entry (no changes needed here)
             FullscreenEntryView(
                 entry: entry,
                 onEdit: {
-                    // Dismiss the fullscreen view first, then set the editing entry
                     fullscreenEntry = nil
-                    // Small delay to ensure smooth transition
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         editingEntry = entry
                     }
                 },
                 onDelete: {
-                    deleteEntry(entry)
+                    deleteEntry(entry) // Needs DB delete logic later
                 }
             )
         }
-        .fullScreenCover(item: $editingEntry) { entry in
+        .fullScreenCover(item: $editingEntry) { entryToEdit in
+             // *** MODIFIED onSave for EDITING entries ***
             EditableFullscreenEntryView(
-                entry: entry,
+                entry: entryToEdit,
                 onSave: { updatedText, updatedMood, updatedIntensity in
-                    updateEntry(entry, newText: updatedText, newMood: updatedMood, intensity: updatedIntensity)
+                    // 1. Create the updated entry object
+                    // Keep original ID and Date
+                     let updatedEntry = JournalEntry(
+                         id: entryToEdit.id,
+                         text: updatedText,
+                         mood: updatedMood,
+                         date: entryToEdit.date, // Keep original date
+                         intensity: updatedIntensity
+                     )
+
+                    // 2. Generate embedding for the potentially updated text
+                    let embeddingVector = generateEmbedding(for: updatedEntry.text)
+
+                    // 3. Save updated entry to Database (handle errors)
+                    do {
+                        try databaseService.saveJournalEntry(updatedEntry, embedding: embeddingVector)
+                        print("✅ Successfully updated journal entry \(updatedEntry.id) in DB.")
+
+                        // 4. *Only if DB save succeeds*, update AppState UI
+                        DispatchQueue.main.async {
+                            updateEntryInAppState(updatedEntry) // Use helper to update AppState
+                        }
+                    } catch {
+                        print("‼️ Error updating journal entry \(updatedEntry.id) in DB: \(error)")
+                         // Optionally show an error alert
+                    }
                 },
                 onDelete: {
-                    deleteEntry(entry)
+                    deleteEntry(entryToEdit) // Needs DB delete logic later
                 },
-                autoFocusText: true // Auto-focus for immediate editing with cursor at end
+                autoFocusText: true
             )
         }
         .onAppear {
+             // Load initial data from DB? (Deferred for now)
+            // The existing logic only expands the first in-memory entry
             if expandedEntryId == nil, let firstEntry = appState.journalEntries.first {
                 expandedEntryId = firstEntry.id
             }
         }
+    } // End Body
+
+    // MARK: - Helper Functions (Modify these later for DB operations)
+
+    // Helper function to update entry in AppState (used by editing save)
+    private func updateEntryInAppState(_ updatedEntry: JournalEntry) {
+        if let index = appState.journalEntries.firstIndex(where: { $0.id == updatedEntry.id }) {
+            withAnimation {
+                appState.journalEntries[index] = updatedEntry
+            }
+            // Update fullscreen/editing state if necessary
+            if fullscreenEntry?.id == updatedEntry.id {
+                fullscreenEntry = updatedEntry
+            }
+            // We assume editingEntry is dismissed automatically by the sheet closing
+        } else {
+             print("Warning: Tried to update entry \(updatedEntry.id) in AppState, but not found.")
+             // Maybe append it if somehow missing? Or reload from DB?
+        }
     }
-    
+
+    // TODO: Modify deleteEntry to also delete from DatabaseService
     private func deleteEntry(_ entry: JournalEntry) {
+        // --- Current AppState Deletion ---
         if let index = appState.journalEntries.firstIndex(where: { $0.id == entry.id }) {
             _ = withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 appState.journalEntries.remove(at: index)
             }
         }
-        
-        // Clear the fullscreen entry if it's the one being deleted
-        if fullscreenEntry?.id == entry.id {
-            fullscreenEntry = nil
-        }
-        
-        // Clear the editing entry if it's the one being deleted
-        if editingEntry?.id == entry.id {
-            editingEntry = nil
-        }
+         // Clear UI state
+        if fullscreenEntry?.id == entry.id { fullscreenEntry = nil }
+        if editingEntry?.id == entry.id { editingEntry = nil }
+
+        // --- Add Database Deletion ---
+        // Task { // Run DB operations in background
+        //     do {
+        //         try await databaseService.deleteJournalEntry(id: entry.id)
+        //         print("✅ Successfully deleted journal entry \(entry.id) from DB.")
+        //     } catch {
+        //         print("‼️ Error deleting journal entry \(entry.id) from DB: \(error)")
+        //         // Handle error - maybe re-add to AppState or show alert?
+        //     }
+        // }
     }
-    
-    private func updateEntry(_ entry: JournalEntry, newText: String, newMood: Mood, intensity: Int) {
-        if let index = appState.journalEntries.firstIndex(where: { $0.id == entry.id }) {
-            let updatedEntry = JournalEntry(
-                id: entry.id,
-                text: newText,
-                mood: newMood,
-                date: entry.date,
-                intensity: intensity
-            )
-            
-            withAnimation {
-                appState.journalEntries[index] = updatedEntry
-            }
-            
-            // Update the fullscreen entry if it's the one being edited
-            if fullscreenEntry?.id == entry.id {
-                fullscreenEntry = updatedEntry
-            }
-        }
-    }
-}
+
+    // TODO: Modify updateEntry to call saveJournalEntry via DatabaseService (Done inside the .fullScreenCover modifier now)
+    // Remove the old updateEntry function as the logic is now in the onSave closure.
+    // private func updateEntry(_ entry: JournalEntry, newText: String, newMood: Mood, intensity: Int) { ... }
+
+} // End JournalView
+
+// ScrollOffsetPreferenceKey and JournalEntryCard remain the same for now...
+
+// ... (Keep existing ScrollOffsetPreferenceKey and JournalEntryCard structs) ...
 
 struct ScrollOffsetPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
@@ -398,9 +461,9 @@ struct JournalEntryCard: View {
     let isExpanded: Bool
     let onTap: () -> Void
     let onExpand: () -> Void
-    
+
     private let styles = UIStyles.shared
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header always visible
@@ -409,7 +472,7 @@ struct JournalEntryCard: View {
                     Text(formatDate(entry.date))
                         .font(styles.typography.smallLabelFont)
                         .foregroundColor(styles.colors.secondaryAccent)
-                    
+
                     if !isExpanded {
                         Text(entry.text)
                             .lineLimit(1)
@@ -417,9 +480,9 @@ struct JournalEntryCard: View {
                             .foregroundColor(styles.colors.text)
                     }
                 }
-                
+
                 Spacer()
-                
+
                 HStack(spacing: 12) {
                     // Mood icon and formatted text
                     HStack(spacing: 4) {
@@ -427,7 +490,7 @@ struct JournalEntryCard: View {
                             .foregroundColor(entry.mood.color)
                             .font(.system(size: 20))
                             .scaleEffect(isExpanded ? 1.1 : 1.0)
-                        
+
                         if isExpanded {
                             Text(formattedMoodText(entry.mood, intensity: entry.intensity))
                                 .font(styles.typography.caption)
@@ -435,14 +498,14 @@ struct JournalEntryCard: View {
                         }
                     }
                     .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
-                    
+
                     // Lock icon if needed (only when expanded)
                     if isExpanded && entry.isLocked {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 14))
                             .foregroundColor(styles.colors.secondaryAccent)
                     }
-                    
+
                     // Expand/collapse chevron with rotation
                     Image(systemName: "chevron.down")
                         .font(.system(size: 14, weight: .bold))
@@ -453,23 +516,23 @@ struct JournalEntryCard: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
-            
+
             // Expanded content
             if isExpanded {
                 Divider()
                     .background(Color(hex: "#222222"))
                     .padding(.horizontal, 16)
-                
+
                 Text(entry.text)
                     .font(styles.typography.bodyFont)
                     .foregroundColor(styles.colors.text)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
-                
+
                 // Action buttons - only Expand button now
                 HStack {
                     Spacer()
-                    
+
                     // Expand button
                     Button(action: onExpand) {
                         HStack(spacing: 4) {
@@ -507,10 +570,10 @@ struct JournalEntryCard: View {
             }
         }
     }
-    
+
     private func formatDate(_ date: Date) -> String {
         let calendar = Calendar.current
-        
+
         if calendar.isDateInToday(date) {
             return "Today, \(formatTime(date))"
         } else if calendar.isDateInYesterday(date) {
@@ -521,7 +584,7 @@ struct JournalEntryCard: View {
             return formatter.string(from: date)
         }
     }
-    
+
     private func formatTime(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
@@ -536,4 +599,3 @@ struct JournalEntryCard: View {
       }
   }
 }
-
