@@ -64,7 +64,8 @@ class ChatManager: ObservableObject {
         Task {
             let embedding = generateEmbedding(for: message.text) // Use global helper
             do {
-                try await databaseService.saveChatMessage(message, chatId: currentChat.id, embedding: embedding)
+                // Remove await if the method isn't actually async
+                try databaseService.saveChatMessage(message, chatId: currentChat.id, embedding: embedding)
                 print("Successfully saved chat message \(message.id) to DB.")
             } catch {
                 // Handle or log the error appropriately
@@ -112,7 +113,8 @@ class ChatManager: ObservableObject {
         // Call database service to delete chat messages
         Task {
             do {
-                try await databaseService.deleteChatFromDB(id: chat.id)
+                // Remove await if the method isn't actually async
+                try databaseService.deleteChatFromDB(id: chat.id)
                 print("Successfully deleted chat \(chat.id) from DB.")
             } catch {
                 print("‼️ Error deleting chat \(chat.id) from DB: \(error)")
@@ -125,11 +127,11 @@ class ChatManager: ObservableObject {
     private func loadChatsFromDB() {
         Task { // Run in a background task
             do {
-                // Fix: Add await since loadAllChats is async
-                let loadedChats = try await databaseService.loadAllChats()
+                // Remove await if the method isn't actually async
+                let loadedChats = try databaseService.loadAllChats()
                 // Switch back to main thread to update @Published properties
-                // No await needed since there's no async operation within the closure
-                MainActor.run {
+                // Add await since MainActor.run is async
+                await MainActor.run {
                     self.chats = loadedChats
                     // Set currentChat to the most recent one if available, otherwise keep the new empty one
                     if let mostRecentChat = loadedChats.first {
@@ -143,7 +145,7 @@ class ChatManager: ObservableObject {
             } catch {
                 print("‼️ ERROR loading chats into ChatManager from DB: \(error)")
                 // Handle error appropriately, maybe show an alert or load empty state
-                MainActor.run {
+                await MainActor.run {
                     self.chats = [] // Ensure chats is empty on error
                     self.currentChat = Chat() // Ensure currentChat is empty on error
                 }
@@ -258,7 +260,8 @@ class ChatManager: ObservableObject {
             // Call database service to update star status
             Task {
                 do {
-                    try await databaseService.toggleMessageStarInDB(id: message.id, isStarred: newStarStatus)
+                    // Remove await if the method isn't actually async
+                    try databaseService.toggleMessageStarInDB(id: message.id, isStarred: newStarStatus)
                     print("Successfully toggled star for message \(message.id) in DB to \(newStarStatus).")
                 } catch {
                     print("‼️ Error toggling star for message \(message.id) in DB: \(error)")
@@ -273,7 +276,8 @@ class ChatManager: ObservableObject {
              // Call database service to update star status
              Task {
                  do {
-                     try await databaseService.toggleMessageStarInDB(id: message.id, isStarred: newStarStatus)
+                     // Remove await if the method isn't actually async
+                     try databaseService.toggleMessageStarInDB(id: message.id, isStarred: newStarStatus)
                      print("Successfully toggled star for message \(message.id) (current chat only) in DB to \(newStarStatus).")
                  } catch {
                      print("‼️ Error toggling star for message \(message.id) (current chat only) in DB: \(error)")
@@ -296,7 +300,8 @@ class ChatManager: ObservableObject {
             // Call database service to delete message
             Task {
                 do {
-                    try await databaseService.deleteMessageFromDB(id: message.id)
+                    // Remove await if the method isn't actually async
+                    try databaseService.deleteMessageFromDB(id: message.id)
                     print("Successfully deleted message \(message.id) from DB.")
                 } catch {
                     print("‼️ Error deleting message \(message.id) from DB: \(error)")
@@ -310,7 +315,8 @@ class ChatManager: ObservableObject {
             // Call database service to delete message
             Task {
                 do {
-                    try await databaseService.deleteMessageFromDB(id: messageToDeleteId)
+                    // Remove await if the method isn't actually async
+                    try databaseService.deleteMessageFromDB(id: messageToDeleteId)
                     print("Successfully deleted message \(messageToDeleteId) (current chat only) from DB.")
                 } catch {
                     print("‼️ Error deleting message \(messageToDeleteId) (current chat only) from DB: \(error)")
@@ -335,7 +341,8 @@ class ChatManager: ObservableObject {
             // Call database service to update star status for all messages in the chat
             Task {
                 do {
-                    try await databaseService.toggleChatStarInDB(id: chat.id, isStarred: newStarStatus)
+                    // Remove await if the method isn't actually async
+                    try databaseService.toggleChatStarInDB(id: chat.id, isStarred: newStarStatus)
                     print("Successfully toggled star for chat \(chat.id) in DB to \(newStarStatus).")
                 } catch {
                     print("‼️ Error toggling star for chat \(chat.id) in DB: \(error)")
