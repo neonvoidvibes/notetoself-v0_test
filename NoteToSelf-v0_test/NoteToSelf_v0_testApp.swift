@@ -2,20 +2,27 @@ import SwiftUI
 
 @main
 struct NoteToSelf_v0_testApp: App {
-    // Load AppState first if DatabaseService depends on it, or vice versa
-    // Instantiate DatabaseService first as ChatManager depends on it
-    @StateObject private var databaseService = DatabaseService()
-    @StateObject private var appState = AppState() // AppState might load sample data initially
-    // Update ChatManager init to pass DatabaseService
+    // Create services before @StateObject declarations to avoid capturing self
+    private let dbService = DatabaseService()
+    private let appStateService = AppState()
+    private let chatManagerService: ChatManager
+    
+    // Initialize StateObjects with pre-created services
+    @StateObject private var databaseService: DatabaseService
+    @StateObject private var appState: AppState 
     @StateObject private var chatManager: ChatManager
 
     // Define UserDefaults key for migration flag
     private let migrationKey = "didRunLibSQLMigration_v1"
-
+    
     init() {
         // Initialize ChatManager with DatabaseService
-        // Must be done in init because databaseService needs to exist first
-        _chatManager = StateObject(wrappedValue: ChatManager(databaseService: databaseService))
+        chatManagerService = ChatManager(databaseService: dbService)
+        
+        // Initialize StateObjects with our pre-created instances
+        _databaseService = StateObject(wrappedValue: dbService)
+        _appState = StateObject(wrappedValue: appStateService)
+        _chatManager = StateObject(wrappedValue: chatManagerService)
     }
 
     var body: some Scene {
@@ -71,31 +78,36 @@ struct NoteToSelf_v0_testApp: App {
                 do {
                     // 1. Migrate Journal Entries (from AppState's initial sample data)
                     print("Migrating Journal Entries...")
-                    for entry in appState.journalEntries {
+                    // Use await to access MainActor-isolated property from background
+                    let entriesToMigrate = await appState.journalEntries
+                    for entry in entriesToMigrate {
                         let embedding = generateEmbedding(for: entry.text)
-                        // Add await here
                         try await databaseService.saveJournalEntry(entry, embedding: embedding)
                         // Add a small delay to avoid overwhelming CPU/DB if needed
                         // try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
                     }
-                    print("Finished migrating \(appState.journalEntries.count) Journal Entries.")
+                    // Use await to access MainActor-isolated property from background
+                    print("Finished migrating \(await appState.journalEntries.count) Journal Entries.")
 
                     // 2. Migrate Chat Messages (from ChatManager's loaded UserDefaults data)
                     print("Migrating Chat Messages...")
                     var migratedMessageCount = 0
-                    for chat in chatManager.chats {
+                    // Use await to access MainActor-isolated property from background
+                    let chatsToMigrate = await chatManager.chats
+                    for chat in chatsToMigrate {
                         for message in chat.messages {
                             let embedding = generateEmbedding(for: message.text)
-                             // Add await here
                             try await databaseService.saveChatMessage(message, chatId: chat.id, embedding: embedding)
                             migratedMessageCount += 1
                             // Add a small delay if needed
                             // try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
                         }
                     }
-                    print("Finished migrating \(migratedMessageCount) Chat Messages from \(chatManager.chats.count) chats.")
+                     // Use await to access MainActor-isolated property from background
+                    print("Finished migrating \(migratedMessageCount) Chat Messages from \(await chatManager.chats.count) chats.")
 
                     // 3. Set the migration flag upon successful completion
+                    // Accessing defaults is synchronous, no await needed here
                     defaults.set(true, forKey: migrationKey)
                     print("Successfully set migration flag '\(migrationKey)'.")
 
