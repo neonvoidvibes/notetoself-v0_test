@@ -362,7 +362,8 @@ struct ReflectionsView: View {
                   if !entries.isEmpty {
                       contextString += "Relevant past journal entries:\n"
                       for entry in entries {
-                          contextString += "- \"\(entry.text.prefix(100))...\" (Mood: \(entry.mood.rawValue), Date: \(entry.date.formatted(date: .short, time: .omitted)))\n"
+                          // Use .numeric for a short date format like "1/2/23"
+                          contextString += "- \"\(entry.text.prefix(100))...\" (Mood: \(entry.mood.rawValue), Date: \(entry.date.formatted(date: .numeric, time: .omitted)))\n"
                       }
                       contextString += "\n"
                   }
