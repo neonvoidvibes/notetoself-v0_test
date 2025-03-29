@@ -309,8 +309,8 @@ struct EditableFullscreenEntryView: View {
                         .background(Color.clear)
                         .scrollContentBackground(.hidden)
                         .focused($isTextFieldFocused)
-                        .onChange(of: isTextFieldFocused) { isFocused in
-                            if isFocused {
+                        .onChange(of: isTextFieldFocused) { oldValue, newValue in
+                            if newValue {
                                 // Close mood selector when text field is focused
                                 withAnimation {
                                     showMoodSelector = false
@@ -440,4 +440,3 @@ struct FullscreenEntryView_Previews: PreviewProvider {
         }
     }
 }
-

@@ -127,7 +127,8 @@ class ChatManager: ObservableObject {
             do {
                 let loadedChats = try databaseService.loadAllChats()
                 // Switch back to main thread to update @Published properties
-                await MainActor.run {
+                // No await needed since there's no async operation within the closure
+                MainActor.run {
                     self.chats = loadedChats
                     // Set currentChat to the most recent one if available, otherwise keep the new empty one
                     if let mostRecentChat = loadedChats.first {
@@ -141,7 +142,7 @@ class ChatManager: ObservableObject {
             } catch {
                 print("‼️ ERROR loading chats into ChatManager from DB: \(error)")
                 // Handle error appropriately, maybe show an alert or load empty state
-                await MainActor.run {
+                MainActor.run {
                     self.chats = [] // Ensure chats is empty on error
                     self.currentChat = Chat() // Ensure currentChat is empty on error
                 }
@@ -261,7 +262,7 @@ class ChatManager: ObservableObject {
                 } catch {
                     print("‼️ Error toggling star for message \(message.id) in DB: \(error)")
                     // Revert UI change on error? Or show alert?
-                    // await MainActor.run { chats[chatIndex].messages[messageIndex].isStarred.toggle() }
+                    // MainActor.run { chats[chatIndex].messages[messageIndex].isStarred.toggle() }
                 }
             }
         } else if let messageIndex = currentChat.messages.firstIndex(where: { $0.id == message.id }) {
@@ -276,7 +277,7 @@ class ChatManager: ObservableObject {
                  } catch {
                      print("‼️ Error toggling star for message \(message.id) (current chat only) in DB: \(error)")
                      // Revert UI change on error?
-                     // await MainActor.run { currentChat.messages[messageIndex].isStarred.toggle() }
+                     // MainActor.run { currentChat.messages[messageIndex].isStarred.toggle() }
                  }
              }
         }
@@ -338,7 +339,7 @@ class ChatManager: ObservableObject {
                 } catch {
                     print("‼️ Error toggling star for chat \(chat.id) in DB: \(error)")
                     // Revert UI change on error? Or show alert?
-                    // await MainActor.run {
+                    // MainActor.run {
                     //     if let revertIndex = chats.firstIndex(where: { $0.id == chat.id }) {
                     //         chats[revertIndex].isStarred.toggle()
                     //         if currentChat.id == chat.id { currentChat.isStarred.toggle() }

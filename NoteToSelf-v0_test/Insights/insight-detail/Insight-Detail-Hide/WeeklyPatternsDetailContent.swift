@@ -327,7 +327,7 @@ struct WeeklyPatternsDetailContent: View {
       var bestCombination: (day: DayOfWeek, time: TimeOfDay, mood: Double) = (.monday, .morning, 0)
       
       for (day, dayEntries) in weekdayMoodData {
-          for (time, timeEntries) in timeOfDayMoodData {
+          for (time, _) in timeOfDayMoodData {
               // Find entries that match both this day and time
               let combinedEntries = dayEntries.filter { entry in
                   TimeOfDay(from: entry.date) == time
@@ -410,4 +410,3 @@ extension Date {
       return weekday == 1 || weekday == 7 // Sunday or Saturday
   }
 }
-

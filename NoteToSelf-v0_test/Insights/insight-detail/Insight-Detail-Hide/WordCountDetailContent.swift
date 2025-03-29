@@ -16,7 +16,7 @@ struct WordCountDetailContent: View {
     }
     
     private var entriesByMonth: [(month: String, count: Int, words: Int)] {
-        let calendar = Calendar.current
+        // Remove unused calendar variable
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM yyyy"
         
@@ -132,4 +132,3 @@ struct MonthlyWordCountView: View {
         return geometry.size.width * percentage
     }
 }
-

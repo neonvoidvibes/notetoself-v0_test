@@ -2,49 +2,40 @@ import SwiftUI
 
 @main
 struct NoteToSelf_v0_testApp: App {
-    // Create services before @StateObject declarations to avoid capturing self
-    private let dbService = DatabaseService()
-    private let appStateService = AppState()
-    private let chatManagerService: ChatManager
+    // Using this instead of placing the dbService in a property to avoid reference issues
+    @StateObject private var databaseService = DatabaseService()
+    @StateObject private var appState = AppState()
     
-    // Initialize StateObjects with pre-created services
-    @StateObject private var databaseService: DatabaseService
-    @StateObject private var appState: AppState 
-    @StateObject private var chatManager: ChatManager
+    // Use a closure to initialize chatManager with databaseService
+    // This avoids capturing self during initialization
+    @StateObject private var chatManager = {
+        let dbService = DatabaseService()
+        return ChatManager(databaseService: dbService)
+    }()
 
     // Define UserDefaults key for migration flag
     private let migrationKey = "didRunLibSQLMigration_v1"
-    
-    init() {
-        // Initialize ChatManager with DatabaseService
-        chatManagerService = ChatManager(databaseService: dbService)
-        
-        // Initialize StateObjects with our pre-created instances
-        _databaseService = StateObject(wrappedValue: dbService)
-        _appState = StateObject(wrappedValue: appStateService)
-        _chatManager = StateObject(wrappedValue: chatManagerService)
-    }
 
     var body: some Scene {
-    WindowGroup {
-        MainTabView()
-            .environmentObject(appState)
-            .environmentObject(chatManager)
-            .environmentObject(databaseService)
-            .preferredColorScheme(.dark)
-            .onAppear {
-                // Run migration first if needed (this runs async)
-                runInitialMigrationIfNeeded()
+        WindowGroup {
+            MainTabView()
+                .environmentObject(appState)
+                .environmentObject(chatManager)
+                .environmentObject(databaseService)
+                .preferredColorScheme(.dark)
+                .onAppear {
+                    // Run migration first if needed (this runs async)
+                    runInitialMigrationIfNeeded()
 
-                // Then load initial data from DB for AppState
-                // This should run after potential migration finishes,
-                // but for simplicity, we run it here. If migration is slow,
-                // the initial load might fetch data before migration completes.
-                // A more robust solution might use completion handlers or async/await.
-                // For now, load directly.
-                loadInitialAppStateData()
-            }
-    }
+                    // Then load initial data from DB for AppState
+                    // This should run after potential migration finishes,
+                    // but for simplicity, we run it here. If migration is slow,
+                    // the initial load might fetch data before migration completes.
+                    // A more robust solution might use completion handlers or async/await.
+                    // For now, load directly.
+                    loadInitialAppStateData()
+                }
+        }
     } // End of body Scene
 
     // --- Load Initial AppState Data ---
