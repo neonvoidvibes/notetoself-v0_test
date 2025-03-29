@@ -2,8 +2,8 @@ import SwiftUI
 import Combine
 
 struct MainTabView: View {
-  @StateObject private var appState = AppState()
-  @StateObject private var chatManager = ChatManager()
+  @EnvironmentObject private var appState: AppState // Use EnvironmentObject
+  @EnvironmentObject private var chatManager: ChatManager // Use EnvironmentObject
   @State private var selectedTab = 0
   
   // Settings-related states
@@ -463,14 +463,15 @@ struct MainTabView: View {
       }
       // IMPORTANT: Remove the mainScrollingDisabled environment variable to allow scrolling
       .environment(\.settingsScrollingDisabled, isSwipingSettings)
-      .environmentObject(appState)
-      .environmentObject(chatManager)
+      // No need to pass environment objects down again here
       .preferredColorScheme(.dark)
       .onAppear {
           bottomSheetOffset = peekHeight - fullSheetHeight
-          appState.loadSampleData()
+          // Remove sample data loading
           
           if !appState.hasSeenOnboarding {
+              // This logic might need review - should onboarding status be persisted?
+              // For now, keep the logic but remove sample data load.
               appState.hasSeenOnboarding = true
           }
           
@@ -577,4 +578,3 @@ struct ScaleButtonStyle: ButtonStyle {
           .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
   }
 }
-
