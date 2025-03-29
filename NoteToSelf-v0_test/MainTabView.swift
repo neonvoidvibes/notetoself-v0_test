@@ -183,29 +183,32 @@ struct MainTabView: View {
           
           // Main content: disabled during settings swipes
           VStack(spacing: 0) {
-              Group {
+              ZStack {
                   if selectedTab == 0 {
                       JournalView(tabBarOffset: .constant(0),
                                   lastScrollPosition: .constant(0),
                                   tabBarVisible: .constant(true))
+                          .mainCardStyle()
                   } else if selectedTab == 1 {
                       InsightsView(tabBarOffset: .constant(0),
                        lastScrollPosition: .constant(0),
                        tabBarVisible: .constant(true))
+                          .mainCardStyle()
                   } else if selectedTab == 2 {
                       ReflectionsView(tabBarOffset: .constant(0),
                        lastScrollPosition: .constant(0),
                        tabBarVisible: .constant(true),
-                       chatManager: chatManager,
+                       // chatManager: chatManager, // Removed argument
                        showChatHistory: {
                            withAnimation(.easeInOut(duration: 0.3)) {
                                showingChatHistory = true
                                chatHistoryOffset = 0
                            }
                        })
+                          .mainCardStyle()
+                          .environmentObject(chatManager) // Added modifier
                   }
               }
-              .mainCardStyle()
               .offset(y: bottomSheetExpanded ? -fullSheetHeight * 0.25 : 0)
               .animation(styles.animation.bottomSheetAnimation, value: bottomSheetExpanded)
               .environment(\.bottomSheetExpanded, bottomSheetExpanded)

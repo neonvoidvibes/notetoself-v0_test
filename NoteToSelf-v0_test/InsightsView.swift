@@ -700,38 +700,103 @@ struct AnalyticItem: View {
     }
 }
 
+// MARK: - Corrected Preview Provider (Paste this at the end of InsightsView.swift)
 struct InsightsView_Previews: PreviewProvider {
+    // Create static instances needed for the preview environment
+    // Use @StateObject for ObservableObjects that the preview manages
+    @StateObject static var databaseService = DatabaseService()
+    // LLMService is likely a singleton, access directly
+    static var llmService = LLMService.shared
+    @StateObject static var subscriptionManager = SubscriptionManager.shared // Singleton ObservableObject
+    @StateObject static var appState = AppState()
+
+    // Initialize ChatManager within the preview scope, passing dependencies
+    // Use static vars for dependencies to ensure they exist when ChatManager is created
+    @StateObject static var chatManager = ChatManager(
+        databaseService: databaseService,
+        llmService: llmService, // Pass the static instance
+        subscriptionManager: subscriptionManager
+    )
+
     static var previews: some View {
-        let appState = AppState()
-        // Sample data loading should ideally happen via DB now, but keep for preview consistency if needed
-        // appState.loadSampleData() 
-        let databaseService = DatabaseService() // Create DB service for preview
-        let chatManager = ChatManager(databaseService: databaseService) // Create ChatManager with DB service
-        
-        // Load initial data into managers for preview
-        // This mimics the async loading in the main app flow
-        Task {
-            do {
-                let entries = try databaseService.loadAllJournalEntries()
-                await MainActor.run { appState.journalEntries = entries }
-                
-                let chats = try databaseService.loadAllChats()
-                await MainActor.run { 
-                    chatManager.chats = chats
-                    if let first = chats.first { chatManager.currentChat = first }
+        // Use a container to handle async data loading for the preview
+        PreviewDataLoadingContainer {
+            // The actual view being previewed
+            InsightsView(
+                tabBarOffset: .constant(0),
+                lastScrollPosition: .constant(0),
+                tabBarVisible: .constant(true)
+            )
+            // Provide all necessary environment objects that InsightsView and its children might need
+            .environmentObject(appState)
+            .environmentObject(chatManager)
+            .environmentObject(databaseService) // Pass if any card needs it directly
+            .environmentObject(subscriptionManager)
+        }
+    }
+
+    // Helper container view to load preview data asynchronously
+    struct PreviewDataLoadingContainer<Content: View>: View {
+        @ViewBuilder let content: Content
+        @State private var isLoading = true
+
+        // No need for @ObservedObject here, access static properties directly in loadData
+
+        var body: some View {
+            Group {
+                if isLoading {
+                    ProgressView("Loading Preview Data...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(UIStyles.shared.colors.appBackground) // Match background
+                        .onAppear {
+                            // Perform data loading when the container appears
+                            Task {
+                                await loadData()
+                                isLoading = false // Mark loading as complete
+                            }
+                        }
+                } else {
+                    // Render the actual content once loading is done
+                    content
                 }
-            } catch {
-                print("Preview data loading error: \(error)")
             }
         }
 
-        return InsightsView(
-            tabBarOffset: .constant(0),
-            lastScrollPosition: .constant(0),
-            tabBarVisible: .constant(true)
-        )
-        .environmentObject(appState)
-        .environmentObject(chatManager) // Pass the initialized ChatManager
-        .environmentObject(databaseService) // Pass the DatabaseService
+        // Async function to load data using the static instances from the outer scope
+        func loadData() async {
+             print("Preview: Starting data load...")
+             // Access static properties directly from the enclosing type
+             let dbService = InsightsView_Previews.databaseService
+             let state = InsightsView_Previews.appState
+             let chatMgr = InsightsView_Previews.chatManager
+
+             do {
+                 // Load journal entries into AppState
+                 let entries = try dbService.loadAllJournalEntries()
+                 await MainActor.run { state.journalEntries = entries }
+                 print("Preview: Loaded \(entries.count) entries into AppState")
+
+                 // Load chats into ChatManager
+                 let chats = try dbService.loadAllChats()
+                 await MainActor.run {
+                     chatMgr.chats = chats
+                     // Set currentChat for preview state consistency
+                     if let firstChat = chats.first {
+                         chatMgr.currentChat = firstChat
+                         print("Preview: Set ChatManager currentChat to ID \(firstChat.id)")
+                     } else {
+                          chatMgr.currentChat = Chat() // Ensure it's a valid empty chat
+                          print("Preview: No chats found, ChatManager currentChat is new.")
+                     }
+                 }
+                 print("Preview: Loaded \(chats.count) chats into ChatManager")
+
+             } catch {
+                 print("‼️ Preview data loading error: \(error)")
+                 // Optionally load static sample data into appState/chatManager on error
+                 // await MainActor.run { /* load sample data */ }
+             }
+             print("Preview: Data loading finished.")
+        }
     }
 }

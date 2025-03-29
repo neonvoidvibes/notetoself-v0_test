@@ -110,6 +110,7 @@ class DatabaseService: ObservableObject {
 
         if let validEmbedding = embedding, validEmbedding.count == self.embeddingDimension {
             let embJSON = helperEmbeddingToJson(validEmbedding)
+            // Basic safety for JSON string within SQL literal - replace single quotes
             let safeEmbJSON = embJSON.replacingOccurrences(of: "'", with: "''")
             sql = """
                 INSERT OR REPLACE INTO JournalEntries (id, text, mood, date, intensity, embedding)
@@ -119,8 +120,8 @@ class DatabaseService: ObservableObject {
                       .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity))]
             guard params.count == 5 else { throw DatabaseError.saveDataFailed("Param count mismatch (JE/Embed)") }
         } else {
-            if embedding != nil { print("Warning: Dim mismatch JE \(entry.id). No embed.") }
-            else { print("Warning: Saving JE \(entry.id) without embed (nil).") }
+            if embedding != nil { print("Warning: Dim mismatch JE \(entry.id). Saving without embedding.") }
+            else { print("Warning: Saving JE \(entry.id) without embedding (nil).") }
             sql = "INSERT OR REPLACE INTO JournalEntries (id, text, mood, date, intensity, embedding) VALUES (?, ?, ?, ?, ?, NULL);"
             params = [.text(entry.id.uuidString), .text(entry.text), .text(entry.mood.rawValue),
                       .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity))]
@@ -147,8 +148,8 @@ class DatabaseService: ObservableObject {
                       .integer(message.isStarred ? 1 : 0)]
              guard params.count == 6 else { throw DatabaseError.saveDataFailed("Param count mismatch (CM/Embed)") }
          } else {
-             if embedding != nil { print("Warning: Dim mismatch CM \(message.id). No embed.") }
-             else { print("Warning: Saving CM \(message.id) without embed (nil).") }
+             if embedding != nil { print("Warning: Dim mismatch CM \(message.id). Saving without embedding.") }
+             else { print("Warning: Saving CM \(message.id) without embedding (nil).") }
              sql = "INSERT OR REPLACE INTO ChatMessages (id, chatId, text, isUser, date, isStarred, embedding) VALUES (?, ?, ?, ?, ?, ?, NULL);"
              params = [.text(message.id.uuidString), .text(chatId.uuidString), .text(message.text),
                        .integer(message.isUser ? 1 : 0), .integer(Int64(message.date.timeIntervalSince1970)),
@@ -163,15 +164,13 @@ class DatabaseService: ObservableObject {
     /// Deletes a JournalEntry from the database based on its ID.
     func deleteJournalEntry(id: UUID) throws {
         let sql = "DELETE FROM JournalEntries WHERE id = ?;"
-        // Parameters must be wrapped in an array, even if there's only one
         let params: [Value] = [.text(id.uuidString)]
 
         do {
-            _ = try self.connection.execute(sql, params) // Use self.connection
+            _ = try self.connection.execute(sql, params)
             print("Attempted delete for JournalEntry ID: \(id.uuidString)")
         } catch {
             print("‼️ Error deleting JournalEntry \(id.uuidString): \(error)")
-            // Re-throw as a custom error
             throw DatabaseError.deleteFailed("Failed to delete JournalEntry \(id.uuidString): \(error.localizedDescription)")
         }
     }
@@ -183,7 +182,6 @@ class DatabaseService: ObservableObject {
         do {
             _ = try self.connection.execute(sql, params)
             print("Attempted delete for all messages in Chat ID: \(id.uuidString)")
-            // Note: If a separate 'Chats' table existed, we'd delete the chat record here too.
         } catch {
             print("‼️ Error deleting Chat \(id.uuidString): \(error)")
             throw DatabaseError.deleteFailed("Failed to delete Chat \(id.uuidString): \(error.localizedDescription)")
@@ -206,7 +204,6 @@ class DatabaseService: ObservableObject {
     // --- Update Operations ---
 
     /// Toggles the 'isStarred' status for all messages within a specific chat.
-    /// Note: This assumes the Chat's starred status applies to all its messages.
     func toggleChatStarInDB(id: UUID, isStarred: Bool) throws {
         let sql = "UPDATE ChatMessages SET isStarred = ? WHERE chatId = ?;"
         let params: [Value] = [.integer(isStarred ? 1 : 0), .text(id.uuidString)]
@@ -215,7 +212,6 @@ class DatabaseService: ObservableObject {
             print("Attempted toggle star (\(isStarred)) for all messages in Chat ID: \(id.uuidString)")
         } catch {
             print("‼️ Error toggling star for Chat \(id.uuidString): \(error)")
-            // Consider a more specific error type if needed
             throw DatabaseError.saveDataFailed("Failed to toggle star for Chat \(id.uuidString): \(error.localizedDescription)")
         }
     }
@@ -229,7 +225,6 @@ class DatabaseService: ObservableObject {
             print("Attempted toggle star (\(isStarred)) for ChatMessage ID: \(id.uuidString)")
         } catch {
             print("‼️ Error toggling star for ChatMessage \(id.uuidString): \(error)")
-            // Consider a more specific error type if needed
             throw DatabaseError.saveDataFailed("Failed to toggle star for ChatMessage \(id.uuidString): \(error.localizedDescription)")
         }
     }
@@ -242,20 +237,22 @@ class DatabaseService: ObservableObject {
              throw DatabaseError.dimensionMismatch(expected: self.embeddingDimension, actual: queryVector.count)
         }
         let queryJSON = embeddingToJson(queryVector) // Use global helper
+        // ** FIXED JOIN CONDITION **
         let sql = """
             SELECT E.id, E.text, E.mood, E.date, E.intensity
             FROM JournalEntries AS E
             JOIN vector_top_k('journal_embedding_idx', vector32(?), ?) AS V
-              ON E.id = V.id COLLATE NOCASE
+              ON E.rowid = V.rowid -- Join on rowid, which vector_top_k returns as 'rowid' or implicitly uses
             WHERE E.embedding IS NOT NULL
             ORDER BY V.distance ASC;
             """
         let params: [Value] = [.text(queryJSON), .integer(Int64(limit))]
 
         do {
-            let rows = try self.connection.query(sql, params) // Use self.connection
+            let rows = try self.connection.query(sql, params)
             var results: [JournalEntry] = []
             for row in rows {
+                // Decoding logic remains the same, assuming SELECT clause is correct
                 guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
                       let text = try? row.getString(1),
                       let moodStr = try? row.getString(2), let mood = Mood(rawValue: moodStr),
@@ -265,7 +262,10 @@ class DatabaseService: ObservableObject {
                 results.append(JournalEntry(id: id, text: text, mood: mood, date: date, intensity: Int(intensityInt)))
             }
             return results
-        } catch { throw DatabaseError.queryFailed("Find JournalEntries: \(error.localizedDescription)") }
+        } catch {
+            print("‼️ Error during findSimilarJournalEntries query: \(error)") // Log specific error
+            throw DatabaseError.queryFailed("Find JournalEntries: \(error.localizedDescription)")
+        }
     }
 
     func findSimilarChatMessages(to queryVector: [Float], limit: Int = 5) throws -> [(message: ChatMessage, chatId: UUID)] {
@@ -274,20 +274,22 @@ class DatabaseService: ObservableObject {
               throw DatabaseError.dimensionMismatch(expected: self.embeddingDimension, actual: queryVector.count)
          }
          let queryJSON = embeddingToJson(queryVector) // Use global helper
+         // ** FIXED JOIN CONDITION **
          let sql = """
              SELECT M.id, M.chatId, M.text, M.isUser, M.date, M.isStarred
              FROM ChatMessages AS M
              JOIN vector_top_k('chat_embedding_idx', vector32(?), ?) AS V
-               ON M.id = V.id COLLATE NOCASE
+               ON M.rowid = V.rowid -- Join on rowid
              WHERE M.embedding IS NOT NULL
              ORDER BY V.distance ASC;
              """
          let params: [Value] = [.text(queryJSON), .integer(Int64(limit))]
 
         do {
-            let rows = try self.connection.query(sql, params) // Use self.connection
+            let rows = try self.connection.query(sql, params)
             var results: [(message: ChatMessage, chatId: UUID)] = []
             for row in rows {
+                 // Decoding logic remains the same
                  guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
                        let chatIdStr = try? row.getString(1), let chatId = UUID(uuidString: chatIdStr),
                        let text = try? row.getString(2),
@@ -299,7 +301,10 @@ class DatabaseService: ObservableObject {
                  results.append((message: message, chatId: chatId))
             }
             return results
-        } catch { throw DatabaseError.queryFailed("Find ChatMessages: \(error.localizedDescription)") }
+        } catch {
+            print("‼️ Error during findSimilarChatMessages query: \(error)") // Log specific error
+            throw DatabaseError.queryFailed("Find ChatMessages: \(error.localizedDescription)")
+        }
     }
 
     // --- Load Operations ---
@@ -307,10 +312,8 @@ class DatabaseService: ObservableObject {
     /// Loads all JournalEntries from the database.
     func loadAllJournalEntries() throws -> [JournalEntry] {
         let sql = "SELECT id, text, mood, date, intensity FROM JournalEntries ORDER BY date DESC;"
-        // No parameters needed for this query
-
         do {
-            let rows = try self.connection.query(sql) // Use self.connection
+            let rows = try self.connection.query(sql)
             var results: [JournalEntry] = []
             for row in rows {
                 guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
@@ -319,7 +322,6 @@ class DatabaseService: ObservableObject {
                       let dateTimestamp = try? row.getInt(3), let intensityInt = try? row.getInt(4)
                 else {
                     print("Warning: Failed to decode JournalEntry row during loadAll: \(row)")
-                    // Consider throwing a decoding error or logging more details
                     continue // Skip this row
                 }
                 let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
@@ -335,14 +337,12 @@ class DatabaseService: ObservableObject {
 
     /// Loads all Chats by querying messages and reconstructing Chat objects.
     func loadAllChats() throws -> [Chat] {
-        // Query all messages, ordered by chatId and then date to facilitate grouping and reconstruction
         let sql = "SELECT id, chatId, text, isUser, date, isStarred FROM ChatMessages ORDER BY chatId ASC, date ASC;"
 
         do {
             let rows = try self.connection.query(sql)
             var messagesByChatId: [UUID: [ChatMessage]] = [:]
 
-            // Group messages by chatId
             for row in rows {
                 guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
                       let chatIdStr = try? row.getString(1), let chatId = UUID(uuidString: chatIdStr),
@@ -352,35 +352,29 @@ class DatabaseService: ObservableObject {
                       let isStarredInt = try? row.getInt(5)
                 else {
                     print("Warning: Failed to decode ChatMessage row during loadAllChats grouping: \(row)")
-                    continue // Skip this row
+                    continue
                 }
                 let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
                 let message = ChatMessage(id: id, text: text, isUser: isUserInt == 1, date: date, isStarred: isStarredInt == 1)
 
-                if messagesByChatId[chatId] == nil {
-                    messagesByChatId[chatId] = []
-                }
-                messagesByChatId[chatId]?.append(message)
+                messagesByChatId[chatId, default: []].append(message)
             }
 
-            // Reconstruct Chat objects
             var chats: [Chat] = []
             for (chatId, messages) in messagesByChatId {
-                guard !messages.isEmpty else { continue } // Should not happen if query is correct
+                guard !messages.isEmpty else { continue }
 
-                // Sort messages just in case (though query should handle it)
                 let sortedMessages = messages.sorted { $0.date < $1.date }
-
                 let createdAt = sortedMessages.first!.date
                 let lastUpdatedAt = sortedMessages.last!.date
-                // Default isStarred to false for the Chat object for now, as it's not stored directly.
-                // Title generation will happen after creation.
-                var chat = Chat(id: chatId, messages: sortedMessages, createdAt: createdAt, lastUpdatedAt: lastUpdatedAt, isStarred: false)
-                chat.generateTitle() // Generate title based on the first user message
+                // Determine Chat's starred status based on any message being starred
+                let isChatStarred = sortedMessages.contains { $0.isStarred }
+
+                var chat = Chat(id: chatId, messages: sortedMessages, createdAt: createdAt, lastUpdatedAt: lastUpdatedAt, isStarred: isChatStarred)
+                chat.generateTitle()
                 chats.append(chat)
             }
 
-            // Sort the final list of chats by last updated date (newest first)
             chats.sort { $0.lastUpdatedAt > $1.lastUpdatedAt }
 
             print("Loaded and reconstructed \(chats.count) chats from DB messages.")
@@ -391,9 +385,6 @@ class DatabaseService: ObservableObject {
             throw DatabaseError.queryFailed("Load All Chats: \(error.localizedDescription)")
         }
     }
-
-    // TODO: Add methods for loading specific items, etc. as needed later.
-
 } // --- End of DatabaseService class ---
 
 
@@ -410,6 +401,7 @@ private struct EmbeddingModelProvider {
         if model == nil { print("‼️ Error: Failed to load NLEmbedding sentence model for English.") }
         else if let loadedModel = model, loadedModel.dimension != EXPECTED_EMBEDDING_DIMENSION {
              print("‼️ Error: Loaded NLEmbedding dimension (\(loadedModel.dimension)) doesn't match EXPECTED (\(EXPECTED_EMBEDDING_DIMENSION)).")
+             return nil // Return nil if dimension doesn't match
         }
         return model
     }()
@@ -417,18 +409,34 @@ private struct EmbeddingModelProvider {
 
 /// Generates a sentence embedding for the given text using NLEmbedding (iOS 16+).
 func generateEmbedding(for text: String) -> [Float]? { // Keep internal access
-    guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+    guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        print("[Embedding] Input text is empty, skipping embedding generation.")
+        return nil
+    }
     if #available(iOS 16.0, *) {
-        guard let embeddingModel = EmbeddingModelProvider.sharedModel else { return nil }
-        guard let vector = embeddingModel.vector(for: text) else { return nil }
+        guard let embeddingModel = EmbeddingModelProvider.sharedModel else {
+             print("‼️ [Embedding] NLEmbedding model not available or dimension mismatch.")
+             return nil
+        }
+        guard let vector = embeddingModel.vector(for: text) else {
+             print("⚠️ [Embedding] Could not generate vector for text: '\(text.prefix(50))...'")
+             return nil
+        }
+        // NLEmbedding returns [Double], convert to [Float]
         let floatVector = vector.map { Float($0) }
-        guard floatVector.count == EXPECTED_EMBEDDING_DIMENSION else { return nil }
+        // Dimension check is implicitly handled by EmbeddingModelProvider now
+        // print("[Embedding] Generated \(floatVector.count)-dim vector.") // Optional: Log success
         return floatVector
-    } else { return nil }
+    } else {
+        print("‼️ [Embedding] NLEmbedding requires iOS 16.0 or later.")
+        return nil
+    }
 }
+
 
 /// Converts a list of Float numbers into a JSON array string for libSQL's vector32 function.
 func embeddingToJson(_ embedding: [Float]) -> String { // Keep internal access
+    // Use higher precision format specifier if needed, but %.8f is usually sufficient
     let numberStrings = embedding.map { String(format: "%.8f", $0) }
     return "[" + numberStrings.joined(separator: ",") + "]"
 }
