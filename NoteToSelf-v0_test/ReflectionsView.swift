@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ReflectionsView: View {
   @EnvironmentObject var appState: AppState
+  @EnvironmentObject var databaseService: DatabaseService // Inject DatabaseService
   @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled
   @Environment(\.bottomSheetExpanded) private var bottomSheetExpanded
   @State private var messageText: String = ""
@@ -341,22 +342,78 @@ struct ReflectionsView: View {
           appState.dailyReflectionsUsed += 1
       }
       
-      // Simulate AI typing
-      isTyping = true
-      
-      // Simulate AI response after a delay
-      DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-          isTyping = false
+      // Start AI processing (including RAG)
+      Task {
+          // Indicate typing while processing
+          await MainActor.run { isTyping = true }
+
+          var contextString = ""
+          // 1. Generate embedding for the user message
+          if let queryEmbedding = generateEmbedding(for: messageToSend) {
+              // 2. Find similar entries/messages (run concurrently)
+              async let similarEntries = databaseService.findSimilarJournalEntries(to: queryEmbedding, limit: 3)
+              async let similarMessages = databaseService.findSimilarChatMessages(to: queryEmbedding, limit: 5) // Fetch more messages as they are shorter
+
+              // 3. Format context
+              do {
+                  let entries = try await similarEntries
+                  let messages = try await similarMessages
+                  
+                  if !entries.isEmpty {
+                      contextString += "Relevant past journal entries:\n"
+                      for entry in entries {
+                          contextString += "- \"\(entry.text.prefix(100))...\" (Mood: \(entry.mood.rawValue), Date: \(entry.date.formatted(date: .short, time: .omitted)))\n"
+                      }
+                      contextString += "\n"
+                  }
+                  
+                  if !messages.isEmpty {
+                      contextString += "Relevant past chat messages:\n"
+                      // Group messages by chat to provide better context
+                      let messagesByChat = Dictionary(grouping: messages, by: { $0.chatId })
+                      for (chatId, msgs) in messagesByChat {
+                           if let chatTitle = chatManager.chats.first(where: { $0.id == chatId })?.title {
+                               contextString += "From chat \"\(chatTitle)\":\n"
+                           } else {
+                               contextString += "From a past chat:\n"
+                           }
+                           for msgTuple in msgs.sorted(by: { $0.message.date < $1.message.date }) {
+                               let prefix = msgTuple.message.isUser ? "You: " : "AI: "
+                               contextString += "  - \(prefix)\"\(msgTuple.message.text.prefix(80))...\"\n"
+                           }
+                      }
+                      contextString += "\n"
+                  }
+                  
+              } catch {
+                  print("‼️ Error fetching RAG context: \(error)")
+                  // Proceed without context if fetching fails
+              }
+          } else {
+               print("‼️ Could not generate embedding for RAG query.")
+          }
+
+          // 4. Prepare final prompt with context
+          let finalPrompt = """
+          \(contextString.isEmpty ? "" : "Context from past entries/messages:\n\(contextString)\n---\n")
+          User query: \(messageToSend)
+          """
           
-          // Generate a response based on the user's message
-          let responseText = generateResponse(to: messageToSend)
+          // 5. Generate response (Simulated)
+          // In a real app, replace this delay and canned response with an actual AI API call
+          try? await Task.sleep(nanoseconds: 1_500_000_000) // Simulate network delay (1.5 seconds)
+          
+          let responseText = generateResponse(to: finalPrompt) // Pass the full prompt
           let aiMessage = ChatMessage(text: responseText, isUser: false)
           
-          // Add AI message to chat manager
-          chatManager.addMessage(aiMessage)
+          // 6. Update UI on main thread
+          await MainActor.run {
+              isTyping = false
+              chatManager.addMessage(aiMessage)
+          }
       }
   }
-  
+
   private func generateResponse(to message: String) -> String {
       // In a real app, this would call an AI service
       // For now, we'll return a simple canned response
@@ -532,4 +589,3 @@ struct TypingIndicator: View {
       return sin(animationOffset + CGFloat(delay)) * 5
   }
 }
-

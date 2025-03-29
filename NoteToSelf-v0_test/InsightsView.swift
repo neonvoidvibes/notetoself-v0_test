@@ -703,15 +703,35 @@ struct AnalyticItem: View {
 struct InsightsView_Previews: PreviewProvider {
     static var previews: some View {
         let appState = AppState()
-        appState.loadSampleData()
+        // Sample data loading should ideally happen via DB now, but keep for preview consistency if needed
+        // appState.loadSampleData() 
+        let databaseService = DatabaseService() // Create DB service for preview
+        let chatManager = ChatManager(databaseService: databaseService) // Create ChatManager with DB service
         
+        // Load initial data into managers for preview
+        // This mimics the async loading in the main app flow
+        Task {
+            do {
+                let entries = try databaseService.loadAllJournalEntries()
+                await MainActor.run { appState.journalEntries = entries }
+                
+                let chats = try databaseService.loadAllChats()
+                await MainActor.run { 
+                    chatManager.chats = chats
+                    if let first = chats.first { chatManager.currentChat = first }
+                }
+            } catch {
+                print("Preview data loading error: \(error)")
+            }
+        }
+
         return InsightsView(
             tabBarOffset: .constant(0),
             lastScrollPosition: .constant(0),
             tabBarVisible: .constant(true)
         )
         .environmentObject(appState)
-        .environmentObject(ChatManager())
+        .environmentObject(chatManager) // Pass the initialized ChatManager
+        .environmentObject(databaseService) // Pass the DatabaseService
     }
 }
-
