@@ -161,7 +161,8 @@ struct RecommendationsInsightCard: View {
 
                              // Generation Date
                              if let date = generatedDate {
-                                 Text("Generated on \(date.formatted(date: .long, time: .short))")
+                                 // Corrected: .shortened
+                                 Text("Generated on \(date.formatted(date: .long, time: .shortened))")
                                      .font(styles.typography.caption)
                                      .foregroundColor(styles.colors.textSecondary)
                                      .frame(maxWidth: .infinity, alignment: .center)

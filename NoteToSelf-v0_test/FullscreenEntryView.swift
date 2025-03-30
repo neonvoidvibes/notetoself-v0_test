@@ -3,20 +3,20 @@ import SwiftUI
 struct FullscreenEntryView: View {
     let entry: JournalEntry
     @Environment(\.dismiss) private var dismiss
-    
+
     // Optional callbacks for edit and delete actions
     var onEdit: (() -> Void)?
     var onDelete: (() -> Void)?
-    
+
     // Access to shared styles
     private let styles = UIStyles.shared
-    
+
     var body: some View {
         ZStack {
             // Background
             styles.colors.appBackground
                 .ignoresSafeArea()
-            
+
             VStack(spacing: 0) {
                 // Custom navigation bar
                 HStack {
@@ -31,9 +31,9 @@ struct FullscreenEntryView: View {
                         }
                         .foregroundColor(styles.colors.accent)
                     }
-                    
+
                     Spacer()
-                    
+
                     // Date display
                     Text(formatDate(entry.date))
                         .font(styles.typography.smallLabelFont)
@@ -42,14 +42,14 @@ struct FullscreenEntryView: View {
                 .padding(.horizontal, styles.layout.paddingXL)
                 .padding(.top, styles.layout.topSafeAreaPadding)
                 .padding(.bottom, styles.layout.paddingM)
-                
+
                 // Main content
                 ScrollView {
                     VStack(alignment: .leading, spacing: styles.layout.spacingXL) {
                         // Header with mood and action buttons
                         HStack(spacing: styles.layout.spacingM) {
                             Spacer()
-                            
+
                             // Mood pill with formatted intensity
                             Text(formattedMoodText(entry.mood, intensity: entry.intensity))
                                 .font(styles.typography.caption)
@@ -64,7 +64,7 @@ struct FullscreenEntryView: View {
                                     RoundedRectangle(cornerRadius: styles.layout.radiusM)
                                         .stroke(entry.mood.color.opacity(0.5), lineWidth: 1)
                                 )
-                            
+
                             // Edit button (if not locked and onEdit is provided)
                             if !entry.isLocked && onEdit != nil {
                                 Button(action: {
@@ -83,7 +83,7 @@ struct FullscreenEntryView: View {
                                     .cornerRadius(styles.layout.radiusM)
                                 }
                             }
-                            
+
                             // Delete button (if onDelete is provided) - icon only
                             if onDelete != nil {
                                 Button(action: {
@@ -98,7 +98,7 @@ struct FullscreenEntryView: View {
                                         .cornerRadius(styles.layout.radiusM)
                                 }
                             }
-                            
+
                             // Locked indicator if needed - icon only
                             if entry.isLocked {
                                 Image(systemName: "lock.fill")
@@ -112,14 +112,14 @@ struct FullscreenEntryView: View {
                         }
                         .padding(.horizontal, styles.layout.paddingXL)
                         .padding(.top, styles.layout.paddingL)
-                        
+
                         // Entry text
                         Text(entry.text)
                             .font(styles.typography.bodyLarge)
                             .foregroundColor(styles.colors.text)
                             .lineSpacing(8)
                             .padding(.horizontal, styles.layout.paddingXL)
-                        
+
                         Spacer(minLength: 100)
                     }
                 }
@@ -127,12 +127,10 @@ struct FullscreenEntryView: View {
         }
         .preferredColorScheme(.dark)
     }
-    
+
     private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
+        // Corrected: Use .shortened instead of .short
+        return date.formatted(date: .long, time: .shortened)
     }
 
     private func formattedMoodText(_ mood: Mood, intensity: Int = 2) -> String {
@@ -152,34 +150,34 @@ struct EditableFullscreenEntryView: View {
     @FocusState private var isTextFieldFocused: Bool
     @State private var showMoodSelector: Bool = false
     @State private var selectedIntensity: Int
-    
+
     // For new entries, date is set to now
     // For editing, we keep the original date
     private let date: Date
     private let isNewEntry: Bool
     private let isLocked: Bool
     private let autoFocusText: Bool
-    
+
     // Callback when saving
     var onSave: ((String, Mood, Int) -> Void)?
     var onDelete: (() -> Void)?
-    
+
     // Access to shared styles
     private let styles = UIStyles.shared
-    
+
     // Initialize for new entry
-    init(initialMood: Mood = .neutral, onSave: ((String, Mood, Int) -> Void)? = nil, autoFocusText: Bool = false) {
+    init(initialMood: Mood = .neutral, onSave: ((String, Mood, Int) -> Void)? = nil, onDelete: (() -> Void)? = nil, autoFocusText: Bool = false) {
         self._entryText = State(initialValue: "")
         self._selectedMood = State(initialValue: initialMood)
         self._selectedIntensity = State(initialValue: 2) // Default to moderate
         self.date = Date()
         self.isNewEntry = true
-        self.isLocked = false
+        self.isLocked = false // New entries are never locked
         self.onSave = onSave
-        self.onDelete = nil
+        self.onDelete = onDelete
         self.autoFocusText = autoFocusText
     }
-    
+
     // Initialize for editing existing entry
     init(entry: JournalEntry, onSave: ((String, Mood, Int) -> Void)? = nil, onDelete: (() -> Void)? = nil, autoFocusText: Bool = true) {
         self._entryText = State(initialValue: entry.text)
@@ -192,7 +190,7 @@ struct EditableFullscreenEntryView: View {
         self.onDelete = onDelete
         self.autoFocusText = autoFocusText
     }
-    
+
     var body: some View {
     ZStack {
         // Background
@@ -202,7 +200,7 @@ struct EditableFullscreenEntryView: View {
             .onTapGesture {
                 // Dismiss keyboard when tapping anywhere on the background
                 isTextFieldFocused = false
-                
+
                 // Also close mood selector if open
                 if showMoodSelector {
                     withAnimation {
@@ -210,7 +208,7 @@ struct EditableFullscreenEntryView: View {
                     }
                 }
             }
-        
+
         VStack(spacing: 0) {
             // Custom navigation bar - match the view mode exactly
             HStack {
@@ -225,9 +223,9 @@ struct EditableFullscreenEntryView: View {
                     }
                     .foregroundColor(styles.colors.accent)
                 }
-                
+
                 Spacer()
-                
+
                 // Show date for all entries
                 Text(formatDate(date))
                     .font(styles.typography.smallLabelFont)
@@ -236,19 +234,19 @@ struct EditableFullscreenEntryView: View {
             .padding(.horizontal, styles.layout.paddingXL)
             .padding(.top, styles.layout.topSafeAreaPadding)
             .padding(.bottom, styles.layout.paddingM)
-            
+
             // Main content
             ScrollView {
                 VStack(alignment: .leading, spacing: styles.layout.spacingXL) {
                     // Header with mood and action buttons - match view mode exactly
                     HStack(spacing: styles.layout.spacingM) {
                         Spacer()
-                        
+
                         // Mood selector button
                         Button(action: {
                             // Dismiss keyboard when opening mood selector
                             isTextFieldFocused = false
-                            
+
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 showMoodSelector.toggle()
                             }
@@ -267,12 +265,12 @@ struct EditableFullscreenEntryView: View {
                                         .stroke(selectedMood.color.opacity(0.5), lineWidth: 1)
                                 )
                         }
-                        
+
                         // Delete button (if onDelete is provided) - icon only
                         if !isNewEntry && onDelete != nil {
                             Button(action: {
                                 onDelete?()
-                                dismiss()
+                                dismiss() // Dismiss after triggering delete
                             }) {
                                 Image(systemName: "trash")
                                     .font(.system(size: styles.layout.iconSizeS))
@@ -286,7 +284,7 @@ struct EditableFullscreenEntryView: View {
                     }
                     .padding(.horizontal, styles.layout.paddingXL)
                     .padding(.top, styles.layout.paddingL)
-                    
+
                     // Mood wheel selector panel
                     if showMoodSelector {
                         VStack {
@@ -298,7 +296,7 @@ struct EditableFullscreenEntryView: View {
                         .padding(.horizontal, styles.layout.paddingXL)
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
-                    
+
                     // Text editor - styled to match the text display in view mode
                     TextEditor(text: $entryText)
                         .font(styles.typography.bodyLarge)
@@ -330,7 +328,7 @@ struct EditableFullscreenEntryView: View {
                                 }
                             }
                         )
-                    
+
                     Spacer(minLength: 100)
                 }
             }
@@ -342,7 +340,7 @@ struct EditableFullscreenEntryView: View {
                     }
             )
         }
-        
+
         // Save button at bottom right
         VStack {
             Spacer()
@@ -402,14 +400,11 @@ struct EditableFullscreenEntryView: View {
             }
         }
     }
-}
-    
+
     private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
+         // Corrected: Use .shortened instead of .short
+         return date.formatted(date: .long, time: .shortened)
+     }
 
     private func formattedMoodText(_ mood: Mood, intensity: Int = 2) -> String {
         switch intensity {
@@ -427,14 +422,14 @@ struct FullscreenEntryView_Previews: PreviewProvider {
             mood: .happy,
             date: Date()
         )
-        
+
         Group {
             FullscreenEntryView(entry: sampleEntry)
                 .previewDisplayName("View Mode")
-            
+
             EditableFullscreenEntryView(entry: sampleEntry)
                 .previewDisplayName("Edit Mode")
-            
+
             EditableFullscreenEntryView()
                 .previewDisplayName("New Entry Mode")
         }

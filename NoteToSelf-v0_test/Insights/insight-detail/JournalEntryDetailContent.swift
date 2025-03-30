@@ -3,7 +3,7 @@ import SwiftUI
 struct JournalEntryDetailContent: View {
     let entry: JournalEntry
     private let styles = UIStyles.shared
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: styles.layout.spacingL) {
             // Entry header
@@ -12,39 +12,39 @@ struct JournalEntryDetailContent: View {
                     Text(formatDate(entry.date))
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.textSecondary)
-                    
+
                     HStack {
                         entry.mood.icon
                             .foregroundColor(entry.mood.color)
-                        
+
                         Text(formattedMoodText(entry.mood, intensity: entry.intensity))
                             .font(styles.typography.bodyFont)
                             .foregroundColor(entry.mood.color)
                     }
                 }
-                
+
                 Spacer()
-                
+
                 if entry.isLocked {
                     Image(systemName: "lock.fill")
                         .foregroundColor(styles.colors.textSecondary)
                 }
             }
-            
+
             // Entry text
             Text(entry.text)
                 .font(styles.typography.bodyLarge)
                 .foregroundColor(styles.colors.text)
                 .lineSpacing(8)
-            
+
             // Entry stats
             HStack(spacing: styles.layout.spacingXL) {
                 StatItem(
                     value: "\(entry.text.split(separator: " ").count)",
                     label: "Words",
-                    icon: "text.word.count"
+                    icon: "text.word.spacing"
                 )
-                
+
                 StatItem(
                     value: "\(entry.text.count)",
                     label: "Characters",
@@ -54,14 +54,13 @@ struct JournalEntryDetailContent: View {
             .padding(.top, styles.layout.paddingL)
         }
     }
-    
+
     private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-    
+         // Corrected: Use .shortened instead of .short
+         return date.formatted(date: .long, time: .shortened)
+     }
+
+
     private func formattedMoodText(_ mood: Mood, intensity: Int = 2) -> String {
         switch intensity {
         case 1: return "Slightly \(mood.name)"
@@ -70,4 +69,3 @@ struct JournalEntryDetailContent: View {
         }
     }
 }
-
