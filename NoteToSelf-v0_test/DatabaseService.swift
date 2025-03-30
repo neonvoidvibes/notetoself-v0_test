@@ -14,6 +14,7 @@ enum DatabaseError: Error {
     case decodingFailed(String)
     case dimensionMismatch(expected: Int, actual: Int)
     case deleteFailed(String) // Added error type for delete
+    case noResultsFound // Added for clarity when second query finds nothing
 }
 
 // --- Service Class Definition ---
@@ -247,7 +248,8 @@ class DatabaseService: ObservableObject {
     }
 
 
-    // --- Search Operations (Reverted to include JOIN and V.distance) ---
+    // --- Search Operations (Corrected Pattern) ---
+
     func findSimilarJournalEntries(to queryVector: [Float], limit: Int = 5) throws -> [JournalEntry] {
         guard !queryVector.isEmpty else { return [] }
         guard queryVector.count == self.embeddingDimension else {
@@ -256,34 +258,42 @@ class DatabaseService: ObservableObject {
         guard let queryJSON = embeddingToJson(queryVector) else {
              throw DatabaseError.embeddingGenerationFailed("Failed to convert query vector to JSON.")
         }
-        // ** Reverted: Explicitly select V.distance **
+
+        // CORRECTED QUERY: Join, calculate distance, order by calculated distance
         let sql = """
-            SELECT E.id, E.text, E.mood, E.date, E.intensity, V.distance
+            SELECT E.id, E.text, E.mood, E.date, E.intensity,
+                   vector_distance_cos(E.embedding, vector32(?)) AS distance
             FROM JournalEntries AS E
             JOIN vector_top_k('journal_embedding_idx', vector32(?), ?) AS V
-              ON E.rowid = V.rowid
+              ON E.rowid = V.id -- Use V.id as per documentation example
             WHERE E.embedding IS NOT NULL
-            ORDER BY V.distance ASC;
+            ORDER BY distance ASC;
             """
-        let params: [Value] = [.text(queryJSON), .integer(Int64(limit))]
+        // Parameters: queryJSON (for distance calc), queryJSON (for vector_top_k), limit
+        let params: [Value] = [.text(queryJSON), .text(queryJSON), .integer(Int64(limit))]
 
+        print("[DB Search] Executing corrected JournalEntries search...")
         do {
             let rows = try self.connection.query(sql, params)
             var results: [JournalEntry] = []
             for row in rows {
-                // Decoding logic (ignoring V.distance for the result struct)
+                // Decode JournalEntry columns (index 0 to 4)
                 guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
                       let text = try? row.getString(1),
                       let moodStr = try? row.getString(2), let mood = Mood(rawValue: moodStr),
-                      let dateTimestamp = try? row.getInt(3), let intensityInt = try? row.getInt(4)
+                      let dateTimestamp = try? row.getInt(3), // Int64?
+                      let intensityInt = try? row.getInt(4) // Int64?
+                      // Optional: decode distance (index 5) if needed for logging/thresholding
+                      // let distance = try? row.getDouble(5)
                 else { print("Warning: Failed decode JournalEntry row: \(row)"); continue }
                 let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
                 results.append(JournalEntry(id: id, text: text, mood: mood, date: date, intensity: Int(intensityInt)))
             }
+            print("[DB Search] Corrected JournalEntries search successful. Found \(results.count) entries.")
             return results
         } catch {
-            print("‼️ Error during findSimilarJournalEntries query: \(error)") // Log specific error
-            throw DatabaseError.queryFailed("Find JournalEntries: \(error.localizedDescription)")
+            print("‼️ Error during CORRECTED findSimilarJournalEntries query: \(error)")
+            throw DatabaseError.queryFailed("Corrected Find JournalEntries: \(error.localizedDescription)")
         }
     }
 
@@ -295,38 +305,47 @@ class DatabaseService: ObservableObject {
          guard let queryJSON = embeddingToJson(queryVector) else {
               throw DatabaseError.embeddingGenerationFailed("Failed to convert query vector to JSON.")
          }
-         // ** Reverted: Explicitly select V.distance **
+
+         // CORRECTED QUERY: Join, calculate distance, order by calculated distance
          let sql = """
-             SELECT M.id, M.chatId, M.text, M.isUser, M.date, M.isStarred, V.distance
+             SELECT M.id, M.chatId, M.text, M.isUser, M.date, M.isStarred,
+                    vector_distance_cos(M.embedding, vector32(?)) AS distance
              FROM ChatMessages AS M
              JOIN vector_top_k('chat_embedding_idx', vector32(?), ?) AS V
-               ON M.rowid = V.rowid
+               ON M.rowid = V.id -- Use V.id as per documentation example
              WHERE M.embedding IS NOT NULL
-             ORDER BY V.distance ASC;
+             ORDER BY distance ASC;
              """
-         let params: [Value] = [.text(queryJSON), .integer(Int64(limit))]
+         // Parameters: queryJSON (for distance calc), queryJSON (for vector_top_k), limit
+         let params: [Value] = [.text(queryJSON), .text(queryJSON), .integer(Int64(limit))]
 
+         print("[DB Search] Executing corrected ChatMessages search...")
         do {
             let rows = try self.connection.query(sql, params)
             var results: [(message: ChatMessage, chatId: UUID)] = []
             for row in rows {
-                 // Decoding logic (ignoring V.distance for the result struct)
+                 // Decode ChatMessage columns (index 0 to 5)
                  guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
                        let chatIdStr = try? row.getString(1), let chatId = UUID(uuidString: chatIdStr),
                        let text = try? row.getString(2),
-                       let isUserInt = try? row.getInt(3), let dateTimestamp = try? row.getInt(4),
-                       let isStarredInt = try? row.getInt(5)
+                       let isUserInt = try? row.getInt(3), // Int64?
+                       let dateTimestamp = try? row.getInt(4), // Int64?
+                       let isStarredInt = try? row.getInt(5) // Int64?
+                       // Optional: decode distance (index 6) if needed
+                       // let distance = try? row.getDouble(6)
                  else { print("Warning: Failed decode ChatMessage row: \(row)"); continue }
                  let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
                  let message = ChatMessage(id: id, text: text, isUser: isUserInt == 1, date: date, isStarred: isStarredInt == 1)
                  results.append((message: message, chatId: chatId))
             }
+            print("[DB Search] Corrected ChatMessages search successful. Found \(results.count) messages.")
             return results
         } catch {
-            print("‼️ Error during findSimilarChatMessages query: \(error)") // Log specific error
-            throw DatabaseError.queryFailed("Find ChatMessages: \(error.localizedDescription)")
+            print("‼️ Error during CORRECTED findSimilarChatMessages query: \(error)")
+            throw DatabaseError.queryFailed("Corrected Find ChatMessages: \(error.localizedDescription)")
         }
     }
+
 
     // --- Load Operations ---
 
@@ -340,12 +359,14 @@ class DatabaseService: ObservableObject {
                 guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
                       let text = try? row.getString(1),
                       let moodStr = try? row.getString(2), let mood = Mood(rawValue: moodStr),
-                      let dateTimestamp = try? row.getInt(3), let intensityInt = try? row.getInt(4)
+                      let dateTimestamp = try? row.getInt(3), // Int64?
+                      let intensityInt = try? row.getInt(4) // Int64?
                 else {
                     print("Warning: Failed to decode JournalEntry row during loadAll: \(row)")
                     continue // Skip this row
                 }
                 let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
+                // Create JournalEntry with Int intensity
                 results.append(JournalEntry(id: id, text: text, mood: mood, date: date, intensity: Int(intensityInt)))
             }
             print("Loaded \(results.count) journal entries from DB.")
@@ -368,9 +389,9 @@ class DatabaseService: ObservableObject {
                 guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
                       let chatIdStr = try? row.getString(1), let chatId = UUID(uuidString: chatIdStr),
                       let text = try? row.getString(2),
-                      let isUserInt = try? row.getInt(3),
-                      let dateTimestamp = try? row.getInt(4),
-                      let isStarredInt = try? row.getInt(5)
+                      let isUserInt = try? row.getInt(3), // Int64?
+                      let dateTimestamp = try? row.getInt(4), // Int64?
+                      let isStarredInt = try? row.getInt(5) // Int64?
                 else {
                     print("Warning: Failed to decode ChatMessage row during loadAllChats grouping: \(row)")
                     continue
