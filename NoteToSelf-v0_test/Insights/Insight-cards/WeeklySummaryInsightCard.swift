@@ -182,7 +182,7 @@ struct WeeklySummaryInsightCard: View {
 
                         // Generation Date
                         if let date = generatedDate {
-                            Text("Generated on \(date.formatted(date: .long, time: .short))")
+                            Text("Generated on \(date.formatted(date: .long, time: .shortened))") // Corrected: .shortened
                                 .font(styles.typography.caption)
                                 .foregroundColor(styles.colors.textSecondary)
                                 .frame(maxWidth: .infinity, alignment: .center)
@@ -200,14 +200,3 @@ struct WeeklySummaryInsightCard: View {
         )
     }
 }
-
-// Helper view for daily entry rows (can be removed if not used in detail view)
-/*
-struct DailyEntryRow: View {
-    let day: Date
-    let entry: JournalEntry?
-    let styles: UIStyles
-
-    // ... (implementation as before) ...
-}
-*/
