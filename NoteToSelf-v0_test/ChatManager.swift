@@ -47,14 +47,18 @@ class ChatManager: ObservableObject {
         // Checks now run directly as we are on MainActor
         resetDailyCountIfNeeded() // Ensure count is up-to-date
 
+        #if !DEBUG // Only enforce limit in Release builds
         let isSubscribed = subscriptionManager.isUserSubscribed
         let currentCount = self.dailyFreeMessageCount
 
         if !isSubscribed && currentCount >= maxFreeMessagesPerDay {
             print("‼️ [ChatPipeline] Daily free message limit reached (\(currentCount)/\(maxFreeMessagesPerDay)). Subscription required.")
             // TODO: Signal UI to show alert
-            return
+            return // Exit early if limit reached in Release build
         }
+        #else
+        print("⚠️ [ChatPipeline] DEBUG build: Bypassing daily free message limit check.")
+        #endif
 
         print("[ChatPipeline] User message received: '\(originalUserMessageText.prefix(50))...'")
 
@@ -62,8 +66,11 @@ class ChatManager: ObservableObject {
         let userMessage = ChatMessage(text: originalUserMessageText, isUser: true)
         addMessageToCurrentChat(userMessage) // Handles UI update and background DB save
 
-        // Increment usage count for free users
-        if !isSubscribed {
+        // Increment usage count for free users (Only if not subscribed - check still relevant even if limit bypassed in debug)
+        if !subscriptionManager.isUserSubscribed {
+            #if DEBUG
+            print("[ChatPipeline] DEBUG: Incrementing daily count (but limit is bypassed).")
+            #endif
             self.dailyFreeMessageCount += 1
             self.updateLastUsageDate()
             print("[ChatPipeline] Daily free message count incremented: \(self.dailyFreeMessageCount)/\(maxFreeMessagesPerDay)")
@@ -191,16 +198,33 @@ class ChatManager: ObservableObject {
         self.chats.sort { $0.lastUpdatedAt > $1.lastUpdatedAt }
 
         // 4. Save to Database (Dispatch to background task)
-        let chatId = self.currentChat.id
+        // **Explicitly copy properties before the task to prevent potential access issues**
+        let chatId = self.currentChat.id    // Copy UUID
+        let messageId = message.id          // Copy UUID
+        let messageText = message.text      // Copy String
+        let isUser = message.isUser         // Copy Bool
+        let messageDate = message.date      // Copy Date
+        let isStarred = message.isStarred   // Copy Bool
+
+        // Create a new message struct instance from copied properties to pass to the task
+        let messageToSave = ChatMessage(
+            id: messageId,
+            text: messageText,
+            isUser: isUser,
+            date: messageDate,
+            isStarred: isStarred
+        )
+
         Task.detached(priority: .background) { [databaseService] in // Capture service
-            print("[ChatDB] Generating embedding & saving message \(message.id) to DB...")
-            let embedding = await generateEmbedding(for: message.text) // Use await
+            // Now use the explicitly copied message (`messageToSave`)
+            print("[ChatDB] Generating embedding & saving message \(messageToSave.id) to DB...") // Access copied ID
+            let embedding = await generateEmbedding(for: messageToSave.text) // Access copied text
             do {
-                // Use captured self explicitly
-                try databaseService.saveChatMessage(message, chatId: chatId, embedding: embedding)
-                print("✅ [ChatDB] Successfully saved message \(message.id) to DB.")
+                // Pass the explicitly copied message struct
+                try databaseService.saveChatMessage(messageToSave, chatId: chatId, embedding: embedding)
+                print("✅ [ChatDB] Successfully saved message \(messageToSave.id) to DB.")
             } catch {
-                print("‼️ [ChatDB] Error saving message \(message.id) to DB: \(error)")
+                print("‼️ [ChatDB] Error saving message \(messageToSave.id) to DB: \(error)")
             }
         }
     }
