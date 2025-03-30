@@ -46,7 +46,7 @@ struct NoteToSelf_v0_testApp: App {
                 .environmentObject(chatManager)
                 .environmentObject(subscriptionManager)
                 .environmentObject(databaseService) // Provide if needed by MainTabView or children
-                // .environmentObject(llmService) // Provide only if needed directly by views
+                .environmentObject(llmService) // Provide LLMService for JournalView trigger
                 .preferredColorScheme(.dark)
                 // Removed onAppear here, data loading triggered from init
         }

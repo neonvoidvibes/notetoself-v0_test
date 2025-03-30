@@ -4,6 +4,7 @@ struct JournalView: View {
     // Environment Objects
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var databaseService: DatabaseService // <-- Inject DatabaseService
+    @EnvironmentObject var llmService: LLMService // <-- Inject LLMService for trigger
 
     // Environment Variables
     @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled
@@ -327,6 +328,11 @@ struct JournalView: View {
                                      expandedEntryId = newEntry.id // Auto-expand
                                  }
                             }
+
+                            // 5. Trigger background insight generation
+                            // Pass required services from environment
+                            await appState.triggerAllInsightGenerations(llmService: llmService, databaseService: databaseService)
+
                         } catch {
                             print("‼️ Error saving new journal entry \(newEntry.id) to DB: \(error)")
                             // Optionally show an error alert to the user here
@@ -347,7 +353,7 @@ struct JournalView: View {
                     }
                 },
                 onDelete: {
-                    deleteEntry(entry) // Needs DB delete logic later
+                    deleteEntry(entry) // Handles DB delete
                 }
             )
         }
@@ -380,6 +386,10 @@ struct JournalView: View {
                             await MainActor.run { // Ensure UI updates are on main actor
                                 updateEntryInAppState(updatedEntry) // Use helper to update AppState
                             }
+
+                             // 5. Trigger background insight generation
+                             await appState.triggerAllInsightGenerations(llmService: llmService, databaseService: databaseService)
+
                         } catch {
                             print("‼️ Error updating journal entry \(updatedEntry.id) in DB: \(error)")
                              // Optionally show an error alert
@@ -387,7 +397,7 @@ struct JournalView: View {
                     } // End Task for embedding/saving
                 },
                 onDelete: {
-                    deleteEntry(entryToEdit) // Needs DB delete logic later
+                    deleteEntry(entryToEdit) // Handles DB delete
                 },
                 autoFocusText: true
             )
@@ -422,7 +432,7 @@ struct JournalView: View {
         }
     }
 
-    // TODO: Modify deleteEntry to also delete from DatabaseService
+    // Delete entry from AppState and Database
     private func deleteEntry(_ entry: JournalEntry) {
         // --- Current AppState Deletion (needs to be on main actor) ---
         Task { @MainActor in // Ensure UI updates run on main actor
@@ -453,10 +463,6 @@ struct JournalView: View {
             }
         }
     }
-
-    // TODO: Modify updateEntry to call saveJournalEntry via DatabaseService (Done inside the .fullScreenCover modifier now)
-    // Remove the old updateEntry function as the logic is now in the onSave closure.
-    // private func updateEntry(_ entry: JournalEntry, newText: String, newMood: Mood, intensity: Int) { ... }
 
 } // End JournalView
 

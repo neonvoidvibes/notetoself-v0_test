@@ -1,4 +1,5 @@
 import SwiftUI // Using SwiftUI for Color and Image, otherwise Foundation is fine
+import Combine // Needed for AppState publisher
 
 // MARK: - Chat Message Model
 struct ChatMessage: Identifiable, Codable, Equatable, Hashable { // Added Equatable & Hashable
@@ -170,7 +171,7 @@ enum Mood: String, CaseIterable, Codable, Hashable { // Added Hashable
          case .neutral: return Color(red: 0.8, green: 0.8, blue: 0.8) // #CCCCCC Light Gray
          }
      }
-    
+
     // Computed property for direct use in SwiftUI Views
     var icon: Image { Image(systemName: systemIconName) }
 
@@ -190,18 +191,66 @@ enum SubscriptionTier: String, Codable, Hashable { // Added Hashable
     var hasAdvancedInsights: Bool { self == .premium }
 }
 
+// MARK: - AI Insight Models (Phase 5)
+
+// Structure for Weekly Summary Insight
+struct WeeklySummaryResult: Codable, Equatable {
+    var mainSummary: String = ""
+    var keyThemes: [String] = []
+    var moodTrend: String = ""
+    var notableQuote: String = ""
+
+    // Example initializer for preview or default state
+    static func empty() -> WeeklySummaryResult {
+        WeeklySummaryResult(mainSummary: "No summary available yet.", keyThemes: [], moodTrend: "N/A", notableQuote: "")
+    }
+}
+
+// Structure for Mood Trend Insight
+struct MoodTrendResult: Codable, Equatable {
+    var overallTrend: String = "Stable" // e.g., "Improving", "Declining", "Stable", "Fluctuating"
+    var dominantMood: String = "Neutral" // Name of the most frequent mood
+    var moodShifts: [String] = [] // e.g., "Shift from Happy to Stressed mid-week"
+    var analysis: String = "" // A short textual analysis
+
+    static func empty() -> MoodTrendResult {
+        MoodTrendResult(overallTrend: "N/A", dominantMood: "N/A", moodShifts: [], analysis: "Not enough data for analysis.")
+    }
+}
+
+// Structure for Recommendation Insight
+struct RecommendationResult: Codable, Equatable {
+    struct RecommendationItem: Codable, Equatable, Identifiable {
+        let id = UUID() // Add identifiable conformance for UI lists
+        var title: String
+        var description: String
+        var category: String // e.g., "Mindfulness", "Activity", "Social"
+        var rationale: String // Why this recommendation is suggested
+    }
+
+    var recommendations: [RecommendationItem] = []
+
+    static func empty() -> RecommendationResult {
+        RecommendationResult(recommendations: [])
+    }
+}
+
 
 // MARK: - App State (Keep if used globally)
 // Note: AppState itself doesn't need Codable unless you save/load it directly
 class AppState: ObservableObject {
     @Published var journalEntries: [JournalEntry] = [] // Now uses the struct defined above
-    // @Published var chatMessages: [ChatMessage] = [] // ChatManager likely handles chats now
     @Published var subscriptionTier: SubscriptionTier = .free // Uses enum defined above
-    @Published var dailyReflectionsUsed: Int = 0 // Tracked by ChatManager now? Review needed.
     @Published var hasSeenOnboarding: Bool = false // Keep for onboarding logic
 
     // Keep canUseReflections logic if needed elsewhere, but ChatManager enforces limit
     let freeReflectionsLimit = 3
+    var dailyReflectionsUsed: Int { // Computed from ChatManager's persisted count
+        // This assumes ChatManager's @AppStorage is the source of truth
+        // We might need a more direct way if ChatManager isn't always loaded
+        @AppStorage("chatDailyFreeMessageCount") var count: Int = 0
+        return count
+    }
     var canUseReflections: Bool {
         return subscriptionTier == .premium || dailyReflectionsUsed < freeReflectionsLimit
     }
@@ -229,9 +278,40 @@ class AppState: ObservableObject {
         return streak
     }
 
-    // Remove loadSampleData if AppState now loads from DatabaseService
-    // func loadSampleData() { ... }
+    // --- Insight Generation Trigger ---
+    // Call this after saving a journal entry
+    func triggerAllInsightGenerations(llmService: LLMService, databaseService: DatabaseService) async {
+        print("[AppState] Triggering background insight generation...")
+
+        // Check subscription status - only generate if premium
+        guard subscriptionTier == .premium else {
+            print("[AppState] Skipping insight generation (Free tier).")
+            return
+        }
+
+        // Create generators (consider dependency injection if AppState gets complex)
+        let summaryGenerator = WeeklySummaryGenerator(llmService: llmService, databaseService: databaseService)
+        let moodTrendGenerator = MoodTrendGenerator(llmService: llmService, databaseService: databaseService)
+        let recommendationGenerator = RecommendationGenerator(llmService: llmService, databaseService: databaseService)
+
+        // Run generators concurrently
+        async let summaryTask: Void = summaryGenerator.generateAndStoreIfNeeded()
+        async let moodTrendTask: Void = moodTrendGenerator.generateAndStoreIfNeeded()
+        async let recommendationTask: Void = recommendationGenerator.generateAndStoreIfNeeded()
+
+        // Await completion (errors are handled within each generator)
+        _ = await [summaryTask, moodTrendTask, recommendationTask]
+
+        print("[AppState] Background insight generation finished.")
+        // Optionally: Post a notification for UI refresh if needed, although InsightsView reloads on appear.
+        // await MainActor.run { NotificationCenter.default.post(name: .insightsUpdated, object: nil) }
+    }
 }
+
+// Notification name for UI updates (optional)
+// extension Notification.Name {
+//     static let insightsUpdated = Notification.Name("insightsUpdated")
+// }
 
 // Helper Color Extension (if not already defined elsewhere, e.g., UIStyles)
 // If UIStyles already defines this, remove it from here.

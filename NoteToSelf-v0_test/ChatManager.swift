@@ -25,12 +25,7 @@ class ChatManager: ObservableObject {
         self.subscriptionManager = subscriptionManager
         self.currentChat = Chat()
 
-        // Load chats synchronously now that ChatManager is @MainActor
-        // This assumes loadChatsFromDB can run reasonably fast or is acceptable on launch.
-        // Alternatively, keep the Task approach but manage loading state.
-        loadChatsFromDBSync() // Changed to sync version for simplicity with @MainActor
-
-        // Call resetDailyCountIfNeeded safely now within the MainActor context
+        loadChatsFromDBSync()
         resetDailyCountIfNeeded()
         print("[ChatManager] Initialized. Daily free messages used: \(dailyFreeMessageCount)")
     }
@@ -44,17 +39,15 @@ class ChatManager: ObservableObject {
             return
         }
 
-        // Checks now run directly as we are on MainActor
-        resetDailyCountIfNeeded() // Ensure count is up-to-date
+        resetDailyCountIfNeeded()
 
-        #if !DEBUG // Only enforce limit in Release builds
+        #if !DEBUG
         let isSubscribed = subscriptionManager.isUserSubscribed
         let currentCount = self.dailyFreeMessageCount
-
         if !isSubscribed && currentCount >= maxFreeMessagesPerDay {
             print("‼️ [ChatPipeline] Daily free message limit reached (\(currentCount)/\(maxFreeMessagesPerDay)). Subscription required.")
-            // TODO: Signal UI to show alert
-            return // Exit early if limit reached in Release build
+            // TODO: Signal UI to show alert (Consider using a Combine publisher or delegate)
+            return
         }
         #else
         print("⚠️ [ChatPipeline] DEBUG build: Bypassing daily free message limit check.")
@@ -62,11 +55,9 @@ class ChatManager: ObservableObject {
 
         print("[ChatPipeline] User message received: '\(originalUserMessageText.prefix(50))...'")
 
-        // 1. Create and save user message (UI update + async DB save)
         let userMessage = ChatMessage(text: originalUserMessageText, isUser: true)
-        addMessageToCurrentChat(userMessage) // Handles UI update and background DB save
+        addMessageToCurrentChat(userMessage)
 
-        // Increment usage count for free users (Only if not subscribed - check still relevant even if limit bypassed in debug)
         if !subscriptionManager.isUserSubscribed {
             #if DEBUG
             print("[ChatPipeline] DEBUG: Incrementing daily count (but limit is bypassed).")
@@ -76,57 +67,89 @@ class ChatManager: ObservableObject {
             print("[ChatPipeline] Daily free message count incremented: \(self.dailyFreeMessageCount)/\(maxFreeMessagesPerDay)")
         }
 
-        self.isTyping = true // Start typing indicator
+        self.isTyping = true
         print("[ChatPipeline] AI processing started.")
 
-        // --- Start Background Task for AI processing ---
+        // Capture necessary dependencies for the Task
+        let dbService = self.databaseService
+        let llmSvc = self.llmService
+
         Task {
-            var contextString = ""
+            var ragContextString = ""
             var retrievalError: Error? = nil
 
-            // --- RAG Context Retrieval & PII Filtering (Re-enabled) ---
+            // --- RAG Context Retrieval ---
             print("[ChatPipeline] Attempting embedding generation for RAG...")
-            let queryEmbedding = await generateEmbedding(for: originalUserMessageText) // Use await
-            if let queryEmbedding = queryEmbedding { // Check the awaited result
-                print("[ChatPipeline] Embedding generated successfully.")
-                print("[ChatPipeline] Attempting RAG context retrieval...")
+            let queryEmbedding = await generateEmbedding(for: originalUserMessageText)
+            if let queryEmbedding = queryEmbedding {
+                print("[ChatPipeline] Embedding generated. Retrieving RAG context...")
                 do {
-                    // Use async let for concurrent database lookups
-                    async let similarEntriesFetch = databaseService.findSimilarJournalEntries(to: queryEmbedding, limit: 3)
-                    async let similarMessagesFetch = databaseService.findSimilarChatMessages(to: queryEmbedding, limit: 5)
+                    // Concurrent lookups
+                    async let similarEntriesFetch = dbService.findSimilarJournalEntries(to: queryEmbedding, limit: 3)
+                    async let similarMessagesFetch = dbService.findSimilarChatMessages(to: queryEmbedding, limit: 5)
+                    async let latestSummaryFetch = dbService.loadLatestInsight(type: "weeklySummary")
+                    async let latestMoodTrendFetch = dbService.loadLatestInsight(type: "moodTrend")
+                    async let latestRecsFetch = dbService.loadLatestInsight(type: "recommendation")
+
 
                     // Await results
                     let entries = try await similarEntriesFetch
                     let messages = try await similarMessagesFetch
-                    print("[ChatPipeline] RAG retrieval success: \(entries.count) entries, \(messages.count) messages.")
+                    let summaryData = try? await latestSummaryFetch // Use try? to ignore errors here
+                    let moodTrendData = try? await latestMoodTrendFetch
+                    let recommendationsData = try? await latestRecsFetch
 
-                    print("[ChatPipeline] Starting PII filtering for context...")
+                    print("[ChatPipeline] RAG retrieval success: \(entries.count) entries, \(messages.count) messages, \(summaryData != nil ? 1 : 0) summary, \(moodTrendData != nil ? 1 : 0) trend, \(recommendationsData != nil ? 1 : 0) recs.")
+
                     var formattedContextItems: [String] = []
 
+                    // Format Journal Entries
                     if !entries.isEmpty {
-                        formattedContextItems.append("Context from past journal entries:")
+                        formattedContextItems.append("Context from recent/relevant journal entries:")
                         for entry in entries {
                             let filteredText = filterPII(text: entry.text)
-                            // Corrected Date Format: Use .numeric for date
-                            formattedContextItems.append("- Entry (\(entry.date.formatted(date: .numeric, time: .omitted)), Mood: \(entry.mood.rawValue)): \(filteredText.prefix(100))...")
+                            formattedContextItems.append("- Entry (\(entry.date.formatted(date: .numeric, time: .omitted)), Mood: \(entry.mood.name)): \(filteredText.prefix(100))...")
                         }
                     }
 
+                    // Format Chat Messages
                     if !messages.isEmpty {
-                        formattedContextItems.append("\nContext from past chat messages:")
+                        formattedContextItems.append("\nContext from recent/relevant chat messages:")
                         for msgTuple in messages.sorted(by: { $0.message.date < $1.message.date }) {
                              let prefix = msgTuple.message.isUser ? "You" : "AI"
                              let filteredText = filterPII(text: msgTuple.message.text)
                              formattedContextItems.append("- \(prefix) (\(msgTuple.message.date.formatted(date: .omitted, time: .shortened))): \(filteredText.prefix(80))...")
                         }
                     }
-                    contextString = formattedContextItems.joined(separator: "\n")
-                    print("[ChatPipeline] PII filtering complete. Context length: \(contextString.count) chars.")
+
+                    // Format AI Insights
+                    var insightContext: [String] = []
+                    let decoder = JSONDecoder()
+
+                    if let (summaryJson, _) = summaryData, let data = summaryJson.data(using: .utf8), let summary = try? decoder.decode(WeeklySummaryResult.self, from: data) {
+                        insightContext.append("Last Weekly Summary: \(summary.mainSummary.prefix(100))... Themes: \(summary.keyThemes.joined(separator: ", ")). Trend: \(summary.moodTrend).")
+                    }
+                     if let (trendJson, _) = moodTrendData, let data = trendJson.data(using: .utf8), let trend = try? decoder.decode(MoodTrendResult.self, from: data) {
+                         insightContext.append("Recent Mood Trend: \(trend.overallTrend). Dominant: \(trend.dominantMood). Analysis: \(trend.analysis.prefix(100))...")
+                     }
+                    if let (recsJson, _) = recommendationsData, let data = recsJson.data(using: .utf8), let recs = try? decoder.decode(RecommendationResult.self, from: data), !recs.recommendations.isEmpty {
+                        let recTitles = recs.recommendations.map { $0.title }.joined(separator: ", ")
+                        insightContext.append("Recent Recommendations: \(recTitles).")
+                    }
+
+                    if !insightContext.isEmpty {
+                        formattedContextItems.append("\nContext from recent AI-generated insights:")
+                        formattedContextItems.append(contentsOf: insightContext.map { "- \($0)" })
+                    }
+
+
+                    ragContextString = formattedContextItems.joined(separator: "\n")
+                    print("[ChatPipeline] PII filtering & context formatting complete. Context length: \(ragContextString.count) chars.")
 
                 } catch {
-                    print("‼️ [ChatPipeline] RAG retrieval failed: \(error)")
-                    retrievalError = error // Store the error
-                    contextString = "" // Ensure context is empty on error
+                    print("‼️ [ChatPipeline] RAG DB retrieval failed: \(error)")
+                    retrievalError = error
+                    ragContextString = ""
                 }
             } else {
                 print("‼️ [ChatPipeline] Embedding generation failed.")
@@ -138,19 +161,17 @@ class ChatManager: ObservableObject {
             let filteredUserMessage = filterPII(text: originalUserMessageText)
             print("[ChatPipeline] PII filtering for user message complete.")
 
-            // If RAG failed, contextString will be empty.
             let finalPrompt = """
-            \(contextString.isEmpty ? "" : "\(contextString)\n\n---\n\n")User: \(filteredUserMessage)
+            \(ragContextString.isEmpty ? "" : "\(ragContextString)\n\n---\n\n")User: \(filteredUserMessage)
             """
-            print("[ChatPipeline] Sending prompt to LLM (Context included: \(contextString.isEmpty ? "No" : "Yes")).") // Indicate if context was added
+            print("[ChatPipeline] Sending prompt to LLM (Context included: \(ragContextString.isEmpty ? "No" : "Yes")).")
 
             // --- Call LLM & Handle Response ---
             var assistantMessage: ChatMessage?
             var llmError: Error?
 
             do {
-                // No need to capture self explicitly here as Task inherits actor context
-                let assistantReplyText = try await llmService.generateChatResponse(
+                let assistantReplyText = try await llmSvc.generateChatResponse(
                     systemPrompt: SystemPrompts.chatAgentPrompt,
                     userMessage: finalPrompt
                 )
@@ -160,20 +181,21 @@ class ChatManager: ObservableObject {
             } catch {
                 print("‼️ [ChatPipeline] LLM Service failed: \(error)")
                 llmError = error
-                assistantMessage = ChatMessage(text: "Sorry, I encountered an error processing your request.", isUser: false, isStarred: true)
+                // Provide a more user-friendly error message
+                let displayError = (error as? LLMService.LLMError)?.localizedDescription ?? "Sorry, I encountered an error."
+                assistantMessage = ChatMessage(text: displayError, isUser: false, isStarred: true) // Star error messages?
             }
 
             // --- Update UI (must switch back to MainActor) ---
             await MainActor.run {
                 if let msg = assistantMessage {
-                    addMessageToCurrentChat(msg) // This is @MainActor, safe to call
+                    addMessageToCurrentChat(msg)
                 }
-                self.isTyping = false // Stop typing indicator
+                self.isTyping = false
                 print("[ChatPipeline] AI processing finished.")
                 if let err = llmError {
                      print("‼️ [ChatPipeline] Final Error State: \(err.localizedDescription)")
                 }
-                 // Log the RAG error if it occurred earlier
                  if let ragErr = retrievalError {
                      print("⚠️ [ChatPipeline] Note: RAG retrieval failed earlier: \(ragErr.localizedDescription)")
                  }
@@ -184,16 +206,13 @@ class ChatManager: ObservableObject {
     /// Internal helper to add a message to the current chat state and save it to the database.
     /// Already marked @MainActor, so UI updates are safe. DB save dispatched.
     private func addMessageToCurrentChat(_ message: ChatMessage) {
-        // 1. Update local state (current chat)
         self.currentChat.messages.append(message)
         self.currentChat.lastUpdatedAt = Date()
 
-        // 2. Generate title
         if self.currentChat.title == "New Chat" && message.isUser && self.currentChat.messages.filter({ $0.isUser }).count == 1 {
             self.currentChat.generateTitle()
         }
 
-        // 3. Update the chat in the main list
         if let index = self.chats.firstIndex(where: { $0.id == self.currentChat.id }) {
             self.chats[index] = self.currentChat
         } else {
@@ -201,30 +220,13 @@ class ChatManager: ObservableObject {
         }
         self.chats.sort { $0.lastUpdatedAt > $1.lastUpdatedAt }
 
-        // 4. Save to Database (Dispatch to background task)
-        // **Explicitly copy properties before the task to prevent potential access issues**
-        let chatId = self.currentChat.id    // Copy UUID
-        let messageId = message.id          // Copy UUID
-        let messageText = message.text      // Copy String
-        let isUser = message.isUser         // Copy Bool
-        let messageDate = message.date      // Copy Date
-        let isStarred = message.isStarred   // Copy Bool
+        let chatId = self.currentChat.id
+        let messageToSave = message // Capture the message itself
 
-        // Create a new message struct instance from copied properties to pass to the task
-        let messageToSave = ChatMessage(
-            id: messageId,
-            text: messageText,
-            isUser: isUser,
-            date: messageDate,
-            isStarred: isStarred
-        )
-
-        Task.detached(priority: .background) { [databaseService] in // Capture service
-            // Now use the explicitly copied message (`messageToSave`)
-            print("[ChatDB] Generating embedding & saving message \(messageToSave.id) to DB...") // Access copied ID
-            let embedding = await generateEmbedding(for: messageToSave.text) // Access copied text
+        Task.detached(priority: .background) { [databaseService] in
+            print("[ChatDB] Generating embedding & saving message \(messageToSave.id) to DB...")
+            let embedding = await generateEmbedding(for: messageToSave.text)
             do {
-                // Pass the explicitly copied message struct
                 try databaseService.saveChatMessage(messageToSave, chatId: chatId, embedding: embedding)
                 print("✅ [ChatDB] Successfully saved message \(messageToSave.id) to DB.")
             } catch {
@@ -236,7 +238,6 @@ class ChatManager: ObservableObject {
 
     // MARK: - Chat Lifecycle Management
 
-    // These are fine on MainActor as they directly modify @Published properties
     func startNewChat() {
         print("[ChatManager] Starting new chat.")
         self.currentChat = Chat()
@@ -256,7 +257,6 @@ class ChatManager: ObservableObject {
              self.currentChat = Chat()
          }
 
-         // Use explicit self capture
          Task.detached(priority: .background) { [databaseService] in
              do {
                  try databaseService.deleteChatFromDB(id: chatIdToDelete)
@@ -286,7 +286,6 @@ class ChatManager: ObservableObject {
               return
          }
 
-         // Use explicit self capture
          Task.detached(priority: .background) { [databaseService] in
               do {
                   try databaseService.deleteMessageFromDB(id: messageIdToDelete)
@@ -308,7 +307,6 @@ class ChatManager: ObservableObject {
             if self.currentChat.id == chat.id { self.currentChat.isStarred = newStarStatus }
 
             let chatId = chat.id
-            // Use explicit self capture
             Task.detached(priority: .background) { [databaseService] in
                 do {
                     try databaseService.toggleChatStarInDB(id: chatId, isStarred: newStarStatus)
@@ -324,7 +322,6 @@ class ChatManager: ObservableObject {
         let messageId = message.id
         var newStarStatus: Bool? = nil
 
-        // Find and update message in local state
         if let msgIdx = self.currentChat.messages.firstIndex(where: { $0.id == messageId }) {
              self.currentChat.messages[msgIdx].isStarred.toggle()
              newStarStatus = self.currentChat.messages[msgIdx].isStarred
@@ -341,10 +338,8 @@ class ChatManager: ObservableObject {
              }
         }
 
-        // If found and toggled, update DB
         if let status = newStarStatus {
             print("[ChatManager] Toggling star for message \(messageId) to \(status)")
-            // Use explicit self capture
             Task.detached(priority: .background) { [databaseService] in
                 do {
                     try databaseService.toggleMessageStarInDB(id: messageId, isStarred: status)
@@ -361,7 +356,6 @@ class ChatManager: ObservableObject {
 
     // MARK: - Data Loading & Grouping
 
-    // Synchronous version for use within @MainActor init
     private func loadChatsFromDBSync() {
         print("[ChatManager] Loading chats synchronously...")
         do {
@@ -380,7 +374,6 @@ class ChatManager: ObservableObject {
         }
     }
 
-    // Group chats by time period (Simplified variable usage)
     func groupChatsByTimePeriod() -> [(String, [Chat])] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
@@ -392,7 +385,6 @@ class ChatManager: ObservableObject {
 
         for chat in chats {
             let chatDate = calendar.startOfDay(for: chat.lastUpdatedAt)
-            // Removed unused chatMonth, currentMonth
             let chatYear = calendar.component(.year, from: chat.lastUpdatedAt)
             let currentYear = calendar.component(.year, from: today)
 
@@ -427,7 +419,6 @@ class ChatManager: ObservableObject {
 
     // MARK: - Daily Usage Reset Logic
 
-    // Marked @MainActor (as class is now) - safe to access @AppStorage
     private func resetDailyCountIfNeeded() {
         let today = Calendar.current.startOfDay(for: Date())
         let lastDate = dateFromString(lastUsageDateString) ?? .distantPast
@@ -439,7 +430,6 @@ class ChatManager: ObservableObject {
         }
     }
 
-    // Marked @MainActor (as class is now) - safe to access @AppStorage
     private func updateLastUsageDate() {
         lastUsageDateString = stringFromDate(Date())
     }

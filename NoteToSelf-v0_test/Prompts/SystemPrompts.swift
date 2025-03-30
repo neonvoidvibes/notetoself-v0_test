@@ -20,8 +20,9 @@ struct SystemPrompts {
     Encourage self-discovery and deeper thinking.
     """
 
-    // Example prompt for generating a weekly summary (used in Phase 5)
-    // Expects filtered entries as input. Instructs JSON output.
+    // --- Insight Generation Prompts (Demand JSON Output) ---
+
+    // Weekly Summary Prompt
     static func weeklySummaryPrompt(entriesContext: String) -> String {
         """
         Analyze the following filtered journal entry snippets from the past week:
@@ -40,6 +41,46 @@ struct SystemPrompts {
         """
     }
 
-    // Add more specific prompts for other insight generators here...
+    // Mood Trend Prompt
+    static func moodTrendPrompt(entriesContext: String) -> String {
+        """
+        Analyze the mood patterns in the following filtered journal entry snippets:
+        ```
+        \(entriesContext.isEmpty ? "No specific entries provided for context." : entriesContext)
+        ```
+        Based ONLY on these snippets, identify the overall mood trend, dominant mood, and any notable shifts.
+        You MUST respond ONLY with a single, valid JSON object matching this exact structure:
+        {
+          "overallTrend": "Categorize the trend as 'Improving', 'Declining', 'Stable', or 'Fluctuating'.",
+          "dominantMood": "Identify the single most frequently mentioned mood name (e.g., 'Happy', 'Stressed'). Use 'Mixed' if no single mood dominates.",
+          "moodShifts": ["List", "any", "notable shifts", "observed, e.g., 'Shift from Happy to Stressed mid-week', 'Consistent Calmness'. Keep descriptions brief (max 10 words). Provide an empty array if no clear shifts."],
+          "analysis": "Provide a very brief (1-2 sentence) interpretation of the observed mood patterns."
+        }
+        Do not include any introductory text, apologies, explanations, code block markers (like ```json), or markdown formatting outside the JSON structure itself. Ensure all string values within the JSON are properly escaped. If the provided context is empty or insufficient, provide default empty values within the JSON structure (e.g., empty strings and arrays).
+        """
+    }
+
+    // Recommendation Prompt
+    static func recommendationPrompt(entriesContext: String) -> String {
+        """
+        Analyze the following filtered journal entry snippets for potential areas of growth or support:
+        ```
+        \(entriesContext.isEmpty ? "No specific entries provided for context." : entriesContext)
+        ```
+        Based ONLY on these snippets, generate 2-3 actionable and personalized recommendations focused on well-being, mindfulness, or self-improvement.
+        You MUST respond ONLY with a single, valid JSON object matching this exact structure:
+        {
+          "recommendations": [
+            {
+              "title": "A short, catchy title for the recommendation (e.g., 'Mindful Morning Moment').",
+              "description": "A concise (1-2 sentence) description of the recommended action.",
+              "category": "Categorize as 'Mindfulness', 'Activity', 'Social', 'Self-Care', or 'Reflection'.",
+              "rationale": "A brief (1 sentence) explanation of why this might be helpful based on inferred themes or moods from the snippets."
+            }
+          ]
+        }
+        Generate between 2 and 3 recommendation items in the array. Do not include any introductory text, apologies, explanations, code block markers (like ```json), or markdown formatting outside the JSON structure itself. Ensure all string values within the JSON are properly escaped. If the context is insufficient to generate recommendations, return an empty recommendations array: `{"recommendations": []}`.
+        """
+    }
 
 }

@@ -4,21 +4,32 @@ import Charts
 struct InsightsView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var chatManager: ChatManager
+    @EnvironmentObject var databaseService: DatabaseService // Inject DatabaseService
     @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled
-    @State private var selectedMonth: Date = Date()
+
+    @State private var selectedMonth: Date = Date() // Keep for potential calendar card re-integration
     @Binding var tabBarOffset: CGFloat
     @Binding var lastScrollPosition: CGFloat
     @Binding var tabBarVisible: Bool
-    
+
+    // State for stored insights
+    @State private var storedWeeklySummary: WeeklySummaryResult? = nil
+    @State private var storedWeeklySummaryDate: Date? = nil
+    @State private var storedMoodTrend: MoodTrendResult? = nil
+    @State private var storedMoodTrendDate: Date? = nil
+    @State private var storedRecommendations: RecommendationResult? = nil
+    @State private var storedRecommendationsDate: Date? = nil
+    @State private var isLoadingInsights: Bool = false
+
     // Access to shared styles
     private let styles = UIStyles.shared
-    
+
     // Check if weekly summary is fresh (generated in the past 24 hours)
     private var isWeeklySummaryFresh: Bool {
-        // For demo purposes, we'll consider it fresh if there's an entry from today
-        return appState.journalEntries.contains { Calendar.current.isDateInToday($0.date) }
+        guard let generatedDate = storedWeeklySummaryDate else { return false }
+        return Calendar.current.dateComponents([.hour], from: generatedDate, to: Date()).hour ?? 25 < 24
     }
-    
+
 var body: some View {
     ZStack {
         styles.colors.appBackground.ignoresSafeArea()
@@ -30,12 +41,12 @@ var body: some View {
                     Text("Insights")
                         .font(styles.typography.title1)
                         .foregroundColor(styles.colors.text)
-                    
+
                     Rectangle()
                         .fill(styles.colors.accent)
                         .frame(width: 20, height: 3)
                 }
-                
+
                 // Menu button on left
                 HStack {
                     Button(action: {
@@ -63,7 +74,7 @@ var body: some View {
             }
             .padding(.top, 8) // Further reduced top padding
             .padding(.bottom, 8)
-            
+
             // Main content in ScrollView
             ScrollView {
                 GeometryReader { geometry in
@@ -73,7 +84,7 @@ var body: some View {
                     )
                 }
                 .frame(height: 0)
-                
+
                 // Inspiring prompt section
                 VStack(alignment: .center, spacing: styles.layout.spacingL) {
                     // Inspiring header with larger font
@@ -81,7 +92,7 @@ var body: some View {
                         .font(styles.typography.headingFont)
                         .foregroundColor(styles.colors.text)
                         .padding(.bottom, 4)
-                    
+
                     // Inspiring quote with larger font
                     Text("Discover patterns, make better choices.")
                         .font(styles.typography.bodyLarge)
@@ -104,74 +115,74 @@ var body: some View {
                         endPoint: .bottom
                     )
                 )
-                
-                VStack(spacing: styles.layout.cardSpacing) {
-                    // TOGGLE FOR SUBSCRIPTION TIER - FOR TESTING ONLY
-                    // Comment out this section when not needed
-                    HStack {
-                        Text("Subscription Mode:")
-                            .font(styles.typography.bodySmall)
-                            .foregroundColor(styles.colors.textSecondary)
-                        
-                        Picker("", selection: $appState.subscriptionTier) {
-                            Text("Free").tag(SubscriptionTier.free)
-                            Text("Premium").tag(SubscriptionTier.premium)
+
+                if isLoadingInsights {
+                    ProgressView("Loading Insights...")
+                        .padding(.vertical, 50)
+                        .tint(styles.colors.accent)
+                } else {
+                    VStack(spacing: styles.layout.cardSpacing) {
+                        // TOGGLE FOR SUBSCRIPTION TIER - FOR TESTING ONLY
+                        // Comment out this section when not needed
+                        HStack {
+                            Text("Subscription Mode:")
+                                .font(styles.typography.bodySmall)
+                                .foregroundColor(styles.colors.textSecondary)
+
+                            Picker("", selection: $appState.subscriptionTier) {
+                                Text("Free").tag(SubscriptionTier.free)
+                                Text("Premium").tag(SubscriptionTier.premium)
+                            }
+                            .pickerStyle(SegmentedPickerStyle())
+                            .frame(width: 200)
                         }
-                        .pickerStyle(SegmentedPickerStyle())
-                        .frame(width: 200)
-                    }
-                    .padding(.horizontal, styles.layout.paddingXL)
-                    .padding(.top, 8)
-                    
-                    // Today's Highlights Section
-                    styles.sectionHeader("Today's Highlights")
-                    
-                    // 1. Streak Card
-                    StreakInsightCard(streak: appState.currentStreak)
                         .padding(.horizontal, styles.layout.paddingXL)
-                    
-                    // Weekly Summary Card
-                    WeeklySummaryInsightCard(entries: appState.journalEntries)
+                        .padding(.top, 8)
+
+                        // Today's Highlights Section
+                        styles.sectionHeader("Today's Highlights")
+
+                        // 1. Streak Card (Uses AppState directly, no AI)
+                        StreakInsightCard(streak: appState.currentStreak)
+                            .padding(.horizontal, styles.layout.paddingXL)
+
+                        // Weekly Summary Card (Uses stored AI result)
+                        WeeklySummaryInsightCard(
+                            summaryResult: storedWeeklySummary,
+                            generatedDate: storedWeeklySummaryDate,
+                            isFresh: isWeeklySummaryFresh
+                        )
                         .padding(.horizontal, styles.layout.paddingXL)
-                    
-                    // Deeper Insights Section
-                    styles.sectionHeader("Deeper Insights")
-                    
-                    // AI Reflection Card
-                    ChatInsightCard()
-                        .padding(.horizontal, styles.layout.paddingXL)
-                        .accessibilityLabel("AI Reflection")
-                    
-                    // Mood Analysis Card
-                    MoodTrendsInsightCard(entries: appState.journalEntries)
+
+
+                        // Deeper Insights Section
+                        styles.sectionHeader("Deeper Insights")
+
+                        // AI Reflection Card (Uses ChatManager directly, no AI insight model)
+                        ChatInsightCard()
+                            .padding(.horizontal, styles.layout.paddingXL)
+                            .accessibilityLabel("AI Reflection")
+
+                        // Mood Analysis Card (Uses stored AI result)
+                        MoodTrendsInsightCard(
+                            trendResult: storedMoodTrend,
+                            generatedDate: storedMoodTrendDate
+                        )
                         .padding(.horizontal, styles.layout.paddingXL)
                         .accessibilityLabel("Mood Analysis")
-                    
-                    // Recommendations Card
-                    RecommendationsInsightCard(entries: appState.journalEntries)
+
+
+                        // Recommendations Card (Uses stored AI result)
+                        RecommendationsInsightCard(
+                            recommendationResult: storedRecommendations,
+                            generatedDate: storedRecommendationsDate
+                        )
                         .padding(.horizontal, styles.layout.paddingXL)
                         .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
-                    
-                    // Hidden cards - commented out but kept for reference
-                    /*
-                    // Calendar Card - integrated with Current Streak
-                    CalendarInsightCard(selectedMonth: $selectedMonth, entries: appState.journalEntries)
-                        .padding(.horizontal, styles.layout.paddingXL)
-                    
-                    // Weekly Insight Card - moved to hide folder
-                    WeeklyInsightCard(entries: appState.journalEntries)
-                        .padding(.horizontal, styles.layout.paddingXL)
-                    
-                    // Writing Consistency Card - moved to hide folder
-                    WritingConsistencyInsightCard(entries: appState.journalEntries)
-                        .padding(.horizontal, styles.layout.paddingXL)
-                    
-                    // Mood Distribution Card - moved to hide folder
-                    MoodDistributionInsightCard(entries: appState.journalEntries)
-                        .padding(.horizontal, styles.layout.paddingXL)
-                    */
-                }
-            }
+
+                    } // End VStack for cards
+                } // End else (isLoadingInsights)
+            } // End ScrollView
             .coordinateSpace(name: "scrollView")
             .disabled(mainScrollingDisabled)
             .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
@@ -187,7 +198,10 @@ var body: some View {
                     lastScrollPosition = value
                 }
             }
-        }
+        } // End VStack
+    } // End body
+    .onAppear {
+        loadStoredInsights()
     }
     .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToTab"))) { notification in
         if let userInfo = notification.userInfo, let tabIndex = userInfo["tabIndex"] as? Int {
@@ -199,539 +213,119 @@ var body: some View {
             )
         }
     }
-}
-}
 
-// MARK: - Streak Card
-
-struct StreakCard: View {
-    let streak: Int
-    
-    // Access to shared styles
-    private let styles = UIStyles.shared
-    
-    var body: some View {
-        styles.card(
-            VStack(spacing: styles.layout.spacingM) {
-                HStack {
-                    Text("Current Streak")
-                        .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
-                    
-                    Spacer()
-                    
-                    Image(systemName: "flame.fill")
-                        .foregroundColor(styles.colors.accent)
-                        .font(.system(size: styles.layout.iconSizeL))
-                }
-                
-                HStack(alignment: .firstTextBaseline) {
-                    Text("\(streak)")
-                        .font(.system(size: 48, weight: .bold, design: .monospaced))
-                        .foregroundColor(styles.colors.text)
-                    
-                    Text(streak == 1 ? "day" : "days")
-                        .font(styles.typography.bodyFont)
-                        .foregroundColor(styles.colors.textSecondary)
-                }
-                
-                Text("Keep up the good work! Consistency is key to building a journaling habit.")
-                    .font(styles.typography.bodySmall)
-                    .foregroundColor(styles.colors.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, styles.layout.spacingS)
-            }
-            .padding(styles.layout.paddingL)
-        )
-        .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
-        .transition(.scale.combined(with: .opacity))
-    }
-}
-
-// MARK: - Monthly Calendar Section
-
-struct MonthlyCalendarSection: View {
-    @Binding var selectedMonth: Date
-    let entries: [JournalEntry]
-    
-    // Access to shared styles
-    private let styles = UIStyles.shared
-    
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
-    private let weekdaySymbols = Calendar.current.veryShortWeekdaySymbols
-    
-    var body: some View {
-        styles.card(
-            VStack(spacing: styles.layout.spacingM) {
-                // Month navigation
-                HStack {
-                    Text("Monthly Activity")
-                        .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
-                    
-                    Spacer()
-                    
-                    HStack(spacing: styles.layout.spacingM) {
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                selectedMonth = Calendar.current.date(byAdding: .month, value: -1, to: selectedMonth)!
-                            }
-                        }) {
-                            Image(systemName: "chevron.left")
-                                .foregroundColor(styles.colors.accent)
-                        }
-                        
-                        Text(monthYearString(from: selectedMonth))
-                            .font(styles.typography.label)
-                            .foregroundColor(styles.colors.text)
-                        
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                selectedMonth = Calendar.current.date(byAdding: .month, value: 1, to: selectedMonth)!
-                            }
-                        }) {
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(styles.colors.accent)
-                        }
-                    }
-                }
-                
-                // Weekday headers
-                LazyVGrid(columns: columns, spacing: 8) {
-                    ForEach(weekdaySymbols, id: \.self) { symbol in
-                        Text(symbol)
-                            .font(styles.typography.caption)
-                            .foregroundColor(styles.colors.textSecondary)
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                
-                // Calendar days
-                LazyVGrid(columns: columns, spacing: 8) {
-                    ForEach(daysInMonth(), id: \.self) { day in
-                        if day.day != 0 {
-                            CalendarDayView(day: day, entries: entries)
-                                .transition(.scale.combined(with: .opacity))
-                        } else {
-                            // Empty cell for days not in this month
-                            Color.clear
-                                .frame(height: 40)
-                        }
-                    }
-                }
-            }
-            .padding(styles.layout.paddingL)
-        )
-        .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
-    }
-    
-    private func monthYearString(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: date)
-    }
-    
-    private func daysInMonth() -> [CalendarDay] {
-        let calendar = Calendar.current
-        
-        // Get the first day of the month
-        let components = calendar.dateComponents([.year, .month], from: selectedMonth)
-        let firstDayOfMonth = calendar.date(from: components)!
-        
-        // Get the weekday of the first day (0 = Sunday, 1 = Monday, etc.)
-        let firstWeekday = calendar.component(.weekday, from: firstDayOfMonth)
-        
-        // Get the number of days in the month
-        let range = calendar.range(of: .day, in: .month, for: firstDayOfMonth)!
-        let numDays = range.count
-        
-        var days: [CalendarDay] = []
-        
-        // Add empty cells for days before the first day of the month
-        for _ in 1..<firstWeekday {
-            days.append(CalendarDay(day: 0, date: Date()))
+    // --- Data Loading ---
+    private func loadStoredInsights() {
+        guard appState.subscriptionTier == .premium else {
+             print("[InsightsView] Skipping insight loading (Free tier).")
+             // Clear any previously loaded insights if user downgrades
+             storedWeeklySummary = nil
+             storedMoodTrend = nil
+             storedRecommendations = nil
+             storedWeeklySummaryDate = nil
+             storedMoodTrendDate = nil
+             storedRecommendationsDate = nil
+             return
         }
-        
-        // Add cells for each day of the month
-        for day in 1...numDays {
-            let date = calendar.date(byAdding: .day, value: day - 1, to: firstDayOfMonth)!
-            days.append(CalendarDay(day: day, date: date))
-        }
-        
-        return days
-    }
-}
 
-struct CalendarDay: Hashable {
-    let day: Int
-    let date: Date
-}
+        Task {
+            isLoadingInsights = true
+            print("[InsightsView] Loading stored insights from DB...")
 
-struct CalendarDayView: View {
-    let day: CalendarDay
-    let entries: [JournalEntry]
-    
-    // Access to shared styles
-    private let styles = UIStyles.shared
-    
-    private var hasEntry: Bool {
-        let calendar = Calendar.current
-        return entries.contains { entry in
-            calendar.isDate(entry.date, inSameDayAs: day.date)
-        }
-    }
-    
-    private var entryMood: Mood? {
-        let calendar = Calendar.current
-        return entries.first { entry in
-            calendar.isDate(entry.date, inSameDayAs: day.date)
-        }?.mood
-    }
-    
-    private var isToday: Bool {
-        Calendar.current.isDateInToday(day.date)
-    }
-    
-    var body: some View {
-        ZStack {
-            // Background circle with subtle gradient for depth
-            if hasEntry {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(
-                                colors: [
-                                    entryMood?.color.opacity(0.4) ?? styles.colors.accent.opacity(0.4),
-                                    entryMood?.color.opacity(0.2) ?? styles.colors.accent.opacity(0.2)
-                                ]
-                            ),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 40, height: 40)
-            }
-            
-            if isToday {
-                Circle()
-                    .stroke(
-                        LinearGradient(
-                            gradient: Gradient(
-                                colors: [
-                                    styles.colors.accent,
-                                    styles.colors.accent.opacity(0.7)
-                                ]
-                            ),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 2
-                    )
-                    .frame(width: 40, height: 40)
-            }
-            
-            Text("\(day.day)")
-                .font(styles.typography.bodyFont)
-                .foregroundColor(hasEntry ? styles.colors.text : styles.colors.textSecondary)
-        }
-        .frame(height: 40)
-    }
-}
+            async let summaryDataFetch = databaseService.loadLatestInsight(type: "weeklySummary")
+            async let moodTrendDataFetch = databaseService.loadLatestInsight(type: "moodTrend")
+            async let recommendationsDataFetch = databaseService.loadLatestInsight(type: "recommendation")
 
-// MARK: - Mood Chart Section
+            // Await results
+            let summaryData = await summaryDataFetch
+            let moodTrendData = await moodTrendDataFetch
+            let recommendationsData = await recommendationsDataFetch
 
-struct MoodChartSection: View {
-    let entries: [JournalEntry]
-    
-    // Access to shared styles
-    private let styles = UIStyles.shared
-    
-    private var lastTwoWeeksEntries: [JournalEntry] {
-        let calendar = Calendar.current
-        let twoWeeksAgo = calendar.date(byAdding: .day, value: -14, to: Date())!
-        
-        return entries
-            .filter { $0.date >= twoWeeksAgo }
-            .sorted { $0.date < $1.date }
-    }
-    
-    private var moodData: [MoodDataPoint] {
-        let calendar = Calendar.current
-        var result: [MoodDataPoint] = []
-        
-        // Create a dictionary to group entries by day
-        var entriesByDay: [Date: JournalEntry] = [:]
-        
-        for entry in lastTwoWeeksEntries {
-            let day = calendar.startOfDay(for: entry.date)
-            entriesByDay[day] = entry
-        }
-        
-        // Fill in the last 14 days
-        for dayOffset in (0..<14).reversed() {
-            let date = calendar.date(byAdding: .day, value: -dayOffset, to: calendar.startOfDay(for: Date()))!
-            let entry = entriesByDay[date]
-            
-            let moodValue: Double
-            if let entry = entry {
-                switch entry.mood {
-                case .happy: moodValue = 4
-                case .excited: moodValue = 5
-                case .neutral: moodValue = 3
-                case .stressed: moodValue = 2
-                case .sad: moodValue = 1
-                default: moodValue = 3 // Default to neutral for other moods
+            // Process Weekly Summary
+            if let (json, date) = try? summaryData {
+                if let data = json.data(using: .utf8),
+                   let decoded = try? JSONDecoder().decode(WeeklySummaryResult.self, from: data) {
+                    storedWeeklySummary = decoded
+                    storedWeeklySummaryDate = date
+                    print("[InsightsView] Loaded Weekly Summary (Generated: \(date.formatted()))")
+                } else {
+                    print("⚠️ [InsightsView] Failed to decode Weekly Summary JSON.")
+                    storedWeeklySummary = WeeklySummaryResult.empty() // Show empty state
+                    storedWeeklySummaryDate = nil
                 }
             } else {
-                moodValue = 0 // No entry for this day
+                 print("[InsightsView] No stored Weekly Summary found.")
+                 storedWeeklySummary = nil // Ensure it's nil if not found
+                 storedWeeklySummaryDate = nil
             }
-            
-            result.append(MoodDataPoint(date: date, value: moodValue))
+
+            // Process Mood Trend
+             if let (json, date) = try? moodTrendData {
+                 if let data = json.data(using: .utf8),
+                    let decoded = try? JSONDecoder().decode(MoodTrendResult.self, from: data) {
+                     storedMoodTrend = decoded
+                     storedMoodTrendDate = date
+                     print("[InsightsView] Loaded Mood Trend (Generated: \(date.formatted()))")
+                 } else {
+                     print("⚠️ [InsightsView] Failed to decode Mood Trend JSON.")
+                     storedMoodTrend = MoodTrendResult.empty()
+                     storedMoodTrendDate = nil
+                 }
+             } else {
+                  print("[InsightsView] No stored Mood Trend found.")
+                  storedMoodTrend = nil
+                  storedMoodTrendDate = nil
+             }
+
+            // Process Recommendations
+             if let (json, date) = try? recommendationsData {
+                 if let data = json.data(using: .utf8),
+                    let decoded = try? JSONDecoder().decode(RecommendationResult.self, from: data) {
+                     storedRecommendations = decoded
+                     storedRecommendationsDate = date
+                     print("[InsightsView] Loaded Recommendations (Generated: \(date.formatted()))")
+                 } else {
+                     print("⚠️ [InsightsView] Failed to decode Recommendations JSON.")
+                     storedRecommendations = RecommendationResult.empty()
+                     storedRecommendationsDate = nil
+                 }
+             } else {
+                  print("[InsightsView] No stored Recommendations found.")
+                  storedRecommendations = nil
+                  storedRecommendationsDate = nil
+             }
+
+
+            isLoadingInsights = false
+            print("[InsightsView] Finished loading insights.")
         }
-        
-        return result
-    }
-    
-    private func formattedMoodText(_ mood: Mood, intensity: Int = 2) -> String {
-        switch intensity {
-        case 1: return "Slightly \(mood.name)"
-        case 3: return "Very \(mood.name)"
-        default: return mood.name
-        }
-    }
-    
-    var body: some View {
-        styles.card(
-            VStack(spacing: styles.layout.spacingM) {
-                HStack {
-                    Text("Mood Trends")
-                        .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
-                    
-                    Spacer()
-                }
-                
-                if #available(iOS 16.0, *) {
-                    Chart {
-                        ForEach(moodData, id: \.date) { dataPoint in
-                            if dataPoint.value > 0 {
-                                LineMark(
-                                    x: .value("Date", dataPoint.date),
-                                    y: .value("Mood", dataPoint.value)
-                                )
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [styles.colors.accent, styles.colors.accent.opacity(0.7)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round))
-                                
-                                PointMark(
-                                    x: .value("Date", dataPoint.date),
-                                    y: .value("Mood", dataPoint.value)
-                                )
-                                .foregroundStyle(styles.colors.accent)
-                                .symbolSize(30)
-                            }
-                        }
-                    }
-                    .chartYScale(domain: 1...5)
-                    .chartYAxis {
-                        AxisMarks(values: [1, 2, 3, 4, 5]) { value in
-                            AxisValueLabel {
-                                switch value.index {
-                                case 0: Text("Sad").font(styles.typography.caption)
-                                case 1: Text("Anxious").font(styles.typography.caption)
-                                case 2: Text("Neutral").font(styles.typography.caption)
-                                case 3: Text("Happy").font(styles.typography.caption)
-                                case 4: Text("Excited").font(styles.typography.caption)
-                                default: Text("")
-                                }
-                            }
-                        }
-                    }
-                    .chartXAxis {
-                        AxisMarks(values: .stride(by: .day, count: 2)) { value in
-                            AxisValueLabel {
-                                if let date = value.as(Date.self) {
-                                    Text(formatDate(date))
-                                        .font(styles.typography.caption)
-                                }
-                            }
-                        }
-                    }
-                    .frame(height: 200)
-                } else {
-                    // Fallback for iOS 15
-                    Text("Mood chart requires iOS 16 or later")
-                        .font(styles.typography.bodyFont)
-                        .foregroundColor(styles.colors.textSecondary)
-                        .frame(height: 200)
-                        .frame(maxWidth: .infinity)
-                }
-                
-                Text("Track your mood patterns over time to identify trends and triggers.")
-                    .font(styles.typography.bodySmall)
-                    .foregroundColor(styles.colors.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, styles.layout.spacingS)
-            }
-            .padding(styles.layout.paddingL)
-        )
-        .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
-    }
-    
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d MMM"
-        return formatter.string(from: date)
     }
 }
 
-struct MoodDataPoint {
-    let date: Date
-    let value: Double
-}
-
-// MARK: - Advanced Analytics Section (Subscription Gated)
-
-struct AdvancedAnalyticsSection: View {
-    let subscriptionTier: SubscriptionTier
-    
-    // Access to shared styles
-    private let styles = UIStyles.shared
-    
-    var body: some View {
-        styles.card(
-            ZStack {
-                VStack(spacing: styles.layout.spacingM) {
-                    HStack {
-                        Text("Advanced Analytics")
-                            .font(styles.typography.title3)
-                            .foregroundColor(styles.colors.text)
-                        
-                        Spacer()
-                    }
-                    
-                    HStack(spacing: styles.layout.spacingL) {
-                        AnalyticItem(
-                            icon: "brain.head.profile",
-                            title: "Mood Prediction",
-                            value: "87%"
-                        )
-                        
-                        AnalyticItem(
-                            icon: "text.magnifyingglass",
-                            title: "Top Topics",
-                            value: "Work, Health"
-                        )
-                        
-                        AnalyticItem(
-                            icon: "chart.bar.fill",
-                            title: "Sentiment",
-                            value: "+12%"
-                        )
-                    }
-                    
-                    Text("Unlock deeper insights with advanced analytics to better understand your patterns and improve your well-being.")
-                        .font(styles.typography.bodySmall)
-                        .foregroundColor(styles.colors.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.top, styles.layout.spacingS)
-                }
-                .padding(styles.layout.paddingL)
-                .blur(radius: subscriptionTier == .premium ? 0 : 3)
-                
-                if subscriptionTier != .premium {
-                    VStack(spacing: styles.layout.spacingM) {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 32))
-                            .foregroundColor(styles.colors.accent)
-                        
-                        Text("Premium Feature")
-                            .font(styles.typography.title3)
-                            .foregroundColor(styles.colors.text)
-                        
-                        Button("Upgrade") {
-                            // Show subscription options
-                        }
-                        .buttonStyle(UIStyles.PrimaryButtonStyle(
-                            colors: styles.colors,
-                            typography: styles.typography,
-                            layout: styles.layout
-                        ))
-                        .frame(width: 150)
-                    }
-                    .padding(styles.layout.paddingL)
-                    .background(
-                        RoundedRectangle(cornerRadius: styles.layout.radiusL)
-                            .fill(styles.colors.surface.opacity(0.9))
-                            .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 10)
-                    )
-                }
-            }
-        )
-        .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
-    }
-}
-
-struct AnalyticItem: View {
-    let icon: String
-    let title: String
-    let value: String
-    
-    // Access to shared styles
-    private let styles = UIStyles.shared
-    
-    var body: some View {
-        VStack(spacing: styles.layout.spacingS) {
-            Image(systemName: icon)
-                .font(.system(size: styles.layout.iconSizeL))
-                .foregroundColor(styles.colors.accent)
-            
-            Text(value)
-                .font(styles.typography.bodyFont)
-                .foregroundColor(styles.colors.text)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
-// MARK: - Corrected Preview Provider (Paste this at the end of InsightsView.swift)
+// --- Preview Provider (Updated) ---
 struct InsightsView_Previews: PreviewProvider {
-    // Create static instances needed for the preview environment
-    // Use @StateObject for ObservableObjects that the preview manages
     @StateObject static var databaseService = DatabaseService()
-    // LLMService is likely a singleton, access directly
     static var llmService = LLMService.shared
-    @StateObject static var subscriptionManager = SubscriptionManager.shared // Singleton ObservableObject
+    @StateObject static var subscriptionManager = SubscriptionManager.shared
     @StateObject static var appState = AppState()
-
-    // Initialize ChatManager within the preview scope, passing dependencies
-    // Use static vars for dependencies to ensure they exist when ChatManager is created
     @StateObject static var chatManager = ChatManager(
         databaseService: databaseService,
-        llmService: llmService, // Pass the static instance
+        llmService: llmService,
         subscriptionManager: subscriptionManager
     )
 
     static var previews: some View {
-        // Use a container to handle async data loading for the preview
         PreviewDataLoadingContainer {
-            // The actual view being previewed
             InsightsView(
                 tabBarOffset: .constant(0),
                 lastScrollPosition: .constant(0),
                 tabBarVisible: .constant(true)
             )
-            // Provide all necessary environment objects that InsightsView and its children might need
             .environmentObject(appState)
             .environmentObject(chatManager)
-            .environmentObject(databaseService) // Pass if any card needs it directly
+            .environmentObject(databaseService)
             .environmentObject(subscriptionManager)
+            .environmentObject(llmService) // Provide LLMService if needed by generators later
         }
     }
 
@@ -740,32 +334,26 @@ struct InsightsView_Previews: PreviewProvider {
         @ViewBuilder let content: Content
         @State private var isLoading = true
 
-        // No need for @ObservedObject here, access static properties directly in loadData
-
         var body: some View {
             Group {
                 if isLoading {
                     ProgressView("Loading Preview Data...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(UIStyles.shared.colors.appBackground) // Match background
+                        .background(UIStyles.shared.colors.appBackground)
                         .onAppear {
-                            // Perform data loading when the container appears
                             Task {
                                 await loadData()
-                                isLoading = false // Mark loading as complete
+                                isLoading = false
                             }
                         }
                 } else {
-                    // Render the actual content once loading is done
                     content
                 }
             }
         }
 
-        // Async function to load data using the static instances from the outer scope
         func loadData() async {
              print("Preview: Starting data load...")
-             // Access static properties directly from the enclosing type
              let dbService = InsightsView_Previews.databaseService
              let state = InsightsView_Previews.appState
              let chatMgr = InsightsView_Previews.chatManager
@@ -780,21 +368,24 @@ struct InsightsView_Previews: PreviewProvider {
                  let chats = try dbService.loadAllChats()
                  await MainActor.run {
                      chatMgr.chats = chats
-                     // Set currentChat for preview state consistency
                      if let firstChat = chats.first {
                          chatMgr.currentChat = firstChat
-                         print("Preview: Set ChatManager currentChat to ID \(firstChat.id)")
                      } else {
-                          chatMgr.currentChat = Chat() // Ensure it's a valid empty chat
-                          print("Preview: No chats found, ChatManager currentChat is new.")
+                          chatMgr.currentChat = Chat()
                      }
                  }
                  print("Preview: Loaded \(chats.count) chats into ChatManager")
 
+                 // Optionally: Pre-populate some dummy insights for preview
+                 // let dummySummary = WeeklySummaryResult(...)
+                 // let encoder = JSONEncoder()
+                 // if let data = try? encoder.encode(dummySummary), let json = String(data: data, encoding: .utf8) {
+                 //    try? await dbService.saveGeneratedInsight(type: "weeklySummary", date: Date(), jsonData: json)
+                 // }
+
+
              } catch {
                  print("‼️ Preview data loading error: \(error)")
-                 // Optionally load static sample data into appState/chatManager on error
-                 // await MainActor.run { /* load sample data */ }
              }
              print("Preview: Data loading finished.")
         }
