@@ -3,8 +3,7 @@ import SwiftUI
 struct JournalView: View {
     // Environment Objects
     @EnvironmentObject var appState: AppState
-    @EnvironmentObject var databaseService: DatabaseService // <-- Inject DatabaseService
-    // REMOVED: @EnvironmentObject var llmService: LLMService
+    @EnvironmentObject var databaseService: DatabaseService
 
     // Environment Variables
     @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled
@@ -32,10 +31,8 @@ struct JournalView: View {
     // Access to shared styles
     private let styles = UIStyles.shared
 
-    // Computed property to filter the journal entries (remains the same)
+    // Computed property to filter the journal entries
     private var filteredEntries: [JournalEntry] {
-        // For now, this still filters the in-memory AppState array.
-        // Later, this could be replaced by a database query if AppState stops holding all entries.
         appState.journalEntries.filtered(
             by: searchTags,
             moods: selectedMoods,
@@ -45,7 +42,7 @@ struct JournalView: View {
         )
     }
 
-    // Function to clear filters (remains the same)
+    // Function to clear filters
     private func clearFilters(closePanel: Bool = false) {
         searchText = ""
         searchTags = []
@@ -67,7 +64,7 @@ struct JournalView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Header (remains the same)
+                // Header
                 ZStack(alignment: .center) {
                     // Title truly centered
                     VStack(spacing: 8) {
@@ -85,18 +82,12 @@ struct JournalView: View {
                         Button(action: {
                             NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
                         }) {
-                            VStack(spacing: 6) { // Increased spacing between bars
+                            VStack(spacing: 6) {
                                 HStack {
-                                    Rectangle()
-                                        .fill(styles.colors.accent)
-                                        .frame(width: 28, height: 2) // Top bar - slightly longer
-                                    Spacer()
+                                    Rectangle().fill(styles.colors.accent).frame(width: 28, height: 2); Spacer()
                                 }
                                 HStack {
-                                    Rectangle()
-                                        .fill(styles.colors.accent)
-                                        .frame(width: 20, height: 2) // Bottom bar (shorter)
-                                    Spacer()
+                                    Rectangle().fill(styles.colors.accent).frame(width: 20, height: 2); Spacer()
                                 }
                             }
                             .frame(width: 36, height: 36)
@@ -120,7 +111,7 @@ struct JournalView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 8)
 
-                // Filter panel (remains the same)
+                // Filter panel
                 if showingFilterPanel {
                     FilterPanel(
                         searchText: $searchText,
@@ -136,12 +127,9 @@ struct JournalView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
-                // Journal entries list (remains mostly the same, uses filteredEntries)
+                // Journal entries list
                 ScrollViewReader { scrollProxy in
                     ScrollView {
-                        // ScrollView content (Inspiring prompt, No Matching Entries, LazyVStack)
-                        // ... (existing code for ScrollView content) ...
-                        // This part doesn't change significantly yet, as it still reads from AppState
                          GeometryReader { geometry in
                              Color.clear.preference(
                                  key: ScrollOffsetPreferenceKey.self,
@@ -150,7 +138,7 @@ struct JournalView: View {
                          }
                          .frame(height: 0)
 
-                         // Inspiring prompt - only show when there are filtered entries and filter panel is closed
+                         // Inspiring prompt
                          if !appState.journalEntries.isEmpty && !filteredEntries.isEmpty && !showingFilterPanel {
                              VStack(alignment: .center, spacing: styles.layout.spacingL) {
                                  Text("My Journal")
@@ -169,40 +157,33 @@ struct JournalView: View {
                              .frame(maxWidth: .infinity)
                              .background(
                                  LinearGradient(
-                                     gradient: Gradient(colors: [
-                                         styles.colors.appBackground,
-                                         styles.colors.appBackground.opacity(0.9)
-                                     ]),
+                                     gradient: Gradient(colors: [styles.colors.appBackground, styles.colors.appBackground.opacity(0.9)]),
                                      startPoint: .top,
                                      endPoint: .bottom
                                  )
                              )
                          }
 
+                         // Entry List / Empty State
                          if filteredEntries.isEmpty {
                            VStack(alignment: .center, spacing: 16) {
                                if !searchTags.isEmpty || !selectedMoods.isEmpty || dateFilterType != .all {
-                                   Text("No Matching Entries") // ... existing no results view
+                                   Text("No Matching Entries")
                                         .font(styles.typography.bodyFont)
                                         .foregroundColor(styles.colors.text)
                                         .padding(.top, 60)
-
                                    Text("Try adjusting your filters")
                                        .font(styles.typography.bodySmall)
                                        .foregroundColor(styles.colors.textSecondary)
-
-                                   Button("Clear Filters") {
-                                       clearFilters(closePanel: true)
-                                   }
+                                   Button("Clear Filters") { clearFilters(closePanel: true) }
                                    .font(styles.typography.bodyFont)
                                    .foregroundColor(styles.colors.accent)
                                    .padding(.top, 8)
                                } else {
-                                   Text("No journal entries yet.") // ... existing empty state view
+                                   Text("No journal entries yet.")
                                        .font(styles.typography.headingFont)
                                        .foregroundColor(styles.colors.text)
                                        .padding(.top, 60)
-
                                    Text("Tap the + button to add your first entry.")
                                        .font(styles.typography.bodyFont)
                                        .foregroundColor(styles.colors.textSecondary)
@@ -214,11 +195,9 @@ struct JournalView: View {
                          } else {
                              LazyVStack(spacing: styles.layout.radiusM) {
                                  let groupedEntries = JournalDateGrouping.groupEntriesByTimePeriod(filteredEntries)
-
                                  ForEach(groupedEntries, id: \.0) { section, entries in
                                      DateGroupSectionHeader(title: section)
                                          .id("header-\(section)")
-
                                      ForEach(entries) { entry in
                                          JournalEntryCard(
                                              entry: entry,
@@ -228,9 +207,7 @@ struct JournalView: View {
                                                      expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
                                                  }
                                              },
-                                             onExpand: {
-                                                 fullscreenEntry = entry
-                                             }
+                                             onExpand: { fullscreenEntry = entry }
                                          )
                                          .transition(.opacity.combined(with: .move(edge: .top)))
                                      }
@@ -246,13 +223,8 @@ struct JournalView: View {
                         let scrollingDown = value < lastScrollPosition
                         if abs(value - lastScrollPosition) > 10 {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                if scrollingDown {
-                                    tabBarOffset = 100
-                                    tabBarVisible = false
-                                } else {
-                                    tabBarOffset = 0
-                                    tabBarVisible = true
-                                }
+                                if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
+                                else { tabBarOffset = 0; tabBarVisible = true }
                             }
                             lastScrollPosition = value
                         }
@@ -265,32 +237,20 @@ struct JournalView: View {
                 } // End ScrollViewReader
             } // End VStack
 
-            // Floating add button (remains the same)
+            // Floating add button
             VStack {
                 Spacer()
                 HStack {
                     Spacer()
-                    Button(action: {
-                        showingNewEntrySheet = true
-                    }) {
+                    Button(action: { showingNewEntrySheet = true }) {
                         Image(systemName: "plus")
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(styles.colors.appBackground)
                             .frame(width: 60, height: 60)
                             .background(
                                 ZStack {
-                                    Circle()
-                                        .fill(styles.colors.accent)
-
-                                    Circle()
-                                        .fill(
-                                            LinearGradient(
-                                                gradient: Gradient(colors: [Color.white.opacity(0.3), Color.clear]),
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            )
-                                        )
-                                        .padding(2)
+                                    Circle().fill(styles.colors.accent)
+                                    Circle().fill(LinearGradient(gradient: Gradient(colors: [Color.white.opacity(0.3), Color.clear]), startPoint: .topLeading, endPoint: .bottomTrailing)).padding(2)
                                 }
                             )
                             .shadow(color: styles.colors.accent.opacity(0.2), radius: 8, x: 0, y: 4)
@@ -303,170 +263,99 @@ struct JournalView: View {
             }
         } // End ZStack
         .fullScreenCover(isPresented: $showingNewEntrySheet) {
-            // *** MODIFIED onSave for NEW entries ***
             EditableFullscreenEntryView(
                 initialMood: .neutral,
                 onSave: { text, mood, intensity in
-                    // 1. Create the new entry object
                     let newEntry = JournalEntry(text: text, mood: mood, date: Date(), intensity: intensity)
-
-                    // 2. Generate embedding asynchronously & Save to Database
                     Task {
-                        print("[JournalView] Generating embedding for new entry...")
                         let embeddingVector = await generateEmbedding(for: newEntry.text)
-
-                        // 3. Save to Database (handle errors)
                         do {
                             try databaseService.saveJournalEntry(newEntry, embedding: embeddingVector)
-                            print("✅ Successfully saved new journal entry \(newEntry.id) to DB.")
-
-                            // 4. *Only if DB save succeeds*, update AppState UI
-                            await MainActor.run { // Ensure UI updates are on main actor
+                            await MainActor.run {
                                  withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                                     // Prepend to keep newest first
                                      appState.journalEntries.insert(newEntry, at: 0)
-                                     expandedEntryId = newEntry.id // Auto-expand
+                                     expandedEntryId = newEntry.id
                                  }
                             }
-
-                            // 5. Trigger background insight generation
-                            // Access LLMService singleton directly
-                            await appState.triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService)
-
+                            // Call global trigger function
+                            await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, subscriptionTier: appState.subscriptionTier)
                         } catch {
                             print("‼️ Error saving new journal entry \(newEntry.id) to DB: \(error)")
-                            // Optionally show an error alert to the user here
                         }
-                    } // End Task for embedding/saving
+                    }
                 },
                 autoFocusText: true
             )
         }
         .fullScreenCover(item: $fullscreenEntry) { entry in
-            // View existing entry (no changes needed here)
             FullscreenEntryView(
                 entry: entry,
                 onEdit: {
                     fullscreenEntry = nil
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        editingEntry = entry
-                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { editingEntry = entry }
                 },
-                onDelete: {
-                    deleteEntry(entry) // Handles DB delete
-                }
+                onDelete: { deleteEntry(entry) }
             )
         }
         .fullScreenCover(item: $editingEntry) { entryToEdit in
-             // *** MODIFIED onSave for EDITING entries ***
             EditableFullscreenEntryView(
                 entry: entryToEdit,
                 onSave: { updatedText, updatedMood, updatedIntensity in
-                    // 1. Create the updated entry object
-                    // Keep original ID and Date
-                     let updatedEntry = JournalEntry(
-                         id: entryToEdit.id,
-                         text: updatedText,
-                         mood: updatedMood,
-                         date: entryToEdit.date, // Keep original date
-                         intensity: updatedIntensity
-                     )
-
-                    // 2. Generate embedding asynchronously & Save updated entry to Database
+                     let updatedEntry = JournalEntry(id: entryToEdit.id, text: updatedText, mood: updatedMood, date: entryToEdit.date, intensity: updatedIntensity)
                     Task {
-                         print("[JournalView] Generating embedding for updated entry...")
                          let embeddingVector = await generateEmbedding(for: updatedEntry.text)
-
-                        // 3. Save updated entry to Database (handle errors)
                         do {
                             try databaseService.saveJournalEntry(updatedEntry, embedding: embeddingVector)
-                            print("✅ Successfully updated journal entry \(updatedEntry.id) in DB.")
-
-                            // 4. *Only if DB save succeeds*, update AppState UI
-                            await MainActor.run { // Ensure UI updates are on main actor
-                                updateEntryInAppState(updatedEntry) // Use helper to update AppState
-                            }
-
-                             // 5. Trigger background insight generation
-                             await appState.triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService)
-
+                            await MainActor.run { updateEntryInAppState(updatedEntry) }
+                            // Call global trigger function
+                            await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, subscriptionTier: appState.subscriptionTier)
                         } catch {
                             print("‼️ Error updating journal entry \(updatedEntry.id) in DB: \(error)")
-                             // Optionally show an error alert
                         }
-                    } // End Task for embedding/saving
+                    }
                 },
-                onDelete: {
-                    deleteEntry(entryToEdit) // Handles DB delete
-                },
+                onDelete: { deleteEntry(entryToEdit) },
                 autoFocusText: true
             )
         }
         .onAppear {
-             // Load initial data from DB? (Deferred for now)
-            // The existing logic only expands the first in-memory entry
             if expandedEntryId == nil, let firstEntry = appState.journalEntries.first {
                 expandedEntryId = firstEntry.id
             }
         }
     } // End Body
 
-    // MARK: - Helper Functions (Modify these later for DB operations)
+    // MARK: - Helper Functions
 
-    // Helper function to update entry in AppState (used by editing save)
-    // Ensure this is called on the main actor
     @MainActor
     private func updateEntryInAppState(_ updatedEntry: JournalEntry) {
         if let index = appState.journalEntries.firstIndex(where: { $0.id == updatedEntry.id }) {
-            withAnimation {
-                appState.journalEntries[index] = updatedEntry
-            }
-            // Update fullscreen/editing state if necessary
-            if fullscreenEntry?.id == updatedEntry.id {
-                fullscreenEntry = updatedEntry
-            }
-            // We assume editingEntry is dismissed automatically by the sheet closing
+            withAnimation { appState.journalEntries[index] = updatedEntry }
+            if fullscreenEntry?.id == updatedEntry.id { fullscreenEntry = updatedEntry }
         } else {
              print("Warning: Tried to update entry \(updatedEntry.id) in AppState, but not found.")
-             // Maybe append it if somehow missing? Or reload from DB?
         }
     }
 
-    // Delete entry from AppState and Database
     private func deleteEntry(_ entry: JournalEntry) {
-        // --- Current AppState Deletion (needs to be on main actor) ---
-        Task { @MainActor in // Ensure UI updates run on main actor
+        Task { @MainActor in
             if let index = appState.journalEntries.firstIndex(where: { $0.id == entry.id }) {
-                _ = withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    appState.journalEntries.remove(at: index)
-                }
+                _ = withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { appState.journalEntries.remove(at: index) }
             }
-             // Clear UI state
             if fullscreenEntry?.id == entry.id { fullscreenEntry = nil }
             if editingEntry?.id == entry.id { editingEntry = nil }
         }
-
-        // --- Delete from Database ---
-        Task.detached(priority: .background) { // Run DB delete in the background
+        Task.detached(priority: .background) {
             do {
-                try databaseService.deleteJournalEntry(id: entry.id) // Call the DB service method
+                try databaseService.deleteJournalEntry(id: entry.id)
                 print("✅ Successfully deleted journal entry \(entry.id) from DB.")
             } catch {
                 print("‼️ Error deleting journal entry \(entry.id) from DB: \(error)")
-                // --- Error Handling Strategy ---
-                // If DB delete fails, the UI already removed the item.
-                // Option 1: Do nothing (UI and DB are out of sync). Not ideal.
-                // Option 2: Show an error alert to the user (needs main actor).
-                // Option 3 (Complex): Try to re-insert the item into AppState to match DB.
-                // For now, just log the error. Consider adding user feedback later.
-                // await MainActor.run { /* Show alert */ }
             }
         }
     }
 
 } // End JournalView
-
-// ScrollOffsetPreferenceKey and JournalEntryCard remain the same for now...
 
 // ... (Keep existing ScrollOffsetPreferenceKey and JournalEntryCard structs) ...
 

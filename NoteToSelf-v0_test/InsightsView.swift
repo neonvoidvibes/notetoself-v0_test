@@ -233,17 +233,22 @@ struct InsightsView: View {
             isLoadingInsights = true
             print("[InsightsView] Loading stored insights from DB...")
 
-            async let summaryDataFetch = databaseService.loadLatestInsight(type: "weeklySummary")
-            async let moodTrendDataFetch = databaseService.loadLatestInsight(type: "moodTrend")
-            async let recommendationsDataFetch = databaseService.loadLatestInsight(type: "recommendation")
+            // Wrap DB calls in a Task to run them off the main thread
+             async let summaryDataFetch: (jsonData: String, generatedDate: Date)? = try databaseService.loadLatestInsight(type: "weeklySummary")
+             async let moodTrendDataFetch: (jsonData: String, generatedDate: Date)? = try databaseService.loadLatestInsight(type: "moodTrend")
+             async let recommendationsDataFetch: (jsonData: String, generatedDate: Date)? = try databaseService.loadLatestInsight(type: "recommendation")
+
 
             // Await results
-            let summaryData = await summaryDataFetch
-            let moodTrendData = await moodTrendDataFetch
-            let recommendationsData = await recommendationsDataFetch
+            // Use try await here as the async let itself can throw if the underlying task throws
+            let summaryData = try? await summaryDataFetch
+            let moodTrendData = try? await moodTrendDataFetch
+            let recommendationsData = try? await recommendationsDataFetch
+
 
             // Process Weekly Summary
-            if let (json, date) = try? summaryData {
+            // Remove try? from result variable access
+            if let (json, date) = summaryData {
                 if let data = json.data(using: .utf8),
                    let decoded = try? JSONDecoder().decode(WeeklySummaryResult.self, from: data) {
                     storedWeeklySummary = decoded
@@ -261,7 +266,8 @@ struct InsightsView: View {
             }
 
             // Process Mood Trend
-             if let (json, date) = try? moodTrendData {
+             // Remove try? from result variable access
+             if let (json, date) = moodTrendData {
                  if let data = json.data(using: .utf8),
                     let decoded = try? JSONDecoder().decode(MoodTrendResult.self, from: data) {
                      storedMoodTrend = decoded
@@ -279,7 +285,8 @@ struct InsightsView: View {
              }
 
             // Process Recommendations
-             if let (json, date) = try? recommendationsData {
+             // Remove try? from result variable access
+             if let (json, date) = recommendationsData {
                  if let data = json.data(using: .utf8),
                     let decoded = try? JSONDecoder().decode(RecommendationResult.self, from: data) {
                      storedRecommendations = decoded
@@ -326,7 +333,7 @@ struct InsightsView_Previews: PreviewProvider {
             .environmentObject(chatManager)
             .environmentObject(databaseService)
             .environmentObject(subscriptionManager)
-            .environmentObject(llmService) // Provide LLMService if needed by generators later
+            // REMOVED: .environmentObject(llmService)
         }
     }
 
@@ -376,14 +383,6 @@ struct InsightsView_Previews: PreviewProvider {
                      }
                  }
                  print("Preview: Loaded \(chats.count) chats into ChatManager")
-
-                 // Optionally: Pre-populate some dummy insights for preview
-                 // let dummySummary = WeeklySummaryResult(...)
-                 // let encoder = JSONEncoder()
-                 // if let data = try? encoder.encode(dummySummary), let json = String(data: data, encoding: .utf8) {
-                 //    try? await dbService.saveGeneratedInsight(type: "weeklySummary", date: Date(), jsonData: json)
-                 // }
-
 
              } catch {
                  print("‼️ Preview data loading error: \(error)")

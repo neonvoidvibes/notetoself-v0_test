@@ -21,7 +21,7 @@ struct InsightDetail: Identifiable {
   let id = UUID()
   let type: InsightType
   let title: String
-  let data: Any
+  let data: Any // Data can be different types depending on the insight
 }
 
 extension InsightDetail: Equatable {
@@ -34,22 +34,22 @@ extension InsightDetail: Equatable {
 
 struct HiddenFeatureDetailContent: View {
     let title: String
-    
+
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "lock.fill")
                 .font(.system(size: 60))
                 .foregroundColor(.gray)
                 .padding(.bottom, 10)
-            
+
             Text("Premium Feature")
                 .font(.title)
                 .fontWeight(.bold)
-            
+
             Text("\(title) is currently available only in premium version")
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-            
+
             Text("This feature will be available in a future update.")
                 .foregroundColor(.gray)
                 .padding(.top, 5)
@@ -63,46 +63,71 @@ struct HiddenFeatureDetailContent: View {
 
 struct InsightDetailView: View {
   let insight: InsightDetail
-  let entries: [JournalEntry]
+  let entries: [JournalEntry] // Keep entries for context if needed by some detail views
   @Environment(\.presentationMode) var presentationMode
-  
+
   private let styles = UIStyles.shared
-  
+
   var body: some View {
+      // Use NavigationView or NavigationStack based on deployment target
       NavigationView {
           ZStack {
               styles.colors.appBackground.ignoresSafeArea()
-              
+
               // Content based on insight type
               Group {
                   switch insight.type {
                   case .streak:
-                      StreakDetailContent(streak: insight.data as! Int)
+                      // Assuming data is Int
+                      if let streak = insight.data as? Int {
+                          StreakDetailContent(streak: streak)
+                      } else {
+                          Text("Error: Invalid streak data")
+                      }
                   case .calendar:
-                      CalendarDetailContent(selectedMonth: insight.data as! Date, entries: entries)
+                       // Assuming data is Date
+                       if let month = insight.data as? Date {
+                            CalendarDetailContent(selectedMonth: month, entries: entries)
+                       } else {
+                           Text("Error: Invalid calendar data")
+                       }
                   case .moodTrends:
+                      // MoodTrendsDetailContent uses entries directly
                       MoodTrendsDetailContent(entries: entries)
                   case .writingConsistency:
+                      // WritingConsistencyDetailContent uses entries directly
                       WritingConsistencyDetailContent(entries: entries)
                   case .moodDistribution:
-                      MoodDistributionDetailContent(entries: entries)
+                       // MoodDistributionDetailContent uses entries directly
+                       MoodDistributionDetailContent(entries: entries)
                   case .wordCount:
-                      // Placeholder for hidden feature
                       HiddenFeatureDetailContent(title: "Word Count Analysis")
                   case .topicAnalysis:
-                      // Placeholder for hidden feature
                       HiddenFeatureDetailContent(title: "Topic Analysis")
                   case .sentimentAnalysis:
-                      // Placeholder for hidden feature
                       HiddenFeatureDetailContent(title: "Sentiment Analysis")
                   case .journalEntry:
-                      JournalEntryDetailContent(entry: insight.data as! JournalEntry)
+                      // Assuming data is JournalEntry
+                      if let entry = insight.data as? JournalEntry {
+                          JournalEntryDetailContent(entry: entry)
+                      } else {
+                           Text("Error: Invalid journal entry data")
+                      }
                   case .weeklySummary:
-                      WeeklySummaryDetailContent(entries: entries)
+                       // WeeklySummaryDetailContent uses entries directly
+                       WeeklySummaryDetailContent(entries: entries)
                   case .weeklyPatterns:
-                      WeeklyPatternsDetailContent(entries: entries)
+                        // WeeklyPatternsDetailContent uses entries directly
+                        WeeklyPatternsDetailContent(entries: entries)
                   case .recommendations:
-                      RecommendationsDetailContent(recommendations: insight.data as! [Recommendation])
+                       // Assuming data is RecommendationResult
+                       if let result = insight.data as? RecommendationResult {
+                            RecommendationsDetailContent(recommendations: result.recommendations)
+                       } else {
+                            // Fallback if data isn't RecommendationResult, maybe show empty state
+                            RecommendationsDetailContent(recommendations: []) // Pass empty array
+                            // Or: Text("Error: Invalid recommendations data")
+                       }
                   }
               }
           }
@@ -117,4 +142,3 @@ struct InsightDetailView: View {
       }
   }
 }
-

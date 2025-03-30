@@ -20,8 +20,6 @@ enum DatabaseError: Error {
 }
 
 // --- Service Class Definition ---
-
-// Removed @MainActor - DB operations should happen in background.
 class DatabaseService: ObservableObject {
     // MARK: - Properties
     private let db: Database // Libsql Database object
@@ -47,10 +45,6 @@ class DatabaseService: ObservableObject {
             self.db = tempDb
             self.connection = tempConnection
 
-            // Run schema setup synchronously during init
-            // Use Task to ensure it runs off the main thread if init is on main.
-            // However, init itself might not be on main. Let's keep it simple for now.
-            // Consider async init pattern if setup becomes slow.
              try setupSchemaAndIndexes()
              print("Schema and index setup sequence completed successfully.")
 
@@ -65,35 +59,35 @@ class DatabaseService: ObservableObject {
         print("Setting up database schema and indexes...")
         do {
             // JournalEntries Table
-            _ = try self.connection.execute( // Ignore unused result
+            _ = try self.connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS JournalEntries (
                     id TEXT PRIMARY KEY, text TEXT NOT NULL, mood TEXT NOT NULL,
                     date INTEGER NOT NULL, intensity INTEGER NOT NULL,
-                    embedding FLOAT32(\(self.embeddingDimension)) /* Corrected Type */
+                    embedding FLOAT32(\(self.embeddingDimension))
                 );
                 """
             )
             // ChatMessages Table
-            _ = try self.connection.execute( // Ignore unused result
+            _ = try self.connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS ChatMessages (
                     id TEXT PRIMARY KEY, chatId TEXT NOT NULL, text TEXT NOT NULL,
                     isUser INTEGER NOT NULL, date INTEGER NOT NULL, isStarred INTEGER NOT NULL,
-                    embedding FLOAT32(\(self.embeddingDimension)) /* Corrected Type */
+                    embedding FLOAT32(\(self.embeddingDimension))
                 );
                 """
             )
-            // GeneratedInsights Table (Added in Phase 5)
-             _ = try self.connection.execute( // Ignore unused result
+            // GeneratedInsights Table
+             _ = try self.connection.execute(
                  """
                  CREATE TABLE IF NOT EXISTS GeneratedInsights (
-                     id TEXT PRIMARY KEY,             -- Unique ID for the insight entry (e.g., UUID)
-                     insightType TEXT UNIQUE NOT NULL, -- Type identifier (e.g., "weeklySummary", "moodTrend") - UNIQUE ensures only one latest per type
-                     generatedDate INTEGER NOT NULL,    -- Unix timestamp when generated
-                     relatedStartDate INTEGER,        -- Optional: Start date of data used (e.g., week start)
-                     relatedEndDate INTEGER,          -- Optional: End date of data used (e.g., week end)
-                     jsonData TEXT NOT NULL             -- The generated insight as a JSON string
+                     id TEXT PRIMARY KEY,
+                     insightType TEXT UNIQUE NOT NULL,
+                     generatedDate INTEGER NOT NULL,
+                     relatedStartDate INTEGER,
+                     relatedEndDate INTEGER,
+                     jsonData TEXT NOT NULL
                  );
                  """
              )
@@ -101,18 +95,18 @@ class DatabaseService: ObservableObject {
             print("Database tables checked/created.")
 
             // Journal Entry Index
-            _ = try self.connection.execute( // Ignore unused result
+            _ = try self.connection.execute(
                 """
                 CREATE INDEX IF NOT EXISTS journal_embedding_idx
                 ON JournalEntries( libsql_vector_idx(embedding) );
-                """ // Dimension inferred from FLOAT32(512) column type
+                """
             )
             // Chat Message Index
-            _ = try self.connection.execute( // Ignore unused result
+            _ = try self.connection.execute(
                 """
                 CREATE INDEX IF NOT EXISTS chat_embedding_idx
                 ON ChatMessages( libsql_vector_idx(embedding) );
-                """ // Dimension inferred from FLOAT32(512) column type
+                """
             )
             print("Vector indexes checked/created.")
 
@@ -135,7 +129,7 @@ class DatabaseService: ObservableObject {
                  params = [.text(entry.id.uuidString), .text(entry.text), .text(entry.mood.rawValue),
                            .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity))]
                  guard params.count == 5 else { throw DatabaseError.saveDataFailed("Param count mismatch (JE/NoEmbed/JSONFail)") }
-                 _ = try self.connection.execute(sql, params) // Ignore unused result
+                 _ = try self.connection.execute(sql, params)
                  return
             }
             let safeEmbJSON = embJSON.replacingOccurrences(of: "'", with: "''")
@@ -154,13 +148,13 @@ class DatabaseService: ObservableObject {
                       .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity))]
             guard params.count == 5 else { throw DatabaseError.saveDataFailed("Param count mismatch (JE/NoEmbed)") }
         }
-        _ = try self.connection.execute(sql, params) // Ignore unused result
+        _ = try self.connection.execute(sql, params)
     }
 
     func deleteJournalEntry(id: UUID) throws {
         let sql = "DELETE FROM JournalEntries WHERE id = ?;"
         let params: [Value] = [.text(id.uuidString)]
-        _ = try self.connection.execute(sql, params) // Ignore unused result
+        _ = try self.connection.execute(sql, params)
         print("Attempted delete for JournalEntry ID: \(id.uuidString)")
     }
 
@@ -236,7 +230,7 @@ class DatabaseService: ObservableObject {
                            .integer(message.isUser ? 1 : 0), .integer(Int64(message.date.timeIntervalSince1970)),
                            .integer(message.isStarred ? 1 : 0)]
                  guard params.count == 6 else { throw DatabaseError.saveDataFailed("Param count mismatch (CM/NoEmbed/JSONFail)") }
-                 _ = try self.connection.execute(sql, params) // Ignore unused result
+                 _ = try self.connection.execute(sql, params)
                  return
             }
             let safeEmbJSON = embJSON.replacingOccurrences(of: "'", with: "''")
@@ -257,38 +251,35 @@ class DatabaseService: ObservableObject {
                        .integer(message.isStarred ? 1 : 0)]
               guard params.count == 6 else { throw DatabaseError.saveDataFailed("Param count mismatch (CM/NoEmbed)") }
          }
-        _ = try self.connection.execute(sql, params) // Ignore unused result
+        _ = try self.connection.execute(sql, params)
     }
 
     func deleteChatFromDB(id: UUID) throws {
         let sql = "DELETE FROM ChatMessages WHERE chatId = ?;"
         let params: [Value] = [.text(id.uuidString)]
-        _ = try self.connection.execute(sql, params) // Ignore unused result
+        _ = try self.connection.execute(sql, params)
         print("Attempted delete for all messages in Chat ID: \(id.uuidString)")
-        // TODO: If a separate Chats table is added, delete the chat metadata row too.
     }
 
     func deleteMessageFromDB(id: UUID) throws {
         let sql = "DELETE FROM ChatMessages WHERE id = ?;"
         let params: [Value] = [.text(id.uuidString)]
-        _ = try self.connection.execute(sql, params) // Ignore unused result
+        _ = try self.connection.execute(sql, params)
         print("Attempted delete for ChatMessage ID: \(id.uuidString)")
     }
 
     func toggleChatStarInDB(id: UUID, isStarred: Bool) throws {
         let sql = "UPDATE ChatMessages SET isStarred = ? WHERE chatId = ?;"
         let params: [Value] = [.integer(isStarred ? 1 : 0), .text(id.uuidString)]
-        _ = try self.connection.execute(sql, params) // Ignore unused result
+        _ = try self.connection.execute(sql, params)
         print("Attempted toggle star (\(isStarred)) for all messages in Chat ID: \(id.uuidString)")
-         // TODO: If a separate Chats table is added, update the chat metadata row too.
     }
 
     func toggleMessageStarInDB(id: UUID, isStarred: Bool) throws {
         let sql = "UPDATE ChatMessages SET isStarred = ? WHERE id = ?;"
         let params: [Value] = [.integer(isStarred ? 1 : 0), .text(id.uuidString)]
-        _ = try self.connection.execute(sql, params) // Ignore unused result
+        _ = try self.connection.execute(sql, params)
         print("Attempted toggle star (\(isStarred)) for ChatMessage ID: \(id.uuidString)")
-        // TODO: If a separate Chats table is added, potentially update the chat's overall star status if any message is starred.
     }
 
     func findSimilarChatMessages(to queryVector: [Float], limit: Int = 5) throws -> [(message: ChatMessage, chatId: UUID)] {
@@ -386,19 +377,19 @@ class DatabaseService: ObservableObject {
         ]
 
         print("[DB Insight] Saving insight of type '\(type)'...")
-        _ = try self.connection.execute(sql, params) // Ignore unused result
+        _ = try self.connection.execute(sql, params)
         print("✅ [DB Insight] Saved insight type '\(type)'.")
     }
 
 
     /// Loads the most recently generated insight JSON string for a specific type.
-    func loadLatestInsight(type: String) async throws -> (jsonData: String, generatedDate: Date)? {
+    /// NOTE: This is a synchronous function. Callers should dispatch to a background thread.
+    func loadLatestInsight(type: String) throws -> (jsonData: String, generatedDate: Date)? {
         let sql = "SELECT jsonData, generatedDate FROM GeneratedInsights WHERE insightType = ?;"
         let params: [Value] = [.text(type)]
 
         print("[DB Insight] Loading latest insight of type '\(type)'...")
-        // Use try await for async query
-        let rows = try await self.connection.query(sql, params) // Assuming query can be async
+        let rows = try self.connection.query(sql, params) // Synchronous call
 
         // Iterate through rows, process the first one found
         for row in rows {
@@ -420,14 +411,13 @@ class DatabaseService: ObservableObject {
 
 
      /// Updates the timestamp of an existing insight without changing its data.
-     /// Useful for generators that skip regeneration but want to mark it as "checked".
-     func updateInsightTimestamp(type: String, date: Date) async throws {
+     /// NOTE: This is a synchronous function. Callers should dispatch to a background thread.
+     func updateInsightTimestamp(type: String, date: Date) throws {
          let sql = "UPDATE GeneratedInsights SET generatedDate = ? WHERE insightType = ?;"
          let params: [Value] = [.integer(Int64(date.timeIntervalSince1970)), .text(type)]
 
          print("[DB Insight] Updating timestamp for insight type '\(type)'...")
-         // Execute returns Int64 (rows affected)
-         let affectedRows = try await self.connection.execute(sql, params) // Assuming execute can be async
+         let affectedRows = try self.connection.execute(sql, params) // Synchronous call
 
          if affectedRows > 0 {
              print("✅ [DB Insight] Timestamp updated for insight type '\(type)'.")

@@ -251,12 +251,17 @@ struct MoodDataPoint: Identifiable {
 }
 
 // Defined here for global access
+// Note: This 'Recommendation' struct might conflict with RecommendationResult.RecommendationItem
+// Let's rename this one or remove it if RecommendationResult.RecommendationItem is sufficient.
+// Removing this one as RecommendationResult.RecommendationItem serves the purpose.
+/*
 struct Recommendation: Identifiable {
     let id = UUID()
     let title: String
     let description: String
     let icon: String
 }
+*/
 
 
 // MARK: - App State (Keep if used globally)
@@ -301,43 +306,8 @@ class AppState: ObservableObject {
         return streak
     }
 
-    // --- Insight Generation Trigger ---
-    // Call this after saving a journal entry
-    func triggerAllInsightGenerations(llmService: LLMService, databaseService: DatabaseService) async {
-        print("[AppState] Triggering background insight generation...")
-
-        // Check subscription status - only generate if premium
-        guard subscriptionTier == .premium else {
-            print("[AppState] Skipping insight generation (Free tier).")
-            return
-        }
-
-        // Create generators (consider dependency injection if AppState gets complex)
-        let summaryGenerator = WeeklySummaryGenerator(llmService: llmService, databaseService: databaseService)
-        let moodTrendGenerator = MoodTrendGenerator(llmService: llmService, databaseService: databaseService)
-        let recommendationGenerator = RecommendationGenerator(llmService: llmService, databaseService: databaseService)
-
-        // Run generators concurrently in detached tasks so they don't block the caller
-        Task.detached(priority: .background) {
-            await summaryGenerator.generateAndStoreIfNeeded()
-        }
-        Task.detached(priority: .background) {
-            await moodTrendGenerator.generateAndStoreIfNeeded()
-        }
-        Task.detached(priority: .background) {
-             await recommendationGenerator.generateAndStoreIfNeeded()
-        }
-
-        print("[AppState] Background insight generation tasks launched.")
-        // Optionally: Post a notification for UI refresh if needed, although InsightsView reloads on appear.
-        // await MainActor.run { NotificationCenter.default.post(name: .insightsUpdated, object: nil) }
-    }
+    // REMOVED triggerAllInsightGenerations function - moved to InsightUtils.swift
 }
-
-// Notification name for UI updates (optional)
-// extension Notification.Name {
-//     static let insightsUpdated = Notification.Name("insightsUpdated")
-// }
 
 // Helper Color Extension (if not already defined elsewhere, e.g., UIStyles)
 // If UIStyles already defines this, remove it from here.
