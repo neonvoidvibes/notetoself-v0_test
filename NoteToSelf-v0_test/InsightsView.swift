@@ -12,23 +12,22 @@ struct InsightsView: View {
     @Binding var lastScrollPosition: CGFloat
     @Binding var tabBarVisible: Bool
 
-    // State for stored insights
-    @State private var storedWeeklySummary: WeeklySummaryResult? = nil
-    @State private var storedWeeklySummaryDate: Date? = nil
-    @State private var storedMoodTrend: MoodTrendResult? = nil
-    @State private var storedMoodTrendDate: Date? = nil
-    @State private var storedRecommendations: RecommendationResult? = nil
-    @State private var storedRecommendationsDate: Date? = nil
-    @State private var isLoadingInsights: Bool = false // Keep loading state
+    // State for stored raw insight data
+    @State private var summaryJson: String? = nil
+    @State private var summaryDate: Date? = nil
+    @State private var trendJson: String? = nil
+    @State private var trendDate: Date? = nil
+    @State private var recommendationsJson: String? = nil
+    @State private var recommendationsDate: Date? = nil
+    @State private var isLoadingInsights: Bool = false
 
     private let styles = UIStyles.shared
 
     private var isWeeklySummaryFresh: Bool {
-        guard let generatedDate = storedWeeklySummaryDate else { return false }
+        guard let generatedDate = summaryDate else { return false }
         return Calendar.current.dateComponents([.hour], from: generatedDate, to: Date()).hour ?? 25 < 24
     }
 
-    // Computed property to check if the user has any entries at all
     private var hasAnyEntries: Bool {
         !appState.journalEntries.isEmpty
     }
@@ -64,7 +63,7 @@ struct InsightsView: View {
                         Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: geometry.frame(in: .named("scrollView")).minY)
                     }.frame(height: 0)
 
-                    // Initial Empty State (if no entries at all)
+                    // Initial Empty State or Content
                     if !hasAnyEntries {
                         VStack(spacing: styles.layout.spacingL) {
                             Spacer(minLength: 100)
@@ -83,28 +82,22 @@ struct InsightsView: View {
                         }
                         .padding(.vertical, 50)
                     } else {
-                        // Regular Content (Header + Cards)
+                        // Regular Content Header
                         VStack(alignment: .center, spacing: styles.layout.spacingL) {
                             Text("My Insights")
-                                .font(styles.typography.headingFont)
-                                .foregroundColor(styles.colors.text)
-                                .padding(.bottom, 4)
+                                .font(styles.typography.headingFont).foregroundColor(styles.colors.text).padding(.bottom, 4)
                             Text("Discover patterns, make better choices.")
-                                .font(styles.typography.bodyLarge)
-                                .foregroundColor(styles.colors.accent)
-                                .multilineTextAlignment(.center)
+                                .font(styles.typography.bodyLarge).foregroundColor(styles.colors.accent).multilineTextAlignment(.center)
                         }
                         .padding(.horizontal, styles.layout.paddingXL)
                         .padding(.vertical, styles.layout.spacingXL * 1.5)
-                        .padding(.top, 80)
-                        .padding(.bottom, 40)
+                        .padding(.top, 80).padding(.bottom, 40)
                         .frame(maxWidth: .infinity)
-                        .background(
-                            LinearGradient(gradient: Gradient(colors: [styles.colors.appBackground, styles.colors.appBackground.opacity(0.9)]), startPoint: .top, endPoint: .bottom)
-                        )
+                        .background(LinearGradient(gradient: Gradient(colors: [styles.colors.appBackground, styles.colors.appBackground.opacity(0.9)]), startPoint: .top, endPoint: .bottom))
 
                         // Loading Indicator or Cards
-                        if isLoadingInsights {
+                        if isLoadingInsights && summaryJson == nil && trendJson == nil && recommendationsJson == nil {
+                            // Show loading only on initial load when everything is nil
                             ProgressView("Loading Insights...")
                                 .padding(.vertical, 50)
                                 .tint(styles.colors.accent)
@@ -113,18 +106,15 @@ struct InsightsView: View {
                                 // Subscription Tier Toggle (for testing)
                                 #if DEBUG
                                 HStack {
-                                    Text("Subscription Mode:")
-                                        .font(styles.typography.bodySmall)
-                                        .foregroundColor(styles.colors.textSecondary)
+                                    Text("Sub:").font(styles.typography.bodySmall).foregroundColor(styles.colors.textSecondary)
                                     Picker("", selection: $appState.subscriptionTier) {
                                         Text("Free").tag(SubscriptionTier.free)
                                         Text("Premium").tag(SubscriptionTier.premium)
                                     }
-                                    .pickerStyle(SegmentedPickerStyle())
-                                    .frame(width: 200)
+                                    .pickerStyle(SegmentedPickerStyle()).frame(width: 150) // Smaller picker
+                                    Spacer()
                                 }
-                                .padding(.horizontal, styles.layout.paddingXL)
-                                .padding(.top, 8)
+                                .padding(.horizontal, styles.layout.paddingXL).padding(.top, 8)
                                 #endif
 
                                 // Today's Highlights Section
@@ -134,12 +124,12 @@ struct InsightsView: View {
                                 StreakInsightCard(streak: appState.currentStreak)
                                     .padding(.horizontal, styles.layout.paddingXL)
 
-                                // Weekly Summary Card
+                                // Weekly Summary Card (Pass raw data)
                                 WeeklySummaryInsightCard(
-                                    summaryResult: storedWeeklySummary,
-                                    generatedDate: storedWeeklySummaryDate,
+                                    jsonString: summaryJson,
+                                    generatedDate: summaryDate,
                                     isFresh: isWeeklySummaryFresh,
-                                    subscriptionTier: appState.subscriptionTier // Pass tier
+                                    subscriptionTier: appState.subscriptionTier
                                 )
                                 .padding(.horizontal, styles.layout.paddingXL)
 
@@ -151,31 +141,32 @@ struct InsightsView: View {
                                     .padding(.horizontal, styles.layout.paddingXL)
                                     .accessibilityLabel("AI Reflection")
 
-                                // Mood Analysis Card
+                                // Mood Analysis Card (Pass raw data)
                                 MoodTrendsInsightCard(
-                                    trendResult: storedMoodTrend,
-                                    generatedDate: storedMoodTrendDate,
-                                    subscriptionTier: appState.subscriptionTier // Pass tier
+                                    jsonString: trendJson,
+                                    generatedDate: trendDate,
+                                    subscriptionTier: appState.subscriptionTier
                                 )
                                 .padding(.horizontal, styles.layout.paddingXL)
                                 .accessibilityLabel("Mood Analysis")
 
-                                // Recommendations Card
+                                // Recommendations Card (Pass raw data)
                                 RecommendationsInsightCard(
-                                    recommendationResult: storedRecommendations,
-                                    generatedDate: storedRecommendationsDate,
-                                    subscriptionTier: appState.subscriptionTier // Pass tier
+                                    jsonString: recommendationsJson,
+                                    generatedDate: recommendationsDate,
+                                    subscriptionTier: appState.subscriptionTier
                                 )
                                 .padding(.horizontal, styles.layout.paddingXL)
                                 .padding(.bottom, styles.layout.paddingXL + 80)
 
                             } // End VStack for cards
-                        } // End else (isLoadingInsights)
+                        } // End else (isLoadingInsights or has data)
                     } // End else (hasAnyEntries)
                 } // End ScrollView
                 .coordinateSpace(name: "scrollView")
                 .disabled(mainScrollingDisabled)
                 .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                    // Scroll handling logic (unchanged)
                     let scrollingDown = value < lastScrollPosition
                     if abs(value - lastScrollPosition) > 10 {
                         if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
@@ -188,10 +179,16 @@ struct InsightsView: View {
         .onAppear {
             loadStoredInsights()
         }
-        // Add listener for insight updates
         .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
              print("[InsightsView] Received insightsDidUpdate notification. Reloading insights.")
-             loadStoredInsights()
+             // Only set loading state briefly if we already have some data,
+             // otherwise let the cards handle their own loading appearance.
+             if summaryJson != nil || trendJson != nil || recommendationsJson != nil {
+                 // Maybe a very short loading flash? Or just let cards update.
+                 // For now, just reload without setting isLoadingInsights = true
+                 // isLoadingInsights = true // Optional: Briefly show global loading
+             }
+             loadStoredInsights() // Reload data
          }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToTab"))) { notification in
             if let userInfo = notification.userInfo, let tabIndex = userInfo["tabIndex"] as? Int {
@@ -202,70 +199,49 @@ struct InsightsView: View {
 
     // --- Data Loading ---
     private func loadStoredInsights() {
-        // Don't skip loading based on tier here, let cards handle display logic
-        // guard appState.subscriptionTier == .premium else { ... }
+        // Set loading true only if NO data exists yet
+        if summaryJson == nil && trendJson == nil && recommendationsJson == nil {
+            isLoadingInsights = true
+        }
+        print("[InsightsView] Loading stored insights from DB...")
 
         Task {
-            isLoadingInsights = true // Set loading state
-            print("[InsightsView] Loading stored insights from DB...")
-
             // Run DB calls in background task
             let summaryResult = await Task.detached { try? self.databaseService.loadLatestInsight(type: "weeklySummary") }.value
             let moodTrendResult = await Task.detached { try? self.databaseService.loadLatestInsight(type: "moodTrend") }.value
             let recommendationsResult = await Task.detached { try? self.databaseService.loadLatestInsight(type: "recommendation") }.value
 
-            // Process results back on main thread
+            // Update state back on main thread
             await MainActor.run {
-                // Process Weekly Summary
                 if let (json, date) = summaryResult {
-                    if let data = json.data(using: .utf8), let decoded = try? JSONDecoder().decode(WeeklySummaryResult.self, from: data) {
-                        storedWeeklySummary = decoded
-                        storedWeeklySummaryDate = date
-                        print("[InsightsView] Loaded Weekly Summary (Generated: \(date.formatted()))")
-                    } else {
-                        print("⚠️ [InsightsView] Failed to decode Weekly Summary JSON.")
-                        storedWeeklySummary = nil // Clear potentially stale data
-                        storedWeeklySummaryDate = nil
-                    }
+                    self.summaryJson = json
+                    self.summaryDate = date
+                    print("[InsightsView] Loaded Weekly Summary JSON (Generated: \(date.formatted()))")
                 } else {
-                     print("[InsightsView] No stored Weekly Summary found.")
-                     storedWeeklySummary = nil
-                     storedWeeklySummaryDate = nil
+                    self.summaryJson = nil
+                    self.summaryDate = nil
+                    print("[InsightsView] No stored Weekly Summary found.")
                 }
 
-                // Process Mood Trend
                 if let (json, date) = moodTrendResult {
-                     if let data = json.data(using: .utf8), let decoded = try? JSONDecoder().decode(MoodTrendResult.self, from: data) {
-                         storedMoodTrend = decoded
-                         storedMoodTrendDate = date
-                         print("[InsightsView] Loaded Mood Trend (Generated: \(date.formatted()))")
-                     } else {
-                         print("⚠️ [InsightsView] Failed to decode Mood Trend JSON.")
-                         storedMoodTrend = nil
-                         storedMoodTrendDate = nil
-                     }
-                 } else {
-                      print("[InsightsView] No stored Mood Trend found.")
-                      storedMoodTrend = nil
-                      storedMoodTrendDate = nil
-                 }
+                    self.trendJson = json
+                    self.trendDate = date
+                    print("[InsightsView] Loaded Mood Trend JSON (Generated: \(date.formatted()))")
+                } else {
+                    self.trendJson = nil
+                    self.trendDate = nil
+                    print("[InsightsView] No stored Mood Trend found.")
+                }
 
-                // Process Recommendations
-                 if let (json, date) = recommendationsResult {
-                     if let data = json.data(using: .utf8), let decoded = try? JSONDecoder().decode(RecommendationResult.self, from: data) {
-                         storedRecommendations = decoded
-                         storedRecommendationsDate = date
-                         print("[InsightsView] Loaded Recommendations (Generated: \(date.formatted()))")
-                     } else {
-                         print("⚠️ [InsightsView] Failed to decode Recommendations JSON.")
-                         storedRecommendations = nil
-                         storedRecommendationsDate = nil
-                     }
-                 } else {
-                      print("[InsightsView] No stored Recommendations found.")
-                      storedRecommendations = nil
-                      storedRecommendationsDate = nil
-                 }
+                if let (json, date) = recommendationsResult {
+                    self.recommendationsJson = json
+                    self.recommendationsDate = date
+                    print("[InsightsView] Loaded Recommendations JSON (Generated: \(date.formatted()))")
+                } else {
+                    self.recommendationsJson = nil
+                    self.recommendationsDate = nil
+                    print("[InsightsView] No stored Recommendations found.")
+                }
 
                 isLoadingInsights = false // Clear loading state
                 print("[InsightsView] Finished loading insights.")
