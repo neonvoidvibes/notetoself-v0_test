@@ -247,7 +247,7 @@ class DatabaseService: ObservableObject {
     }
 
 
-    // --- Search Operations ---
+    // --- Search Operations (Reverted to include JOIN and V.distance) ---
     func findSimilarJournalEntries(to queryVector: [Float], limit: Int = 5) throws -> [JournalEntry] {
         guard !queryVector.isEmpty else { return [] }
         guard queryVector.count == self.embeddingDimension else {
@@ -256,12 +256,12 @@ class DatabaseService: ObservableObject {
         guard let queryJSON = embeddingToJson(queryVector) else {
              throw DatabaseError.embeddingGenerationFailed("Failed to convert query vector to JSON.")
         }
-        // ** FIXED JOIN CONDITION **
+        // ** Reverted: Explicitly select V.distance **
         let sql = """
-            SELECT E.id, E.text, E.mood, E.date, E.intensity
+            SELECT E.id, E.text, E.mood, E.date, E.intensity, V.distance
             FROM JournalEntries AS E
             JOIN vector_top_k('journal_embedding_idx', vector32(?), ?) AS V
-              ON E.rowid = V.rowid -- Join on rowid, which vector_top_k returns as 'rowid' or implicitly uses
+              ON E.rowid = V.rowid
             WHERE E.embedding IS NOT NULL
             ORDER BY V.distance ASC;
             """
@@ -271,7 +271,7 @@ class DatabaseService: ObservableObject {
             let rows = try self.connection.query(sql, params)
             var results: [JournalEntry] = []
             for row in rows {
-                // Decoding logic remains the same, assuming SELECT clause is correct
+                // Decoding logic (ignoring V.distance for the result struct)
                 guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
                       let text = try? row.getString(1),
                       let moodStr = try? row.getString(2), let mood = Mood(rawValue: moodStr),
@@ -295,12 +295,12 @@ class DatabaseService: ObservableObject {
          guard let queryJSON = embeddingToJson(queryVector) else {
               throw DatabaseError.embeddingGenerationFailed("Failed to convert query vector to JSON.")
          }
-         // ** FIXED JOIN CONDITION **
+         // ** Reverted: Explicitly select V.distance **
          let sql = """
-             SELECT M.id, M.chatId, M.text, M.isUser, M.date, M.isStarred
+             SELECT M.id, M.chatId, M.text, M.isUser, M.date, M.isStarred, V.distance
              FROM ChatMessages AS M
              JOIN vector_top_k('chat_embedding_idx', vector32(?), ?) AS V
-               ON M.rowid = V.rowid -- Join on rowid
+               ON M.rowid = V.rowid
              WHERE M.embedding IS NOT NULL
              ORDER BY V.distance ASC;
              """
@@ -310,7 +310,7 @@ class DatabaseService: ObservableObject {
             let rows = try self.connection.query(sql, params)
             var results: [(message: ChatMessage, chatId: UUID)] = []
             for row in rows {
-                 // Decoding logic remains the same
+                 // Decoding logic (ignoring V.distance for the result struct)
                  guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
                        let chatIdStr = try? row.getString(1), let chatId = UUID(uuidString: chatIdStr),
                        let text = try? row.getString(2),
@@ -407,4 +407,3 @@ class DatabaseService: ObservableObject {
         }
     }
 } // --- End of DatabaseService class ---
-    

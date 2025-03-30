@@ -7,41 +7,43 @@ actor EmbeddingService {
     static let shared = EmbeddingService() // Singleton instance
 
     private let embeddingDimension = 512 // Expected dimension
-    private var embeddingModel: NLEmbedding?
+    private let embeddingModel: NLEmbedding? // Make it constant after init
 
-    private init() {
-        // Initialize the model synchronously during actor initialization.
-        // Actors ensure initialization happens safely before methods are called.
-        print("[EmbeddingService] Initializing...")
-        self.embeddingModel = loadModel()
-        if embeddingModel != nil {
-            print("[EmbeddingService] NLEmbedding model loaded successfully.")
-        } else {
-            print("‼️ [EmbeddingService] Failed to load NLEmbedding model during initialization.")
+    // Helper function to load the model synchronously without accessing actor state
+    private static func loadEmbeddingModel(dimension: Int) -> NLEmbedding? {
+        print("[EmbeddingService Helper] Attempting to load NLEmbedding model...")
+        guard let model = NLEmbedding.sentenceEmbedding(for: .english) else {
+            print("‼️ [EmbeddingService Helper] NLEmbedding.sentenceEmbedding returned nil.")
+            return nil
         }
+        guard model.dimension == dimension else {
+            print("‼️ [EmbeddingService Helper] Loaded NLEmbedding dimension (\(model.dimension)) doesn't match EXPECTED (\(dimension)).")
+            return nil
+        }
+        print("[EmbeddingService Helper] NLEmbedding model loaded successfully.")
+        return model
     }
 
-    private func loadModel() -> NLEmbedding? {
-        guard let model = NLEmbedding.sentenceEmbedding(for: .english) else {
-            print("‼️ [EmbeddingService] NLEmbedding.sentenceEmbedding returned nil.")
-            return nil
+    private init() {
+        // Call the static helper function to load the model synchronously during initialization.
+        // This runs before the actor is fully initialized and isolated.
+        print("[EmbeddingService] Initializing...")
+        self.embeddingModel = EmbeddingService.loadEmbeddingModel(dimension: self.embeddingDimension)
+        if embeddingModel == nil {
+             print("‼️ [EmbeddingService] Failed to load NLEmbedding model during initialization.")
+             // Consider how to handle this failure - maybe throw or log prominently.
         }
-        guard model.dimension == embeddingDimension else {
-            print("‼️ [EmbeddingService] Loaded NLEmbedding dimension (\(model.dimension)) doesn't match EXPECTED (\(embeddingDimension)).")
-            return nil
-        }
-        return model
     }
 
     /// Generates a sentence embedding for the given text using the managed NLEmbedding instance.
     /// This method is safe to call from any thread due to the actor isolation.
     func generateEmbedding(for text: String) -> [Float]? {
         guard let model = self.embeddingModel else {
-            print("‼️ [EmbeddingService] Embedding model not available.")
+            print("‼️ [EmbeddingService] Embedding model not available (was nil during init?).")
             return nil
         }
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            print("[EmbeddingService] Input text is empty, skipping embedding generation.")
+            // print("[EmbeddingService] Input text is empty, skipping embedding generation.") // Reduced logging noise
             return nil
         }
 
@@ -61,6 +63,7 @@ actor EmbeddingService {
 // Global async function to access the embedding service easily, handling availability check.
 func generateEmbedding(for text: String) async -> [Float]? {
     if #available(iOS 16.0, *) {
+        // Call the actor's method
         return await EmbeddingService.shared.generateEmbedding(for: text)
     } else {
         print("‼️ [Embedding] NLEmbedding requires iOS 16.0 or later.")

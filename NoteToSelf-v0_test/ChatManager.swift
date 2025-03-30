@@ -84,16 +84,18 @@ class ChatManager: ObservableObject {
             var contextString = ""
             var retrievalError: Error? = nil
 
-            // --- RAG Context Retrieval & PII Filtering ---
+            // --- RAG Context Retrieval & PII Filtering (Re-enabled) ---
             print("[ChatPipeline] Attempting embedding generation for RAG...")
             let queryEmbedding = await generateEmbedding(for: originalUserMessageText) // Use await
             if let queryEmbedding = queryEmbedding { // Check the awaited result
                 print("[ChatPipeline] Embedding generated successfully.")
                 print("[ChatPipeline] Attempting RAG context retrieval...")
                 do {
+                    // Use async let for concurrent database lookups
                     async let similarEntriesFetch = databaseService.findSimilarJournalEntries(to: queryEmbedding, limit: 3)
                     async let similarMessagesFetch = databaseService.findSimilarChatMessages(to: queryEmbedding, limit: 5)
 
+                    // Await results
                     let entries = try await similarEntriesFetch
                     let messages = try await similarMessagesFetch
                     print("[ChatPipeline] RAG retrieval success: \(entries.count) entries, \(messages.count) messages.")
@@ -123,8 +125,8 @@ class ChatManager: ObservableObject {
 
                 } catch {
                     print("‼️ [ChatPipeline] RAG retrieval failed: \(error)")
-                    retrievalError = error
-                    contextString = ""
+                    retrievalError = error // Store the error
+                    contextString = "" // Ensure context is empty on error
                 }
             } else {
                 print("‼️ [ChatPipeline] Embedding generation failed.")
@@ -136,10 +138,11 @@ class ChatManager: ObservableObject {
             let filteredUserMessage = filterPII(text: originalUserMessageText)
             print("[ChatPipeline] PII filtering for user message complete.")
 
+            // If RAG failed, contextString will be empty.
             let finalPrompt = """
             \(contextString.isEmpty ? "" : "\(contextString)\n\n---\n\n")User: \(filteredUserMessage)
             """
-            print("[ChatPipeline] Sending prompt to LLM (Context included: \(contextString.isEmpty ? "No" : "Yes")).")
+            print("[ChatPipeline] Sending prompt to LLM (Context included: \(contextString.isEmpty ? "No" : "Yes")).") // Indicate if context was added
 
             // --- Call LLM & Handle Response ---
             var assistantMessage: ChatMessage?
@@ -170,6 +173,7 @@ class ChatManager: ObservableObject {
                 if let err = llmError {
                      print("‼️ [ChatPipeline] Final Error State: \(err.localizedDescription)")
                 }
+                 // Log the RAG error if it occurred earlier
                  if let ragErr = retrievalError {
                      print("⚠️ [ChatPipeline] Note: RAG retrieval failed earlier: \(ragErr.localizedDescription)")
                  }
