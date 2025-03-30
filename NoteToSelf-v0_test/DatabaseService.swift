@@ -21,9 +21,7 @@ enum DatabaseError: Error {
 
 // --- Service Class Definition ---
 
-// Make DatabaseService conform to ObservableObject if needed by SwiftUI views directly,
-// otherwise it can be a regular class. Let's keep it ObservableObject for now.
-@MainActor // If methods need to update UI directly, otherwise remove. Let's assume not needed for now.
+// Removed @MainActor - DB operations should happen in background.
 class DatabaseService: ObservableObject {
     // MARK: - Properties
     private let db: Database // Libsql Database object
@@ -49,8 +47,12 @@ class DatabaseService: ObservableObject {
             self.db = tempDb
             self.connection = tempConnection
 
-            try setupSchemaAndIndexes()
-            print("Schema and index setup sequence completed successfully.")
+            // Run schema setup synchronously during init
+            // Use Task to ensure it runs off the main thread if init is on main.
+            // However, init itself might not be on main. Let's keep it simple for now.
+            // Consider async init pattern if setup becomes slow.
+             try setupSchemaAndIndexes()
+             print("Schema and index setup sequence completed successfully.")
 
         } catch {
             print("‼️ ERROR during DatabaseService initialization: \(error)")
@@ -63,7 +65,7 @@ class DatabaseService: ObservableObject {
         print("Setting up database schema and indexes...")
         do {
             // JournalEntries Table
-            try self.connection.execute(
+            _ = try self.connection.execute( // Ignore unused result
                 """
                 CREATE TABLE IF NOT EXISTS JournalEntries (
                     id TEXT PRIMARY KEY, text TEXT NOT NULL, mood TEXT NOT NULL,
@@ -73,7 +75,7 @@ class DatabaseService: ObservableObject {
                 """
             )
             // ChatMessages Table
-            try self.connection.execute(
+            _ = try self.connection.execute( // Ignore unused result
                 """
                 CREATE TABLE IF NOT EXISTS ChatMessages (
                     id TEXT PRIMARY KEY, chatId TEXT NOT NULL, text TEXT NOT NULL,
@@ -83,7 +85,7 @@ class DatabaseService: ObservableObject {
                 """
             )
             // GeneratedInsights Table (Added in Phase 5)
-             try self.connection.execute(
+             _ = try self.connection.execute( // Ignore unused result
                  """
                  CREATE TABLE IF NOT EXISTS GeneratedInsights (
                      id TEXT PRIMARY KEY,             -- Unique ID for the insight entry (e.g., UUID)
@@ -99,14 +101,14 @@ class DatabaseService: ObservableObject {
             print("Database tables checked/created.")
 
             // Journal Entry Index
-            try self.connection.execute(
+            _ = try self.connection.execute( // Ignore unused result
                 """
                 CREATE INDEX IF NOT EXISTS journal_embedding_idx
                 ON JournalEntries( libsql_vector_idx(embedding) );
                 """ // Dimension inferred from FLOAT32(512) column type
             )
             // Chat Message Index
-            try self.connection.execute(
+            _ = try self.connection.execute( // Ignore unused result
                 """
                 CREATE INDEX IF NOT EXISTS chat_embedding_idx
                 ON ChatMessages( libsql_vector_idx(embedding) );
@@ -133,7 +135,7 @@ class DatabaseService: ObservableObject {
                  params = [.text(entry.id.uuidString), .text(entry.text), .text(entry.mood.rawValue),
                            .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity))]
                  guard params.count == 5 else { throw DatabaseError.saveDataFailed("Param count mismatch (JE/NoEmbed/JSONFail)") }
-                 try self.connection.execute(sql, params)
+                 _ = try self.connection.execute(sql, params) // Ignore unused result
                  return
             }
             let safeEmbJSON = embJSON.replacingOccurrences(of: "'", with: "''")
@@ -152,13 +154,13 @@ class DatabaseService: ObservableObject {
                       .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity))]
             guard params.count == 5 else { throw DatabaseError.saveDataFailed("Param count mismatch (JE/NoEmbed)") }
         }
-        try self.connection.execute(sql, params)
+        _ = try self.connection.execute(sql, params) // Ignore unused result
     }
 
     func deleteJournalEntry(id: UUID) throws {
         let sql = "DELETE FROM JournalEntries WHERE id = ?;"
         let params: [Value] = [.text(id.uuidString)]
-        try self.connection.execute(sql, params)
+        _ = try self.connection.execute(sql, params) // Ignore unused result
         print("Attempted delete for JournalEntry ID: \(id.uuidString)")
     }
 
@@ -234,7 +236,7 @@ class DatabaseService: ObservableObject {
                            .integer(message.isUser ? 1 : 0), .integer(Int64(message.date.timeIntervalSince1970)),
                            .integer(message.isStarred ? 1 : 0)]
                  guard params.count == 6 else { throw DatabaseError.saveDataFailed("Param count mismatch (CM/NoEmbed/JSONFail)") }
-                 try self.connection.execute(sql, params)
+                 _ = try self.connection.execute(sql, params) // Ignore unused result
                  return
             }
             let safeEmbJSON = embJSON.replacingOccurrences(of: "'", with: "''")
@@ -255,13 +257,13 @@ class DatabaseService: ObservableObject {
                        .integer(message.isStarred ? 1 : 0)]
               guard params.count == 6 else { throw DatabaseError.saveDataFailed("Param count mismatch (CM/NoEmbed)") }
          }
-        try self.connection.execute(sql, params)
+        _ = try self.connection.execute(sql, params) // Ignore unused result
     }
 
     func deleteChatFromDB(id: UUID) throws {
         let sql = "DELETE FROM ChatMessages WHERE chatId = ?;"
         let params: [Value] = [.text(id.uuidString)]
-        try self.connection.execute(sql, params)
+        _ = try self.connection.execute(sql, params) // Ignore unused result
         print("Attempted delete for all messages in Chat ID: \(id.uuidString)")
         // TODO: If a separate Chats table is added, delete the chat metadata row too.
     }
@@ -269,14 +271,14 @@ class DatabaseService: ObservableObject {
     func deleteMessageFromDB(id: UUID) throws {
         let sql = "DELETE FROM ChatMessages WHERE id = ?;"
         let params: [Value] = [.text(id.uuidString)]
-        try self.connection.execute(sql, params)
+        _ = try self.connection.execute(sql, params) // Ignore unused result
         print("Attempted delete for ChatMessage ID: \(id.uuidString)")
     }
 
     func toggleChatStarInDB(id: UUID, isStarred: Bool) throws {
         let sql = "UPDATE ChatMessages SET isStarred = ? WHERE chatId = ?;"
         let params: [Value] = [.integer(isStarred ? 1 : 0), .text(id.uuidString)]
-        try self.connection.execute(sql, params)
+        _ = try self.connection.execute(sql, params) // Ignore unused result
         print("Attempted toggle star (\(isStarred)) for all messages in Chat ID: \(id.uuidString)")
          // TODO: If a separate Chats table is added, update the chat metadata row too.
     }
@@ -284,7 +286,7 @@ class DatabaseService: ObservableObject {
     func toggleMessageStarInDB(id: UUID, isStarred: Bool) throws {
         let sql = "UPDATE ChatMessages SET isStarred = ? WHERE id = ?;"
         let params: [Value] = [.integer(isStarred ? 1 : 0), .text(id.uuidString)]
-        try self.connection.execute(sql, params)
+        _ = try self.connection.execute(sql, params) // Ignore unused result
         print("Attempted toggle star (\(isStarred)) for ChatMessage ID: \(id.uuidString)")
         // TODO: If a separate Chats table is added, potentially update the chat's overall star status if any message is starred.
     }
@@ -369,12 +371,10 @@ class DatabaseService: ObservableObject {
 
     /// Saves or updates a generated insight JSON string for a specific type.
     func saveGeneratedInsight(type: String, date: Date, jsonData: String, startDate: Date? = nil, endDate: Date? = nil) throws {
-        // Using INSERT OR REPLACE with the UNIQUE constraint on insightType effectively updates the existing row or inserts a new one.
         let sql = """
         INSERT OR REPLACE INTO GeneratedInsights (insightType, generatedDate, relatedStartDate, relatedEndDate, jsonData, id)
         VALUES (?, ?, ?, ?, ?, ?);
         """
-        // Generate a new UUID each time to ensure the primary key is unique, even on replace.
         let uniqueId = UUID().uuidString
         let params: [Value] = [
             .text(type),
@@ -382,39 +382,42 @@ class DatabaseService: ObservableObject {
             startDate != nil ? .integer(Int64(startDate!.timeIntervalSince1970)) : .null,
             endDate != nil ? .integer(Int64(endDate!.timeIntervalSince1970)) : .null,
             .text(jsonData),
-            .text(uniqueId) // Provide the new primary key value
+            .text(uniqueId)
         ]
 
         print("[DB Insight] Saving insight of type '\(type)'...")
-        try self.connection.execute(sql, params)
+        _ = try self.connection.execute(sql, params) // Ignore unused result
         print("✅ [DB Insight] Saved insight type '\(type)'.")
     }
 
 
     /// Loads the most recently generated insight JSON string for a specific type.
     func loadLatestInsight(type: String) async throws -> (jsonData: String, generatedDate: Date)? {
-        // No need to order by date since insightType is UNIQUE. We just select the single row.
         let sql = "SELECT jsonData, generatedDate FROM GeneratedInsights WHERE insightType = ?;"
         let params: [Value] = [.text(type)]
 
         print("[DB Insight] Loading latest insight of type '\(type)'...")
-        let rows = try self.connection.query(sql, params)
+        // Use try await for async query
+        let rows = try await self.connection.query(sql, params) // Assuming query can be async
 
-        guard let row = rows.first else {
-            print("[DB Insight] No insight found for type '\(type)'.")
-            return nil // Return nil if no insight of this type exists
+        // Iterate through rows, process the first one found
+        for row in rows {
+            guard let json = try? row.getString(0),
+                  let dateTimestamp = try? row.getInt(1) else {
+                print("‼️ [DB Insight] Failed to decode insight row for type '\(type)': \(row)")
+                throw DatabaseError.insightDecodingError("Failed to decode columns for insight type '\(type)'")
+            }
+
+            let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
+            print("[DB Insight] Loaded insight type '\(type)' generated on \(date.formatted()).")
+            return (jsonData: json, generatedDate: date) // Return the first valid row
         }
 
-        guard let json = try? row.getString(0),
-              let dateTimestamp = try? row.getInt(1) else {
-            print("‼️ [DB Insight] Failed to decode insight row for type '\(type)': \(row)")
-            throw DatabaseError.insightDecodingError("Failed to decode columns for insight type '\(type)'")
-        }
-
-        let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
-        print("[DB Insight] Loaded insight type '\(type)' generated on \(date.formatted()).")
-        return (jsonData: json, generatedDate: date)
+        // If loop finishes without returning, no insight was found
+        print("[DB Insight] No insight found for type '\(type)'.")
+        return nil
     }
+
 
      /// Updates the timestamp of an existing insight without changing its data.
      /// Useful for generators that skip regeneration but want to mark it as "checked".
@@ -423,12 +426,10 @@ class DatabaseService: ObservableObject {
          let params: [Value] = [.integer(Int64(date.timeIntervalSince1970)), .text(type)]
 
          print("[DB Insight] Updating timestamp for insight type '\(type)'...")
-         // Check if the update affected any rows
-         let changes = try self.connection.sync().totalChanges() // Get changes before execution
-         try self.connection.execute(sql, params)
-         let newChanges = try self.connection.sync().totalChanges() // Get changes after execution
+         // Execute returns Int64 (rows affected)
+         let affectedRows = try await self.connection.execute(sql, params) // Assuming execute can be async
 
-         if newChanges > changes {
+         if affectedRows > 0 {
              print("✅ [DB Insight] Timestamp updated for insight type '\(type)'.")
          } else {
              print("⚠️ [DB Insight] Timestamp update attempted, but no insight found for type '\(type)'.")
