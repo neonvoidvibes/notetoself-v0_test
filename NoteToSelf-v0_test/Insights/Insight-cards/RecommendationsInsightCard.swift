@@ -3,16 +3,11 @@ import SwiftUI
 struct RecommendationsInsightCard: View {
     // Input: Stored insight result and generation date
     let recommendationResult: RecommendationResult?
-    let generatedDate: Date? // Keep track of when it was generated
+    let generatedDate: Date?
+    let subscriptionTier: SubscriptionTier // Added
 
     @State private var isExpanded: Bool = false
     private let styles = UIStyles.shared
-
-    // Access subscription tier from environment
-    @EnvironmentObject var appState: AppState
-    private var subscriptionTier: SubscriptionTier {
-        appState.subscriptionTier
-    }
 
     // Helper to get icon based on category string
     private func iconForCategory(_ category: String) -> String {
@@ -26,6 +21,17 @@ struct RecommendationsInsightCard: View {
         }
     }
 
+     // Determine placeholder message based on state
+     private var placeholderMessage: String {
+         if recommendationResult == nil && generatedDate == nil {
+             return "Keep journaling (at least 3 entries needed) to receive personalized recommendations!"
+         } else if recommendationResult == nil && generatedDate != nil {
+             return "Generating your recommendations..."
+         } else {
+             return "Recommendations are not available yet."
+         }
+     }
+
     var body: some View {
         styles.expandableCard(
             isExpanded: $isExpanded,
@@ -38,6 +44,10 @@ struct RecommendationsInsightCard: View {
                                 .font(styles.typography.title3)
                                 .foregroundColor(styles.colors.text)
                             Spacer()
+                             if subscriptionTier == .free {
+                                 Image(systemName: "lock.fill")
+                                     .foregroundColor(styles.colors.textSecondary)
+                             }
                         }
 
                         // Show recommendations if available and subscribed
@@ -51,7 +61,7 @@ struct RecommendationsInsightCard: View {
                                     }
                                 }
                                 if recommendations.count > 2 {
-                                     Text("+\(recommendations.count - 2) more insights...")
+                                     Text("+\(recommendations.count - 2) more...") // Simplified more text
                                          .font(styles.typography.caption)
                                          .foregroundColor(styles.colors.textSecondary)
                                          .frame(maxWidth: .infinity, alignment: .trailing)
@@ -59,43 +69,23 @@ struct RecommendationsInsightCard: View {
                                 }
 
                             } else {
-                                Text("Personalized recommendations are being generated or not available yet.")
-                                    .font(styles.typography.bodyFont)
-                                    .foregroundColor(styles.colors.textSecondary)
-                                    .frame(maxWidth: .infinity, minHeight: 80, alignment: .center) // Placeholder height
+                                // Premium user, but no data yet
+                                 Text(placeholderMessage)
+                                     .font(styles.typography.bodyFont)
+                                     .foregroundColor(styles.colors.textSecondary)
+                                     .frame(maxWidth: .infinity, minHeight: 80, alignment: .center)
+                                     .multilineTextAlignment(.center)
                             }
                         } else {
-                             // Free tier preview
+                             // Free tier locked state
                              Text("Unlock personalized recommendations with Premium.")
                                  .font(styles.typography.bodyFont)
                                  .foregroundColor(styles.colors.textSecondary)
                                  .frame(maxWidth: .infinity, minHeight: 80, alignment: .center)
+                                 .multilineTextAlignment(.center)
                         }
                     } // End VStack
-
-                    // Lock overlay for free users
-                    if subscriptionTier == .free {
-                         VStack {
-                             Spacer()
-                             LinearGradient(
-                                 gradient: Gradient(colors: [styles.colors.surface.opacity(0), styles.colors.surface.opacity(0.8)]),
-                                 startPoint: .top,
-                                 endPoint: .bottom
-                             )
-                             .frame(height: 80)
-                             .overlay(
-                                 VStack {
-                                     Spacer()
-                                     Image(systemName: "lock.fill")
-                                         .font(.title)
-                                         .foregroundColor(styles.colors.accent)
-                                         .padding(.bottom)
-                                 }
-                             )
-                         }
-                         .allowsHitTesting(false)
-                    }
-                } // End ZStack
+                } // End ZStack (no lock overlay needed here, handled by content)
             },
             detailContent: {
                 // Expanded detail content (only shown if premium)
@@ -105,89 +95,65 @@ struct RecommendationsInsightCard: View {
                             // Introduction
                             VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                                 Text("Personalized Recommendations")
-                                    .font(styles.typography.title3)
-                                    .foregroundColor(styles.colors.text)
-
-                                Text("Based on your recent journal entries, here are some suggestions that might support your well-being:")
-                                    .font(styles.typography.bodyFont)
-                                    .foregroundColor(styles.colors.textSecondary)
+                                    .font(styles.typography.title3).foregroundColor(styles.colors.text)
+                                Text("Based on your recent journal entries, here are some suggestions:") // Simplified
+                                    .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
 
                             // All recommendations with details
-                            VStack(alignment: .leading, spacing: styles.layout.spacingL) { // Increased spacing
+                            VStack(alignment: .leading, spacing: styles.layout.spacingL) {
                                 ForEach(recommendations) { recommendation in
-                                    VStack(alignment: .leading, spacing: 12) { // Increased spacing
-                                        // Title and Icon
-                                        HStack {
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        HStack { // Title and Icon
                                             Image(systemName: iconForCategory(recommendation.category))
-                                                .foregroundColor(styles.colors.accent)
-                                                .font(.system(size: 20))
+                                                .foregroundColor(styles.colors.accent).font(.system(size: 20))
                                                 .frame(width: 24, height: 24)
-
                                             Text(recommendation.title)
-                                                .font(styles.typography.bodyLarge.weight(.semibold)) // Bolder title
-                                                .foregroundColor(styles.colors.text)
+                                                .font(styles.typography.bodyLarge.weight(.semibold)).foregroundColor(styles.colors.text)
                                         }
-
-                                        // Description
-                                        Text(recommendation.description)
-                                            .font(styles.typography.bodyFont)
-                                            .foregroundColor(styles.colors.textSecondary)
+                                        Text(recommendation.description) // Description
+                                            .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
                                             .fixedSize(horizontal: false, vertical: true)
-
-
-                                        // Rationale
-                                        Text("Rationale: \(recommendation.rationale)")
-                                            .font(styles.typography.caption.italic()) // Italic rationale
-                                            .foregroundColor(styles.colors.textSecondary.opacity(0.8))
-                                            .fixedSize(horizontal: false, vertical: true)
-                                            .padding(.top, 4)
-
+                                        Text("Rationale: \(recommendation.rationale)") // Rationale
+                                            .font(styles.typography.caption.italic()).foregroundColor(styles.colors.textSecondary.opacity(0.8))
+                                            .fixedSize(horizontal: false, vertical: true).padding(.top, 4)
                                          if recommendation.id != recommendations.last?.id {
                                              Divider().background(styles.colors.tertiaryBackground.opacity(0.5)).padding(.top, 8)
                                          }
-                                    }
-                                    .padding(.vertical, 8)
+                                    }.padding(.vertical, 8)
                                 }
                             }
 
                             // Disclaimer
                             Text("These recommendations are AI-generated based on patterns and are not a substitute for professional advice.")
-                                .font(styles.typography.caption)
-                                .foregroundColor(styles.colors.textSecondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.top, 8)
+                                .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
+                                .multilineTextAlignment(.center).padding(.top, 8)
 
                              // Generation Date
                              if let date = generatedDate {
-                                 // Corrected: .shortened
                                  Text("Generated on \(date.formatted(date: .long, time: .shortened))")
-                                     .font(styles.typography.caption)
-                                     .foregroundColor(styles.colors.textSecondary)
-                                     .frame(maxWidth: .infinity, alignment: .center)
-                                     .padding(.top)
+                                     .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
+                                     .frame(maxWidth: .infinity, alignment: .center).padding(.top)
                              }
                         }
                     } else {
+                        // Premium, but no recommendations generated yet
                         Text("Personalized recommendations are not available yet. Keep journaling!")
-                            .font(styles.typography.bodyFont)
-                            .foregroundColor(styles.colors.textSecondary)
+                            .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
                             .frame(maxWidth: .infinity, alignment: .center)
                     }
                 } else {
                     // Free tier expanded view
                     VStack(spacing: styles.layout.spacingL) {
                          Image(systemName: "lock.fill")
-                             .font(.system(size: 40))
-                             .foregroundColor(styles.colors.accent)
-                         Text("Unlock Recommendations")
-                             .font(styles.typography.title3)
-                             .foregroundColor(styles.colors.text)
-                         Text("Upgrade to Premium to receive personalized recommendations based on your journal entries.")
-                              .font(styles.typography.bodyFont)
-                              .foregroundColor(styles.colors.textSecondary)
+                             .font(.system(size: 40)).foregroundColor(styles.colors.accent)
+                         Text("Upgrade for Recommendations")
+                             .font(styles.typography.title3).foregroundColor(styles.colors.text)
+                         Text("Unlock personalized recommendations based on your journal entries with Premium.")
+                              .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
                               .multilineTextAlignment(.center)
+                         // Optional Upgrade Button
                          Button("Upgrade Now") {
                              // TODO: Trigger upgrade flow
                          }
@@ -213,7 +179,6 @@ struct RecommendationRow: View {
                 Circle()
                     .fill(styles.colors.tertiaryBackground)
                     .frame(width: 40, height: 40)
-
                 Image(systemName: iconName)
                     .foregroundColor(styles.colors.accent)
                     .font(.system(size: 18))
@@ -224,7 +189,6 @@ struct RecommendationRow: View {
                 Text(recommendation.title)
                     .font(styles.typography.insightCaption)
                     .foregroundColor(styles.colors.text)
-
                 Text(recommendation.description)
                     .font(styles.typography.bodySmall) // Smaller font for preview
                     .foregroundColor(styles.colors.textSecondary)

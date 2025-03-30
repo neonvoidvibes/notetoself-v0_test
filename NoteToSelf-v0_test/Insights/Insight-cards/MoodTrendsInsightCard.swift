@@ -4,19 +4,17 @@ import Charts // Keep Charts import if needed for potential future visualization
 struct MoodTrendsInsightCard: View {
     // Input: Stored insight result and generation date
     let trendResult: MoodTrendResult?
-    let generatedDate: Date? // Keep track of when it was generated
+    let generatedDate: Date?
+    let subscriptionTier: SubscriptionTier // Added
 
     @State private var isExpanded: Bool = false
     private let styles = UIStyles.shared
 
-    // Helper to get color based on mood name string
     private func moodColor(forName moodName: String?) -> Color {
         guard let name = moodName else { return styles.colors.textSecondary }
-        // Attempt to find matching Mood enum case
         if let moodEnum = Mood.allCases.first(where: { $0.name.lowercased() == name.lowercased() }) {
             return moodEnum.color
         }
-        // Fallback for general terms
         switch name.lowercased() {
         case "positive", "improving": return styles.colors.moodHappy
         case "negative", "declining": return styles.colors.moodSad
@@ -25,7 +23,6 @@ struct MoodTrendsInsightCard: View {
         }
     }
 
-    // Helper to get icon based on trend string
     private func trendIcon(forName trendName: String?) -> String {
          guard let name = trendName else { return "arrow.right.circle.fill" }
          switch name.lowercased() {
@@ -37,6 +34,16 @@ struct MoodTrendsInsightCard: View {
          }
      }
 
+     // Determine placeholder message based on state
+     private var placeholderMessage: String {
+         if trendResult == nil && generatedDate == nil {
+             return "Keep journaling regularly (at least 3 entries needed) to analyze your mood trends!"
+         } else if trendResult == nil && generatedDate != nil {
+             return "Generating your mood trend analysis..."
+         } else {
+             return "Mood trend analysis is not available yet."
+         }
+     }
 
     var body: some View {
         styles.expandableCard(
@@ -49,71 +56,76 @@ struct MoodTrendsInsightCard: View {
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
                         Spacer()
+                        if subscriptionTier == .free {
+                             Image(systemName: "lock.fill")
+                                 .foregroundColor(styles.colors.textSecondary)
+                        }
                     }
 
-                    if let result = trendResult {
-                        HStack(spacing: styles.layout.spacingL) {
-                            // Overall Trend Icon & Text
-                            VStack(spacing: 8) {
-                                Image(systemName: trendIcon(forName: result.overallTrend))
-                                    .font(.system(size: 32))
-                                    .foregroundColor(moodColor(forName: result.overallTrend)) // Color based on trend
-                                Text(result.overallTrend)
-                                    .font(styles.typography.bodyFont)
-                                    .foregroundColor(styles.colors.text)
-                                Text("Overall Trend")
-                                     .font(styles.typography.caption)
-                                     .foregroundColor(styles.colors.textSecondary)
-                            }
-                            .frame(maxWidth: .infinity)
+                    if subscriptionTier == .premium {
+                        if let result = trendResult {
+                            HStack(spacing: styles.layout.spacingL) {
+                                // Overall Trend Icon & Text
+                                VStack(spacing: 8) {
+                                    Image(systemName: trendIcon(forName: result.overallTrend))
+                                        .font(.system(size: 32))
+                                        .foregroundColor(moodColor(forName: result.overallTrend))
+                                    Text(result.overallTrend)
+                                        .font(styles.typography.bodyFont).foregroundColor(styles.colors.text)
+                                    Text("Overall Trend")
+                                         .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
+                                }.frame(maxWidth: .infinity)
 
-                            // Dominant Mood Icon & Text
-                            VStack(spacing: 8) {
-                                // Try to get specific mood icon, fallback to generic
-                                let moodEnum = Mood.allCases.first { $0.name.lowercased() == result.dominantMood.lowercased() }
-                                Image(systemName: moodEnum?.systemIconName ?? "questionmark.circle.fill")
-                                    .font(.system(size: 32))
-                                    .foregroundColor(moodColor(forName: result.dominantMood))
-                                Text(result.dominantMood)
-                                    .font(styles.typography.bodyFont)
-                                    .foregroundColor(styles.colors.text)
-                                 Text("Dominant Mood")
-                                     .font(styles.typography.caption)
-                                     .foregroundColor(styles.colors.textSecondary)
+                                // Dominant Mood Icon & Text
+                                VStack(spacing: 8) {
+                                    let moodEnum = Mood.allCases.first { $0.name.lowercased() == result.dominantMood.lowercased() }
+                                    Image(systemName: moodEnum?.systemIconName ?? "questionmark.circle.fill")
+                                        .font(.system(size: 32))
+                                        .foregroundColor(moodColor(forName: result.dominantMood))
+                                    Text(result.dominantMood)
+                                        .font(styles.typography.bodyFont).foregroundColor(styles.colors.text)
+                                     Text("Dominant Mood")
+                                         .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
+                                }.frame(maxWidth: .infinity)
                             }
-                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, styles.layout.spacingS)
+
+                            // Analysis Text Preview
+                            Text(result.analysis)
+                                .font(styles.typography.bodySmall)
+                                .foregroundColor(styles.colors.textSecondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.top, styles.layout.spacingS)
+                                .lineLimit(2)
+
+                        } else {
+                            // Premium user, but no data yet
+                             Text(placeholderMessage)
+                                 .font(styles.typography.bodyFont)
+                                 .foregroundColor(styles.colors.textSecondary)
+                                 .frame(maxWidth: .infinity, minHeight: 100, alignment: .center)
+                                 .multilineTextAlignment(.center)
                         }
-                        .padding(.vertical, styles.layout.spacingS)
-
-                        // Analysis Text Preview
-                        Text(result.analysis)
-                            .font(styles.typography.bodySmall)
-                            .foregroundColor(styles.colors.textSecondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.top, styles.layout.spacingS)
-                            .lineLimit(2)
-
                     } else {
-                        Text("Mood trend analysis is being generated or not available yet.")
-                            .font(styles.typography.bodyFont)
-                            .foregroundColor(styles.colors.textSecondary)
-                            .frame(maxWidth: .infinity, minHeight: 100, alignment: .center) // Placeholder height
+                         // Free tier locked state
+                         Text("Unlock mood trend analysis and insights with Premium.")
+                             .font(styles.typography.bodyFont)
+                             .foregroundColor(styles.colors.textSecondary)
+                             .frame(maxWidth: .infinity, minHeight: 100, alignment: .center)
+                             .multilineTextAlignment(.center)
                     }
                 }
             },
             detailContent: {
-                // Expanded detail content
-                if let result = trendResult {
+                // Expanded detail content (Only show if premium and data exists)
+                if subscriptionTier == .premium, let result = trendResult {
                     VStack(spacing: styles.layout.spacingL) {
                         // Detailed Analysis
                         VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                             Text("Detailed Analysis")
-                                .font(styles.typography.title3)
-                                .foregroundColor(styles.colors.text)
-
+                                .font(styles.typography.title3).foregroundColor(styles.colors.text)
                             Text(result.analysis)
-                                .font(styles.typography.bodyFont)
-                                .foregroundColor(styles.colors.textSecondary)
+                                .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
 
@@ -121,17 +133,13 @@ struct MoodTrendsInsightCard: View {
                         if !result.moodShifts.isEmpty {
                             VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                                 Text("Notable Mood Shifts")
-                                    .font(styles.typography.title3)
-                                    .foregroundColor(styles.colors.text)
-
+                                    .font(styles.typography.title3).foregroundColor(styles.colors.text)
                                 ForEach(result.moodShifts, id: \.self) { shift in
                                     HStack(alignment: .top, spacing: styles.layout.spacingS) {
                                         Image(systemName: "arrow.right.arrow.left.circle.fill")
-                                            .foregroundColor(styles.colors.accent)
-                                            .padding(.top, 2)
+                                            .foregroundColor(styles.colors.accent).padding(.top, 2)
                                         Text(shift)
-                                            .font(styles.typography.bodyFont)
-                                            .foregroundColor(styles.colors.textSecondary)
+                                            .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
                                     }
                                 }
                             }
@@ -140,40 +148,42 @@ struct MoodTrendsInsightCard: View {
                          // Dominant Mood Info
                          VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                              Text("Dominant Mood: \(result.dominantMood)")
-                                 .font(styles.typography.title3)
-                                 .foregroundColor(styles.colors.text)
-
+                                 .font(styles.typography.title3).foregroundColor(styles.colors.text)
                              Text("Understanding your most frequent mood can highlight your baseline emotional state or recurring feelings.")
-                                 .font(styles.typography.bodyFont)
-                                 .foregroundColor(styles.colors.textSecondary)
+                                 .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
                          }
 
                          // Overall Trend Info
                          VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                              Text("Overall Trend: \(result.overallTrend)")
-                                 .font(styles.typography.title3)
-                                 .foregroundColor(styles.colors.text)
-
+                                 .font(styles.typography.title3).foregroundColor(styles.colors.text)
                              Text("Tracking the general direction of your mood helps identify broader patterns over time.")
-                                 .font(styles.typography.bodyFont)
-                                 .foregroundColor(styles.colors.textSecondary)
+                                 .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
                          }
-
 
                         // Generation Date
                         if let date = generatedDate {
-                            // Corrected: .shortened
                             Text("Generated on \(date.formatted(date: .long, time: .shortened))")
-                                .font(styles.typography.caption)
-                                .foregroundColor(styles.colors.textSecondary)
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .padding(.top)
+                                .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
+                                .frame(maxWidth: .infinity, alignment: .center).padding(.top)
                         }
                     }
-                } else {
-                    Text("Mood trend details are not available.")
-                        .font(styles.typography.bodyFont)
-                        .foregroundColor(styles.colors.textSecondary)
+                } else if subscriptionTier == .free {
+                     // Free tier expanded state
+                      VStack(spacing: styles.layout.spacingL) {
+                          Image(systemName: "lock.fill")
+                              .font(.system(size: 40)).foregroundColor(styles.colors.accent)
+                          Text("Upgrade for Details")
+                              .font(styles.typography.title3).foregroundColor(styles.colors.text)
+                          Text("Unlock detailed mood analysis and insights with Premium.")
+                               .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
+                               .multilineTextAlignment(.center)
+                          // Optional Upgrade Button
+                      }
+                 } else {
+                    // Premium, but no data
+                    Text("Mood trend details are not available yet.")
+                        .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
