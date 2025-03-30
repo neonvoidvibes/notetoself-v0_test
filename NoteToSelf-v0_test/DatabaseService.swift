@@ -13,16 +13,21 @@ enum DatabaseError: Error {
     case queryFailed(String)
     case decodingFailed(String)
     case dimensionMismatch(expected: Int, actual: Int)
-    case deleteFailed(String) // Added error type for delete
-    case noResultsFound // Added for clarity when second query finds nothing
+    case deleteFailed(String)
+    case noResultsFound
+    case insightNotFound(String) // Specific error for insights
+    case insightDecodingError(String)
 }
 
 // --- Service Class Definition ---
 
+// Make DatabaseService conform to ObservableObject if needed by SwiftUI views directly,
+// otherwise it can be a regular class. Let's keep it ObservableObject for now.
+@MainActor // If methods need to update UI directly, otherwise remove. Let's assume not needed for now.
 class DatabaseService: ObservableObject {
     // MARK: - Properties
     private let db: Database // Libsql Database object
-    private(set) var connection: Connection // Active connection to the database
+    private let connection: Connection // Active connection to the database
     private let dbFileName = "NoteToSelfData_v1.sqlite" // Database file name (versioned)
     private let embeddingDimension = 512 // ** Confirmed Embedding Dimension **
 
@@ -58,7 +63,7 @@ class DatabaseService: ObservableObject {
         print("Setting up database schema and indexes...")
         do {
             // JournalEntries Table
-            _ = try self.connection.execute(
+            try self.connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS JournalEntries (
                     id TEXT PRIMARY KEY, text TEXT NOT NULL, mood TEXT NOT NULL,
@@ -68,7 +73,7 @@ class DatabaseService: ObservableObject {
                 """
             )
             // ChatMessages Table
-            _ = try self.connection.execute(
+            try self.connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS ChatMessages (
                     id TEXT PRIMARY KEY, chatId TEXT NOT NULL, text TEXT NOT NULL,
@@ -77,17 +82,31 @@ class DatabaseService: ObservableObject {
                 );
                 """
             )
+            // GeneratedInsights Table (Added in Phase 5)
+             try self.connection.execute(
+                 """
+                 CREATE TABLE IF NOT EXISTS GeneratedInsights (
+                     id TEXT PRIMARY KEY,             -- Unique ID for the insight entry (e.g., UUID)
+                     insightType TEXT UNIQUE NOT NULL, -- Type identifier (e.g., "weeklySummary", "moodTrend") - UNIQUE ensures only one latest per type
+                     generatedDate INTEGER NOT NULL,    -- Unix timestamp when generated
+                     relatedStartDate INTEGER,        -- Optional: Start date of data used (e.g., week start)
+                     relatedEndDate INTEGER,          -- Optional: End date of data used (e.g., week end)
+                     jsonData TEXT NOT NULL             -- The generated insight as a JSON string
+                 );
+                 """
+             )
+
             print("Database tables checked/created.")
 
             // Journal Entry Index
-            _ = try self.connection.execute(
+            try self.connection.execute(
                 """
                 CREATE INDEX IF NOT EXISTS journal_embedding_idx
                 ON JournalEntries( libsql_vector_idx(embedding) );
                 """ // Dimension inferred from FLOAT32(512) column type
             )
             // Chat Message Index
-            _ = try self.connection.execute(
+            try self.connection.execute(
                 """
                 CREATE INDEX IF NOT EXISTS chat_embedding_idx
                 ON ChatMessages( libsql_vector_idx(embedding) );
@@ -101,9 +120,8 @@ class DatabaseService: ObservableObject {
         }
     }
 
-    // MARK: - Data Operations
+    // MARK: - Journal Entry Operations
 
-    // --- Save Operations ---
     func saveJournalEntry(_ entry: JournalEntry, embedding: [Float]?) throws {
         let sql: String
         let params: [Value]
@@ -115,11 +133,9 @@ class DatabaseService: ObservableObject {
                  params = [.text(entry.id.uuidString), .text(entry.text), .text(entry.mood.rawValue),
                            .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity))]
                  guard params.count == 5 else { throw DatabaseError.saveDataFailed("Param count mismatch (JE/NoEmbed/JSONFail)") }
-                 do { _ = try self.connection.execute(sql, params) }
-                 catch { throw DatabaseError.saveDataFailed("JournalEntry \(entry.id): \(error.localizedDescription)") }
-                 return // Exit after saving without embedding
+                 try self.connection.execute(sql, params)
+                 return
             }
-            // Basic safety for JSON string within SQL literal - replace single quotes
             let safeEmbJSON = embJSON.replacingOccurrences(of: "'", with: "''")
             sql = """
                 INSERT OR REPLACE INTO JournalEntries (id, text, mood, date, intensity, embedding)
@@ -136,9 +152,75 @@ class DatabaseService: ObservableObject {
                       .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity))]
             guard params.count == 5 else { throw DatabaseError.saveDataFailed("Param count mismatch (JE/NoEmbed)") }
         }
-        do { _ = try self.connection.execute(sql, params) }
-        catch { throw DatabaseError.saveDataFailed("JournalEntry \(entry.id): \(error.localizedDescription)") }
+        try self.connection.execute(sql, params)
     }
+
+    func deleteJournalEntry(id: UUID) throws {
+        let sql = "DELETE FROM JournalEntries WHERE id = ?;"
+        let params: [Value] = [.text(id.uuidString)]
+        try self.connection.execute(sql, params)
+        print("Attempted delete for JournalEntry ID: \(id.uuidString)")
+    }
+
+    func loadAllJournalEntries() throws -> [JournalEntry] {
+        let sql = "SELECT id, text, mood, date, intensity FROM JournalEntries ORDER BY date DESC;"
+        let rows = try self.connection.query(sql)
+        var results: [JournalEntry] = []
+        for row in rows {
+            guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
+                  let text = try? row.getString(1),
+                  let moodStr = try? row.getString(2), let mood = Mood(rawValue: moodStr),
+                  let dateTimestamp = try? row.getInt(3),
+                  let intensityInt = try? row.getInt(4)
+            else {
+                print("Warning: Failed to decode JournalEntry row during loadAll: \(row)")
+                continue
+            }
+            let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
+            results.append(JournalEntry(id: id, text: text, mood: mood, date: date, intensity: Int(intensityInt)))
+        }
+        print("Loaded \(results.count) journal entries from DB.")
+        return results
+    }
+
+    func findSimilarJournalEntries(to queryVector: [Float], limit: Int = 5) throws -> [JournalEntry] {
+        guard !queryVector.isEmpty else { return [] }
+        guard queryVector.count == self.embeddingDimension else {
+             throw DatabaseError.dimensionMismatch(expected: self.embeddingDimension, actual: queryVector.count)
+        }
+        guard let queryJSON = embeddingToJson(queryVector) else {
+             throw DatabaseError.embeddingGenerationFailed("Failed to convert query vector to JSON.")
+        }
+
+        let sql = """
+            SELECT E.id, E.text, E.mood, E.date, E.intensity,
+                   vector_distance_cos(E.embedding, vector32(?)) AS distance
+            FROM JournalEntries AS E
+            JOIN vector_top_k('journal_embedding_idx', vector32(?), ?) AS V
+              ON E.rowid = V.id
+            WHERE E.embedding IS NOT NULL
+            ORDER BY distance ASC;
+            """
+        let params: [Value] = [.text(queryJSON), .text(queryJSON), .integer(Int64(limit))]
+
+        print("[DB Search] Executing corrected JournalEntries search...")
+        let rows = try self.connection.query(sql, params)
+        var results: [JournalEntry] = []
+        for row in rows {
+            guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
+                  let text = try? row.getString(1),
+                  let moodStr = try? row.getString(2), let mood = Mood(rawValue: moodStr),
+                  let dateTimestamp = try? row.getInt(3),
+                  let intensityInt = try? row.getInt(4)
+            else { print("Warning: Failed decode JournalEntry row: \(row)"); continue }
+            let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
+            results.append(JournalEntry(id: id, text: text, mood: mood, date: date, intensity: Int(intensityInt)))
+        }
+        print("[DB Search] Corrected JournalEntries search successful. Found \(results.count) entries.")
+        return results
+    }
+
+    // MARK: - Chat Message / Chat Operations
 
     func saveChatMessage(_ message: ChatMessage, chatId: UUID, embedding: [Float]?) throws {
         let sql: String
@@ -152,9 +234,8 @@ class DatabaseService: ObservableObject {
                            .integer(message.isUser ? 1 : 0), .integer(Int64(message.date.timeIntervalSince1970)),
                            .integer(message.isStarred ? 1 : 0)]
                  guard params.count == 6 else { throw DatabaseError.saveDataFailed("Param count mismatch (CM/NoEmbed/JSONFail)") }
-                 do { _ = try self.connection.execute(sql, params) }
-                 catch { throw DatabaseError.saveDataFailed("ChatMessage \(message.id): \(error.localizedDescription)") }
-                 return // Exit after saving without embedding
+                 try self.connection.execute(sql, params)
+                 return
             }
             let safeEmbJSON = embJSON.replacingOccurrences(of: "'", with: "''")
             sql = """
@@ -174,127 +255,38 @@ class DatabaseService: ObservableObject {
                        .integer(message.isStarred ? 1 : 0)]
               guard params.count == 6 else { throw DatabaseError.saveDataFailed("Param count mismatch (CM/NoEmbed)") }
          }
-        do { _ = try self.connection.execute(sql, params) }
-        catch { throw DatabaseError.saveDataFailed("ChatMessage \(message.id): \(error.localizedDescription)") }
+        try self.connection.execute(sql, params)
     }
 
-    // --- Delete Operations ---
-    /// Deletes a JournalEntry from the database based on its ID.
-    func deleteJournalEntry(id: UUID) throws {
-        let sql = "DELETE FROM JournalEntries WHERE id = ?;"
-        let params: [Value] = [.text(id.uuidString)]
-
-        do {
-            _ = try self.connection.execute(sql, params)
-            print("Attempted delete for JournalEntry ID: \(id.uuidString)")
-        } catch {
-            print("‼️ Error deleting JournalEntry \(id.uuidString): \(error)")
-            throw DatabaseError.deleteFailed("Failed to delete JournalEntry \(id.uuidString): \(error.localizedDescription)")
-        }
-    }
-
-    /// Deletes all ChatMessages associated with a given chatId.
     func deleteChatFromDB(id: UUID) throws {
         let sql = "DELETE FROM ChatMessages WHERE chatId = ?;"
         let params: [Value] = [.text(id.uuidString)]
-        do {
-            _ = try self.connection.execute(sql, params)
-            print("Attempted delete for all messages in Chat ID: \(id.uuidString)")
-        } catch {
-            print("‼️ Error deleting Chat \(id.uuidString): \(error)")
-            throw DatabaseError.deleteFailed("Failed to delete Chat \(id.uuidString): \(error.localizedDescription)")
-        }
+        try self.connection.execute(sql, params)
+        print("Attempted delete for all messages in Chat ID: \(id.uuidString)")
+        // TODO: If a separate Chats table is added, delete the chat metadata row too.
     }
 
-    /// Deletes a single ChatMessage from the database based on its ID.
     func deleteMessageFromDB(id: UUID) throws {
         let sql = "DELETE FROM ChatMessages WHERE id = ?;"
         let params: [Value] = [.text(id.uuidString)]
-        do {
-            _ = try self.connection.execute(sql, params)
-            print("Attempted delete for ChatMessage ID: \(id.uuidString)")
-        } catch {
-            print("‼️ Error deleting ChatMessage \(id.uuidString): \(error)")
-            throw DatabaseError.deleteFailed("Failed to delete ChatMessage \(id.uuidString): \(error.localizedDescription)")
-        }
+        try self.connection.execute(sql, params)
+        print("Attempted delete for ChatMessage ID: \(id.uuidString)")
     }
 
-    // --- Update Operations ---
-
-    /// Toggles the 'isStarred' status for all messages within a specific chat.
     func toggleChatStarInDB(id: UUID, isStarred: Bool) throws {
         let sql = "UPDATE ChatMessages SET isStarred = ? WHERE chatId = ?;"
         let params: [Value] = [.integer(isStarred ? 1 : 0), .text(id.uuidString)]
-        do {
-            _ = try self.connection.execute(sql, params)
-            print("Attempted toggle star (\(isStarred)) for all messages in Chat ID: \(id.uuidString)")
-        } catch {
-            print("‼️ Error toggling star for Chat \(id.uuidString): \(error)")
-            throw DatabaseError.saveDataFailed("Failed to toggle star for Chat \(id.uuidString): \(error.localizedDescription)")
-        }
+        try self.connection.execute(sql, params)
+        print("Attempted toggle star (\(isStarred)) for all messages in Chat ID: \(id.uuidString)")
+         // TODO: If a separate Chats table is added, update the chat metadata row too.
     }
 
-    /// Toggles the 'isStarred' status for a single ChatMessage.
     func toggleMessageStarInDB(id: UUID, isStarred: Bool) throws {
         let sql = "UPDATE ChatMessages SET isStarred = ? WHERE id = ?;"
         let params: [Value] = [.integer(isStarred ? 1 : 0), .text(id.uuidString)]
-        do {
-            _ = try self.connection.execute(sql, params)
-            print("Attempted toggle star (\(isStarred)) for ChatMessage ID: \(id.uuidString)")
-        } catch {
-            print("‼️ Error toggling star for ChatMessage \(id.uuidString): \(error)")
-            throw DatabaseError.saveDataFailed("Failed to toggle star for ChatMessage \(id.uuidString): \(error.localizedDescription)")
-        }
-    }
-
-
-    // --- Search Operations (Corrected Pattern) ---
-
-    func findSimilarJournalEntries(to queryVector: [Float], limit: Int = 5) throws -> [JournalEntry] {
-        guard !queryVector.isEmpty else { return [] }
-        guard queryVector.count == self.embeddingDimension else {
-             throw DatabaseError.dimensionMismatch(expected: self.embeddingDimension, actual: queryVector.count)
-        }
-        guard let queryJSON = embeddingToJson(queryVector) else {
-             throw DatabaseError.embeddingGenerationFailed("Failed to convert query vector to JSON.")
-        }
-
-        // CORRECTED QUERY: Join, calculate distance, order by calculated distance
-        let sql = """
-            SELECT E.id, E.text, E.mood, E.date, E.intensity,
-                   vector_distance_cos(E.embedding, vector32(?)) AS distance
-            FROM JournalEntries AS E
-            JOIN vector_top_k('journal_embedding_idx', vector32(?), ?) AS V
-              ON E.rowid = V.id -- Use V.id as per documentation example
-            WHERE E.embedding IS NOT NULL
-            ORDER BY distance ASC;
-            """
-        // Parameters: queryJSON (for distance calc), queryJSON (for vector_top_k), limit
-        let params: [Value] = [.text(queryJSON), .text(queryJSON), .integer(Int64(limit))]
-
-        print("[DB Search] Executing corrected JournalEntries search...")
-        do {
-            let rows = try self.connection.query(sql, params)
-            var results: [JournalEntry] = []
-            for row in rows {
-                // Decode JournalEntry columns (index 0 to 4)
-                guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
-                      let text = try? row.getString(1),
-                      let moodStr = try? row.getString(2), let mood = Mood(rawValue: moodStr),
-                      let dateTimestamp = try? row.getInt(3), // Int64?
-                      let intensityInt = try? row.getInt(4) // Int64?
-                      // Optional: decode distance (index 5) if needed for logging/thresholding
-                      // let distance = try? row.getDouble(5)
-                else { print("Warning: Failed decode JournalEntry row: \(row)"); continue }
-                let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
-                results.append(JournalEntry(id: id, text: text, mood: mood, date: date, intensity: Int(intensityInt)))
-            }
-            print("[DB Search] Corrected JournalEntries search successful. Found \(results.count) entries.")
-            return results
-        } catch {
-            print("‼️ Error during CORRECTED findSimilarJournalEntries query: \(error)")
-            throw DatabaseError.queryFailed("Corrected Find JournalEntries: \(error.localizedDescription)")
-        }
+        try self.connection.execute(sql, params)
+        print("Attempted toggle star (\(isStarred)) for ChatMessage ID: \(id.uuidString)")
+        // TODO: If a separate Chats table is added, potentially update the chat's overall star status if any message is starred.
     }
 
     func findSimilarChatMessages(to queryVector: [Float], limit: Int = 5) throws -> [(message: ChatMessage, chatId: UUID)] {
@@ -306,125 +298,144 @@ class DatabaseService: ObservableObject {
               throw DatabaseError.embeddingGenerationFailed("Failed to convert query vector to JSON.")
          }
 
-         // CORRECTED QUERY: Join, calculate distance, order by calculated distance
          let sql = """
              SELECT M.id, M.chatId, M.text, M.isUser, M.date, M.isStarred,
                     vector_distance_cos(M.embedding, vector32(?)) AS distance
              FROM ChatMessages AS M
              JOIN vector_top_k('chat_embedding_idx', vector32(?), ?) AS V
-               ON M.rowid = V.id -- Use V.id as per documentation example
+               ON M.rowid = V.id
              WHERE M.embedding IS NOT NULL
              ORDER BY distance ASC;
              """
-         // Parameters: queryJSON (for distance calc), queryJSON (for vector_top_k), limit
          let params: [Value] = [.text(queryJSON), .text(queryJSON), .integer(Int64(limit))]
 
          print("[DB Search] Executing corrected ChatMessages search...")
-        do {
-            let rows = try self.connection.query(sql, params)
-            var results: [(message: ChatMessage, chatId: UUID)] = []
-            for row in rows {
-                 // Decode ChatMessage columns (index 0 to 5)
-                 guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
-                       let chatIdStr = try? row.getString(1), let chatId = UUID(uuidString: chatIdStr),
-                       let text = try? row.getString(2),
-                       let isUserInt = try? row.getInt(3), // Int64?
-                       let dateTimestamp = try? row.getInt(4), // Int64?
-                       let isStarredInt = try? row.getInt(5) // Int64?
-                       // Optional: decode distance (index 6) if needed
-                       // let distance = try? row.getDouble(6)
-                 else { print("Warning: Failed decode ChatMessage row: \(row)"); continue }
-                 let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
-                 let message = ChatMessage(id: id, text: text, isUser: isUserInt == 1, date: date, isStarred: isStarredInt == 1)
-                 results.append((message: message, chatId: chatId))
-            }
-            print("[DB Search] Corrected ChatMessages search successful. Found \(results.count) messages.")
-            return results
-        } catch {
-            print("‼️ Error during CORRECTED findSimilarChatMessages query: \(error)")
-            throw DatabaseError.queryFailed("Corrected Find ChatMessages: \(error.localizedDescription)")
+        let rows = try self.connection.query(sql, params)
+        var results: [(message: ChatMessage, chatId: UUID)] = []
+        for row in rows {
+             guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
+                   let chatIdStr = try? row.getString(1), let chatId = UUID(uuidString: chatIdStr),
+                   let text = try? row.getString(2),
+                   let isUserInt = try? row.getInt(3),
+                   let dateTimestamp = try? row.getInt(4),
+                   let isStarredInt = try? row.getInt(5)
+             else { print("Warning: Failed decode ChatMessage row: \(row)"); continue }
+             let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
+             let message = ChatMessage(id: id, text: text, isUser: isUserInt == 1, date: date, isStarred: isStarredInt == 1)
+             results.append((message: message, chatId: chatId))
         }
+        print("[DB Search] Corrected ChatMessages search successful. Found \(results.count) messages.")
+        return results
     }
 
-
-    // --- Load Operations ---
-
-    /// Loads all JournalEntries from the database.
-    func loadAllJournalEntries() throws -> [JournalEntry] {
-        let sql = "SELECT id, text, mood, date, intensity FROM JournalEntries ORDER BY date DESC;"
-        do {
-            let rows = try self.connection.query(sql)
-            var results: [JournalEntry] = []
-            for row in rows {
-                guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
-                      let text = try? row.getString(1),
-                      let moodStr = try? row.getString(2), let mood = Mood(rawValue: moodStr),
-                      let dateTimestamp = try? row.getInt(3), // Int64?
-                      let intensityInt = try? row.getInt(4) // Int64?
-                else {
-                    print("Warning: Failed to decode JournalEntry row during loadAll: \(row)")
-                    continue // Skip this row
-                }
-                let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
-                // Create JournalEntry with Int intensity
-                results.append(JournalEntry(id: id, text: text, mood: mood, date: date, intensity: Int(intensityInt)))
-            }
-            print("Loaded \(results.count) journal entries from DB.")
-            return results
-        } catch {
-            print("‼️ Error loading all JournalEntries: \(error)")
-            throw DatabaseError.queryFailed("Load All JournalEntries: \(error.localizedDescription)")
-        }
-    }
-
-    /// Loads all Chats by querying messages and reconstructing Chat objects.
     func loadAllChats() throws -> [Chat] {
         let sql = "SELECT id, chatId, text, isUser, date, isStarred FROM ChatMessages ORDER BY chatId ASC, date ASC;"
+        let rows = try self.connection.query(sql)
+        var messagesByChatId: [UUID: [ChatMessage]] = [:]
 
-        do {
-            let rows = try self.connection.query(sql)
-            var messagesByChatId: [UUID: [ChatMessage]] = [:]
-
-            for row in rows {
-                guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
-                      let chatIdStr = try? row.getString(1), let chatId = UUID(uuidString: chatIdStr),
-                      let text = try? row.getString(2),
-                      let isUserInt = try? row.getInt(3), // Int64?
-                      let dateTimestamp = try? row.getInt(4), // Int64?
-                      let isStarredInt = try? row.getInt(5) // Int64?
-                else {
-                    print("Warning: Failed to decode ChatMessage row during loadAllChats grouping: \(row)")
-                    continue
-                }
-                let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
-                let message = ChatMessage(id: id, text: text, isUser: isUserInt == 1, date: date, isStarred: isStarredInt == 1)
-
-                messagesByChatId[chatId, default: []].append(message)
+        for row in rows {
+            guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
+                  let chatIdStr = try? row.getString(1), let chatId = UUID(uuidString: chatIdStr),
+                  let text = try? row.getString(2),
+                  let isUserInt = try? row.getInt(3),
+                  let dateTimestamp = try? row.getInt(4),
+                  let isStarredInt = try? row.getInt(5)
+            else {
+                print("Warning: Failed to decode ChatMessage row during loadAllChats grouping: \(row)")
+                continue
             }
-
-            var chats: [Chat] = []
-            for (chatId, messages) in messagesByChatId {
-                guard !messages.isEmpty else { continue }
-
-                let sortedMessages = messages.sorted { $0.date < $1.date }
-                let createdAt = sortedMessages.first!.date
-                let lastUpdatedAt = sortedMessages.last!.date
-                // Determine Chat's starred status based on any message being starred
-                let isChatStarred = sortedMessages.contains { $0.isStarred }
-
-                var chat = Chat(id: chatId, messages: sortedMessages, createdAt: createdAt, lastUpdatedAt: lastUpdatedAt, isStarred: isChatStarred)
-                chat.generateTitle()
-                chats.append(chat)
-            }
-
-            chats.sort { $0.lastUpdatedAt > $1.lastUpdatedAt }
-
-            print("Loaded and reconstructed \(chats.count) chats from DB messages.")
-            return chats
-
-        } catch {
-            print("‼️ Error loading all Chats: \(error)")
-            throw DatabaseError.queryFailed("Load All Chats: \(error.localizedDescription)")
+            let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
+            let message = ChatMessage(id: id, text: text, isUser: isUserInt == 1, date: date, isStarred: isStarredInt == 1)
+            messagesByChatId[chatId, default: []].append(message)
         }
+
+        var chats: [Chat] = []
+        for (chatId, messages) in messagesByChatId {
+            guard !messages.isEmpty else { continue }
+            let sortedMessages = messages.sorted { $0.date < $1.date }
+            let createdAt = sortedMessages.first!.date
+            let lastUpdatedAt = sortedMessages.last!.date
+            let isChatStarred = sortedMessages.contains { $0.isStarred }
+            var chat = Chat(id: chatId, messages: sortedMessages, createdAt: createdAt, lastUpdatedAt: lastUpdatedAt, isStarred: isChatStarred)
+            chat.generateTitle()
+            chats.append(chat)
+        }
+        chats.sort { $0.lastUpdatedAt > $1.lastUpdatedAt }
+        print("Loaded and reconstructed \(chats.count) chats from DB messages.")
+        return chats
     }
+
+    // MARK: - Generated Insight Operations (Phase 5)
+
+    /// Saves or updates a generated insight JSON string for a specific type.
+    func saveGeneratedInsight(type: String, date: Date, jsonData: String, startDate: Date? = nil, endDate: Date? = nil) throws {
+        // Using INSERT OR REPLACE with the UNIQUE constraint on insightType effectively updates the existing row or inserts a new one.
+        let sql = """
+        INSERT OR REPLACE INTO GeneratedInsights (insightType, generatedDate, relatedStartDate, relatedEndDate, jsonData, id)
+        VALUES (?, ?, ?, ?, ?, ?);
+        """
+        // Generate a new UUID each time to ensure the primary key is unique, even on replace.
+        let uniqueId = UUID().uuidString
+        let params: [Value] = [
+            .text(type),
+            .integer(Int64(date.timeIntervalSince1970)),
+            startDate != nil ? .integer(Int64(startDate!.timeIntervalSince1970)) : .null,
+            endDate != nil ? .integer(Int64(endDate!.timeIntervalSince1970)) : .null,
+            .text(jsonData),
+            .text(uniqueId) // Provide the new primary key value
+        ]
+
+        print("[DB Insight] Saving insight of type '\(type)'...")
+        try self.connection.execute(sql, params)
+        print("✅ [DB Insight] Saved insight type '\(type)'.")
+    }
+
+
+    /// Loads the most recently generated insight JSON string for a specific type.
+    func loadLatestInsight(type: String) async throws -> (jsonData: String, generatedDate: Date)? {
+        // No need to order by date since insightType is UNIQUE. We just select the single row.
+        let sql = "SELECT jsonData, generatedDate FROM GeneratedInsights WHERE insightType = ?;"
+        let params: [Value] = [.text(type)]
+
+        print("[DB Insight] Loading latest insight of type '\(type)'...")
+        let rows = try self.connection.query(sql, params)
+
+        guard let row = rows.first else {
+            print("[DB Insight] No insight found for type '\(type)'.")
+            return nil // Return nil if no insight of this type exists
+        }
+
+        guard let json = try? row.getString(0),
+              let dateTimestamp = try? row.getInt(1) else {
+            print("‼️ [DB Insight] Failed to decode insight row for type '\(type)': \(row)")
+            throw DatabaseError.insightDecodingError("Failed to decode columns for insight type '\(type)'")
+        }
+
+        let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
+        print("[DB Insight] Loaded insight type '\(type)' generated on \(date.formatted()).")
+        return (jsonData: json, generatedDate: date)
+    }
+
+     /// Updates the timestamp of an existing insight without changing its data.
+     /// Useful for generators that skip regeneration but want to mark it as "checked".
+     func updateInsightTimestamp(type: String, date: Date) async throws {
+         let sql = "UPDATE GeneratedInsights SET generatedDate = ? WHERE insightType = ?;"
+         let params: [Value] = [.integer(Int64(date.timeIntervalSince1970)), .text(type)]
+
+         print("[DB Insight] Updating timestamp for insight type '\(type)'...")
+         // Check if the update affected any rows
+         let changes = try self.connection.sync().totalChanges() // Get changes before execution
+         try self.connection.execute(sql, params)
+         let newChanges = try self.connection.sync().totalChanges() // Get changes after execution
+
+         if newChanges > changes {
+             print("✅ [DB Insight] Timestamp updated for insight type '\(type)'.")
+         } else {
+             print("⚠️ [DB Insight] Timestamp update attempted, but no insight found for type '\(type)'.")
+             // Optionally throw an error or just log
+             // throw DatabaseError.insightNotFound(type)
+         }
+     }
+
+
 } // --- End of DatabaseService class ---
