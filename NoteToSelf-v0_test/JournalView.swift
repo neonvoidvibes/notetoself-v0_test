@@ -4,7 +4,7 @@ struct JournalView: View {
     // Environment Objects
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var databaseService: DatabaseService // <-- Inject DatabaseService
-    @EnvironmentObject var llmService: LLMService // <-- Inject LLMService for trigger
+    // REMOVED: @EnvironmentObject var llmService: LLMService
 
     // Environment Variables
     @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled
@@ -330,8 +330,8 @@ struct JournalView: View {
                             }
 
                             // 5. Trigger background insight generation
-                            // Pass required services from environment
-                            await appState.triggerAllInsightGenerations(llmService: llmService, databaseService: databaseService)
+                            // Access LLMService singleton directly
+                            await appState.triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService)
 
                         } catch {
                             print("‼️ Error saving new journal entry \(newEntry.id) to DB: \(error)")
@@ -388,7 +388,7 @@ struct JournalView: View {
                             }
 
                              // 5. Trigger background insight generation
-                             await appState.triggerAllInsightGenerations(llmService: llmService, databaseService: databaseService)
+                             await appState.triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService)
 
                         } catch {
                             print("‼️ Error updating journal entry \(updatedEntry.id) in DB: \(error)")

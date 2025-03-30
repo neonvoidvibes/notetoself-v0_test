@@ -30,189 +30,190 @@ struct InsightsView: View {
         return Calendar.current.dateComponents([.hour], from: generatedDate, to: Date()).hour ?? 25 < 24
     }
 
-var body: some View {
-    ZStack {
-        styles.colors.appBackground.ignoresSafeArea()
-        VStack(spacing: 0) {
-            // Header
-            ZStack(alignment: .center) {
-                // Title truly centered
-                VStack(spacing: 8) {
-                    Text("Insights")
-                        .font(styles.typography.title1)
-                        .foregroundColor(styles.colors.text)
+    var body: some View {
+        ZStack {
+            styles.colors.appBackground.ignoresSafeArea()
+            VStack(spacing: 0) {
+                // Header
+                ZStack(alignment: .center) {
+                    // Title truly centered
+                    VStack(spacing: 8) {
+                        Text("Insights")
+                            .font(styles.typography.title1)
+                            .foregroundColor(styles.colors.text)
 
-                    Rectangle()
-                        .fill(styles.colors.accent)
-                        .frame(width: 20, height: 3)
-                }
-
-                // Menu button on left
-                HStack {
-                    Button(action: {
-                        NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
-                    }) {
-                        VStack(spacing: 6) { // Increased spacing between bars
-                            HStack {
-                                Rectangle()
-                                    .fill(styles.colors.accent)
-                                    .frame(width: 28, height: 2) // Top bar - slightly longer
-                                Spacer()
-                            }
-                            HStack {
-                                Rectangle()
-                                    .fill(styles.colors.accent)
-                                    .frame(width: 20, height: 2) // Bottom bar (shorter)
-                                Spacer()
-                            }
-                        }
-                        .frame(width: 36, height: 36)
+                        Rectangle()
+                            .fill(styles.colors.accent)
+                            .frame(width: 20, height: 3)
                     }
-                    Spacer()
-                }
-                .padding(.horizontal, styles.layout.paddingXL)
-            }
-            .padding(.top, 8) // Further reduced top padding
-            .padding(.bottom, 8)
 
-            // Main content in ScrollView
-            ScrollView {
-                GeometryReader { geometry in
-                    Color.clear.preference(
-                        key: ScrollOffsetPreferenceKey.self,
-                        value: geometry.frame(in: .named("scrollView")).minY
-                    )
-                }
-                .frame(height: 0)
-
-                // Inspiring prompt section
-                VStack(alignment: .center, spacing: styles.layout.spacingL) {
-                    // Inspiring header with larger font
-                    Text("My Insights")
-                        .font(styles.typography.headingFont)
-                        .foregroundColor(styles.colors.text)
-                        .padding(.bottom, 4)
-
-                    // Inspiring quote with larger font
-                    Text("Discover patterns, make better choices.")
-                        .font(styles.typography.bodyLarge)
-                        .foregroundColor(styles.colors.accent)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.horizontal, styles.layout.paddingXL)
-                .padding(.vertical, styles.layout.spacingXL * 1.5)
-                .padding(.top, 80) // Extra top padding for spaciousness
-                .padding(.bottom, 40) // Extra bottom padding
-                .frame(maxWidth: .infinity)
-                .background(
-                    // Subtle gradient background for the inspiring section
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            styles.colors.appBackground,
-                            styles.colors.appBackground.opacity(0.9)
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-
-                if isLoadingInsights {
-                    ProgressView("Loading Insights...")
-                        .padding(.vertical, 50)
-                        .tint(styles.colors.accent)
-                } else {
-                    VStack(spacing: styles.layout.cardSpacing) {
-                        // TOGGLE FOR SUBSCRIPTION TIER - FOR TESTING ONLY
-                        // Comment out this section when not needed
-                        HStack {
-                            Text("Subscription Mode:")
-                                .font(styles.typography.bodySmall)
-                                .foregroundColor(styles.colors.textSecondary)
-
-                            Picker("", selection: $appState.subscriptionTier) {
-                                Text("Free").tag(SubscriptionTier.free)
-                                Text("Premium").tag(SubscriptionTier.premium)
+                    // Menu button on left
+                    HStack {
+                        Button(action: {
+                            NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
+                        }) {
+                            VStack(spacing: 6) { // Increased spacing between bars
+                                HStack {
+                                    Rectangle()
+                                        .fill(styles.colors.accent)
+                                        .frame(width: 28, height: 2) // Top bar - slightly longer
+                                    Spacer()
+                                }
+                                HStack {
+                                    Rectangle()
+                                        .fill(styles.colors.accent)
+                                        .frame(width: 20, height: 2) // Bottom bar (shorter)
+                                    Spacer()
+                                }
                             }
-                            .pickerStyle(SegmentedPickerStyle())
-                            .frame(width: 200)
+                            .frame(width: 36, height: 36)
                         }
-                        .padding(.horizontal, styles.layout.paddingXL)
-                        .padding(.top, 8)
+                        Spacer()
+                    }
+                    .padding(.horizontal, styles.layout.paddingXL)
+                }
+                .padding(.top, 8) // Further reduced top padding
+                .padding(.bottom, 8)
 
-                        // Today's Highlights Section
-                        styles.sectionHeader("Today's Highlights")
-
-                        // 1. Streak Card (Uses AppState directly, no AI)
-                        StreakInsightCard(streak: appState.currentStreak)
-                            .padding(.horizontal, styles.layout.paddingXL)
-
-                        // Weekly Summary Card (Uses stored AI result)
-                        WeeklySummaryInsightCard(
-                            summaryResult: storedWeeklySummary,
-                            generatedDate: storedWeeklySummaryDate,
-                            isFresh: isWeeklySummaryFresh
+                // Main content in ScrollView
+                ScrollView {
+                    GeometryReader { geometry in
+                        Color.clear.preference(
+                            key: ScrollOffsetPreferenceKey.self,
+                            value: geometry.frame(in: .named("scrollView")).minY
                         )
-                        .padding(.horizontal, styles.layout.paddingXL)
+                    }
+                    .frame(height: 0)
 
+                    // Inspiring prompt section
+                    VStack(alignment: .center, spacing: styles.layout.spacingL) {
+                        // Inspiring header with larger font
+                        Text("My Insights")
+                            .font(styles.typography.headingFont)
+                            .foregroundColor(styles.colors.text)
+                            .padding(.bottom, 4)
 
-                        // Deeper Insights Section
-                        styles.sectionHeader("Deeper Insights")
-
-                        // AI Reflection Card (Uses ChatManager directly, no AI insight model)
-                        ChatInsightCard()
-                            .padding(.horizontal, styles.layout.paddingXL)
-                            .accessibilityLabel("AI Reflection")
-
-                        // Mood Analysis Card (Uses stored AI result)
-                        MoodTrendsInsightCard(
-                            trendResult: storedMoodTrend,
-                            generatedDate: storedMoodTrendDate
+                        // Inspiring quote with larger font
+                        Text("Discover patterns, make better choices.")
+                            .font(styles.typography.bodyLarge)
+                            .foregroundColor(styles.colors.accent)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal, styles.layout.paddingXL)
+                    .padding(.vertical, styles.layout.spacingXL * 1.5)
+                    .padding(.top, 80) // Extra top padding for spaciousness
+                    .padding(.bottom, 40) // Extra bottom padding
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        // Subtle gradient background for the inspiring section
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                styles.colors.appBackground,
+                                styles.colors.appBackground.opacity(0.9)
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
                         )
-                        .padding(.horizontal, styles.layout.paddingXL)
-                        .accessibilityLabel("Mood Analysis")
+                    )
 
-
-                        // Recommendations Card (Uses stored AI result)
-                        RecommendationsInsightCard(
-                            recommendationResult: storedRecommendations,
-                            generatedDate: storedRecommendationsDate
-                        )
-                        .padding(.horizontal, styles.layout.paddingXL)
-                        .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
-
-                    } // End VStack for cards
-                } // End else (isLoadingInsights)
-            } // End ScrollView
-            .coordinateSpace(name: "scrollView")
-            .disabled(mainScrollingDisabled)
-            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                let scrollingDown = value < lastScrollPosition
-                if abs(value - lastScrollPosition) > 10 {
-                    if scrollingDown {
-                        tabBarOffset = 100
-                        tabBarVisible = false
+                    if isLoadingInsights {
+                        ProgressView("Loading Insights...")
+                            .padding(.vertical, 50)
+                            .tint(styles.colors.accent)
                     } else {
-                        tabBarOffset = 0
-                        tabBarVisible = true
+                        VStack(spacing: styles.layout.cardSpacing) {
+                            // TOGGLE FOR SUBSCRIPTION TIER - FOR TESTING ONLY
+                            // Comment out this section when not needed
+                            HStack {
+                                Text("Subscription Mode:")
+                                    .font(styles.typography.bodySmall)
+                                    .foregroundColor(styles.colors.textSecondary)
+
+                                Picker("", selection: $appState.subscriptionTier) {
+                                    Text("Free").tag(SubscriptionTier.free)
+                                    Text("Premium").tag(SubscriptionTier.premium)
+                                }
+                                .pickerStyle(SegmentedPickerStyle())
+                                .frame(width: 200)
+                            }
+                            .padding(.horizontal, styles.layout.paddingXL)
+                            .padding(.top, 8)
+
+                            // Today's Highlights Section
+                            styles.sectionHeader("Today's Highlights")
+
+                            // 1. Streak Card (Uses AppState directly, no AI)
+                            StreakInsightCard(streak: appState.currentStreak)
+                                .padding(.horizontal, styles.layout.paddingXL)
+
+                            // Weekly Summary Card (Uses stored AI result)
+                            WeeklySummaryInsightCard(
+                                summaryResult: storedWeeklySummary,
+                                generatedDate: storedWeeklySummaryDate,
+                                isFresh: isWeeklySummaryFresh
+                            )
+                            .padding(.horizontal, styles.layout.paddingXL)
+
+
+                            // Deeper Insights Section
+                            styles.sectionHeader("Deeper Insights")
+
+                            // AI Reflection Card (Uses ChatManager directly, no AI insight model)
+                            ChatInsightCard()
+                                .padding(.horizontal, styles.layout.paddingXL)
+                                .accessibilityLabel("AI Reflection")
+
+                            // Mood Analysis Card (Uses stored AI result)
+                            MoodTrendsInsightCard(
+                                trendResult: storedMoodTrend,
+                                generatedDate: storedMoodTrendDate
+                            )
+                            .padding(.horizontal, styles.layout.paddingXL)
+                            .accessibilityLabel("Mood Analysis")
+
+
+                            // Recommendations Card (Uses stored AI result)
+                            RecommendationsInsightCard(
+                                recommendationResult: storedRecommendations,
+                                generatedDate: storedRecommendationsDate
+                            )
+                            .padding(.horizontal, styles.layout.paddingXL)
+                            .padding(.bottom, styles.layout.paddingXL + 80) // Extra padding for tab bar
+
+                        } // End VStack for cards
+                    } // End else (isLoadingInsights)
+                } // End ScrollView
+                .coordinateSpace(name: "scrollView")
+                .disabled(mainScrollingDisabled)
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                    let scrollingDown = value < lastScrollPosition
+                    if abs(value - lastScrollPosition) > 10 {
+                        if scrollingDown {
+                            tabBarOffset = 100
+                            tabBarVisible = false
+                        } else {
+                            tabBarOffset = 0
+                            tabBarVisible = true
+                        }
+                        lastScrollPosition = value
                     }
-                    lastScrollPosition = value
                 }
-            }
-        } // End VStack
-    } // End body
-    .onAppear {
-        loadStoredInsights()
-    }
-    .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToTab"))) { notification in
-        if let userInfo = notification.userInfo, let tabIndex = userInfo["tabIndex"] as? Int {
-            // Post a notification to switch to the specified tab
-            NotificationCenter.default.post(
-                name: NSNotification.Name("SwitchTab"),
-                object: nil,
-                userInfo: ["tabIndex": tabIndex]
-            )
+            } // End VStack
+        } // End ZStack
+        .onAppear {
+            loadStoredInsights()
         }
-    }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToTab"))) { notification in
+            if let userInfo = notification.userInfo, let tabIndex = userInfo["tabIndex"] as? Int {
+                // Post a notification to switch to the specified tab
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("SwitchTab"),
+                    object: nil,
+                    userInfo: ["tabIndex": tabIndex]
+                )
+            }
+        }
+    } // End body
 
     // --- Data Loading ---
     private func loadStoredInsights() {
@@ -300,9 +301,9 @@ var body: some View {
             print("[InsightsView] Finished loading insights.")
         }
     }
-}
+} // End InsightsView struct
 
-// --- Preview Provider (Updated) ---
+// MARK: - Preview Provider (Correctly placed outside the main struct)
 struct InsightsView_Previews: PreviewProvider {
     @StateObject static var databaseService = DatabaseService()
     static var llmService = LLMService.shared

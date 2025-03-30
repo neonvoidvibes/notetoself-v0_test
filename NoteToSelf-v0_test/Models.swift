@@ -235,9 +235,32 @@ struct RecommendationResult: Codable, Equatable {
     }
 }
 
+// MARK: - Insight Card Helper Structs
+
+// Defined here for global access
+struct CalendarDay: Hashable {
+    let day: Int
+    let date: Date
+}
+
+// Defined here for global access
+struct MoodDataPoint: Identifiable {
+    let id = UUID() // Add identifiable conformance
+    let date: Date
+    let value: Double
+}
+
+// Defined here for global access
+struct Recommendation: Identifiable {
+    let id = UUID()
+    let title: String
+    let description: String
+    let icon: String
+}
+
 
 // MARK: - App State (Keep if used globally)
-// Note: AppState itself doesn't need Codable unless you save/load it directly
+@MainActor // Ensure @Published vars are updated on main thread
 class AppState: ObservableObject {
     @Published var journalEntries: [JournalEntry] = [] // Now uses the struct defined above
     @Published var subscriptionTier: SubscriptionTier = .free // Uses enum defined above
@@ -294,15 +317,18 @@ class AppState: ObservableObject {
         let moodTrendGenerator = MoodTrendGenerator(llmService: llmService, databaseService: databaseService)
         let recommendationGenerator = RecommendationGenerator(llmService: llmService, databaseService: databaseService)
 
-        // Run generators concurrently
-        async let summaryTask: Void = summaryGenerator.generateAndStoreIfNeeded()
-        async let moodTrendTask: Void = moodTrendGenerator.generateAndStoreIfNeeded()
-        async let recommendationTask: Void = recommendationGenerator.generateAndStoreIfNeeded()
+        // Run generators concurrently in detached tasks so they don't block the caller
+        Task.detached(priority: .background) {
+            await summaryGenerator.generateAndStoreIfNeeded()
+        }
+        Task.detached(priority: .background) {
+            await moodTrendGenerator.generateAndStoreIfNeeded()
+        }
+        Task.detached(priority: .background) {
+             await recommendationGenerator.generateAndStoreIfNeeded()
+        }
 
-        // Await completion (errors are handled within each generator)
-        _ = await [summaryTask, moodTrendTask, recommendationTask]
-
-        print("[AppState] Background insight generation finished.")
+        print("[AppState] Background insight generation tasks launched.")
         // Optionally: Post a notification for UI refresh if needed, although InsightsView reloads on appear.
         // await MainActor.run { NotificationCenter.default.post(name: .insightsUpdated, object: nil) }
     }

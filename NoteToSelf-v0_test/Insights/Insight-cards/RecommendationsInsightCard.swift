@@ -201,7 +201,7 @@ struct RecommendationsInsightCard: View {
 
 // Simplified RecommendationRow for preview
 struct RecommendationRow: View {
-    let recommendation: RecommendationResult.RecommendationItem
+    let recommendation: RecommendationResult.RecommendationItem // Use nested type
     let iconName: String
     private let styles = UIStyles.shared
 
