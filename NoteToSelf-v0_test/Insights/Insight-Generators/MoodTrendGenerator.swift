@@ -23,8 +23,10 @@ actor MoodTrendGenerator {
         var shouldGenerate = true
         var lastGenerationDate: Date? = nil
 
+        // Fetch latest insight synchronously (will run on background thread from caller)
         do {
-            if let latest = try await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+            // REMOVED await
+            if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
                 lastGenerationDate = latest.generatedDate
                 let daysSinceLast = calendar.dateComponents([.day], from: latest.generatedDate, to: Date()).day ?? regenerationThresholdDays + 1
                 if daysSinceLast < regenerationThresholdDays {
@@ -47,6 +49,7 @@ actor MoodTrendGenerator {
         do {
             // Fetch slightly more data to ensure enough context if needed
             let fetchStartDate = calendar.date(byAdding: .day, value: -21, to: today)!
+            // REMOVED await
             entries = try databaseService.loadAllJournalEntries().filter { $0.date >= fetchStartDate }
                                        .sorted { $0.date < $1.date } // Sort oldest to newest for trend analysis
         } catch {
@@ -59,6 +62,7 @@ actor MoodTrendGenerator {
               let hasNewEntries = entries.contains { $0.date > lastGenDate }
               if !hasNewEntries {
                    print("[MoodTrendGenerator] Skipping generation: No new entries since last trend on \(lastGenDate.formatted()).")
+                   // try? databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
                    return
               }
               print("[MoodTrendGenerator] New entries found since last generation. Proceeding.")
@@ -74,13 +78,14 @@ actor MoodTrendGenerator {
 
         // 3. Format prompt context
         let context = entries.map { entry in
-            "Date: \(entry.date.formatted(date: .short, time: .omitted)), Mood: \(entry.mood.name)" // Keep context concise
+            // Corrected date format
+            "Date: \(entry.date.formatted(date: .numeric, time: .omitted)), Mood: \(entry.mood.name)"
         }.joined(separator: "\n")
 
         // 4. Get system prompt
         let systemPrompt = SystemPrompts.moodTrendPrompt(entriesContext: context)
 
-        // 5. Call LLMService for structured output
+        // 5. Call LLMService for structured output (this is async)
         do {
             let result: MoodTrendResult = try await llmService.generateStructuredOutput(
                 systemPrompt: systemPrompt,
@@ -99,8 +104,9 @@ actor MoodTrendGenerator {
                 return
             }
 
-            // 7. Save to Database
-            try await databaseService.saveGeneratedInsight(
+            // 7. Save to Database (synchronous call)
+            // REMOVED await
+            try databaseService.saveGeneratedInsight(
                 type: insightTypeIdentifier,
                 date: Date(),
                 jsonData: jsonString,

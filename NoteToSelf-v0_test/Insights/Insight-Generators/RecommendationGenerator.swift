@@ -21,7 +21,8 @@ actor RecommendationGenerator {
         var lastGenerationDate: Date? = nil
 
         do {
-            if let latest = try await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+            // REMOVED await
+            if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
                 lastGenerationDate = latest.generatedDate
                 let daysSinceLast = calendar.dateComponents([.day], from: latest.generatedDate, to: Date()).day ?? regenerationThresholdDays + 1
                 if daysSinceLast < regenerationThresholdDays {
@@ -42,6 +43,7 @@ actor RecommendationGenerator {
         // 2. Fetch necessary data (e.g., last 10-15 entries for context)
         let entries: [JournalEntry]
         do {
+            // REMOVED await
             entries = Array(try databaseService.loadAllJournalEntries().prefix(15)) // Get up to 15 most recent
         } catch {
             print("‼️ [RecommendationGenerator] Error fetching journal entries: \(error)")
@@ -53,6 +55,7 @@ actor RecommendationGenerator {
               let hasNewEntries = entries.contains { $0.date > lastGenDate }
               if !hasNewEntries {
                    print("[RecommendationGenerator] Skipping generation: No new entries since last recommendations on \(lastGenDate.formatted()).")
+                   // try? databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
                    return
               }
               print("[RecommendationGenerator] New entries found since last generation. Proceeding.")
@@ -67,13 +70,14 @@ actor RecommendationGenerator {
 
         // 3. Format prompt context
         let context = entries.map { entry in
-            "Date: \(entry.date.formatted(date: .short, time: .omitted)), Mood: \(entry.mood.name)\n\(entry.text.prefix(150))..." // Limit context length
+             // Corrected date format
+            "Date: \(entry.date.formatted(date: .numeric, time: .omitted)), Mood: \(entry.mood.name)\n\(entry.text.prefix(150))..." // Limit context length
         }.joined(separator: "\n\n")
 
         // 4. Get system prompt
         let systemPrompt = SystemPrompts.recommendationPrompt(entriesContext: context)
 
-        // 5. Call LLMService for structured output
+        // 5. Call LLMService for structured output (this is async)
         do {
             let result: RecommendationResult = try await llmService.generateStructuredOutput(
                 systemPrompt: systemPrompt,
@@ -98,8 +102,9 @@ actor RecommendationGenerator {
                 return
             }
 
-            // 7. Save to Database
-            try await databaseService.saveGeneratedInsight(
+            // 7. Save to Database (synchronous call)
+            // REMOVED await
+            try databaseService.saveGeneratedInsight(
                 type: insightTypeIdentifier,
                 date: Date(),
                 jsonData: jsonString

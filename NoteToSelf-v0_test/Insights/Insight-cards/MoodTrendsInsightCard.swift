@@ -162,7 +162,8 @@ struct MoodTrendsInsightCard: View {
 
                         // Generation Date
                         if let date = generatedDate {
-                            Text("Generated on \(date.formatted(date: .long, time: .short))")
+                            // Corrected: .shortened
+                            Text("Generated on \(date.formatted(date: .long, time: .shortened))")
                                 .font(styles.typography.caption)
                                 .foregroundColor(styles.colors.textSecondary)
                                 .frame(maxWidth: .infinity, alignment: .center)
@@ -179,33 +180,3 @@ struct MoodTrendsInsightCard: View {
         )
     }
 }
-
-
-// Helper view for mood stats (can be removed if not used)
-/*
-struct MoodStatItem: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
-
-    private let styles = UIStyles.shared
-
-    var body: some View {
-        VStack(spacing: 8) {
-            Text(title)
-                .font(styles.typography.caption)
-                .foregroundColor(styles.colors.textSecondary)
-
-            Image(systemName: icon)
-                .foregroundColor(color)
-                .font(.system(size: 24))
-
-            Text(value)
-                .font(styles.typography.bodyLarge)
-                .foregroundColor(styles.colors.text)
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-*/

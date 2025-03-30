@@ -24,7 +24,8 @@ actor WeeklySummaryGenerator {
         var lastGenerationDate: Date? = nil
 
         do {
-            if let latest = try await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+            // REMOVED await
+            if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
                 lastGenerationDate = latest.generatedDate
                 let daysSinceLast = calendar.dateComponents([.day], from: latest.generatedDate, to: Date()).day ?? regenerationThresholdDays + 1
                 if daysSinceLast < regenerationThresholdDays {
@@ -45,6 +46,7 @@ actor WeeklySummaryGenerator {
         // 2. Fetch necessary data (last 7 days of entries)
         let entries: [JournalEntry]
         do {
+             // REMOVED await
             entries = try databaseService.loadAllJournalEntries().filter { $0.date >= oneWeekAgo }
         } catch {
             print("‼️ [WeeklySummaryGenerator] Error fetching journal entries: \(error)")
@@ -57,7 +59,7 @@ actor WeeklySummaryGenerator {
              if !hasNewEntries {
                   print("[WeeklySummaryGenerator] Skipping generation: No new entries since last summary on \(lastGenDate.formatted()).")
                   // Optional: Update the timestamp of the existing insight to prevent re-checking immediately
-                  // try? await databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
+                  // try? databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
                   return
              }
              print("[WeeklySummaryGenerator] New entries found since last generation. Proceeding.")
@@ -73,13 +75,14 @@ actor WeeklySummaryGenerator {
 
         // 3. Format prompt context
         let context = entries.map { entry in
-            "Date: \(entry.date.formatted(date: .short, time: .omitted)), Mood: \(entry.mood.name)\n\(entry.text.prefix(200))..." // Limit context length per entry
+             // Corrected date format
+            "Date: \(entry.date.formatted(date: .numeric, time: .omitted)), Mood: \(entry.mood.name)\n\(entry.text.prefix(200))..." // Limit context length per entry
         }.joined(separator: "\n\n")
 
         // 4. Get system prompt
         let systemPrompt = SystemPrompts.weeklySummaryPrompt(entriesContext: context)
 
-        // 5. Call LLMService for structured output
+        // 5. Call LLMService for structured output (this is async)
         do {
             let result: WeeklySummaryResult = try await llmService.generateStructuredOutput(
                 systemPrompt: systemPrompt,
@@ -98,8 +101,9 @@ actor WeeklySummaryGenerator {
                 return
             }
 
-            // 7. Save to Database
-            try await databaseService.saveGeneratedInsight(
+            // 7. Save to Database (synchronous call)
+            // REMOVED await
+            try databaseService.saveGeneratedInsight(
                 type: insightTypeIdentifier,
                 date: Date(),
                 jsonData: jsonString,
