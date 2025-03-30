@@ -106,10 +106,18 @@ class DatabaseService: ObservableObject {
     func saveJournalEntry(_ entry: JournalEntry, embedding: [Float]?) throws {
         let sql: String
         let params: [Value]
-        let helperEmbeddingToJson = embeddingToJson // Use global helper
 
         if let validEmbedding = embedding, validEmbedding.count == self.embeddingDimension {
-            let embJSON = helperEmbeddingToJson(validEmbedding)
+            guard let embJSON = embeddingToJson(validEmbedding) else {
+                 print("Warning: Failed to convert JE embedding to JSON. Saving without embedding.")
+                 sql = "INSERT OR REPLACE INTO JournalEntries (id, text, mood, date, intensity, embedding) VALUES (?, ?, ?, ?, ?, NULL);"
+                 params = [.text(entry.id.uuidString), .text(entry.text), .text(entry.mood.rawValue),
+                           .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity))]
+                 guard params.count == 5 else { throw DatabaseError.saveDataFailed("Param count mismatch (JE/NoEmbed/JSONFail)") }
+                 do { _ = try self.connection.execute(sql, params) }
+                 catch { throw DatabaseError.saveDataFailed("JournalEntry \(entry.id): \(error.localizedDescription)") }
+                 return // Exit after saving without embedding
+            }
             // Basic safety for JSON string within SQL literal - replace single quotes
             let safeEmbJSON = embJSON.replacingOccurrences(of: "'", with: "''")
             sql = """
@@ -134,10 +142,19 @@ class DatabaseService: ObservableObject {
     func saveChatMessage(_ message: ChatMessage, chatId: UUID, embedding: [Float]?) throws {
         let sql: String
         let params: [Value]
-        let helperEmbeddingToJson = embeddingToJson // Use global helper
 
          if let validEmbedding = embedding, validEmbedding.count == self.embeddingDimension {
-            let embJSON = helperEmbeddingToJson(validEmbedding)
+            guard let embJSON = embeddingToJson(validEmbedding) else {
+                 print("Warning: Failed to convert CM embedding to JSON. Saving without embedding.")
+                 sql = "INSERT OR REPLACE INTO ChatMessages (id, chatId, text, isUser, date, isStarred, embedding) VALUES (?, ?, ?, ?, ?, ?, NULL);"
+                 params = [.text(message.id.uuidString), .text(chatId.uuidString), .text(message.text),
+                           .integer(message.isUser ? 1 : 0), .integer(Int64(message.date.timeIntervalSince1970)),
+                           .integer(message.isStarred ? 1 : 0)]
+                 guard params.count == 6 else { throw DatabaseError.saveDataFailed("Param count mismatch (CM/NoEmbed/JSONFail)") }
+                 do { _ = try self.connection.execute(sql, params) }
+                 catch { throw DatabaseError.saveDataFailed("ChatMessage \(message.id): \(error.localizedDescription)") }
+                 return // Exit after saving without embedding
+            }
             let safeEmbJSON = embJSON.replacingOccurrences(of: "'", with: "''")
             sql = """
                 INSERT OR REPLACE INTO ChatMessages (id, chatId, text, isUser, date, isStarred, embedding)
@@ -236,7 +253,9 @@ class DatabaseService: ObservableObject {
         guard queryVector.count == self.embeddingDimension else {
              throw DatabaseError.dimensionMismatch(expected: self.embeddingDimension, actual: queryVector.count)
         }
-        let queryJSON = embeddingToJson(queryVector) // Use global helper
+        guard let queryJSON = embeddingToJson(queryVector) else {
+             throw DatabaseError.embeddingGenerationFailed("Failed to convert query vector to JSON.")
+        }
         // ** FIXED JOIN CONDITION **
         let sql = """
             SELECT E.id, E.text, E.mood, E.date, E.intensity
@@ -273,7 +292,9 @@ class DatabaseService: ObservableObject {
          guard queryVector.count == self.embeddingDimension else {
               throw DatabaseError.dimensionMismatch(expected: self.embeddingDimension, actual: queryVector.count)
          }
-         let queryJSON = embeddingToJson(queryVector) // Use global helper
+         guard let queryJSON = embeddingToJson(queryVector) else {
+              throw DatabaseError.embeddingGenerationFailed("Failed to convert query vector to JSON.")
+         }
          // ** FIXED JOIN CONDITION **
          let sql = """
              SELECT M.id, M.chatId, M.text, M.isUser, M.date, M.isStarred
@@ -386,57 +407,4 @@ class DatabaseService: ObservableObject {
         }
     }
 } // --- End of DatabaseService class ---
-
-
-// MARK: - Global Embedding Generation Helpers (Outside Class)
-
-// Corrected Embedding Dimension
-fileprivate let EXPECTED_EMBEDDING_DIMENSION = 512
-
-// Internal cache for the embedding model
-@available(iOS 16.0, *)
-private struct EmbeddingModelProvider {
-    static let sharedModel: NLEmbedding? = {
-        let model = NLEmbedding.sentenceEmbedding(for: .english)
-        if model == nil { print("‼️ Error: Failed to load NLEmbedding sentence model for English.") }
-        else if let loadedModel = model, loadedModel.dimension != EXPECTED_EMBEDDING_DIMENSION {
-             print("‼️ Error: Loaded NLEmbedding dimension (\(loadedModel.dimension)) doesn't match EXPECTED (\(EXPECTED_EMBEDDING_DIMENSION)).")
-             return nil // Return nil if dimension doesn't match
-        }
-        return model
-    }()
-}
-
-/// Generates a sentence embedding for the given text using NLEmbedding (iOS 16+).
-func generateEmbedding(for text: String) -> [Float]? { // Keep internal access
-    guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-        print("[Embedding] Input text is empty, skipping embedding generation.")
-        return nil
-    }
-    if #available(iOS 16.0, *) {
-        guard let embeddingModel = EmbeddingModelProvider.sharedModel else {
-             print("‼️ [Embedding] NLEmbedding model not available or dimension mismatch.")
-             return nil
-        }
-        guard let vector = embeddingModel.vector(for: text) else {
-             print("⚠️ [Embedding] Could not generate vector for text: '\(text.prefix(50))...'")
-             return nil
-        }
-        // NLEmbedding returns [Double], convert to [Float]
-        let floatVector = vector.map { Float($0) }
-        // Dimension check is implicitly handled by EmbeddingModelProvider now
-        // print("[Embedding] Generated \(floatVector.count)-dim vector.") // Optional: Log success
-        return floatVector
-    } else {
-        print("‼️ [Embedding] NLEmbedding requires iOS 16.0 or later.")
-        return nil
-    }
-}
-
-
-/// Converts a list of Float numbers into a JSON array string for libSQL's vector32 function.
-func embeddingToJson(_ embedding: [Float]) -> String { // Keep internal access
-    // Use higher precision format specifier if needed, but %.8f is usually sufficient
-    let numberStrings = embedding.map { String(format: "%.8f", $0) }
-    return "[" + numberStrings.joined(separator: ",") + "]"
-}
+    

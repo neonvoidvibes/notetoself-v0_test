@@ -309,27 +309,29 @@ struct JournalView: View {
                     // 1. Create the new entry object
                     let newEntry = JournalEntry(text: text, mood: mood, date: Date(), intensity: intensity)
 
-                    // 2. Generate embedding (can return nil)
-                    let embeddingVector = generateEmbedding(for: newEntry.text) // Use helper
+                    // 2. Generate embedding asynchronously & Save to Database
+                    Task {
+                        print("[JournalView] Generating embedding for new entry...")
+                        let embeddingVector = await generateEmbedding(for: newEntry.text)
 
-                    // 3. Save to Database (handle errors)
-                    do {
-                        try databaseService.saveJournalEntry(newEntry, embedding: embeddingVector)
-                        print("✅ Successfully saved new journal entry \(newEntry.id) to DB.")
+                        // 3. Save to Database (handle errors)
+                        do {
+                            try databaseService.saveJournalEntry(newEntry, embedding: embeddingVector)
+                            print("✅ Successfully saved new journal entry \(newEntry.id) to DB.")
 
-                        // 4. *Only if DB save succeeds*, update AppState UI
-                        // Run UI updates on the main thread
-                        DispatchQueue.main.async {
-                             withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                                 // Prepend to keep newest first
-                                 appState.journalEntries.insert(newEntry, at: 0)
-                                 expandedEntryId = newEntry.id // Auto-expand
-                             }
+                            // 4. *Only if DB save succeeds*, update AppState UI
+                            await MainActor.run { // Ensure UI updates are on main actor
+                                 withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                                     // Prepend to keep newest first
+                                     appState.journalEntries.insert(newEntry, at: 0)
+                                     expandedEntryId = newEntry.id // Auto-expand
+                                 }
+                            }
+                        } catch {
+                            print("‼️ Error saving new journal entry \(newEntry.id) to DB: \(error)")
+                            // Optionally show an error alert to the user here
                         }
-                    } catch {
-                        print("‼️ Error saving new journal entry \(newEntry.id) to DB: \(error)")
-                        // Optionally show an error alert to the user here
-                    }
+                    } // End Task for embedding/saving
                 },
                 autoFocusText: true
             )
@@ -364,22 +366,25 @@ struct JournalView: View {
                          intensity: updatedIntensity
                      )
 
-                    // 2. Generate embedding for the potentially updated text
-                    let embeddingVector = generateEmbedding(for: updatedEntry.text)
+                    // 2. Generate embedding asynchronously & Save updated entry to Database
+                    Task {
+                         print("[JournalView] Generating embedding for updated entry...")
+                         let embeddingVector = await generateEmbedding(for: updatedEntry.text)
 
-                    // 3. Save updated entry to Database (handle errors)
-                    do {
-                        try databaseService.saveJournalEntry(updatedEntry, embedding: embeddingVector)
-                        print("✅ Successfully updated journal entry \(updatedEntry.id) in DB.")
+                        // 3. Save updated entry to Database (handle errors)
+                        do {
+                            try databaseService.saveJournalEntry(updatedEntry, embedding: embeddingVector)
+                            print("✅ Successfully updated journal entry \(updatedEntry.id) in DB.")
 
-                        // 4. *Only if DB save succeeds*, update AppState UI
-                        DispatchQueue.main.async {
-                            updateEntryInAppState(updatedEntry) // Use helper to update AppState
+                            // 4. *Only if DB save succeeds*, update AppState UI
+                            await MainActor.run { // Ensure UI updates are on main actor
+                                updateEntryInAppState(updatedEntry) // Use helper to update AppState
+                            }
+                        } catch {
+                            print("‼️ Error updating journal entry \(updatedEntry.id) in DB: \(error)")
+                             // Optionally show an error alert
                         }
-                    } catch {
-                        print("‼️ Error updating journal entry \(updatedEntry.id) in DB: \(error)")
-                         // Optionally show an error alert
-                    }
+                    } // End Task for embedding/saving
                 },
                 onDelete: {
                     deleteEntry(entryToEdit) // Needs DB delete logic later
@@ -399,6 +404,8 @@ struct JournalView: View {
     // MARK: - Helper Functions (Modify these later for DB operations)
 
     // Helper function to update entry in AppState (used by editing save)
+    // Ensure this is called on the main actor
+    @MainActor
     private func updateEntryInAppState(_ updatedEntry: JournalEntry) {
         if let index = appState.journalEntries.firstIndex(where: { $0.id == updatedEntry.id }) {
             withAnimation {
@@ -417,29 +424,32 @@ struct JournalView: View {
 
     // TODO: Modify deleteEntry to also delete from DatabaseService
     private func deleteEntry(_ entry: JournalEntry) {
-        // --- Current AppState Deletion ---
-        if let index = appState.journalEntries.firstIndex(where: { $0.id == entry.id }) {
-            _ = withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                appState.journalEntries.remove(at: index)
+        // --- Current AppState Deletion (needs to be on main actor) ---
+        Task { @MainActor in // Ensure UI updates run on main actor
+            if let index = appState.journalEntries.firstIndex(where: { $0.id == entry.id }) {
+                _ = withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    appState.journalEntries.remove(at: index)
+                }
             }
+             // Clear UI state
+            if fullscreenEntry?.id == entry.id { fullscreenEntry = nil }
+            if editingEntry?.id == entry.id { editingEntry = nil }
         }
-         // Clear UI state
-        if fullscreenEntry?.id == entry.id { fullscreenEntry = nil }
-        if editingEntry?.id == entry.id { editingEntry = nil }
 
         // --- Delete from Database ---
-        Task { // Run DB delete in the background
+        Task.detached(priority: .background) { // Run DB delete in the background
             do {
-                try databaseService.deleteJournalEntry(id: entry.id) // Call the new DB service method
+                try databaseService.deleteJournalEntry(id: entry.id) // Call the DB service method
                 print("✅ Successfully deleted journal entry \(entry.id) from DB.")
             } catch {
                 print("‼️ Error deleting journal entry \(entry.id) from DB: \(error)")
                 // --- Error Handling Strategy ---
                 // If DB delete fails, the UI already removed the item.
                 // Option 1: Do nothing (UI and DB are out of sync). Not ideal.
-                // Option 2: Show an error alert to the user.
+                // Option 2: Show an error alert to the user (needs main actor).
                 // Option 3 (Complex): Try to re-insert the item into AppState to match DB.
                 // For now, just log the error. Consider adding user feedback later.
+                // await MainActor.run { /* Show alert */ }
             }
         }
     }

@@ -24,7 +24,7 @@ class ChatManager: ObservableObject {
         self.llmService = llmService
         self.subscriptionManager = subscriptionManager
         self.currentChat = Chat()
-        
+
         // Load chats synchronously now that ChatManager is @MainActor
         // This assumes loadChatsFromDB can run reasonably fast or is acceptable on launch.
         // Alternatively, keep the Task approach but manage loading state.
@@ -78,8 +78,9 @@ class ChatManager: ObservableObject {
             var retrievalError: Error? = nil
 
             // --- RAG Context Retrieval & PII Filtering ---
-            print("[ChatPipeline] Attempting embedding generation...")
-            if let queryEmbedding = generateEmbedding(for: originalUserMessageText) {
+            print("[ChatPipeline] Attempting embedding generation for RAG...")
+            let queryEmbedding = await generateEmbedding(for: originalUserMessageText) // Use await
+            if let queryEmbedding = queryEmbedding { // Check the awaited result
                 print("[ChatPipeline] Embedding generated successfully.")
                 print("[ChatPipeline] Attempting RAG context retrieval...")
                 do {
@@ -192,8 +193,8 @@ class ChatManager: ObservableObject {
         // 4. Save to Database (Dispatch to background task)
         let chatId = self.currentChat.id
         Task.detached(priority: .background) { [databaseService] in // Capture service
-            print("[ChatDB] Saving message \(message.id) to DB...")
-            let embedding = generateEmbedding(for: message.text)
+            print("[ChatDB] Generating embedding & saving message \(message.id) to DB...")
+            let embedding = await generateEmbedding(for: message.text) // Use await
             do {
                 // Use captured self explicitly
                 try databaseService.saveChatMessage(message, chatId: chatId, embedding: embedding)
