@@ -14,15 +14,20 @@ struct SharedSectionHeader: View {
     }
 
     var body: some View {
-        Text(title)
-            .font(styles.typography.title3)
-            .foregroundColor(styles.colors.text)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, styles.layout.paddingM)
-            .padding(.top, 12) // Consistent top padding
-            .padding(.bottom, 5) // Consistent bottom padding
-            .listRowInsets(EdgeInsets()) // For List compatibility
-            .background(backgroundColor) // Apply the specific background color
+        // Wrap Text in HStack to apply padding only to text, allowing background full width
+        HStack {
+            Text(title)
+                .font(styles.typography.title3)
+                .foregroundColor(styles.colors.text)
+            Spacer() // Push text to the left
+        }
+        // Increased padding to align with indented card content
+        .padding(.leading, styles.layout.paddingL * 2)
+        .frame(maxWidth: .infinity, alignment: .leading) // Ensure HStack takes full width for background
+        .padding(.top, 12) // Consistent top padding
+        .padding(.bottom, 5) // Consistent bottom padding
+        .listRowInsets(EdgeInsets()) // For List compatibility
+        .background(backgroundColor) // Apply the specific background color
     }
 }
 

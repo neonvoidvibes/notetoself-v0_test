@@ -316,13 +316,14 @@ struct JournalView: View {
                              onExpand: { fullscreenEntry = entry }, // Restore onExpand
                              onStar: { toggleStar(entry) } // Keep star action
                          )
+                         .padding(.horizontal, styles.layout.paddingL) // Apply padding here
                          .transition(.opacity.combined(with: .move(edge: .top)))
                      }
                  }
              }
          }
-         .padding(.horizontal, 20)
-         .padding(.bottom, 100)
+         // REMOVED: .padding(.horizontal, 20)
+         .padding(.bottom, 100) // Keep bottom padding
     }
 
     private var emptyState: some View {
