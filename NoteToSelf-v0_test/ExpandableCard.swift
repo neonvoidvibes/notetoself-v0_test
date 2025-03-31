@@ -22,83 +22,144 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
     @State private var contentHeight: CGFloat = 0
     @State private var detailContentHeight: CGFloat = 0
     @State private var isAnimating: Bool = false
+    @State private var hovered: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) { // Ensure alignment is leading
+        VStack(alignment: .leading, spacing: 0) {
             // Main content area with button overlay
             ZStack(alignment: .bottomTrailing) {
                 // Main content (always visible)
-                content()
-                    .frame(maxWidth: .infinity, alignment: .leading) // Ensure content takes width
-                    .background(
-                        GeometryReader { geometry in
-                            Color.clear.preference(
-                                key: ContentHeightPreferenceKey.self,
-                                value: geometry.size.height
-                            )
+                VStack(alignment: .leading, spacing: 0) {
+                    content()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            GeometryReader { geometry in
+                                Color.clear.preference(
+                                    key: ContentHeightPreferenceKey.self,
+                                    value: geometry.size.height
+                                )
+                            }
+                        )
+                        .onPreferenceChange(ContentHeightPreferenceKey.self) { height in
+                            self.contentHeight = height
                         }
-                    )
-                    .onPreferenceChange(ContentHeightPreferenceKey.self) { height in
-                        self.contentHeight = height
+                    
+                    // Add padding at the bottom to make room for the button
+                    if !isExpanded {
+                        Spacer()
+                            .frame(height: 44)
                     }
-
-                // Expand/Collapse Button (only shown when not expanded)
-                if !isExpanded {
-                    ExpandCollapseButtonInternal(isExpanded: $isExpanded)
-                        .padding(layout.paddingM) // Add padding around the button
                 }
+            }
+            
+            // Expand button in its own container below content
+            if !isExpanded {
+                HStack {
+                    Spacer()
+                    ExpandCollapseButtonInternal(isExpanded: $isExpanded, hovered: hovered)
+                        .opacity(hovered ? 1.0 : 0.8)
+                        .animation(.easeInOut(duration: 0.2), value: hovered)
+                        .onTapGesture {
+                            toggleExpansion()
+                        }
+                }
+                .padding(.top, -40) // Overlap with the bottom padding
+                .padding(.bottom, 8)
+                .padding(.trailing, layout.paddingM)
             }
 
             // Detail content (expandable)
             if isExpanded || isAnimating {
-                 // Add the collapse button inside the details section as well
-                 VStack(alignment: .leading, spacing: 0) { // Use VStack for detail content + button
-                     Divider()
-                         .background(colors.tertiaryBackground)
-                         .padding(.vertical, 8)
+                VStack(alignment: .leading, spacing: 0) {
+                    // Animated divider
+                    Divider()
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    colors.accent.opacity(0.5),
+                                    colors.tertiaryBackground
+                                ]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
 
-                     detailContent()
-                         .frame(maxWidth: .infinity, alignment: .leading) // Ensure content takes width
+                    detailContent()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 16)
 
-                     // Collapse Button at the bottom of details
-                     HStack {
-                         Spacer() // Push button to the right
-                         ExpandCollapseButtonInternal(isExpanded: $isExpanded)
-                     }
-                     .padding(.top, layout.paddingM) // Add padding above button
-                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
-                .animation(.spring(response: 0.35, dampingFraction: 0.7), value: isExpanded)
+                    // Collapse Button at the bottom of details
+                    HStack {
+                        Spacer()
+                        ExpandCollapseButtonInternal(isExpanded: $isExpanded, hovered: hovered)
+                            .scaleEffect(hovered ? 1.05 : 1.0)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hovered)
+                            .onTapGesture {
+                                toggleExpansion()
+                            }
+                    }
+                    .padding(.top, layout.paddingM)
+                    .padding(.bottom, 8)
+                    .padding(.trailing, layout.paddingM)
+                }
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .move(edge: .top)),
+                    removal: .opacity.combined(with: .move(edge: .top))
+                ))
+                .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isExpanded)
             }
         }
         .padding(layout.cardInnerPadding)
         .background(
-            RoundedRectangle(cornerRadius: layout.radiusL)
-                .fill(colors.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: layout.radiusL)
-                        .strokeBorder(
-                            colors.tertiaryBackground.opacity(0.5),
-                            lineWidth: 1
-                        )
+            RoundedRectangle(cornerRadius: layout.radiusM)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color("CardBackground"),
+                            Color("CardBackground").opacity(0.95)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .shadow(
+                    color: isPrimary ? colors.accent.opacity(0.15) : Color.black.opacity(0.15),
+                    radius: 10,
+                    x: 0,
+                    y: 5
                 )
         )
-        .shadow(
-            color: Color.black.opacity(0.08),
-            radius: 8,
-            x: 0,
-            y: 4
+        .overlay(
+            RoundedRectangle(cornerRadius: layout.radiusM)
+                .strokeBorder(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            isPrimary ? colors.accent.opacity(0.3) : Color(hex: "#333333"),
+                            isPrimary ? colors.accent.opacity(0.1) : Color(hex: "#222222")
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: isPrimary ? 1.5 : 1
+                )
         )
-        .contentShape(Rectangle()) // Keep whole card tappable
+        .scaleEffect(hovered ? 1.01 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hovered)
+        .contentShape(Rectangle())
         .onTapGesture {
             toggleExpansion()
+        }
+        .onHover { isHovered in
+            hovered = isHovered
         }
     }
 
     // Function to handle toggling expansion and scrolling
     private func toggleExpansion() {
         let wasExpanded = isExpanded // Capture state before toggle
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
             isExpanded.toggle()
             if !isExpanded { // If collapsing
                 isAnimating = true // Keep animating flag for smooth transition out
@@ -121,34 +182,35 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
     }
 }
 
-// Internal button view to avoid cluttering ExpandableCard body
+// Internal button view with enhanced styling
 struct ExpandCollapseButtonInternal: View {
     @Binding var isExpanded: Bool
+    var hovered: Bool
     private let styles = UIStyles.shared
 
     var body: some View {
-        Button(action: {
-            // Action handled by parent's onTapGesture or explicitly if needed
-            // For now, this button relies on the parent tap gesture
-            // To make it independent: add toggleExpansion() call here
-        }) {
-            HStack(spacing: 4) {
-                Image(systemName: isExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
-                    .font(.system(size: styles.layout.iconSizeS))
-                Text(isExpanded ? "Close" : "Details")
-                    .font(styles.typography.smallLabelFont)
-            }
-            .foregroundColor(styles.colors.accent)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(styles.colors.secondaryBackground.opacity(0.8))
-            .cornerRadius(styles.layout.radiusM)
-            .shadow(color: .black.opacity(0.2), radius: 3, y: 1)
+        HStack(spacing: 4) {
+            Image(systemName: isExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                .font(.system(size: styles.layout.iconSizeS))
+            Text(isExpanded ? "Close" : "Details")
+                .font(styles.typography.smallLabelFont)
         }
-        // Ensure button taps don't interfere with the main card tap if they overlap
+        .foregroundColor(styles.colors.accent)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                .fill(styles.colors.secondaryBackground.opacity(0.8))
+                .shadow(color: .black.opacity(0.2), radius: 3, y: 1)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                .strokeBorder(
+                    styles.colors.accent.opacity(hovered ? 0.3 : 0.1),
+                    lineWidth: 1
+                )
+        )
         .contentShape(Rectangle())
-        // Prevent button tap from triggering parent tap gesture if needed
-        // .allowsHitTesting(true) // Default is true
     }
 }
 
@@ -174,3 +236,4 @@ struct ContentHeightPreferenceKey: PreferenceKey {
         value = nextValue()
     }
 }
+

@@ -9,6 +9,9 @@ struct ChatInsightCard: View {
     var cardId: String? = nil
 
     @State private var isExpanded: Bool = false
+    @State private var isHovering: Bool = false
+    @State private var animateGradient: Bool = false
+    
     private let styles = UIStyles.shared
 
     // This would ideally come from an AI model analyzing journal entries
@@ -44,22 +47,42 @@ struct ChatInsightCard: View {
     var body: some View {
         styles.expandableCard(
             isExpanded: $isExpanded,
-            scrollProxy: scrollProxy, // Pass proxy
-            cardId: cardId,           // Pass ID
+            scrollProxy: scrollProxy,
+            cardId: cardId,
             content: {
-                // Preview content
+                // Preview content with enhanced styling
                 VStack(spacing: styles.layout.spacingM) {
                     HStack {
                         Text("AI Reflection")
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
+                            .shadow(color: styles.colors.accent.opacity(0.3), radius: 1, x: 0, y: 0)
                     
                         Spacer()
+                        
+                        // Animated AI indicator
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        styles.colors.accent,
+                                        styles.colors.accent.opacity(0.7)
+                                    ]),
+                                    startPoint: animateGradient ? .leading : .trailing,
+                                    endPoint: animateGradient ? .trailing : .leading
+                                )
+                            )
+                            .frame(width: 8, height: 8)
+                            .onAppear {
+                                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+                                    animateGradient.toggle()
+                                }
+                            }
                     }
                     
-                    // AI Assistant message with a unique styling
+                    // AI Assistant message with enhanced styling
                     HStack(alignment: .top, spacing: styles.layout.spacingM) {
-                        // Assistant avatar
+                        // Assistant avatar with animated gradient
                         ZStack {
                             Circle()
                                 .fill(
@@ -68,18 +91,20 @@ struct ChatInsightCard: View {
                                             styles.colors.accent,
                                             styles.colors.accent.opacity(0.7)
                                         ]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
+                                        startPoint: animateGradient ? .topLeading : .bottomTrailing,
+                                        endPoint: animateGradient ? .bottomTrailing : .topLeading
                                     )
                                 )
-                                .frame(width: 36, height: 36)
+                                .frame(width: 40, height: 40)
+                                .shadow(color: styles.colors.accent.opacity(0.3), radius: 3, x: 0, y: 2)
                         
-                        Image(systemName: "sparkles")
-                            .foregroundColor(.white)
-                            .font(.system(size: 16))
+                            Image(systemName: "sparkles")
+                                .foregroundColor(.white)
+                                .font(.system(size: 18))
+                                .shadow(color: .white.opacity(0.5), radius: 1, x: 0, y: 0)
                         }
                     
-                        // Message bubble with gradient border
+                        // Message bubble with enhanced styling
                         Text(insightMessage)
                             .font(styles.typography.bodyFont)
                             .foregroundColor(styles.colors.text)
@@ -87,6 +112,7 @@ struct ChatInsightCard: View {
                             .background(
                                 RoundedRectangle(cornerRadius: styles.layout.radiusL)
                                     .fill(styles.colors.secondaryBackground)
+                                    .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: styles.layout.radiusL)
                                             .strokeBorder(
@@ -95,8 +121,8 @@ struct ChatInsightCard: View {
                                                         styles.colors.accent.opacity(0.7),
                                                         styles.colors.accent.opacity(0.3)
                                                     ]),
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
+                                                    startPoint: animateGradient ? .topLeading : .bottomTrailing,
+                                                    endPoint: animateGradient ? .bottomTrailing : .topLeading
                                                 ),
                                                 lineWidth: 1.5
                                             )
@@ -108,36 +134,83 @@ struct ChatInsightCard: View {
                 }
             },
             detailContent: {
-                // Expanded detail content
+                // Expanded detail content with enhanced styling
                 VStack(spacing: styles.layout.spacingL) {
-                    // Full message
+                    // Full message with enhanced styling
                     Text(insightMessage)
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.text)
+                        .padding(20)
+                        .background(
+                            RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                .fill(styles.colors.secondaryBackground.opacity(0.7))
+                                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                .strokeBorder(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            styles.colors.accent.opacity(0.3),
+                                            styles.colors.accent.opacity(0.1)
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1
+                                )
+                        )
                         .frame(maxWidth: .infinity, alignment: .leading)
                 
-                    // Reflection prompts
+                    // Reflection prompts with enhanced styling
                     VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                         Text("Reflection Questions")
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
+                            .shadow(color: styles.colors.accent.opacity(0.3), radius: 1, x: 0, y: 0)
                     
                         ForEach(generateReflectionPrompts(), id: \.self) { prompt in
                             HStack(alignment: .top, spacing: 12) {
-                                Image(systemName: "circle.fill")
-                                    .foregroundColor(styles.colors.accent)
-                                    .font(.system(size: 8))
-                                    .padding(.top, 6)
+                                // Styled bullet point
+                                ZStack {
+                                    Circle()
+                                        .fill(styles.colors.accent.opacity(0.2))
+                                        .frame(width: 22, height: 22)
+                                    
+                                    Circle()
+                                        .fill(styles.colors.accent)
+                                        .frame(width: 8, height: 8)
+                                }
+                                .padding(.top, 4)
                             
                                 Text(prompt)
                                     .font(styles.typography.bodyFont)
                                     .foregroundColor(styles.colors.textSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                    .fill(styles.colors.secondaryBackground.opacity(isHovering ? 0.5 : 0.0))
+                                    .animation(.easeInOut(duration: 0.2), value: isHovering)
+                            )
+                            .onHover { hovering in
+                                isHovering = hovering
+                            }
                         }
                     }
+                    .padding(20)
+                    .background(
+                        RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                            .fill(styles.colors.secondaryBackground.opacity(0.3))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                            .strokeBorder(styles.colors.tertiaryBackground, lineWidth: 1)
+                    )
                 
-                    // Call-to-action button
+                    // Call-to-action button with enhanced styling
                     Button(action: {
                         // Switch to the Reflections tab
                         NotificationCenter.default.post(
@@ -146,15 +219,48 @@ struct ChatInsightCard: View {
                             userInfo: ["tabIndex": 2]
                         )
                     }) {
-                        Text("Continue This Conversation")
-                            .font(styles.typography.bodyFont)
-                            .foregroundColor(.white)
-                            .padding(.vertical, 12)
-                            .frame(maxWidth: .infinity)
-                            .background(
-                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                    .fill(styles.colors.accent)
+                        HStack {
+                            Text("Continue This Conversation")
+                                .font(styles.typography.bodyFont.weight(.medium))
+                                .foregroundColor(.white)
+                            
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.white)
+                        }
+                        .padding(.vertical, 14)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    styles.colors.accent,
+                                    styles.colors.accent.opacity(0.8)
+                                ]),
+                                startPoint: .leading,
+                                endPoint: .trailing
                             )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: styles.layout.radiusM))
+                        .shadow(color: styles.colors.accent.opacity(0.3), radius: 4, x: 0, y: 2)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                .strokeBorder(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            .white.opacity(0.3),
+                                            .clear
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1
+                                )
+                        )
+                    }
+                    .scaleEffect(isHovering ? 1.02 : 1.0)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovering)
+                    .onHover { hovering in
+                        isHovering = hovering
                     }
                 }
             }
@@ -217,3 +323,4 @@ struct ChatInsightCard: View {
         }
     }
 }
+

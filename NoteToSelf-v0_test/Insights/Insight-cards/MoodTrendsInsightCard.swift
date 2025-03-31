@@ -60,62 +60,62 @@ struct MoodTrendsInsightCard: View {
             scrollProxy: scrollProxy, // Pass proxy
             cardId: cardId,           // Pass ID
             content: {
-                // Preview content based on decodedTrend
-                VStack(spacing: styles.layout.spacingM) {
-                    HStack {
-                        Text("Mood Analysis")
-                            .font(styles.typography.title3).foregroundColor(styles.colors.text)
-                        Spacer()
-                        if subscriptionTier == .free {
-                             Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
-                        }
-                    }
+    // Preview content based on decodedTrend
+    VStack(spacing: styles.layout.spacingM) {
+        HStack {
+            Text("Mood Analysis")
+                .font(styles.typography.title3).foregroundColor(styles.colors.text)
+            Spacer()
+            if subscriptionTier == .free {
+                 Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
+            }
+        }
 
-                    if subscriptionTier == .premium {
-                        // Use decodedTrend for display
-                        if let result = decodedTrend {
-                            HStack(spacing: styles.layout.spacingL) {
-                                // Overall Trend
-                                VStack(spacing: 8) {
-                                    Image(systemName: trendIcon(forName: result.overallTrend))
-                                        .font(.system(size: 32)).foregroundColor(moodColor(forName: result.overallTrend))
-                                    Text(result.overallTrend).font(styles.typography.bodyFont).foregroundColor(styles.colors.text)
-                                    Text("Overall Trend").font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
-                                }.frame(maxWidth: .infinity)
-                                // Dominant Mood
-                                VStack(spacing: 8) {
-                                    let moodEnum = Mood.allCases.first { $0.name.lowercased() == result.dominantMood.lowercased() }
-                                    Image(systemName: moodEnum?.systemIconName ?? "questionmark.circle.fill")
-                                        .font(.system(size: 32)).foregroundColor(moodColor(forName: result.dominantMood))
-                                    Text(result.dominantMood).font(styles.typography.bodyFont).foregroundColor(styles.colors.text)
-                                    Text("Dominant Mood").font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
-                                }.frame(maxWidth: .infinity)
-                            }.padding(.vertical, styles.layout.spacingS)
+        if subscriptionTier == .premium {
+            // Use decodedTrend for display
+            if let result = decodedTrend {
+                HStack(spacing: styles.layout.spacingL) {
+                    // Overall Trend
+                    VStack(spacing: 8) {
+                        Image(systemName: trendIcon(forName: result.overallTrend))
+                            .font(.system(size: 32)).foregroundColor(moodColor(forName: result.overallTrend))
+                        Text(result.overallTrend).font(styles.typography.bodyFont).foregroundColor(styles.colors.text)
+                        Text("Overall Trend").font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
+                    }.frame(maxWidth: .infinity)
+                    // Dominant Mood
+                    VStack(spacing: 8) {
+                        let moodEnum = Mood.allCases.first { $0.name.lowercased() == result.dominantMood.lowercased() }
+                        Image(systemName: moodEnum?.systemIconName ?? "questionmark.circle.fill")
+                            .font(.system(size: 32)).foregroundColor(moodColor(forName: result.dominantMood))
+                        Text(result.dominantMood).font(styles.typography.bodyFont).foregroundColor(styles.colors.text)
+                        Text("Dominant Mood").font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
+                    }.frame(maxWidth: .infinity)
+                }.padding(.vertical, styles.layout.spacingS)
 
-                            // Analysis Text Preview
-                            Text(result.analysis)
-                                .font(styles.typography.bodySmall).foregroundColor(styles.colors.textSecondary)
-                                .multilineTextAlignment(.center).padding(.top, styles.layout.spacingS).lineLimit(2)
+                // Analysis Text Preview
+                Text(result.analysis)
+                    .font(styles.typography.bodySmall).foregroundColor(styles.colors.text)
+                    .multilineTextAlignment(.center).padding(.top, styles.layout.spacingS).lineLimit(2)
 
-                        } else {
-                            // Premium user, but no decoded data yet or error
-                             Text(placeholderMessage)
-                                 .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                                 .frame(maxWidth: .infinity, minHeight: 100, alignment: .center)
-                                 .multilineTextAlignment(.center)
-                                 if jsonString != nil && decodedTrend == nil && !decodingError {
-                                     ProgressView().tint(styles.colors.accent).padding(.top, 4)
-                                 }
-                        }
-                    } else {
-                         // Free tier locked state
-                         Text("Unlock mood trend analysis and insights with Premium.")
-                             .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                             .frame(maxWidth: .infinity, minHeight: 100, alignment: .center)
-                             .multilineTextAlignment(.center)
-                    }
-                }
-            },
+            } else {
+                // Premium user, but no decoded data yet or error
+                 Text(placeholderMessage)
+                     .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
+                     .frame(maxWidth: .infinity, minHeight: 100, alignment: .center)
+                     .multilineTextAlignment(.center)
+                     if jsonString != nil && decodedTrend == nil && !decodingError {
+                         ProgressView().tint(styles.colors.accent).padding(.top, 4)
+                     }
+            }
+        } else {
+             // Free tier locked state
+             Text("Unlock mood trend analysis and insights with Premium.")
+                 .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
+                 .frame(maxWidth: .infinity, minHeight: 100, alignment: .center)
+                 .multilineTextAlignment(.center)
+        }
+    }
+},
             detailContent: {
                 // Expanded detail content (Only show if premium and data exists)
                 if subscriptionTier == .premium, let result = decodedTrend {
@@ -219,3 +219,4 @@ struct MoodTrendsInsightCard: View {
         }
     }
 }
+

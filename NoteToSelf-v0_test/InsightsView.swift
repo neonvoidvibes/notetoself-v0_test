@@ -20,6 +20,11 @@ struct InsightsView: View {
     @State private var recommendationsJson: String? = nil
     @State private var recommendationsDate: Date? = nil
     @State private var isLoadingInsights: Bool = false
+    
+    // Animation states
+    @State private var headerAppeared = false
+    @State private var cardsAppeared = false
+    @State private var selectedSection: String? = nil
 
     private let styles = UIStyles.shared
 
@@ -34,195 +39,377 @@ struct InsightsView: View {
 
     var body: some View {
         ZStack {
-            styles.colors.appBackground.ignoresSafeArea()
+            // Background with subtle gradient
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    styles.colors.appBackground,
+                    styles.colors.appBackground.opacity(0.95)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
             VStack(spacing: 0) {
-                // Header (remains the same)
+                // Header with animated accent
                 ZStack(alignment: .center) {
+                    // Title truly centered with animated accent
                     VStack(spacing: 8) {
                         Text("Insights")
                             .font(styles.typography.title1)
                             .foregroundColor(styles.colors.text)
-                        Rectangle().fill(styles.colors.accent).frame(width: 20, height: 3)
+                            .shadow(color: styles.colors.accent.opacity(0.3), radius: 2, x: 0, y: 0)
+
+                        // Animated accent bar
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        styles.colors.accent.opacity(0.7),
+                                        styles.colors.accent
+                                    ]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: headerAppeared ? 30 : 0, height: 3)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: headerAppeared)
                     }
+
+                    // Menu button on left
                     HStack {
-                        Button(action: { NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil) }) {
+                        Button(action: {
+                            NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
+                        }) {
                             VStack(spacing: 6) {
-                                HStack { Rectangle().fill(styles.colors.accent).frame(width: 28, height: 2); Spacer() }
-                                HStack { Rectangle().fill(styles.colors.accent).frame(width: 20, height: 2); Spacer() }
-                            }.frame(width: 36, height: 36)
+                                HStack {
+                                    Rectangle().fill(styles.colors.accent).frame(width: 28, height: 2)
+                                    Spacer()
+                                }
+                                HStack {
+                                    Rectangle().fill(styles.colors.accent).frame(width: 20, height: 2)
+                                    Spacer()
+                                }
+                            }
+                            .frame(width: 36, height: 36)
+                            .background(
+                                Circle()
+                                    .fill(styles.colors.secondaryBackground.opacity(0.5))
+                                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                            )
                         }
+
                         Spacer()
-                    }.padding(.horizontal, styles.layout.paddingXL)
+                    }
+                    .padding(.horizontal, styles.layout.paddingXL)
                 }
-                .padding(.top, 8)
-                .padding(.bottom, 8)
+                .padding(.top, 12)
+                .padding(.bottom, 12)
 
                 // Main content ScrollView
-                ScrollView {
-                    GeometryReader { geometry in
-                        Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: geometry.frame(in: .named("scrollView")).minY)
-                    }.frame(height: 0)
+                ScrollViewReader { scrollProxy in
+                    ScrollView {
+                        GeometryReader { geometry in
+                            Color.clear.preference(
+                                key: ScrollOffsetPreferenceKey.self,
+                                value: geometry.frame(in: .named("scrollView")).minY
+                            )
+                        }.frame(height: 0)
 
-                    // Initial Empty State or Content
-                    if !hasAnyEntries {
-                        VStack(spacing: styles.layout.spacingL) {
-                            Spacer(minLength: 100)
-                            Image(systemName: "sparkles.rectangle.stack")
-                                .font(.system(size: 60))
-                                .foregroundColor(styles.colors.accent.opacity(0.7))
-                            Text("Unlock Your Insights")
-                                .font(styles.typography.title1)
-                                .foregroundColor(styles.colors.text)
-                            Text("Start journaling regularly to discover patterns and receive personalized insights here.")
-                                .font(styles.typography.bodyFont)
-                                .foregroundColor(styles.colors.textSecondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, styles.layout.paddingXL)
-                            Spacer()
-                        }
-                        .padding(.vertical, 50)
-                    } else {
-                        // Regular Content Header
-                        VStack(alignment: .center, spacing: styles.layout.spacingL) {
-                            Text("My Insights")
-                                .font(styles.typography.headingFont).foregroundColor(styles.colors.text).padding(.bottom, 4)
-                            Text("Discover patterns, make better choices.")
-                                .font(styles.typography.bodyLarge).foregroundColor(styles.colors.accent).multilineTextAlignment(.center)
-                        }
-                        .padding(.horizontal, styles.layout.paddingXL)
-                        .padding(.vertical, styles.layout.spacingXL * 1.5)
-                        .padding(.top, 80).padding(.bottom, 40)
-                        .frame(maxWidth: .infinity)
-                        .background(LinearGradient(gradient: Gradient(colors: [styles.colors.appBackground, styles.colors.appBackground.opacity(0.9)]), startPoint: .top, endPoint: .bottom))
-
-                        // Loading Indicator or Cards
-                        if isLoadingInsights && summaryJson == nil && trendJson == nil && recommendationsJson == nil {
-                            // Show loading only on initial load when everything is nil
-                            ProgressView("Loading Insights...")
-                                .padding(.vertical, 50)
-                                .tint(styles.colors.accent)
+                        // Initial Empty State or Content
+                        if !hasAnyEntries {
+                            emptyStateView
                         } else {
-                            // Use LazyVStack for sections within the ScrollView
-                            LazyVStack(spacing: styles.layout.cardSpacing, pinnedViews: [.sectionHeaders]) {
-                                // Subscription Tier Toggle (for testing)
-                                #if DEBUG
-                                Section { // Use correct Section initializer
-                                    HStack {
-                                        Text("Sub:").font(styles.typography.bodySmall).foregroundColor(styles.colors.textSecondary)
-                                        Picker("", selection: $appState.subscriptionTier) {
-                                            Text("Free").tag(SubscriptionTier.free)
-                                            Text("Premium").tag(SubscriptionTier.premium)
+                            // Regular Content Header with animation
+                            VStack(alignment: .center, spacing: styles.layout.spacingL) {
+                                Text("My Insights")
+                                    .font(styles.typography.headingFont)
+                                    .foregroundColor(styles.colors.text)
+                                    .padding(.bottom, 4)
+                                    .shadow(color: styles.colors.accent.opacity(0.3), radius: 2, x: 0, y: 0)
+                                
+                                Text("Discover patterns, make better choices.")
+                                    .font(styles.typography.bodyLarge)
+                                    .foregroundColor(styles.colors.accent)
+                                    .multilineTextAlignment(.center)
+                                    .shadow(color: styles.colors.accent.opacity(0.3), radius: 1, x: 0, y: 0)
+                            }
+                            .padding(.horizontal, styles.layout.paddingXL)
+                            .padding(.vertical, styles.layout.spacingXL * 1.5)
+                            .padding(.top, 80)
+                            .padding(.bottom, 40)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                ZStack {
+                                    // Subtle gradient background
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            styles.colors.appBackground,
+                                            styles.colors.appBackground.opacity(0.85)
+                                        ]),
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                    
+                                    // Subtle pattern overlay
+                                    GeometryReader { geo in
+                                        ForEach(0..<10) { i in
+                                            Circle()
+                                                .fill(styles.colors.accent.opacity(0.03))
+                                                .frame(width: CGFloat.random(in: 40...100))
+                                                .position(
+                                                    x: CGFloat.random(in: 0...geo.size.width),
+                                                    y: CGFloat.random(in: 0...geo.size.height)
+                                                )
                                         }
-                                        .pickerStyle(SegmentedPickerStyle()).frame(width: 150) // Smaller picker
-                                        Spacer()
                                     }
-                                    .padding(.horizontal, styles.layout.paddingXL).padding(.top, 8)
-                                } // End Section content
-                                #endif
+                                }
+                            )
+                            .opacity(headerAppeared ? 1 : 0)
+                            .offset(y: headerAppeared ? 0 : -20)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: headerAppeared)
 
-                                // Wrap LazyVStack in ScrollViewReader
-                                ScrollViewReader { scrollProxy in
-                                    // Today's Highlights Section
-                                    Section(header: SharedSectionHeader(title: "Today's Highlights", backgroundColor: styles.colors.appBackground)) { // Use correct Section initializer
-                                        // Content for this section
-                                        StreakInsightCard(streak: appState.currentStreak)
-                                            .id("streakCard") // Add ID
-                                            .padding(.horizontal, styles.layout.paddingXL)
-                                            // Pass proxy and ID (Streak card doesn't use expandableCard helper directly, add manually if needed)
-
-                                        WeeklySummaryInsightCard(
-                                            jsonString: summaryJson,
-                                            generatedDate: summaryDate,
-                                            isFresh: isWeeklySummaryFresh,
-                                            subscriptionTier: appState.subscriptionTier,
-                                            scrollProxy: scrollProxy, // Pass proxy
-                                            cardId: "summaryCard"     // Pass ID
-                                        )
-                                        .id("summaryCard") // Add ID
-                                        .padding(.horizontal, styles.layout.paddingXL)
-                                    } // End Section content
-
-                                    // Deeper Insights Section
-                                    Section(header: SharedSectionHeader(title: "Deeper Insights", backgroundColor: styles.colors.appBackground)) { // Use correct Section initializer
-                                        // Content for this section
-                                        ChatInsightCard()
-                                            .id("chatCard") // Add ID
-                                            .padding(.horizontal, styles.layout.paddingXL)
-                                            .accessibilityLabel("AI Reflection")
-                                            // Pass proxy and ID (Chat card doesn't use expandableCard helper directly, add manually if needed)
-
-                                        MoodTrendsInsightCard(
-                                            jsonString: trendJson,
-                                            generatedDate: trendDate,
-                                            subscriptionTier: appState.subscriptionTier,
-                                            scrollProxy: scrollProxy, // Pass proxy
-                                            cardId: "trendCard"       // Pass ID
-                                        )
-                                        .id("trendCard") // Add ID
-                                        .padding(.horizontal, styles.layout.paddingXL)
-                                        .accessibilityLabel("Mood Analysis")
-
-                                        RecommendationsInsightCard(
-                                            jsonString: recommendationsJson,
-                                            generatedDate: recommendationsDate,
-                                            subscriptionTier: appState.subscriptionTier,
-                                            scrollProxy: scrollProxy, // Pass proxy
-                                            cardId: "recsCard"        // Pass ID
-                                        )
-                                        .id("recsCard") // Add ID
-                                        .padding(.horizontal, styles.layout.paddingXL)
-                                    } // End Section content
-                                } // End ScrollViewReader
-
-                                // Bottom padding
-                                Section { // Use correct Section initializer
-                                     Spacer().frame(height: styles.layout.paddingXL + 80)
-                                } // End Section content
-
-                            } // End LazyVStack for cards
-                        } // End else (isLoadingInsights or has data)
-                    } // End else (hasAnyEntries)
-                } // End ScrollView
-                .coordinateSpace(name: "scrollView")
-                .disabled(mainScrollingDisabled)
-                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                    // Scroll handling logic (unchanged)
-                    let scrollingDown = value < lastScrollPosition
-                    if abs(value - lastScrollPosition) > 10 {
-                         // Apply animation to tab bar visibility change
-                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                             if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
-                             else { tabBarOffset = 0; tabBarVisible = true }
-                         }
-                        lastScrollPosition = value
+                            // Loading Indicator or Cards
+                            if isLoadingInsights && summaryJson == nil && trendJson == nil && recommendationsJson == nil {
+                                loadingView
+                            } else {
+                                insightsContent(scrollProxy: scrollProxy)
+                            }
+                        }
+                    }
+                    .coordinateSpace(name: "scrollView")
+                    .disabled(mainScrollingDisabled)
+                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                        // Scroll handling logic
+                        let scrollingDown = value < lastScrollPosition
+                        if abs(value - lastScrollPosition) > 10 {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
+                                else { tabBarOffset = 0; tabBarVisible = true }
+                            }
+                            lastScrollPosition = value
+                        }
                     }
                 }
-            } // End Outer VStack
-        } // End ZStack
+            }
+        }
         .onAppear {
             loadStoredInsights()
+            
+            // Trigger animations
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                headerAppeared = true
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                cardsAppeared = true
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
-             print("[InsightsView] Received insightsDidUpdate notification. Reloading insights.")
-             // Only set loading state briefly if we already have some data,
-             // otherwise let the cards handle their own loading appearance.
-             if summaryJson != nil || trendJson != nil || recommendationsJson != nil {
-                 // Maybe a very short loading flash? Or just let cards update.
-                 // For now, just reload without setting isLoadingInsights = true
-                 // isLoadingInsights = true // Optional: Briefly show global loading
-             }
-             loadStoredInsights() // Reload data
-         }
+            print("[InsightsView] Received insightsDidUpdate notification. Reloading insights.")
+            loadStoredInsights()
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToTab"))) { notification in
             if let userInfo = notification.userInfo, let tabIndex = userInfo["tabIndex"] as? Int {
                 NotificationCenter.default.post(name: NSNotification.Name("SwitchTab"), object: nil, userInfo: ["tabIndex": tabIndex])
             }
         }
-    } // End body
+    }
+    
+    // MARK: - Component Views
+    
+    private var emptyStateView: some View {
+        VStack(spacing: styles.layout.spacingL) {
+            Spacer(minLength: 100)
+            
+            // Animated icon
+            ZStack {
+                ForEach(0..<3) { i in
+                    Circle()
+                        .fill(styles.colors.accent.opacity(0.1 - Double(i) * 0.03))
+                        .frame(width: 120 + CGFloat(i * 20), height: 120 + CGFloat(i * 20))
+                        .scaleEffect(headerAppeared ? 1 : 0.5)
+                        .opacity(headerAppeared ? 1 : 0)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.6).delay(0.1 + Double(i) * 0.1), value: headerAppeared)
+                }
+                
+                Image(systemName: "sparkles.rectangle.stack")
+                    .font(.system(size: 60))
+                    .foregroundColor(styles.colors.accent.opacity(0.7))
+                    .shadow(color: styles.colors.accent.opacity(0.5), radius: 5, x: 0, y: 0)
+                    .scaleEffect(headerAppeared ? 1 : 0.5)
+                    .opacity(headerAppeared ? 1 : 0)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.6).delay(0.4), value: headerAppeared)
+            }
+            
+            Text("Unlock Your Insights")
+                .font(styles.typography.title1)
+                .foregroundColor(styles.colors.text)
+                .shadow(color: styles.colors.accent.opacity(0.3), radius: 2, x: 0, y: 0)
+                .offset(y: headerAppeared ? 0 : 20)
+                .opacity(headerAppeared ? 1 : 0)
+                .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.5), value: headerAppeared)
+            
+            Text("Start journaling regularly to discover patterns and receive personalized insights here.")
+                .font(styles.typography.bodyFont)
+                .foregroundColor(styles.colors.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, styles.layout.paddingXL)
+                .offset(y: headerAppeared ? 0 : 20)
+                .opacity(headerAppeared ? 1 : 0)
+                .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.6), value: headerAppeared)
+            
+            Spacer()
+        }
+        .padding(.vertical, 50)
+    }
+    
+    private var loadingView: some View {
+        VStack(spacing: 20) {
+            // Custom loading animation
+            ZStack {
+                Circle()
+                    .stroke(styles.colors.tertiaryBackground, lineWidth: 4)
+                    .frame(width: 60, height: 60)
+                
+                Circle()
+                    .trim(from: 0, to: 0.7)
+                    .stroke(
+                        LinearGradient(
+                            gradient: Gradient(colors: [styles.colors.accent, styles.colors.accent.opacity(0.5)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ),
+                        style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                    )
+                    .frame(width: 60, height: 60)
+                    .rotationEffect(Angle(degrees: headerAppeared ? 360 : 0))
+                    .animation(Animation.linear(duration: 1).repeatForever(autoreverses: false), value: headerAppeared)
+            }
+            
+            Text("Loading Insights...")
+                .font(styles.typography.bodyFont)
+                .foregroundColor(styles.colors.accent)
+        }
+        .padding(.vertical, 50)
+    }
+    
+    @ViewBuilder
+    private func insightsContent(scrollProxy: ScrollViewProxy) -> some View {
+        LazyVStack(spacing: styles.layout.cardSpacing, pinnedViews: [.sectionHeaders]) {
+            // Debug subscription toggle (only in DEBUG)
+            #if DEBUG
+            Section {
+                HStack {
+                    Text("Sub:").font(styles.typography.bodySmall).foregroundColor(styles.colors.textSecondary)
+                    Picker("", selection: $appState.subscriptionTier) {
+                        Text("Free").tag(SubscriptionTier.free)
+                        Text("Premium").tag(SubscriptionTier.premium)
+                    }
+                    .pickerStyle(SegmentedPickerStyle()).frame(width: 150)
+                    Spacer()
+                }
+                .padding(.horizontal, styles.layout.paddingXL)
+                .padding(.top, 8)
+            }
+            #endif
+            
+            // Today's Highlights Section
+            Section(header: AnimatedSectionHeader(
+                title: "Today's Highlights",
+                isSelected: selectedSection == "highlights",
+                onTap: { selectedSection = selectedSection == "highlights" ? nil : "highlights" }
+            )) {
+                // Streak Card
+                StreakInsightCard(
+                    streak: appState.currentStreak,
+                    scrollProxy: scrollProxy,
+                    cardId: "streakCard"
+                )
+                .id("streakCard")
+                .padding(.horizontal, styles.layout.paddingXL)
+                .scaleEffect(cardsAppeared ? 1 : 0.95)
+                .opacity(cardsAppeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
+                .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+                
+                // Weekly Summary Card
+                WeeklySummaryInsightCard(
+                    jsonString: summaryJson,
+                    generatedDate: summaryDate,
+                    isFresh: isWeeklySummaryFresh,
+                    subscriptionTier: appState.subscriptionTier,
+                    scrollProxy: scrollProxy,
+                    cardId: "summaryCard"
+                )
+                .id("summaryCard")
+                .padding(.horizontal, styles.layout.paddingXL)
+                .scaleEffect(cardsAppeared ? 1 : 0.95)
+                .opacity(cardsAppeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
+                .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+            }
+            
+            // Deeper Insights Section
+            Section(header: AnimatedSectionHeader(
+                title: "Deeper Insights",
+                isSelected: selectedSection == "deeper",
+                onTap: { selectedSection = selectedSection == "deeper" ? nil : "deeper" }
+            )) {
+                // Chat Insight Card
+                ChatInsightCard(
+                    scrollProxy: scrollProxy,
+                    cardId: "chatCard"
+                )
+                .id("chatCard")
+                .padding(.horizontal, styles.layout.paddingXL)
+                .accessibilityLabel("AI Reflection")
+                .scaleEffect(cardsAppeared ? 1 : 0.95)
+                .opacity(cardsAppeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
+                .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+                
+                // Mood Trends Card
+                MoodTrendsInsightCard(
+                    jsonString: trendJson,
+                    generatedDate: trendDate,
+                    subscriptionTier: appState.subscriptionTier,
+                    scrollProxy: scrollProxy,
+                    cardId: "trendCard"
+                )
+                .id("trendCard")
+                .padding(.horizontal, styles.layout.paddingXL)
+                .accessibilityLabel("Mood Analysis")
+                .scaleEffect(cardsAppeared ? 1 : 0.95)
+                .opacity(cardsAppeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
+                .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+                
+                // Recommendations Card
+                RecommendationsInsightCard(
+                    jsonString: recommendationsJson,
+                    generatedDate: recommendationsDate,
+                    subscriptionTier: appState.subscriptionTier,
+                    scrollProxy: scrollProxy,
+                    cardId: "recsCard"
+                )
+                .id("recsCard")
+                .padding(.horizontal, styles.layout.paddingXL)
+                .scaleEffect(cardsAppeared ? 1 : 0.95)
+                .opacity(cardsAppeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared)
+                .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+            }
+            
+            // Bottom padding
+            Section {
+                Spacer().frame(height: styles.layout.paddingXL + 80)
+            }
+        }
+    }
 
     // --- Data Loading ---
     private func loadStoredInsights() {
-        // Set loading true only if NO data exists yet
         if summaryJson == nil && trendJson == nil && recommendationsJson == nil {
             isLoadingInsights = true
         }
@@ -266,12 +453,56 @@ struct InsightsView: View {
                     print("[InsightsView] No stored Recommendations found.")
                 }
 
-                isLoadingInsights = false // Clear loading state
+                isLoadingInsights = false
                 print("[InsightsView] Finished loading insights.")
-            } // End MainActor.run
-        } // End Task
+            }
+        }
     }
-} // End InsightsView struct
+}
+
+// Replace the AnimatedSectionHeader implementation with this simplified version without chevrons
+struct AnimatedSectionHeader: View {
+    let title: String
+    let isSelected: Bool
+    let onTap: () -> Void
+    
+    private let styles = UIStyles.shared
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(title)
+                    .font(styles.typography.sectionHeader)
+                    .foregroundColor(isSelected ? styles.colors.accent : styles.colors.text)
+                    .shadow(color: isSelected ? styles.colors.accent.opacity(0.3) : .clear, radius: 1, x: 0, y: 0)
+                
+                Spacer()
+            }
+            .padding(.leading, styles.layout.paddingXL)
+            .padding(.trailing, styles.layout.paddingL)
+            .padding(.vertical, styles.layout.spacingS)
+            .contentShape(Rectangle())
+            .background(styles.colors.appBackground)
+            
+            // Animated accent line
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            styles.colors.accent.opacity(isSelected ? 0.8 : 0.3),
+                            styles.colors.accent.opacity(isSelected ? 0.5 : 0.1)
+                        ]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(height: isSelected ? 2 : 1)
+                .padding(.horizontal, styles.layout.paddingXL)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+        }
+        .background(styles.colors.appBackground)
+    }
+}
 
 // MARK: - Preview Provider
 struct InsightsView_Previews: PreviewProvider {
@@ -336,3 +567,4 @@ struct InsightsView_Previews: PreviewProvider {
         }
     }
 }
+

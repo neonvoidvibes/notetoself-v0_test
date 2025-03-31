@@ -10,6 +10,7 @@ struct WeeklySummaryInsightCard: View {
     // Local state for decoded result
     @State private var decodedSummary: WeeklySummaryResult? = nil
     @State private var decodingError: Bool = false
+    @State private var isHovering: Bool = false
 
     // Scroll behavior properties
     var scrollProxy: ScrollViewProxy? = nil
@@ -77,59 +78,132 @@ struct WeeklySummaryInsightCard: View {
                 VStack(spacing: styles.layout.spacingM) {
                     HStack {
                         Text("Weekly Summary")
-                            .font(styles.typography.title3).foregroundColor(styles.colors.text)
+                            .font(styles.typography.title3)
+                            .foregroundColor(styles.colors.text)
+                            .shadow(color: isFresh && subscriptionTier == .premium ? styles.colors.accent.opacity(0.3) : .clear, radius: 1, x: 0, y: 0)
+                        
                         if isFresh && subscriptionTier == .premium {
-                            Text("NEW").font(.system(size: 10, weight: .bold)).foregroundColor(.black)
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(styles.colors.accent).cornerRadius(4)
+                            Text("NEW")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.black)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [styles.colors.accent, styles.colors.accent.opacity(0.8)]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .clipShape(Capsule())
+                                .shadow(color: styles.colors.accent.opacity(0.3), radius: 2, x: 0, y: 1)
                         }
+                        
                         Spacer()
+                        
                         if subscriptionTier == .free {
-                             Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
+                            ZStack {
+                                Circle()
+                                    .fill(styles.colors.tertiaryBackground)
+                                    .frame(width: 24, height: 24)
+                                
+                                Image(systemName: "lock.fill")
+                                    .foregroundColor(styles.colors.textSecondary)
+                                    .font(.system(size: 12))
+                            }
                         }
                     }
 
                     // Conditional display
                     if subscriptionTier == .premium {
                         Text(summaryPeriod)
-                            .font(styles.typography.insightCaption).foregroundColor(styles.colors.textSecondary)
+                            .font(styles.typography.insightCaption)
+                            .foregroundColor(styles.colors.accent.opacity(0.8))
                             .frame(maxWidth: .infinity, alignment: .leading)
 
                         // Use decodedSummary for display
                         if let result = decodedSummary {
                             Text(result.mainSummary)
-                                .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                                .multilineTextAlignment(.leading).frame(maxWidth: .infinity, alignment: .leading)
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(styles.colors.text)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .lineLimit(3)
+                                .padding(.vertical, 4)
 
                             if !result.keyThemes.isEmpty {
-                                HStack(spacing: 8) {
-                                    ForEach(result.keyThemes.prefix(3), id: \.self) { theme in
-                                        Text(theme).font(styles.typography.caption)
-                                            .padding(.horizontal, 8).padding(.vertical, 4)
-                                            .background(styles.colors.tertiaryBackground).cornerRadius(styles.layout.radiusM)
-                                            .foregroundColor(styles.colors.textSecondary)
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 8) {
+                                        ForEach(result.keyThemes.prefix(3), id: \.self) { theme in
+                                            Text(theme)
+                                                .font(styles.typography.caption)
+                                                .padding(.horizontal, 10)
+                                                .padding(.vertical, 5)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                                        .fill(styles.colors.tertiaryBackground)
+                                                        .shadow(color: Color.black.opacity(0.1), radius: 1, x: 0, y: 1)
+                                                )
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                                        .strokeBorder(styles.colors.accent.opacity(0.2), lineWidth: 1)
+                                                )
+                                                .foregroundColor(styles.colors.text)
+                                        }
                                     }
-                                    Spacer()
-                                }.padding(.top, 4)
+                                    .padding(.vertical, 4)
+                                }
                             }
                         } else {
                             // Premium user, but no decoded data yet or error
-                             Text(placeholderMessage)
-                                 .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                                 .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
-                                 .multilineTextAlignment(.center)
-                                 // Optionally show ProgressView if jsonString exists but decoded is nil
-                                 if jsonString != nil && decodedSummary == nil && !decodingError {
-                                     ProgressView().tint(styles.colors.accent).padding(.top, 4)
-                                 }
+                            VStack(spacing: 12) {
+                                Text(placeholderMessage)
+                                    .font(styles.typography.bodyFont)
+                                    .foregroundColor(styles.colors.textSecondary)
+                                    .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
+                                    .multilineTextAlignment(.center)
+                                
+                                // Optionally show ProgressView if jsonString exists but decoded is nil
+                                if jsonString != nil && decodedSummary == nil && !decodingError {
+                                    ProgressView()
+                                        .tint(styles.colors.accent)
+                                        .scaleEffect(1.2)
+                                }
+                            }
                         }
                     } else {
-                        // Free tier locked state
-                        Text("Unlock weekly summaries and deeper insights with Premium.")
-                            .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                            .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
-                            .multilineTextAlignment(.center)
+                        // Free tier locked state with enhanced styling
+                        VStack(spacing: 16) {
+                            Text("Unlock weekly summaries and deeper insights with Premium.")
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(styles.colors.textSecondary)
+                                .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
+                                .multilineTextAlignment(.center)
+                            
+                            Button(action: {
+                                // Upgrade action would go here
+                            }) {
+                                Text("Upgrade to Premium")
+                                    .font(styles.typography.bodySmall.weight(.medium))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [styles.colors.accent, styles.colors.accent.opacity(0.8)]),
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .clipShape(Capsule())
+                                    .shadow(color: styles.colors.accent.opacity(0.3), radius: 2, x: 0, y: 1)
+                            }
+                            .scaleEffect(isHovering ? 1.05 : 1.0)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovering)
+                            .onHover { hovering in
+                                isHovering = hovering
+                            }
+                        }
                     }
                 }
             },
@@ -137,94 +211,233 @@ struct WeeklySummaryInsightCard: View {
                 // Expanded detail content (Only show if premium and data exists)
                 if subscriptionTier == .premium, let result = decodedSummary {
                     VStack(spacing: styles.layout.spacingL) {
-                         // ... (Detailed content using 'result' - unchanged from previous version) ...
-                         VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                             Text("Summary")
-                                 .font(styles.typography.title3).foregroundColor(styles.colors.text)
-                             Text(result.mainSummary)
-                                 .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                                 .fixedSize(horizontal: false, vertical: true)
-                         }
+                        // Summary section with enhanced styling
+                        VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                            HStack {
+                                Text("Summary")
+                                    .font(styles.typography.title3)
+                                    .foregroundColor(styles.colors.text)
+                                
+                                Spacer()
+                                
+                                Text(summaryPeriod)
+                                    .font(styles.typography.caption)
+                                    .foregroundColor(styles.colors.accent.opacity(0.8))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 4)
+                                    .background(
+                                        Capsule()
+                                            .fill(styles.colors.tertiaryBackground.opacity(0.5))
+                                    )
+                            }
+                            
+                            Text(result.mainSummary)
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(styles.colors.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                        .fill(styles.colors.secondaryBackground.opacity(0.5))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                        .strokeBorder(styles.colors.tertiaryBackground, lineWidth: 1)
+                                )
+                        }
 
-                         if !result.keyThemes.isEmpty {
-                             VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                                 Text("Key Themes")
-                                     .font(styles.typography.title3).foregroundColor(styles.colors.text)
-                                 FlowLayout(spacing: 10) {
-                                      ForEach(result.keyThemes, id: \.self) { theme in
-                                          Text(theme)
-                                              .font(styles.typography.bodySmall)
-                                              .padding(.horizontal, 10).padding(.vertical, 6)
-                                              .background(styles.colors.secondaryBackground).cornerRadius(styles.layout.radiusM)
-                                              .foregroundColor(styles.colors.text)
-                                      }
-                                 }
-                             }
-                         }
+                        // Key Themes section with enhanced styling
+                        if !result.keyThemes.isEmpty {
+                            VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                                Text("Key Themes")
+                                    .font(styles.typography.title3)
+                                    .foregroundColor(styles.colors.text)
+                                
+                                FlowLayout(spacing: 10) {
+                                    ForEach(result.keyThemes, id: \.self) { theme in
+                                        Text(theme)
+                                            .font(styles.typography.bodySmall)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                                    .fill(styles.colors.secondaryBackground)
+                                                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                            )
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                                    .strokeBorder(styles.colors.accent.opacity(0.2), lineWidth: 1)
+                                            )
+                                            .foregroundColor(styles.colors.text)
+                                    }
+                                }
+                            }
+                        }
 
-                         VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                             Text("Mood Trend")
-                                 .font(styles.typography.title3).foregroundColor(styles.colors.text)
-                             HStack {
-                                  let color = moodColor(forName: dominantMood)
-                                  Circle().fill(color).frame(width: 12, height: 12)
-                                 Text(result.moodTrend)
-                                     .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                             }
-                         }
+                        // Mood Trend section with enhanced styling
+                        VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                            Text("Mood Trend")
+                                .font(styles.typography.title3)
+                                .foregroundColor(styles.colors.text)
+                            
+                            HStack(spacing: 12) {
+                                let color = moodColor(forName: dominantMood)
+                                
+                                ZStack {
+                                    Circle()
+                                        .fill(color.opacity(0.2))
+                                        .frame(width: 36, height: 36)
+                                    
+                                    Circle()
+                                        .fill(color)
+                                        .frame(width: 16, height: 16)
+                                }
+                                
+                                Text(result.moodTrend)
+                                    .font(styles.typography.bodyFont)
+                                    .foregroundColor(styles.colors.textSecondary)
+                            }
+                            .padding(16)
+                            .background(
+                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                    .fill(styles.colors.secondaryBackground.opacity(0.5))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                    .strokeBorder(styles.colors.tertiaryBackground, lineWidth: 1)
+                            )
+                        }
 
-                         if !result.notableQuote.isEmpty {
-                              VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                                  Text("Notable Quote")
-                                      .font(styles.typography.title3).foregroundColor(styles.colors.text)
-                                  Text("\"\(result.notableQuote)\"")
-                                      .font(styles.typography.bodyFont.italic()).foregroundColor(styles.colors.accent)
-                              }
-                         }
+                        // Notable Quote section with enhanced styling
+                        if !result.notableQuote.isEmpty {
+                            VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                                Text("Notable Quote")
+                                    .font(styles.typography.title3)
+                                    .foregroundColor(styles.colors.text)
+                                
+                                Text("\"\(result.notableQuote)\"")
+                                    .font(styles.typography.bodyFont.italic())
+                                    .foregroundColor(styles.colors.accent)
+                                    .padding(16)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                            .fill(styles.colors.secondaryBackground.opacity(0.5))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                                            .strokeBorder(styles.colors.tertiaryBackground, lineWidth: 1)
+                                    )
+                            }
+                        }
 
-                         if let date = generatedDate {
-                             Text("Generated on \(date.formatted(date: .long, time: .shortened))")
-                                 .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
-                                 .frame(maxWidth: .infinity, alignment: .center).padding(.top)
-                         }
-                    } // End VStack for detail content
+                        // Generation timestamp with enhanced styling
+                        if let date = generatedDate {
+                            HStack {
+                                Image(systemName: "clock")
+                                    .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                                    .font(.system(size: 12))
+                                
+                                Text("Generated on \(date.formatted(date: .long, time: .shortened))")
+                                    .font(styles.typography.caption)
+                                    .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                            }
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.top)
+                        }
+                    }
                 } else if subscriptionTier == .free {
-                     // Free tier expanded state
-                      VStack(spacing: styles.layout.spacingL) {
-                          Image(systemName: "lock.fill").font(.system(size: 40)).foregroundColor(styles.colors.accent)
-                          Text("Upgrade for Details").font(styles.typography.title3).foregroundColor(styles.colors.text)
-                          Text("Unlock detailed weekly summaries and insights with Premium.")
-                               .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary).multilineTextAlignment(.center)
-                          // Optional Upgrade Button
-                      }
-                 } else {
-                    // Premium, but no data
-                    Text("Weekly summary details are not available yet.")
-                        .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                    // Free tier expanded state with enhanced styling
+                    VStack(spacing: styles.layout.spacingL) {
+                        // Lock icon with glow effect
+                        ZStack {
+                            Circle()
+                                .fill(styles.colors.accent.opacity(0.1))
+                                .frame(width: 80, height: 80)
+                            
+                            Circle()
+                                .fill(styles.colors.accent.opacity(0.2))
+                                .frame(width: 60, height: 60)
+                            
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 30))
+                                .foregroundColor(styles.colors.accent)
+                                .shadow(color: styles.colors.accent.opacity(0.5), radius: 5, x: 0, y: 0)
+                        }
+                        
+                        Text("Upgrade for Details")
+                            .font(styles.typography.title3)
+                            .foregroundColor(styles.colors.text)
+                            .shadow(color: styles.colors.accent.opacity(0.3), radius: 1, x: 0, y: 0)
+                        
+                        Text("Unlock detailed weekly summaries and insights with Premium.")
+                            .font(styles.typography.bodyFont)
+                            .foregroundColor(styles.colors.textSecondary)
+                            .multilineTextAlignment(.center)
+                        
+                        // Premium upgrade button with hover effect
+                        Button(action: {
+                            // Upgrade action would go here
+                        }) {
+                            Text("Upgrade to Premium")
+                                .font(styles.typography.bodyFont.weight(.medium))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 12)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [styles.colors.accent, styles.colors.accent.opacity(0.8)]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .clipShape(Capsule())
+                                .shadow(color: styles.colors.accent.opacity(0.3), radius: 3, x: 0, y: 2)
+                        }
+                        .scaleEffect(isHovering ? 1.05 : 1.0)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovering)
+                        .onHover { hovering in
+                            isHovering = hovering
+                        }
+                    }
+                    .padding(.vertical, 20)
+                } else {
+                    // Premium, but no data with enhanced styling
+                    VStack(spacing: 20) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.system(size: 40))
+                            .foregroundColor(styles.colors.accent.opacity(0.7))
+                            .shadow(color: styles.colors.accent.opacity(0.3), radius: 3, x: 0, y: 0)
+                        
+                        Text("Weekly summary details are not available yet.")
+                            .font(styles.typography.bodyFont)
+                            .foregroundColor(styles.colors.textSecondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        
+                        Text("Keep journaling to generate your first weekly summary!")
+                            .font(styles.typography.bodySmall)
+                            .foregroundColor(styles.colors.accent.opacity(0.8))
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.vertical, 20)
                 }
-            } // End detailContent
-        ) // End expandableCard
-        // Add the onChange modifier to decode the JSON string
+            }
+        )
         .onChange(of: jsonString) { oldValue, newValue in
-             decodeJSON(json: newValue)
+            decodeJSON(json: newValue)
         }
-        // Decode initially as well
         .onAppear {
             decodeJSON(json: jsonString)
         }
-    } // End body
+    }
 
     // Decoding function
     private func decodeJSON(json: String?) {
         guard let json = json, !json.isEmpty else {
-            // If input JSON is nil or empty, clear the decoded state
             if decodedSummary != nil { decodedSummary = nil }
-            decodingError = false // Not an error, just no data
+            decodingError = false
             return
         }
 
-        // Reset error state before attempting decode
         decodingError = false
 
         guard let data = json.data(using: .utf8) else {
@@ -237,15 +450,15 @@ struct WeeklySummaryInsightCard: View {
         do {
             let decoder = JSONDecoder()
             let result = try decoder.decode(WeeklySummaryResult.self, from: data)
-            // Update state only if decoded data is different to avoid unnecessary view updates
             if result != decodedSummary {
-                 decodedSummary = result
-                 print("[WeeklySummaryCard] Successfully decoded new summary.")
+                decodedSummary = result
+                print("[WeeklySummaryCard] Successfully decoded new summary.")
             }
         } catch {
             print("‼️ [WeeklySummaryCard] Failed to decode WeeklySummaryResult: \(error). JSON: \(json)")
-            if decodedSummary != nil { decodedSummary = nil } // Clear previous result on error
+            if decodedSummary != nil { decodedSummary = nil }
             decodingError = true
         }
     }
 }
+

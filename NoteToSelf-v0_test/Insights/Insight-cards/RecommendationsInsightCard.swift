@@ -202,22 +202,31 @@ struct RecommendationsInsightCard: View {
 
 // Simplified RecommendationRow for preview
 struct RecommendationRow: View {
-    let recommendation: RecommendationResult.RecommendationItem // Use nested type
+    let recommendation: RecommendationResult.RecommendationItem
     let iconName: String
     private let styles = UIStyles.shared
-
+    
     var body: some View {
         HStack(alignment: .top, spacing: styles.layout.spacingM) {
             ZStack { // Icon
                 Circle().fill(styles.colors.tertiaryBackground).frame(width: 40, height: 40)
-                Image(systemName: iconName).foregroundColor(styles.colors.accent).font(.system(size: 18))
+                Image(systemName: iconName)
+                    .foregroundColor(styles.colors.accent)
+                    .font(.system(size: 18))
             }
             VStack(alignment: .leading, spacing: 4) { // Content
-                Text(recommendation.title).font(styles.typography.insightCaption).foregroundColor(styles.colors.text)
-                Text(recommendation.description).font(styles.typography.bodySmall)
-                    .foregroundColor(styles.colors.textSecondary).fixedSize(horizontal: false, vertical: true).lineLimit(2)
+                Text(recommendation.title)
+                    .font(styles.typography.insightCaption)
+                    .foregroundColor(styles.colors.text)
+                Text(recommendation.description)
+                    .font(styles.typography.bodySmall)
+                    .foregroundColor(styles.colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(2)
             }
             Spacer()
         }
+        .padding(.vertical, 4)
     }
 }
+

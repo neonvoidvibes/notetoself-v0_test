@@ -40,7 +40,7 @@ struct StreakInsightCard: View {
                     // More conversational and personal text
                     Text(streakMessage)
                         .font(styles.typography.bodySmall)
-                        .foregroundColor(styles.colors.textSecondary)
+                        .foregroundColor(styles.colors.text)
                         .multilineTextAlignment(.center)
                         .padding(.top, styles.layout.spacingS)
                         .lineLimit(2)
@@ -186,3 +186,4 @@ struct StreakBenefitRow: View {
         .padding(.vertical, 4)
     }
 }
+
