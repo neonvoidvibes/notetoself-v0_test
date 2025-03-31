@@ -270,6 +270,7 @@ struct Recommendation: Identifiable {
 @MainActor // Ensure @Published vars are updated on main thread
 class AppState: ObservableObject {
     @Published var journalEntries: [JournalEntry] = [] // Now uses the struct defined above
+    @Published var journalExpandedEntryId: UUID? = nil // State for expanded journal entry ID
     @Published var subscriptionTier: SubscriptionTier = .free // Uses enum defined above
     @Published var hasSeenOnboarding: Bool = false // Keep for onboarding logic
 

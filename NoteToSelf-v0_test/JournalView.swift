@@ -10,7 +10,7 @@ struct JournalView: View {
 
     // View State
     @State private var showingNewEntrySheet = false
-    @State private var expandedEntryId: UUID? = nil // Keep for accordion
+    // @State private var expandedEntryId: UUID? = nil // REMOVED - Moved to AppState
     @State private var editingEntry: JournalEntry? = nil
     @State private var fullscreenEntry: JournalEntry? = nil
 
@@ -86,7 +86,7 @@ struct JournalView: View {
                                  withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                                      appState.journalEntries.insert(newEntry, at: 0)
                                      appState.journalEntries.sort { $0.date > $1.date } // Keep sorted
-                                     expandedEntryId = newEntry.id // Expand new entry by default
+                                     appState.journalExpandedEntryId = newEntry.id // Expand new entry by default using AppState
                                  }
                             }
                             // Call global trigger function
@@ -139,25 +139,23 @@ struct JournalView: View {
             )
         }
         .onChange(of: appState.journalEntries) { _, newEntries in
-             // If nothing is expanded and entries load, expand the first one.
-             if expandedEntryId == nil, let firstEntry = newEntries.first {
-                 expandedEntryId = firstEntry.id
-                 print("onChange(entries): Set initial expandedEntryId to \(firstEntry.id)")
+             // If nothing is expanded in AppState and entries load, expand the first one.
+             if appState.journalExpandedEntryId == nil, let firstEntry = newEntries.first {
+                 appState.journalExpandedEntryId = firstEntry.id
+                 print("onChange(entries): Set initial appState.journalExpandedEntryId to \(firstEntry.id)")
              }
              // If the currently expanded entry is no longer in the list (e.g., deleted), reset.
-             else if let currentId = expandedEntryId, !newEntries.contains(where: { $0.id == currentId }) {
-                  expandedEntryId = newEntries.first?.id // Expand the new first one, or nil if empty
-                  // Corrected print statement
-                  print("onChange(entries): Previously expanded entry gone. Set expandedEntryId to \(newEntries.first?.id.uuidString ?? "nil").")
+             else if let currentId = appState.journalExpandedEntryId, !newEntries.contains(where: { $0.id == currentId }) {
+                  appState.journalExpandedEntryId = newEntries.first?.id // Expand the new first one, or nil if empty
+                  print("onChange(entries): Previously expanded entry gone. Set appState.journalExpandedEntryId to \(newEntries.first?.id.uuidString ?? "nil").")
              }
         }
         .onChange(of: showingFilterPanel) { _, isShowing in
              if !isShowing { // When filter panel is closed
                  // Re-evaluate default expansion based on current filters
-                 if expandedEntryId == nil || (expandedEntryId != nil && !filteredEntries.contains(where: { $0.id == expandedEntryId })) {
-                     expandedEntryId = filteredEntries.first?.id
-                     // Corrected print statement
-                     print("onChange(showingFilterPanel=false): Set expandedEntryId to \(filteredEntries.first?.id.uuidString ?? "nil").")
+                 if appState.journalExpandedEntryId == nil || (appState.journalExpandedEntryId != nil && !filteredEntries.contains(where: { $0.id == appState.journalExpandedEntryId })) {
+                     appState.journalExpandedEntryId = filteredEntries.first?.id
+                     print("onChange(showingFilterPanel=false): Set appState.journalExpandedEntryId to \(filteredEntries.first?.id.uuidString ?? "nil").")
                  }
              }
         }
@@ -307,10 +305,11 @@ struct JournalView: View {
                      ForEach(entries) { entry in
                          JournalEntryCard(
                              entry: entry,
-                             isExpanded: expandedEntryId == entry.id, // Restore binding
+                             isExpanded: appState.journalExpandedEntryId == entry.id, // Use AppState
                              onTap: { // Restore onTap for expansion
                                  withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                     expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
+                                     // Update AppState on tap
+                                     appState.journalExpandedEntryId = appState.journalExpandedEntryId == entry.id ? nil : entry.id
                                  }
                              },
                              onExpand: { fullscreenEntry = entry }, // Restore onExpand
