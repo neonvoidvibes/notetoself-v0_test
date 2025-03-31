@@ -168,12 +168,14 @@ struct MainTabView: View {
                       JournalView(tabBarOffset: .constant(0),
                                   lastScrollPosition: .constant(0),
                                   tabBarVisible: .constant(true))
-                          .mainCardStyle()
+                           // Pass bottomSheetExpanded state to the modifier
+                          .mainCardStyle(isExpanded: bottomSheetExpanded)
                   } else if selectedTab == 1 {
                       InsightsView(tabBarOffset: .constant(0),
                        lastScrollPosition: .constant(0),
                        tabBarVisible: .constant(true))
-                          .mainCardStyle()
+                           // Pass bottomSheetExpanded state to the modifier
+                          .mainCardStyle(isExpanded: bottomSheetExpanded)
                   } else if selectedTab == 2 {
                       ReflectionsView(tabBarOffset: .constant(0),
                        lastScrollPosition: .constant(0),
@@ -185,7 +187,8 @@ struct MainTabView: View {
                                chatHistoryOffset = 0
                            }
                        })
-                          .mainCardStyle()
+                          // Pass bottomSheetExpanded state to the modifier
+                          .mainCardStyle(isExpanded: bottomSheetExpanded)
                           .environmentObject(chatManager) // Added modifier
                   }
               }
@@ -247,9 +250,11 @@ struct MainTabView: View {
                                           .foregroundColor(Color.white) // Change text color to white
                                   }
                               }
-                              .frame(height: peekHeight)
+                              // Apply conditional height for chevron button area
+                              .frame(height: bottomSheetExpanded ? peekHeight / 2 : peekHeight)
                               .contentShape(Rectangle())
-                              .padding(.bottom, bottomSheetExpanded ? 16 : 8) // More padding below the chevron
+                              // Restore original padding logic below chevron
+                              .padding(.bottom, bottomSheetExpanded ? 16 : 8)
                           }
                           .buttonStyle(PlainButtonStyle())
                           
@@ -306,18 +311,19 @@ struct MainTabView: View {
                                   }
                                   Spacer()
                               }
-                              .padding(.vertical, 12)
+                              .padding(.vertical, 12) // Restore original vertical padding
                               .padding(.bottom, 8)
-                              .frame(height: fullSheetHeight - peekHeight)
+                              // Apply conditional height for tab buttons area
+                              .frame(height: bottomSheetExpanded ? fullSheetHeight - (peekHeight / 2) : 0)
                           }
                       }
                       .frame(width: geometry.size.width, height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
                       .background(
                           Group {
                               if bottomSheetExpanded {
-                                  // Use accent color gradient when expanded (This is correct)
+                                  // Restore gradient, make it subtle (accent to accent 0.9 opacity)
                                   LinearGradient(
-                                      gradient: Gradient(colors: [styles.colors.accent, styles.colors.accent.opacity(0.8)]),
+                                      gradient: Gradient(colors: [styles.colors.accent, styles.colors.accent.opacity(0.9)]),
                                       startPoint: .top,
                                       endPoint: .bottom
                                   )

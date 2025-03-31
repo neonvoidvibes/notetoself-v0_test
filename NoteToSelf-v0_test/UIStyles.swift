@@ -138,7 +138,7 @@ struct Layout {
     let bottomSheetIndicatorWidth: CGFloat = 40 // Width of the handle indicator
     let bottomSheetIndicatorHeight: CGFloat = 4 // Height of the handle indicator
     let bottomSheetCornerRadius: CGFloat = 24 // Corner radius of the bottom sheet
-    let mainContentCornerRadius: CGFloat = 20 // Corner radius for the main content card
+    let mainContentCornerRadius: CGFloat = 0 // Corner radius for the main content card
 
     let inputAreaHeight: CGFloat = 40 // Fixed height for input area
 
@@ -363,12 +363,14 @@ extension View {
 
 // MARK: - Universal Main Card Style Modifier
 extension View {
-  func mainCardStyle() -> some View {
+  // Accept isExpanded parameter
+  func mainCardStyle(isExpanded: Bool = false) -> some View {
       self
           .background(UIStyles.shared.colors.cardBackground)
-          // Set radius to 0 to remove rounded corners as requested
-          .clipShape(RoundedCorner(radius: 0, corners: [.bottomLeft, .bottomRight]))
-          .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
+          // Use the variable for the radius (which is now defined as 0)
+          .clipShape(RoundedCorner(radius: UIStyles.shared.layout.mainContentCornerRadius, corners: [.bottomLeft, .bottomRight]))
+          // Conditionally apply shadow
+          .shadow(color: Color.black.opacity(isExpanded ? 0 : 0.2), radius: 20, x: 0, y: 10)
   }
 }
 
