@@ -355,7 +355,7 @@ struct ChatHistoryItem: View {
               .frame(maxWidth: .infinity, alignment: .leading)
           }
       }
-      .padding(styles.layout.paddingM) // Restored original padding
+      .padding(styles.layout.paddingL) // Restored original padding
       .background(styles.colors.secondaryBackground)
       .cornerRadius(styles.layout.radiusM)
       .overlay(
