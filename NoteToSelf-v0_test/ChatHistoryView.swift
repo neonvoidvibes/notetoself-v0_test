@@ -93,7 +93,7 @@ struct ChatHistoryView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
             
-            // Content - Use List instead of ScrollView for better swipe actions
+            // Content - Use List instead of ScrollView for better swipe actions and sticky headers
             List {
                 // Extra top padding
                 Section {
@@ -112,18 +112,8 @@ struct ChatHistoryView: View {
                         .listRowInsets(EdgeInsets(top: 40, leading: 0, bottom: 0, trailing: 0))
                 } else {
                     ForEach(filteredGroupedChats, id: \.0) { section, chats in
-                        // Section header
-                        Section(header: 
-                            Text(section)
-                                .font(styles.typography.title3)
-                                .foregroundColor(styles.colors.text)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.leading, styles.layout.paddingM)
-                                .padding(.top, 12) // Add top padding for sticky headers
-                                .padding(.bottom, 5)
-                                .listRowInsets(EdgeInsets())
-                                .background(styles.colors.menuBackground) // Ensure consistent background color
-                        ) {
+                        // Section header - Use the new shared component
+                        Section(header: StickyListHeader(title: section)) {
                             // Chats in this section
                             ForEach(chats) { chat in
                                 ChatHistoryItem(chat: chat, onStar: {
@@ -415,4 +405,3 @@ struct SwipeableRow<Content: View>: View {
         .contentShape(Rectangle())
     }
 }
-

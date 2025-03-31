@@ -107,23 +107,4 @@ struct JournalDateGrouping {
     }
 }
 
-// Section header component for journal entries
-struct DateGroupSectionHeader: View {
-    let title: String
-    private let styles = UIStyles.shared
-    
-    var body: some View {
-        HStack {
-            Text(title)
-                .font(styles.typography.title3)
-                .foregroundColor(styles.colors.text)
-                .padding(.vertical, 10)
-            
-            Spacer()
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
-        .padding(.bottom, 4)
-    }
-}
-
+// Removed DateGroupSectionHeader component as it's replaced by StickyListHeader

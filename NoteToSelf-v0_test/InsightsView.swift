@@ -102,64 +102,75 @@ struct InsightsView: View {
                                 .padding(.vertical, 50)
                                 .tint(styles.colors.accent)
                         } else {
-                            VStack(spacing: styles.layout.cardSpacing) {
+                            // Use LazyVStack for sections within the ScrollView
+                            LazyVStack(spacing: styles.layout.cardSpacing, pinnedViews: [.sectionHeaders]) {
                                 // Subscription Tier Toggle (for testing)
                                 #if DEBUG
-                                HStack {
-                                    Text("Sub:").font(styles.typography.bodySmall).foregroundColor(styles.colors.textSecondary)
-                                    Picker("", selection: $appState.subscriptionTier) {
-                                        Text("Free").tag(SubscriptionTier.free)
-                                        Text("Premium").tag(SubscriptionTier.premium)
+                                Section { // Wrap in Section for consistency, though no header needed here
+                                    HStack {
+                                        Text("Sub:").font(styles.typography.bodySmall).foregroundColor(styles.colors.textSecondary)
+                                        Picker("", selection: $appState.subscriptionTier) {
+                                            Text("Free").tag(SubscriptionTier.free)
+                                            Text("Premium").tag(SubscriptionTier.premium)
+                                        }
+                                        .pickerStyle(SegmentedPickerStyle()).frame(width: 150) // Smaller picker
+                                        Spacer()
                                     }
-                                    .pickerStyle(SegmentedPickerStyle()).frame(width: 150) // Smaller picker
-                                    Spacer()
+                                    .padding(.horizontal, styles.layout.paddingXL).padding(.top, 8)
                                 }
-                                .padding(.horizontal, styles.layout.paddingXL).padding(.top, 8)
                                 #endif
 
                                 // Today's Highlights Section
-                                styles.sectionHeader("Today's Highlights")
+                                Section(header: StickyListHeader(title: "Today's Highlights")
+                                                    .background(styles.colors.appBackground) // Ensure background covers content
+                                ) {
+                                    // Streak Card
+                                    StreakInsightCard(streak: appState.currentStreak)
+                                        .padding(.horizontal, styles.layout.paddingXL)
 
-                                // Streak Card
-                                StreakInsightCard(streak: appState.currentStreak)
+                                    // Weekly Summary Card (Pass raw data)
+                                    WeeklySummaryInsightCard(
+                                        jsonString: summaryJson,
+                                        generatedDate: summaryDate,
+                                        isFresh: isWeeklySummaryFresh,
+                                        subscriptionTier: appState.subscriptionTier
+                                    )
                                     .padding(.horizontal, styles.layout.paddingXL)
-
-                                // Weekly Summary Card (Pass raw data)
-                                WeeklySummaryInsightCard(
-                                    jsonString: summaryJson,
-                                    generatedDate: summaryDate,
-                                    isFresh: isWeeklySummaryFresh,
-                                    subscriptionTier: appState.subscriptionTier
-                                )
-                                .padding(.horizontal, styles.layout.paddingXL)
+                                }
 
                                 // Deeper Insights Section
-                                styles.sectionHeader("Deeper Insights")
+                                Section(header: StickyListHeader(title: "Deeper Insights")
+                                                    .background(styles.colors.appBackground) // Ensure background covers content
+                                ) {
+                                    // AI Reflection Card
+                                    ChatInsightCard()
+                                        .padding(.horizontal, styles.layout.paddingXL)
+                                        .accessibilityLabel("AI Reflection")
 
-                                // AI Reflection Card
-                                ChatInsightCard()
+                                    // Mood Analysis Card (Pass raw data)
+                                    MoodTrendsInsightCard(
+                                        jsonString: trendJson,
+                                        generatedDate: trendDate,
+                                        subscriptionTier: appState.subscriptionTier
+                                    )
                                     .padding(.horizontal, styles.layout.paddingXL)
-                                    .accessibilityLabel("AI Reflection")
+                                    .accessibilityLabel("Mood Analysis")
 
-                                // Mood Analysis Card (Pass raw data)
-                                MoodTrendsInsightCard(
-                                    jsonString: trendJson,
-                                    generatedDate: trendDate,
-                                    subscriptionTier: appState.subscriptionTier
-                                )
-                                .padding(.horizontal, styles.layout.paddingXL)
-                                .accessibilityLabel("Mood Analysis")
+                                    // Recommendations Card (Pass raw data)
+                                    RecommendationsInsightCard(
+                                        jsonString: recommendationsJson,
+                                        generatedDate: recommendationsDate,
+                                        subscriptionTier: appState.subscriptionTier
+                                    )
+                                    .padding(.horizontal, styles.layout.paddingXL)
+                                }
 
-                                // Recommendations Card (Pass raw data)
-                                RecommendationsInsightCard(
-                                    jsonString: recommendationsJson,
-                                    generatedDate: recommendationsDate,
-                                    subscriptionTier: appState.subscriptionTier
-                                )
-                                .padding(.horizontal, styles.layout.paddingXL)
-                                .padding(.bottom, styles.layout.paddingXL + 80)
+                                // Bottom padding
+                                Section {
+                                     Spacer().frame(height: styles.layout.paddingXL + 80)
+                                }
 
-                            } // End VStack for cards
+                            } // End LazyVStack for cards
                         } // End else (isLoadingInsights or has data)
                     } // End else (hasAnyEntries)
                 } // End ScrollView
