@@ -121,8 +121,7 @@ struct InsightsView: View {
                                 #endif
 
                                 // Today's Highlights Section
-                                Section(header: StickyListHeader(title: "Today's Highlights")
-                                                    .background(styles.colors.appBackground) // Ensure background covers content
+                                Section(header: SharedSectionHeader(title: "Today's Highlights", backgroundColor: styles.colors.appBackground) // Use renamed header
                                 ) {
                                     // Streak Card
                                     StreakInsightCard(streak: appState.currentStreak)
@@ -139,8 +138,7 @@ struct InsightsView: View {
                                 }
 
                                 // Deeper Insights Section
-                                Section(header: StickyListHeader(title: "Deeper Insights")
-                                                    .background(styles.colors.appBackground) // Ensure background covers content
+                                Section(header: SharedSectionHeader(title: "Deeper Insights", backgroundColor: styles.colors.appBackground) // Use renamed header
                                 ) {
                                     // AI Reflection Card
                                     ChatInsightCard()

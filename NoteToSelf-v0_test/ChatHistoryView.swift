@@ -112,8 +112,8 @@ struct ChatHistoryView: View {
                         .listRowInsets(EdgeInsets(top: 40, leading: 0, bottom: 0, trailing: 0))
                 } else {
                     ForEach(filteredGroupedChats, id: \.0) { section, chats in
-                        // Section header - Use the new shared component
-                        Section(header: StickyListHeader(title: section)) {
+                        // Section header - Use the RENAMED component, passing the correct background
+                        Section(header: SharedSectionHeader(title: section, backgroundColor: styles.colors.menuBackground)) {
                             // Chats in this section
                             ForEach(chats) { chat in
                                 ChatHistoryItem(chat: chat, onStar: {

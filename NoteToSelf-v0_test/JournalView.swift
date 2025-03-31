@@ -197,9 +197,8 @@ struct JournalView: View {
                              LazyVStack(spacing: styles.layout.radiusM, pinnedViews: [.sectionHeaders]) { // Pinned views attempt stickiness
                                  let groupedEntries = JournalDateGrouping.groupEntriesByTimePeriod(filteredEntries)
                                  ForEach(groupedEntries, id: \.0) { section, entries in
-                                     // Use StickyListHeader - note: actual stickiness depends on parent container
-                                     Section(header: StickyListHeader(title: section)
-                                                        .background(styles.colors.appBackground) // Ensure background covers content
+                                     // Use the RENAMED component, passing the correct background
+                                     Section(header: SharedSectionHeader(title: section, backgroundColor: styles.colors.appBackground)
                                                         .id("header-\(section)")
                                      ) {
                                          ForEach(entries) { entry in
