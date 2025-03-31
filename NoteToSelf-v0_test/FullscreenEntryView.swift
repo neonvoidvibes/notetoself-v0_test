@@ -11,6 +11,8 @@ struct FullscreenEntryView: View {
     // Access to shared styles
     private let styles = UIStyles.shared
 
+    @State private var showingDeleteConfirmation = false
+
     var body: some View {
         ZStack {
             // Background
@@ -87,7 +89,7 @@ struct FullscreenEntryView: View {
                             // Delete button (if onDelete is provided) - icon only
                             if onDelete != nil {
                                 Button(action: {
-                                    onDelete?()
+                                    showingDeleteConfirmation = true
                                 }) {
                                     Image(systemName: "trash")
                                         .font(.system(size: styles.layout.iconSizeS))
@@ -124,6 +126,23 @@ struct FullscreenEntryView: View {
                     }
                 }
             }
+            // Delete confirmation modal
+            if showingDeleteConfirmation {
+                ConfirmationModal(
+                    title: "Delete Entry",
+                    message: "Are you sure you want to delete this journal entry? This action cannot be undone.",
+                    confirmText: "Delete",
+                    confirmAction: {
+                        showingDeleteConfirmation = false
+                        onDelete?()
+                    },
+                    cancelAction: {
+                        showingDeleteConfirmation = false
+                    },
+                    isDestructive: true
+                )
+                .animation(.spring(), value: showingDeleteConfirmation)
+            }
         }
         .preferredColorScheme(.dark)
     }
@@ -143,45 +162,57 @@ struct FullscreenEntryView: View {
 
 // MARK: - Editable Fullscreen Entry View
 struct EditableFullscreenEntryView: View {
+    var entry: JournalEntry?
+    var initialMood: Mood = .neutral
+    var onSave: (String, Mood, Int) -> Void
+    var onDelete: (() -> Void)?
+    var onCancel: (() -> Void)?
+    var autoFocusText: Bool = false
+    
     @Environment(\.dismiss) private var dismiss
     @State private var entryText: String
     @State private var selectedMood: Mood
     @FocusState private var isTextFieldFocused: Bool
     @State private var showMoodSelector: Bool = false
     @State private var selectedIntensity: Int
+    @State private var showingCancelConfirmation = false
+    @State private var showingDeleteConfirmation = false
 
     private let date: Date
     private let isNewEntry: Bool
     private let isLocked: Bool
-    private let autoFocusText: Bool
-
-    var onSave: ((String, Mood, Int) -> Void)?
-    var onDelete: (() -> Void)?
 
     private let styles = UIStyles.shared
 
-    init(initialMood: Mood = .neutral, onSave: ((String, Mood, Int) -> Void)? = nil, onDelete: (() -> Void)? = nil, autoFocusText: Bool = false) {
+    init(initialMood: Mood = .neutral, onSave: @escaping (String, Mood, Int) -> Void, onDelete: (() -> Void)? = nil, onCancel: (() -> Void)? = nil, autoFocusText: Bool = false) {
+        self.initialMood = initialMood
+        self.onSave = onSave
+        self.onDelete = onDelete
+        self.onCancel = onCancel
+        self.autoFocusText = autoFocusText
+        
         self._entryText = State(initialValue: "")
         self._selectedMood = State(initialValue: initialMood)
         self._selectedIntensity = State(initialValue: 2)
         self.date = Date()
         self.isNewEntry = true
         self.isLocked = false
-        self.onSave = onSave
-        self.onDelete = onDelete
-        self.autoFocusText = autoFocusText
     }
 
-    init(entry: JournalEntry, onSave: ((String, Mood, Int) -> Void)? = nil, onDelete: (() -> Void)? = nil, autoFocusText: Bool = true) {
+    init(entry: JournalEntry, onSave: @escaping (String, Mood, Int) -> Void, onDelete: (() -> Void)? = nil, onCancel: (() -> Void)? = nil, autoFocusText: Bool = true) {
+        self.entry = entry
+        self.initialMood = entry.mood
+        self.onSave = onSave
+        self.onDelete = onDelete
+        self.onCancel = onCancel
+        self.autoFocusText = autoFocusText
+        
         self._entryText = State(initialValue: entry.text)
         self._selectedMood = State(initialValue: entry.mood)
         self._selectedIntensity = State(initialValue: entry.intensity)
         self.date = entry.date
         self.isNewEntry = false
         self.isLocked = entry.isLocked
-        self.onSave = onSave
-        self.onDelete = onDelete
-        self.autoFocusText = autoFocusText
     }
 
     // Corrected: Ensure body property exists and encloses the view content
@@ -201,14 +232,20 @@ struct EditableFullscreenEntryView: View {
             VStack(spacing: 0) {
                 // Custom navigation bar
                 HStack {
-                    Button(action: { dismiss() }) {
-                        HStack(spacing: styles.layout.spacingS) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 16, weight: .semibold))
-                            Text(isNewEntry ? "Cancel" : "Back")
-                                .font(styles.typography.bodyFont)
+                    Button(action: {
+                        if !entryText.isEmpty {
+                            showingCancelConfirmation = true
+                        } else {
+                            if let onCancel = onCancel {
+                                onCancel()
+                            } else {
+                                dismiss()
+                            }
                         }
-                        .foregroundColor(styles.colors.accent)
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(styles.colors.text)
                     }
                     Spacer()
                     Text(formatDate(date))
@@ -247,8 +284,7 @@ struct EditableFullscreenEntryView: View {
                             }
                             if !isNewEntry && onDelete != nil {
                                 Button(action: {
-                                    onDelete?()
-                                    dismiss()
+                                    showingDeleteConfirmation = true
                                 }) {
                                     Image(systemName: "trash")
                                         .font(.system(size: styles.layout.iconSizeS))
@@ -334,7 +370,7 @@ struct EditableFullscreenEntryView: View {
                     } else {
                         Button(action: {
                             if !entryText.isEmpty {
-                                onSave?(entryText, selectedMood, selectedIntensity)
+                                onSave(entryText, selectedMood, selectedIntensity)
                                 dismiss()
                             }
                         }) {
@@ -350,6 +386,45 @@ struct EditableFullscreenEntryView: View {
                         .padding([.trailing, .bottom], 24)
                     }
                 }
+            }
+            // Cancel confirmation modal
+            if showingCancelConfirmation {
+                ConfirmationModal(
+                    title: "Discard Changes",
+                    message: "Are you sure you want to discard this journal entry? Your changes will be lost.",
+                    confirmText: "Discard",
+                    confirmAction: {
+                        showingCancelConfirmation = false
+                        if let onCancel = onCancel {
+                            onCancel()
+                        } else {
+                            dismiss()
+                        }
+                    },
+                    cancelAction: {
+                        showingCancelConfirmation = false
+                    },
+                    isDestructive: true
+                )
+                .animation(.spring(), value: showingCancelConfirmation)
+            }
+            // Delete confirmation modal
+            if showingDeleteConfirmation {
+                ConfirmationModal(
+                    title: "Delete Entry",
+                    message: "Are you sure you want to delete this journal entry? This action cannot be undone.",
+                    confirmText: "Delete",
+                    confirmAction: {
+                        showingDeleteConfirmation = false
+                        onDelete?()
+                        dismiss()
+                    },
+                    cancelAction: {
+                        showingDeleteConfirmation = false
+                    },
+                    isDestructive: true
+                )
+                .animation(.spring(), value: showingDeleteConfirmation)
             }
         }
         .preferredColorScheme(.dark)
@@ -388,11 +463,12 @@ struct FullscreenEntryView_Previews: PreviewProvider {
             FullscreenEntryView(entry: sampleEntry)
                 .previewDisplayName("View Mode")
 
-            EditableFullscreenEntryView(entry: sampleEntry)
+            EditableFullscreenEntryView(entry: sampleEntry, onSave: { _, _, _ in })
                 .previewDisplayName("Edit Mode")
 
-            EditableFullscreenEntryView()
+            EditableFullscreenEntryView(onSave: { _, _, _ in })
                 .previewDisplayName("New Entry Mode")
         }
     }
 }
+

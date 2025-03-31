@@ -13,6 +13,7 @@ struct JournalView: View {
     @State private var expandedEntryId: UUID? = nil
     @State private var editingEntry: JournalEntry? = nil
     @State private var fullscreenEntry: JournalEntry? = nil
+    
 
     // Tab Bar State (Bindings)
     @Binding var tabBarOffset: CGFloat
@@ -261,6 +262,10 @@ struct JournalView: View {
                     .animation(.spring(response: 0.3, dampingFraction: 0.7), value: tabBarOffset)
                 }
             }
+
+            // Add this code near the end of the body, just before the closing bracket of the ZStack
+            // Confirmation modal for delete
+            
         } // End ZStack
         .fullScreenCover(isPresented: $showingNewEntrySheet) {
             EditableFullscreenEntryView(
@@ -337,6 +342,7 @@ struct JournalView: View {
         }
     }
 
+    // Modify the deleteEntry function to show confirmation first
     private func deleteEntry(_ entry: JournalEntry) {
         Task { @MainActor in
             if let index = appState.journalEntries.firstIndex(where: { $0.id == entry.id }) {
@@ -509,3 +515,4 @@ struct JournalEntryCard: View {
       }
   }
 }
+
