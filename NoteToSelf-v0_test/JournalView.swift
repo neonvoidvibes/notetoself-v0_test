@@ -10,7 +10,7 @@ struct JournalView: View {
 
     // View State
     @State private var showingNewEntrySheet = false
-    @State private var expandedEntryId: UUID? = nil // Restored
+    @State private var expandedEntryId: UUID? = nil // Keep for accordion
     @State private var editingEntry: JournalEntry? = nil
     @State private var fullscreenEntry: JournalEntry? = nil
 
@@ -204,13 +204,13 @@ struct JournalView: View {
                                          ForEach(entries) { entry in
                                              JournalEntryCard(
                                                  entry: entry,
-                                                 isExpanded: expandedEntryId == entry.id, // Restored binding
-                                                 onTap: { // Restored onTap for expansion
+                                                 isExpanded: expandedEntryId == entry.id, // Restore binding
+                                                 onTap: { // Restore onTap for expansion
                                                      withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                                          expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
                                                      }
                                                  },
-                                                 onExpand: { fullscreenEntry = entry }, // Restored onExpand
+                                                 onExpand: { fullscreenEntry = entry }, // Restore onExpand
                                                  onStar: { toggleStar(entry) } // Keep star action
                                              )
                                              .transition(.opacity.combined(with: .move(edge: .top)))
@@ -336,8 +336,8 @@ struct JournalView: View {
                 autoFocusText: true
             )
         }
-        .onAppear { // Restored onAppear logic
-            if expandedEntryId == nil, let firstEntry = filteredEntries.first { // Use filteredEntries to expand the top visible one
+        .onAppear { // Ensure latest *filtered* entry is expanded
+            if expandedEntryId == nil, let firstEntry = filteredEntries.first {
                  expandedEntryId = firstEntry.id
             }
         }
@@ -419,7 +419,7 @@ struct ScrollOffsetPreferenceKey: PreferenceKey {
     }
 }
 
-// Restored JournalEntryCard to original accordion style, but kept starring logic
+// Restored JournalEntryCard to original accordion style, removed context menu
 struct JournalEntryCard: View {
     let entry: JournalEntry
     let isExpanded: Bool // Restored
@@ -544,17 +544,7 @@ struct JournalEntryCard: View {
         .onLongPressGesture {
             onStar() // Handle long press for starring
         }
-        .contextMenu { // Restored context menu
-            Button(action: onExpand) {
-                Label("View", systemImage: "arrow.up.left.and.arrow.down.right")
-            }
-            // Keep Star/Unstar action in context menu
-             Button {
-                 onStar()
-             } label: {
-                 Label(entry.isStarred ? "Unstar" : "Star", systemImage: entry.isStarred ? "star.slash" : "star")
-             }
-        }
+        // .contextMenu { ... } // REMOVED context menu entirely
     }
 
     // Restored original formatDate logic
