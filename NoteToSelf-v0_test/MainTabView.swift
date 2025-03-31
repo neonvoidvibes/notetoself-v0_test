@@ -534,11 +534,11 @@ struct NavigationTabButton: View {
   // Fixed dimensions
   private let buttonWidth: CGFloat = 80 // Define button width
   private let iconSize: CGFloat = 24
-  private let underscoreHeight: CGFloat = 3
+  private let underscoreHeight: CGFloat = 4 // Increased thickness
   
   var body: some View {
       Button(action: action) {
-          VStack(spacing: 4) { // Use VStack for vertical layout
+          VStack(spacing: 6) { // Increased spacing from 4 to 6
               Spacer() // Pushes content down within the button frame initially
 
               // Icon
@@ -556,16 +556,18 @@ struct NavigationTabButton: View {
               
               // Underscore indicator
               Rectangle()
-                  .fill(styles.colors.accent)
-                  .frame(height: underscoreHeight)
+                  .fill(Color.white) // Use white color like text/icon
+                  .frame(width: 40, height: underscoreHeight) // Increased width from 35 to 40
                   .opacity(isSelected ? 1 : 0)
               
               Spacer(minLength: 2) // Add small spacer below underscore if needed
           }
-          .frame(width: buttonWidth) // Set fixed width for the button content
+          // Remove horizontal padding from VStack to allow text full width
+          .frame(width: buttonWidth) // Keep fixed width for the overall button tap area
+          // Removed explicit height and temporary background
       }
       .buttonStyle(ScaleButtonStyle())
-      .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+      .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected) // Restore animation
   }
 }
 
