@@ -247,12 +247,15 @@ struct MainTabView: View {
                                   if !bottomSheetExpanded {
                                       Text("Navigation")
                                           .font(.system(size: 10, weight: .regular, design: .monospaced))
-                                          .foregroundColor(Color.white) // Change text color to white
+                                          // Conditional color: Accent when closed, white when open
+                                          .foregroundColor(bottomSheetExpanded ? Color.white : styles.colors.accent)
                                   }
                               }
                               // Apply conditional height for chevron button area
                               .frame(height: bottomSheetExpanded ? peekHeight / 2 : peekHeight)
                               .contentShape(Rectangle())
+                               // Increase conditional top padding: more when closed
+                              .padding(.top, bottomSheetExpanded ? 0 : 20) // Increased from 10 to 20
                               // Restore original padding logic below chevron
                               .padding(.bottom, bottomSheetExpanded ? 16 : 8)
                           }
@@ -529,35 +532,37 @@ struct NavigationTabButton: View {
   private let styles = UIStyles.shared
   
   // Fixed dimensions
-  private let buttonHeight: CGFloat = 60
-  private let textHeight: CGFloat = 15
+  private let buttonWidth: CGFloat = 80 // Define button width
   private let iconSize: CGFloat = 24
+  private let underscoreHeight: CGFloat = 3
   
   var body: some View {
       Button(action: action) {
-          ZStack(alignment: .bottom) {
-              // Container
-              Rectangle()
-                  .fill(Color.clear)
-                  .frame(width: 80, height: buttonHeight)
+          VStack(spacing: 4) { // Use VStack for vertical layout
+              Spacer() // Pushes content down within the button frame initially
+
+              // Icon
+              Image(systemName: icon)
+                  .font(.system(size: iconSize, weight: isSelected ? .bold : .regular))
+                  .foregroundColor(Color.white)
+                  .frame(height: iconSize) // Keep icon height fixed
               
-              // Text label - always at the same position from bottom
+              // Text label
               Text(title)
                   .font(isSelected ? 
                         .system(size: 12, weight: .bold, design: .monospaced) : 
                         styles.typography.caption)
-                  .foregroundColor(Color.white) // Always use white color
-                  .frame(height: textHeight)
-                  .padding(.bottom, 5) // Fixed padding from bottom
+                  .foregroundColor(Color.white)
               
-              // Icon - positioned relative to text
-              Image(systemName: icon)
-                  .font(.system(size: iconSize, 
-                               weight: isSelected ? .bold : .regular)) // Keep weight change
-                  .foregroundColor(Color.white) // Always use white color
-                  .frame(height: iconSize)
-                  .offset(y: isSelected ? -30 : -textHeight - 10) // Position icon above text
+              // Underscore indicator
+              Rectangle()
+                  .fill(styles.colors.accent)
+                  .frame(height: underscoreHeight)
+                  .opacity(isSelected ? 1 : 0)
+              
+              Spacer(minLength: 2) // Add small spacer below underscore if needed
           }
+          .frame(width: buttonWidth) // Set fixed width for the button content
       }
       .buttonStyle(ScaleButtonStyle())
       .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
