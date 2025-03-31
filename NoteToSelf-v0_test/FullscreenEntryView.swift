@@ -86,7 +86,18 @@ struct FullscreenEntryView: View {
                                 }
                             }
 
-                            // Delete button (if onDelete is provided) - icon only
+                            // Locked indicator if needed - icon only (Moved Before Delete)
+                            if entry.isLocked {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(styles.colors.textSecondary)
+                                    .padding(.vertical, 6)
+                                    .padding(.horizontal, 12)
+                                    .background(styles.colors.secondaryBackground)
+                                    .cornerRadius(styles.layout.radiusM)
+                            }
+
+                            // Delete button (if onDelete is provided) - icon only (Moved After Lock)
                             if onDelete != nil {
                                 Button(action: {
                                     showingDeleteConfirmation = true
@@ -99,17 +110,6 @@ struct FullscreenEntryView: View {
                                         .background(styles.colors.secondaryBackground)
                                         .cornerRadius(styles.layout.radiusM)
                                 }
-                            }
-
-                            // Locked indicator if needed - icon only
-                            if entry.isLocked {
-                                Image(systemName: "lock.fill")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(styles.colors.textSecondary)
-                                    .padding(.vertical, 6)
-                                    .padding(.horizontal, 12)
-                                    .background(styles.colors.secondaryBackground)
-                                    .cornerRadius(styles.layout.radiusM)
                             }
                         }
                         .padding(.horizontal, styles.layout.paddingXL)
@@ -471,4 +471,3 @@ struct FullscreenEntryView_Previews: PreviewProvider {
         }
     }
 }
-
