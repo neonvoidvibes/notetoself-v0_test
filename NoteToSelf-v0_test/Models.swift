@@ -76,14 +76,16 @@ struct JournalEntry: Identifiable, Codable, Equatable, Hashable { // Added Equat
     let mood: Mood // Ensure Mood enum is also defined below
     let date: Date
     let intensity: Int
+    var isStarred: Bool // Added starred property
 
-    init(id: UUID = UUID(), text: String, mood: Mood, date: Date, intensity: Int = 2) {
+    init(id: UUID = UUID(), text: String, mood: Mood, date: Date, intensity: Int = 2, isStarred: Bool = false) {
         self.id = id
         self.text = text
         self.mood = mood
         self.date = date
         // Ensure intensity is within a valid range if necessary, e.g., 1-3
         self.intensity = max(1, min(intensity, 3))
+        self.isStarred = isStarred // Initialize starred property
     }
 
     // Existing isLocked logic - check if still relevant/used

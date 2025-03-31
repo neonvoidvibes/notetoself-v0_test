@@ -64,10 +64,16 @@ class DatabaseService: ObservableObject {
                 CREATE TABLE IF NOT EXISTS JournalEntries (
                     id TEXT PRIMARY KEY, text TEXT NOT NULL, mood TEXT NOT NULL,
                     date INTEGER NOT NULL, intensity INTEGER NOT NULL,
+                    isStarred INTEGER NOT NULL DEFAULT 0, -- Added isStarred column
                     embedding FLOAT32(\(self.embeddingDimension))
                 );
                 """
             )
+            // Attempt to add the isStarred column if it doesn't exist (ignores error if it does)
+            // Assign result to _ to silence warning
+            _ = try? self.connection.execute("ALTER TABLE JournalEntries ADD COLUMN isStarred INTEGER NOT NULL DEFAULT 0;")
+            print("JournalEntries table checked/updated.")
+
             // ChatMessages Table
             _ = try self.connection.execute(
                 """
@@ -78,6 +84,8 @@ class DatabaseService: ObservableObject {
                 );
                 """
             )
+            print("ChatMessages table checked.")
+
             // GeneratedInsights Table
              _ = try self.connection.execute(
                  """
@@ -91,8 +99,8 @@ class DatabaseService: ObservableObject {
                  );
                  """
              )
+            print("GeneratedInsights table checked.")
 
-            print("Database tables checked/created.")
 
             // Journal Entry Index
             _ = try self.connection.execute(
@@ -111,6 +119,7 @@ class DatabaseService: ObservableObject {
             print("Vector indexes checked/created.")
 
         } catch {
+            // Removed specific LibsqlError catch block
             print("Error during schema/index setup: \(error)")
             throw DatabaseError.schemaSetupFailed(error.localizedDescription)
         }
@@ -125,28 +134,31 @@ class DatabaseService: ObservableObject {
         if let validEmbedding = embedding, validEmbedding.count == self.embeddingDimension {
             guard let embJSON = embeddingToJson(validEmbedding) else {
                  print("Warning: Failed to convert JE embedding to JSON. Saving without embedding.")
-                 sql = "INSERT OR REPLACE INTO JournalEntries (id, text, mood, date, intensity, embedding) VALUES (?, ?, ?, ?, ?, NULL);"
+                 sql = "INSERT OR REPLACE INTO JournalEntries (id, text, mood, date, intensity, isStarred, embedding) VALUES (?, ?, ?, ?, ?, ?, NULL);"
                  params = [.text(entry.id.uuidString), .text(entry.text), .text(entry.mood.rawValue),
-                           .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity))]
-                 guard params.count == 5 else { throw DatabaseError.saveDataFailed("Param count mismatch (JE/NoEmbed/JSONFail)") }
+                           .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity)),
+                           .integer(entry.isStarred ? 1 : 0)] // Added isStarred
+                 guard params.count == 6 else { throw DatabaseError.saveDataFailed("Param count mismatch (JE/NoEmbed/JSONFail)") }
                  _ = try self.connection.execute(sql, params)
                  return
             }
             let safeEmbJSON = embJSON.replacingOccurrences(of: "'", with: "''")
             sql = """
-                INSERT OR REPLACE INTO JournalEntries (id, text, mood, date, intensity, embedding)
-                VALUES (?, ?, ?, ?, ?, vector32('\(safeEmbJSON)'));
+                INSERT OR REPLACE INTO JournalEntries (id, text, mood, date, intensity, isStarred, embedding)
+                VALUES (?, ?, ?, ?, ?, ?, vector32('\(safeEmbJSON)'));
                 """
             params = [.text(entry.id.uuidString), .text(entry.text), .text(entry.mood.rawValue),
-                      .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity))]
-            guard params.count == 5 else { throw DatabaseError.saveDataFailed("Param count mismatch (JE/Embed)") }
+                      .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity)),
+                      .integer(entry.isStarred ? 1 : 0)] // Added isStarred
+            guard params.count == 6 else { throw DatabaseError.saveDataFailed("Param count mismatch (JE/Embed)") }
         } else {
             if embedding != nil { print("Warning: Dim mismatch JE \(entry.id). Saving without embedding.") }
             else { print("Warning: Saving JE \(entry.id) without embedding (nil).") }
-            sql = "INSERT OR REPLACE INTO JournalEntries (id, text, mood, date, intensity, embedding) VALUES (?, ?, ?, ?, ?, NULL);"
+            sql = "INSERT OR REPLACE INTO JournalEntries (id, text, mood, date, intensity, isStarred, embedding) VALUES (?, ?, ?, ?, ?, ?, NULL);"
             params = [.text(entry.id.uuidString), .text(entry.text), .text(entry.mood.rawValue),
-                      .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity))]
-            guard params.count == 5 else { throw DatabaseError.saveDataFailed("Param count mismatch (JE/NoEmbed)") }
+                      .integer(Int64(entry.date.timeIntervalSince1970)), .integer(Int64(entry.intensity)),
+                      .integer(entry.isStarred ? 1 : 0)] // Added isStarred
+            guard params.count == 6 else { throw DatabaseError.saveDataFailed("Param count mismatch (JE/NoEmbed)") }
         }
         _ = try self.connection.execute(sql, params)
     }
@@ -159,7 +171,7 @@ class DatabaseService: ObservableObject {
     }
 
     func loadAllJournalEntries() throws -> [JournalEntry] {
-        let sql = "SELECT id, text, mood, date, intensity FROM JournalEntries ORDER BY date DESC;"
+        let sql = "SELECT id, text, mood, date, intensity, isStarred FROM JournalEntries ORDER BY date DESC;" // Added isStarred
         let rows = try self.connection.query(sql)
         var results: [JournalEntry] = []
         for row in rows {
@@ -167,16 +179,24 @@ class DatabaseService: ObservableObject {
                   let text = try? row.getString(1),
                   let moodStr = try? row.getString(2), let mood = Mood(rawValue: moodStr),
                   let dateTimestamp = try? row.getInt(3),
-                  let intensityInt = try? row.getInt(4)
+                  let intensityInt = try? row.getInt(4),
+                  let isStarredInt = try? row.getInt(5) // Read isStarred
             else {
                 print("Warning: Failed to decode JournalEntry row during loadAll: \(row)")
                 continue
             }
             let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
-            results.append(JournalEntry(id: id, text: text, mood: mood, date: date, intensity: Int(intensityInt)))
+            results.append(JournalEntry(id: id, text: text, mood: mood, date: date, intensity: Int(intensityInt), isStarred: isStarredInt == 1)) // Initialize with isStarred
         }
         print("Loaded \(results.count) journal entries from DB.")
         return results
+    }
+
+    func toggleJournalEntryStarInDB(id: UUID, isStarred: Bool) throws {
+        let sql = "UPDATE JournalEntries SET isStarred = ? WHERE id = ?;"
+        let params: [Value] = [.integer(isStarred ? 1 : 0), .text(id.uuidString)]
+        _ = try self.connection.execute(sql, params)
+        print("Attempted toggle star (\(isStarred)) for JournalEntry ID: \(id.uuidString)")
     }
 
     func findSimilarJournalEntries(to queryVector: [Float], limit: Int = 5) throws -> [JournalEntry] {
@@ -188,8 +208,9 @@ class DatabaseService: ObservableObject {
              throw DatabaseError.embeddingGenerationFailed("Failed to convert query vector to JSON.")
         }
 
+        // Added isStarred to SELECT list
         let sql = """
-            SELECT E.id, E.text, E.mood, E.date, E.intensity,
+            SELECT E.id, E.text, E.mood, E.date, E.intensity, E.isStarred,
                    vector_distance_cos(E.embedding, vector32(?)) AS distance
             FROM JournalEntries AS E
             JOIN vector_top_k('journal_embedding_idx', vector32(?), ?) AS V
@@ -207,10 +228,11 @@ class DatabaseService: ObservableObject {
                   let text = try? row.getString(1),
                   let moodStr = try? row.getString(2), let mood = Mood(rawValue: moodStr),
                   let dateTimestamp = try? row.getInt(3),
-                  let intensityInt = try? row.getInt(4)
+                  let intensityInt = try? row.getInt(4),
+                  let isStarredInt = try? row.getInt(5) // Read isStarred
             else { print("Warning: Failed decode JournalEntry row: \(row)"); continue }
             let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
-            results.append(JournalEntry(id: id, text: text, mood: mood, date: date, intensity: Int(intensityInt)))
+            results.append(JournalEntry(id: id, text: text, mood: mood, date: date, intensity: Int(intensityInt), isStarred: isStarredInt == 1)) // Init with isStarred
         }
         print("[DB Search] Corrected JournalEntries search successful. Found \(results.count) entries.")
         return results
@@ -268,12 +290,14 @@ class DatabaseService: ObservableObject {
         print("Attempted delete for ChatMessage ID: \(id.uuidString)")
     }
 
+    // Note: toggleChatStarInDB would require a Chats table or updating all messages, which is inefficient.
+    // Sticking to message-level starring for now as per current ChatManager implementation.
+    /*
     func toggleChatStarInDB(id: UUID, isStarred: Bool) throws {
-        let sql = "UPDATE ChatMessages SET isStarred = ? WHERE chatId = ?;"
-        let params: [Value] = [.integer(isStarred ? 1 : 0), .text(id.uuidString)]
-        _ = try self.connection.execute(sql, params)
-        print("Attempted toggle star (\(isStarred)) for all messages in Chat ID: \(id.uuidString)")
+        // Implementation would depend on Chat table existence or updating all messages
+        print("Warning: toggleChatStarInDB not implemented without dedicated Chat table.")
     }
+    */
 
     func toggleMessageStarInDB(id: UUID, isStarred: Bool) throws {
         let sql = "UPDATE ChatMessages SET isStarred = ? WHERE id = ?;"
@@ -348,6 +372,7 @@ class DatabaseService: ObservableObject {
             let sortedMessages = messages.sorted { $0.date < $1.date }
             let createdAt = sortedMessages.first!.date
             let lastUpdatedAt = sortedMessages.last!.date
+            // Determine if chat is starred based on ANY message being starred
             let isChatStarred = sortedMessages.contains { $0.isStarred }
             var chat = Chat(id: chatId, messages: sortedMessages, createdAt: createdAt, lastUpdatedAt: lastUpdatedAt, isStarred: isChatStarred)
             chat.generateTitle()
@@ -385,7 +410,7 @@ class DatabaseService: ObservableObject {
     /// Loads the most recently generated insight JSON string for a specific type.
     /// NOTE: This is a synchronous function. Callers should dispatch to a background thread.
     func loadLatestInsight(type: String) throws -> (jsonData: String, generatedDate: Date)? {
-        let sql = "SELECT jsonData, generatedDate FROM GeneratedInsights WHERE insightType = ?;"
+        let sql = "SELECT jsonData, generatedDate FROM GeneratedInsights WHERE insightType = ? ORDER BY generatedDate DESC LIMIT 1;" // Ensure latest
         let params: [Value] = [.text(type)]
 
         print("[DB Insight] Loading latest insight of type '\(type)'...")

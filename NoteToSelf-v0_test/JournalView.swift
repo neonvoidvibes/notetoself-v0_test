@@ -10,10 +10,10 @@ struct JournalView: View {
 
     // View State
     @State private var showingNewEntrySheet = false
-    @State private var expandedEntryId: UUID? = nil
+    @State private var expandedEntryId: UUID? = nil // Restored
     @State private var editingEntry: JournalEntry? = nil
     @State private var fullscreenEntry: JournalEntry? = nil
-    
+
 
     // Tab Bar State (Bindings)
     @Binding var tabBarOffset: CGFloat
@@ -204,13 +204,14 @@ struct JournalView: View {
                                          ForEach(entries) { entry in
                                              JournalEntryCard(
                                                  entry: entry,
-                                                 isExpanded: expandedEntryId == entry.id,
-                                                 onTap: {
+                                                 isExpanded: expandedEntryId == entry.id, // Restored binding
+                                                 onTap: { // Restored onTap for expansion
                                                      withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                                          expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
                                                      }
                                                  },
-                                                 onExpand: { fullscreenEntry = entry }
+                                                 onExpand: { fullscreenEntry = entry }, // Restored onExpand
+                                                 onStar: { toggleStar(entry) } // Keep star action
                                              )
                                              .transition(.opacity.combined(with: .move(edge: .top)))
                                          }
@@ -268,7 +269,7 @@ struct JournalView: View {
 
             // Add this code near the end of the body, just before the closing bracket of the ZStack
             // Confirmation modal for delete
-            
+
         } // End ZStack
         .fullScreenCover(isPresented: $showingNewEntrySheet) {
             EditableFullscreenEntryView(
@@ -282,7 +283,8 @@ struct JournalView: View {
                             await MainActor.run {
                                  withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                                      appState.journalEntries.insert(newEntry, at: 0)
-                                     expandedEntryId = newEntry.id
+                                     appState.journalEntries.sort { $0.date > $1.date } // Keep sorted
+                                     expandedEntryId = newEntry.id // Expand new entry by default
                                  }
                             }
                             // Call global trigger function
@@ -309,7 +311,15 @@ struct JournalView: View {
             EditableFullscreenEntryView(
                 entry: entryToEdit,
                 onSave: { updatedText, updatedMood, updatedIntensity in
-                     let updatedEntry = JournalEntry(id: entryToEdit.id, text: updatedText, mood: updatedMood, date: entryToEdit.date, intensity: updatedIntensity)
+                     // Create a new entry instance with updated values
+                     let updatedEntry = JournalEntry(
+                        id: entryToEdit.id, // Keep original ID
+                        text: updatedText,
+                        mood: updatedMood,
+                        date: entryToEdit.date, // Keep original date
+                        intensity: updatedIntensity,
+                        isStarred: entryToEdit.isStarred // Preserve starred status
+                     )
                     Task {
                          let embeddingVector = await generateEmbedding(for: updatedEntry.text)
                         do {
@@ -326,9 +336,9 @@ struct JournalView: View {
                 autoFocusText: true
             )
         }
-        .onAppear {
-            if expandedEntryId == nil, let firstEntry = appState.journalEntries.first {
-                expandedEntryId = firstEntry.id
+        .onAppear { // Restored onAppear logic
+            if expandedEntryId == nil, let firstEntry = filteredEntries.first { // Use filteredEntries to expand the top visible one
+                 expandedEntryId = firstEntry.id
             }
         }
     } // End Body
@@ -340,6 +350,7 @@ struct JournalView: View {
         if let index = appState.journalEntries.firstIndex(where: { $0.id == updatedEntry.id }) {
             withAnimation { appState.journalEntries[index] = updatedEntry }
             if fullscreenEntry?.id == updatedEntry.id { fullscreenEntry = updatedEntry }
+            appState.journalEntries.sort { $0.date > $1.date } // Keep sorted
         } else {
              print("Warning: Tried to update entry \(updatedEntry.id) in AppState, but not found.")
         }
@@ -364,9 +375,42 @@ struct JournalView: View {
         }
     }
 
+    // Function to toggle star status
+    @MainActor
+    private func toggleStar(_ entry: JournalEntry) {
+        guard let index = appState.journalEntries.firstIndex(where: { $0.id == entry.id }) else {
+            print("Error: Could not find entry \(entry.id) to star.")
+            return
+        }
+
+        appState.journalEntries[index].isStarred.toggle()
+        let newStatus = appState.journalEntries[index].isStarred
+        print("[JournalView] Toggling star for entry \(entry.id) to \(newStatus)")
+
+        // Update fullscreen/editing views if they are showing this entry
+        if fullscreenEntry?.id == entry.id {
+            fullscreenEntry?.isStarred = newStatus
+        }
+        if editingEntry?.id == entry.id {
+            editingEntry?.isStarred = newStatus
+        }
+
+        // Persist change to DB in background
+        Task.detached(priority: .background) { [databaseService] in
+            do {
+                try databaseService.toggleJournalEntryStarInDB(id: entry.id, isStarred: newStatus)
+                print("✅ Successfully toggled star for entry \(entry.id) in DB.")
+            } catch {
+                print("‼️ Error toggling star for entry \(entry.id) in DB: \(error)")
+                // Consider reverting UI state on error?
+                // await MainActor.run { appState.journalEntries[index].isStarred.toggle() }
+            }
+        }
+    }
+
 } // End JournalView
 
-// ... (Keep existing ScrollOffsetPreferenceKey and JournalEntryCard structs) ...
+// ... (Keep existing ScrollOffsetPreferenceKey) ...
 
 struct ScrollOffsetPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
@@ -375,11 +419,13 @@ struct ScrollOffsetPreferenceKey: PreferenceKey {
     }
 }
 
+// Restored JournalEntryCard to original accordion style, but kept starring logic
 struct JournalEntryCard: View {
     let entry: JournalEntry
-    let isExpanded: Bool
-    let onTap: () -> Void
-    let onExpand: () -> Void
+    let isExpanded: Bool // Restored
+    let onTap: () -> Void // For expansion/collapse
+    let onExpand: () -> Void // For fullscreen view
+    let onStar: () -> Void // Callback for starring
 
     private let styles = UIStyles.shared
 
@@ -387,8 +433,9 @@ struct JournalEntryCard: View {
         VStack(alignment: .leading, spacing: 0) {
             // Header always visible
             HStack(alignment: .center) {
+                // Date/Time and truncated text (if not expanded)
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(formatDate(entry.date))
+                    Text(formatDate(entry.date)) // Restored date format logic
                         .font(styles.typography.smallLabelFont)
                         .foregroundColor(styles.colors.secondaryAccent)
 
@@ -402,15 +449,24 @@ struct JournalEntryCard: View {
 
                 Spacer()
 
+                // Icons on the right
                 HStack(spacing: 12) {
-                    // Mood icon and formatted text
+                    // Star icon if starred
+                     if entry.isStarred {
+                         Image(systemName: "star.fill")
+                             .font(.system(size: 14)) // Match chat history star size
+                             .foregroundColor(styles.colors.accent)
+                             .padding(.trailing, -4) // Adjust spacing slightly
+                     }
+
+                    // Mood icon and formatted text (if expanded)
                     HStack(spacing: 4) {
                         entry.mood.icon
                             .foregroundColor(entry.mood.color)
                             .font(.system(size: 20))
-                            .scaleEffect(isExpanded ? 1.1 : 1.0)
+                            .scaleEffect(isExpanded ? 1.1 : 1.0) // Keep scale effect
 
-                        if isExpanded {
+                        if isExpanded { // Restored conditional mood text
                             Text(formattedMoodText(entry.mood, intensity: entry.intensity))
                                 .font(styles.typography.caption)
                                 .foregroundColor(entry.mood.color)
@@ -419,14 +475,14 @@ struct JournalEntryCard: View {
                     .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
 
                     // Lock icon if needed (only when expanded)
-                    if isExpanded && entry.isLocked {
+                    if isExpanded && entry.isLocked { // Restored lock icon logic
                         Image(systemName: "lock.fill")
                             .font(.system(size: 14))
                             .foregroundColor(styles.colors.secondaryAccent)
                     }
 
                     // Expand/collapse chevron with rotation
-                    Image(systemName: "chevron.down")
+                    Image(systemName: "chevron.down") // Restored chevron
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(styles.colors.secondaryAccent)
                         .rotationEffect(Angle(degrees: isExpanded ? 180 : 0))
@@ -437,12 +493,12 @@ struct JournalEntryCard: View {
             .padding(.vertical, 16)
 
             // Expanded content
-            if isExpanded {
+            if isExpanded { // Restored expanded content section
                 Divider()
                     .background(Color(hex: "#222222"))
                     .padding(.horizontal, 16)
 
-                Text(entry.text)
+                Text(entry.text) // Show full text when expanded
                     .font(styles.typography.bodyFont)
                     .foregroundColor(styles.colors.text)
                     .padding(.horizontal, 20)
@@ -452,8 +508,8 @@ struct JournalEntryCard: View {
                 HStack {
                     Spacer()
 
-                    // Expand button
-                    Button(action: onExpand) {
+                    // Expand button (renamed to "View")
+                    Button(action: onExpand) { // Restored button
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.up.left.and.arrow.down.right")
                                 .font(.system(size: styles.layout.iconSizeS))
@@ -473,23 +529,35 @@ struct JournalEntryCard: View {
         }
         .background(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                .fill(Color("CardBackground"))
+                .fill(Color("CardBackground")) // Ensure "CardBackground" is defined in Assets
                 .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
         )
         .overlay(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                .stroke(Color(hex: "#222222"), lineWidth: 1)
+                // Highlight border if starred, similar to ChatHistoryItem
+                .stroke(entry.isStarred ? styles.colors.accent : Color(hex: "#222222"), lineWidth: entry.isStarred ? 2 : 1)
         )
+        .contentShape(Rectangle()) // Make whole card tappable
         .onTapGesture {
-            onTap()
+            onTap() // Handle tap for expansion/collapse
         }
-        .contextMenu {
+        .onLongPressGesture {
+            onStar() // Handle long press for starring
+        }
+        .contextMenu { // Restored context menu
             Button(action: onExpand) {
                 Label("View", systemImage: "arrow.up.left.and.arrow.down.right")
             }
+            // Keep Star/Unstar action in context menu
+             Button {
+                 onStar()
+             } label: {
+                 Label(entry.isStarred ? "Unstar" : "Star", systemImage: entry.isStarred ? "star.slash" : "star")
+             }
         }
     }
 
+    // Restored original formatDate logic
     private func formatDate(_ date: Date) -> String {
         let calendar = Calendar.current
 
@@ -504,12 +572,14 @@ struct JournalEntryCard: View {
         }
     }
 
+    // Restored formatTime helper
     private func formatTime(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
         return formatter.string(from: date)
     }
 
+    // Restored formattedMoodText helper
     private func formattedMoodText(_ mood: Mood, intensity: Int = 2) -> String {
       switch intensity {
       case 1: return "Slightly \(mood.name)"

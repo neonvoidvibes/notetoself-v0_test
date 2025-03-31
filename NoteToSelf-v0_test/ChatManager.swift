@@ -300,19 +300,41 @@ class ChatManager: ObservableObject {
 
     func toggleStarChat(_ chat: Chat) {
         if let index = self.chats.firstIndex(where: { $0.id == chat.id }) {
-            self.chats[index].isStarred.toggle()
-            let newStarStatus = self.chats[index].isStarred
+            let newStarStatus = !self.chats[index].isStarred // Calculate the new status
+            self.chats[index].isStarred = newStarStatus // Update chat star status locally
             print("[ChatManager] Toggling star for chat \(chat.id) to \(newStarStatus)")
 
-            if self.currentChat.id == chat.id { self.currentChat.isStarred = newStarStatus }
+            // Update all messages within this chat locally
+            for msgIndex in 0..<self.chats[index].messages.count {
+                self.chats[index].messages[msgIndex].isStarred = newStarStatus
+            }
 
-            let chatId = chat.id
+            // Update currentChat if it's the one being toggled
+            if self.currentChat.id == chat.id {
+                self.currentChat.isStarred = newStarStatus
+                for msgIndex in 0..<self.currentChat.messages.count {
+                    self.currentChat.messages[msgIndex].isStarred = newStarStatus
+                }
+            }
+
+            // Get message IDs to update in DB
+            let messageIdsToUpdate = self.chats[index].messages.map { $0.id }
+
+            // Update all messages in the DB in the background
             Task.detached(priority: .background) { [databaseService] in
-                do {
-                    try databaseService.toggleChatStarInDB(id: chatId, isStarred: newStarStatus)
-                    print("✅ [ChatManager] Successfully toggled star for chat \(chatId) in DB.")
-                } catch {
-                    print("‼️ [ChatManager] Error toggling star for chat \(chatId) in DB: \(error)")
+                var errors: [Error] = []
+                for messageId in messageIdsToUpdate {
+                    do {
+                        try databaseService.toggleMessageStarInDB(id: messageId, isStarred: newStarStatus)
+                    } catch {
+                        print("‼️ [ChatManager] Error toggling star for message \(messageId) in DB: \(error)")
+                        errors.append(error)
+                    }
+                }
+                if errors.isEmpty {
+                    print("✅ [ChatManager] Successfully toggled star for all messages in chat \(chat.id) in DB.")
+                } else {
+                    print("‼️ [ChatManager] Encountered \(errors.count) errors while toggling stars for messages in chat \(chat.id).")
                 }
             }
         }
@@ -321,24 +343,44 @@ class ChatManager: ObservableObject {
     func toggleStarMessage(_ message: ChatMessage) {
         let messageId = message.id
         var newStarStatus: Bool? = nil
+        var chatToUpdate: Chat? = nil
 
-        if let msgIdx = self.currentChat.messages.firstIndex(where: { $0.id == messageId }) {
-             self.currentChat.messages[msgIdx].isStarred.toggle()
-             newStarStatus = self.currentChat.messages[msgIdx].isStarred
+        // Find the message and its chat, update the message star status
+        if let chatIdx = self.chats.firstIndex(where: { $0.messages.contains(where: { $0.id == messageId }) }) {
+            if let msgIdx = self.chats[chatIdx].messages.firstIndex(where: { $0.id == messageId }) {
+                self.chats[chatIdx].messages[msgIdx].isStarred.toggle()
+                newStarStatus = self.chats[chatIdx].messages[msgIdx].isStarred
+                chatToUpdate = self.chats[chatIdx] // Keep track of the chat that needs its star status potentially updated
+                if self.currentChat.id == chatToUpdate?.id {
+                    self.currentChat = self.chats[chatIdx] // Update currentChat if it's the one being modified
+                }
+            }
+        } else if let msgIdx = self.currentChat.messages.firstIndex(where: { $0.id == messageId }) {
+            self.currentChat.messages[msgIdx].isStarred.toggle()
+            newStarStatus = self.currentChat.messages[msgIdx].isStarred
+            chatToUpdate = self.currentChat
+            // If currentChat is not in the main chats list yet (e.g., new chat), handle appropriately
              if let chatIdx = self.chats.firstIndex(where: { $0.id == self.currentChat.id }) {
                  self.chats[chatIdx] = self.currentChat
-             }
-        } else {
-             for i in 0..<self.chats.count {
-                 if let msgIdx = self.chats[i].messages.firstIndex(where: { $0.id == messageId }) {
-                     self.chats[i].messages[msgIdx].isStarred.toggle()
-                     newStarStatus = self.chats[i].messages[msgIdx].isStarred
-                     break
-                 }
+             } else {
+                 // This case might need review depending on when chats are added to the list
+                 print("Warning: Toggled star on message in currentChat not yet present in main chats list.")
              }
         }
 
-        if let status = newStarStatus {
+        // Update the containing chat's overall star status if needed
+        if let chat = chatToUpdate, let status = newStarStatus {
+            let chatIsNowStarred = chat.messages.contains { $0.isStarred }
+            if chat.isStarred != chatIsNowStarred {
+                if let chatIdx = self.chats.firstIndex(where: { $0.id == chat.id }) {
+                    self.chats[chatIdx].isStarred = chatIsNowStarred
+                }
+                if self.currentChat.id == chat.id {
+                     self.currentChat.isStarred = chatIsNowStarred
+                }
+            }
+
+            // Persist the individual message star change
             print("[ChatManager] Toggling star for message \(messageId) to \(status)")
             Task.detached(priority: .background) { [databaseService] in
                 do {
@@ -346,10 +388,11 @@ class ChatManager: ObservableObject {
                     print("✅ [ChatManager] Successfully toggled star for message \(messageId) in DB.")
                 } catch {
                     print("‼️ [ChatManager] Error toggling star for message \(messageId) in DB: \(error)")
+                    // Consider reverting UI?
                 }
             }
-        } else {
-             print("⚠️ [ChatManager] Could not find message \(messageId) to star.")
+        } else if newStarStatus == nil {
+            print("⚠️ [ChatManager] Could not find message \(messageId) to star.")
         }
     }
 
