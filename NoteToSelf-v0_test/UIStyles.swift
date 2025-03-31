@@ -298,6 +298,8 @@ func sectionHeader(_ title: String) -> some View {
 func expandableCard<Content: View, DetailContent: View>(
     isExpanded: Binding<Bool>,
     isPrimary: Bool = false,
+    scrollProxy: ScrollViewProxy? = nil, // Add scrollProxy parameter
+    cardId: String? = nil, // Add cardId parameter
     @ViewBuilder content: @escaping () -> Content,
     @ViewBuilder detailContent: @escaping () -> DetailContent
 ) -> some View {
@@ -305,6 +307,8 @@ func expandableCard<Content: View, DetailContent: View>(
         content: content,
         detailContent: detailContent,
         isExpanded: isExpanded,
+        scrollProxy: scrollProxy, // Pass scrollProxy
+        cardId: cardId,           // Pass cardId
         colors: self.colors,
         typography: self.typography,
         layout: self.layout,

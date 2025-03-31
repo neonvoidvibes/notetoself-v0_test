@@ -2,9 +2,14 @@ import SwiftUI
 
 struct StreakInsightCard: View {
     let streak: Int
+
+    // Scroll behavior properties
+    var scrollProxy: ScrollViewProxy? = nil
+    var cardId: String? = nil
+
     @State private var isExpanded: Bool = false
     @EnvironmentObject var appState: AppState
-    
+
     // Access to shared styles
     private let styles = UIStyles.shared
     
@@ -12,6 +17,8 @@ struct StreakInsightCard: View {
         styles.expandableCard(
             isExpanded: $isExpanded,
             isPrimary: true,
+            scrollProxy: scrollProxy, // Pass proxy
+            cardId: cardId,           // Pass ID
             content: {
                 // Preview content
                 VStack(spacing: styles.layout.spacingM) {
@@ -179,4 +186,3 @@ struct StreakBenefitRow: View {
         .padding(.vertical, 4)
     }
 }
-

@@ -10,6 +10,10 @@ struct RecommendationsInsightCard: View {
     @State private var decodedRecommendations: RecommendationResult? = nil
     @State private var decodingError: Bool = false
 
+    // Scroll behavior properties
+    var scrollProxy: ScrollViewProxy? = nil
+    var cardId: String? = nil
+
     @State private var isExpanded: Bool = false
     private let styles = UIStyles.shared
 
@@ -40,6 +44,8 @@ struct RecommendationsInsightCard: View {
     var body: some View {
         styles.expandableCard(
             isExpanded: $isExpanded,
+            scrollProxy: scrollProxy, // Pass proxy
+            cardId: cardId,           // Pass ID
             content: {
                 // Preview content
                 VStack(spacing: styles.layout.spacingM) {

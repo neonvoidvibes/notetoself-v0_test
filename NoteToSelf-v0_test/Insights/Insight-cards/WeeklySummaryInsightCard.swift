@@ -11,6 +11,10 @@ struct WeeklySummaryInsightCard: View {
     @State private var decodedSummary: WeeklySummaryResult? = nil
     @State private var decodingError: Bool = false
 
+    // Scroll behavior properties
+    var scrollProxy: ScrollViewProxy? = nil
+    var cardId: String? = nil
+
     @State private var isExpanded: Bool = false
     private let styles = UIStyles.shared
 
@@ -66,6 +70,8 @@ struct WeeklySummaryInsightCard: View {
         styles.expandableCard(
             isExpanded: $isExpanded,
             isPrimary: isFresh && subscriptionTier == .premium, // Only highlight if premium and fresh
+            scrollProxy: scrollProxy, // Pass proxy
+            cardId: cardId,           // Pass ID
             content: {
                 // Preview content
                 VStack(spacing: styles.layout.spacingM) {

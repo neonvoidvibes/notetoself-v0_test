@@ -11,6 +11,10 @@ struct MoodTrendsInsightCard: View {
     @State private var decodedTrend: MoodTrendResult? = nil
     @State private var decodingError: Bool = false
 
+    // Scroll behavior properties
+    var scrollProxy: ScrollViewProxy? = nil
+    var cardId: String? = nil
+
     @State private var isExpanded: Bool = false
     private let styles = UIStyles.shared
 
@@ -53,6 +57,8 @@ struct MoodTrendsInsightCard: View {
     var body: some View {
         styles.expandableCard(
             isExpanded: $isExpanded,
+            scrollProxy: scrollProxy, // Pass proxy
+            cardId: cardId,           // Pass ID
             content: {
                 // Preview content based on decodedTrend
                 VStack(spacing: styles.layout.spacingM) {

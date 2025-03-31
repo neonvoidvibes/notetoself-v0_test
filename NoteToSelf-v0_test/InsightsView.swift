@@ -120,43 +120,59 @@ struct InsightsView: View {
                                 } // End Section content
                                 #endif
 
-                                // Today's Highlights Section
-                                Section(header: SharedSectionHeader(title: "Today's Highlights", backgroundColor: styles.colors.appBackground)) { // Use correct Section initializer
-                                    // Content for this section
-                                    StreakInsightCard(streak: appState.currentStreak)
+                                // Wrap LazyVStack in ScrollViewReader
+                                ScrollViewReader { scrollProxy in
+                                    // Today's Highlights Section
+                                    Section(header: SharedSectionHeader(title: "Today's Highlights", backgroundColor: styles.colors.appBackground)) { // Use correct Section initializer
+                                        // Content for this section
+                                        StreakInsightCard(streak: appState.currentStreak)
+                                            .id("streakCard") // Add ID
+                                            .padding(.horizontal, styles.layout.paddingXL)
+                                            // Pass proxy and ID (Streak card doesn't use expandableCard helper directly, add manually if needed)
+
+                                        WeeklySummaryInsightCard(
+                                            jsonString: summaryJson,
+                                            generatedDate: summaryDate,
+                                            isFresh: isWeeklySummaryFresh,
+                                            subscriptionTier: appState.subscriptionTier,
+                                            scrollProxy: scrollProxy, // Pass proxy
+                                            cardId: "summaryCard"     // Pass ID
+                                        )
+                                        .id("summaryCard") // Add ID
                                         .padding(.horizontal, styles.layout.paddingXL)
+                                    } // End Section content
 
-                                    WeeklySummaryInsightCard(
-                                        jsonString: summaryJson,
-                                        generatedDate: summaryDate,
-                                        isFresh: isWeeklySummaryFresh,
-                                        subscriptionTier: appState.subscriptionTier
-                                    )
-                                    .padding(.horizontal, styles.layout.paddingXL)
-                                } // End Section content
+                                    // Deeper Insights Section
+                                    Section(header: SharedSectionHeader(title: "Deeper Insights", backgroundColor: styles.colors.appBackground)) { // Use correct Section initializer
+                                        // Content for this section
+                                        ChatInsightCard()
+                                            .id("chatCard") // Add ID
+                                            .padding(.horizontal, styles.layout.paddingXL)
+                                            .accessibilityLabel("AI Reflection")
+                                            // Pass proxy and ID (Chat card doesn't use expandableCard helper directly, add manually if needed)
 
-                                // Deeper Insights Section
-                                Section(header: SharedSectionHeader(title: "Deeper Insights", backgroundColor: styles.colors.appBackground)) { // Use correct Section initializer
-                                    // Content for this section
-                                    ChatInsightCard()
+                                        MoodTrendsInsightCard(
+                                            jsonString: trendJson,
+                                            generatedDate: trendDate,
+                                            subscriptionTier: appState.subscriptionTier,
+                                            scrollProxy: scrollProxy, // Pass proxy
+                                            cardId: "trendCard"       // Pass ID
+                                        )
+                                        .id("trendCard") // Add ID
                                         .padding(.horizontal, styles.layout.paddingXL)
-                                        .accessibilityLabel("AI Reflection")
+                                        .accessibilityLabel("Mood Analysis")
 
-                                    MoodTrendsInsightCard(
-                                        jsonString: trendJson,
-                                        generatedDate: trendDate,
-                                        subscriptionTier: appState.subscriptionTier
-                                    )
-                                    .padding(.horizontal, styles.layout.paddingXL)
-                                    .accessibilityLabel("Mood Analysis")
-
-                                    RecommendationsInsightCard(
-                                        jsonString: recommendationsJson,
-                                        generatedDate: recommendationsDate,
-                                        subscriptionTier: appState.subscriptionTier
-                                    )
-                                    .padding(.horizontal, styles.layout.paddingXL)
-                                } // End Section content
+                                        RecommendationsInsightCard(
+                                            jsonString: recommendationsJson,
+                                            generatedDate: recommendationsDate,
+                                            subscriptionTier: appState.subscriptionTier,
+                                            scrollProxy: scrollProxy, // Pass proxy
+                                            cardId: "recsCard"        // Pass ID
+                                        )
+                                        .id("recsCard") // Add ID
+                                        .padding(.horizontal, styles.layout.paddingXL)
+                                    } // End Section content
+                                } // End ScrollViewReader
 
                                 // Bottom padding
                                 Section { // Use correct Section initializer
@@ -173,8 +189,11 @@ struct InsightsView: View {
                     // Scroll handling logic (unchanged)
                     let scrollingDown = value < lastScrollPosition
                     if abs(value - lastScrollPosition) > 10 {
-                        if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
-                        else { tabBarOffset = 0; tabBarVisible = true }
+                         // Apply animation to tab bar visibility change
+                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                             if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
+                             else { tabBarOffset = 0; tabBarVisible = true }
+                         }
                         lastScrollPosition = value
                     }
                 }

@@ -3,9 +3,14 @@ import SwiftUI
 struct ChatInsightCard: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var chatManager: ChatManager
+
+    // Scroll behavior properties
+    var scrollProxy: ScrollViewProxy? = nil
+    var cardId: String? = nil
+
     @State private var isExpanded: Bool = false
     private let styles = UIStyles.shared
-    
+
     // This would ideally come from an AI model analyzing journal entries
     // For now, we'll use a simple algorithm to generate an insight
     private var insightMessage: String {
@@ -39,6 +44,8 @@ struct ChatInsightCard: View {
     var body: some View {
         styles.expandableCard(
             isExpanded: $isExpanded,
+            scrollProxy: scrollProxy, // Pass proxy
+            cardId: cardId,           // Pass ID
             content: {
                 // Preview content
                 VStack(spacing: styles.layout.spacingM) {
@@ -210,4 +217,3 @@ struct ChatInsightCard: View {
         }
     }
 }
-
