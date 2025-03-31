@@ -165,45 +165,38 @@ struct TypingIndicator: View {
     }
 }
 
-// Main ReflectionsView
+// Replace the entire ReflectionsView implementation with this cleaner approach
+
 struct ReflectionsView: View {
-    @EnvironmentObject var appState: AppState // Keep
-    @EnvironmentObject var chatManager: ChatManager // Keep
-    // @EnvironmentObject var databaseService: DatabaseService // Keep commented out
-
-    @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled // Keep
-    @Environment(\.bottomSheetExpanded) private var bottomSheetExpanded // Keep
-    @State private var messageText: String = "" // Keep
-    @State private var showingSubscriptionPrompt: Bool = false // Keep
-    @Binding var tabBarOffset: CGFloat // Keep
-    @Binding var lastScrollPosition: CGFloat // Keep
-    @Binding var tabBarVisible: Bool // Keep
-    @FocusState private var isInputFocused: Bool // Keep
-    @State private var textEditorHeight: CGFloat = 30 // Keep (but old UI logic will control it)
-    @State private var expandedMessageId: UUID? = nil // Keep
-
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var chatManager: ChatManager
+    
+    @Environment(\.bottomSheetExpanded) private var bottomSheetExpanded
+    @State private var messageText: String = ""
+    @State private var showingSubscriptionPrompt: Bool = false
+    @Binding var tabBarOffset: CGFloat
+    @Binding var lastScrollPosition: CGFloat
+    @Binding var tabBarVisible: Bool
+    @FocusState private var isInputFocused: Bool
+    @State private var expandedMessageId: UUID? = nil
+    
+    // CRITICAL: Track scroll position manually
+    @State private var scrollAtBottom: Bool = true
+    
     // Function to show chat history (passed from parent)
-    var showChatHistory: () -> Void // Keep
-
+    var showChatHistory: () -> Void
+    
     // Access to shared styles
-    private let styles = UIStyles.shared // Keep
-
+    private let styles = UIStyles.shared
+    
     var body: some View {
         ZStack {
-            // Background - using standard black background for the view itself (from old)
+            // Background
             styles.colors.appBackground
                 .ignoresSafeArea()
-
-            // Add a tap gesture to the entire view to dismiss keyboard (from old)
-            Color.clear
-                .contentShape(Rectangle())
-                .ignoresSafeArea()
-                .onTapGesture {
-                    isInputFocused = false
-                }
-
+            
             VStack(spacing: 0) {
-                // Header (Identical to old, keep)
+                // Header
                 ZStack(alignment: .center) {
                     VStack(spacing: 8) {
                         Text("Reflect")
@@ -242,272 +235,208 @@ struct ReflectionsView: View {
                 }
                 .padding(.top, 8)
                 .padding(.bottom, 8)
-
-                // Chat messages
-                ScrollViewReader { scrollView in
-                    ScrollView {
-                        // Inspiring prompt - only show when chat is empty (Use chatManager data)
-                        if chatManager.currentChat.messages.isEmpty { // Adapted from old logic
-                            VStack(alignment: .center, spacing: styles.layout.spacingL) {
-                                Text("My AI")
-                                    .font(styles.typography.headingFont)
-                                    .foregroundColor(styles.colors.text)
-                                    .padding(.bottom, 4)
-                                Text("Ask questions, find clarity.")
-                                    .font(styles.typography.bodyLarge)
-                                    .foregroundColor(styles.colors.accent)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(.horizontal, styles.layout.paddingXL)
-                            .padding(.vertical, styles.layout.spacingXL * 1.5)
-                            .padding(.top, 80)
-                            .padding(.bottom, 40)
-                            .frame(maxWidth: .infinity)
-                            .background(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        styles.colors.appBackground,
-                                        styles.colors.appBackground.opacity(0.9)
-                                    ]),
-                                    startPoint: .top,
-                                    endPoint: .bottom
+                
+                // Chat content - FIXED HEIGHT to prevent layout shifts
+                GeometryReader { geometry in
+                    ScrollViewReader { scrollView in
+                        ScrollView {
+                            // Empty state
+                            if chatManager.currentChat.messages.isEmpty {
+                                VStack(alignment: .center, spacing: styles.layout.spacingL) {
+                                    Text("My AI")
+                                        .font(styles.typography.headingFont)
+                                        .foregroundColor(styles.colors.text)
+                                        .padding(.bottom, 4)
+                                    Text("Ask questions, find clarity.")
+                                        .font(styles.typography.bodyLarge)
+                                        .foregroundColor(styles.colors.accent)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(.horizontal, styles.layout.paddingXL)
+                                .padding(.vertical, styles.layout.spacingXL * 1.5)
+                                .padding(.top, 80)
+                                .padding(.bottom, 40)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            styles.colors.appBackground,
+                                            styles.colors.appBackground.opacity(0.9)
+                                        ]),
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
                                 )
-                            )
-                        }
-
-                        LazyVStack(spacing: styles.layout.spacingL) {
-                            // Iterate over messages from ChatManager's current chat
-                            ForEach(chatManager.currentChat.messages) { message in
-                                // Use the restored ChatBubble
-                                ChatBubble(
-                                    message: message,
-                                    isExpanded: expandedMessageId == message.id,
-                                    onTap: {
-                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            }
+                            
+                            // Messages - NO ANIMATIONS on the container
+                            LazyVStack(spacing: styles.layout.spacingL) {
+                                ForEach(chatManager.currentChat.messages) { message in
+                                    ChatBubble(
+                                        message: message,
+                                        isExpanded: expandedMessageId == message.id,
+                                        onTap: {
                                             expandedMessageId = (expandedMessageId == message.id) ? nil : message.id
                                         }
-                                    }
-                                )
-                                .id(message.id)
-                                // REMOVED: .swipeActions and .contextMenu from current version
+                                    )
+                                    .id(message.id)
+                                }
+                                
+                                // Typing indicator
+                                if chatManager.isTyping {
+                                    TypingIndicator()
+                                        .id("TypingIndicator")
+                                }
+                                
+                                // Scroll anchor
+                                Color.clear
+                                    .frame(height: 1)
+                                    .id("BottomAnchor")
                             }
-
-                            // Observe isTyping directly from ChatManager
-                            if chatManager.isTyping {
-                                // Use the restored TypingIndicator
-                                TypingIndicator()
-                                // REMOVED: id("TypingIndicator")
-                            }
-
-                            // Invisible anchor to scroll to (from old)
-                            Color.clear
-                                .frame(height: 1)
-                                .id("BottomAnchor")
+                            .padding(.horizontal, styles.layout.paddingL)
+                            .padding(.vertical, styles.layout.paddingL)
+                            .padding(.bottom, 20)
                         }
-                        .padding(.horizontal, styles.layout.paddingL)
-                        .padding(.vertical, styles.layout.paddingL)
-                        .padding(.bottom, 20) // Keep original padding
-                    }
-                    .onChange(of: chatManager.currentChat.messages.count) { _, _ in
-                        // Use simpler scrollToBottom from old version
-                        scrollToBottom(proxy: scrollView, anchor: "BottomAnchor")
-                    }
-                    .onChange(of: chatManager.isTyping) { _, newValue in
-                        // Use simpler scrollToBottom from old version
-                        // Scroll slightly later after typing indicator appears/disappears
-                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                              // Always scroll to bottom anchor
-                              scrollToBottom(proxy: scrollView, anchor: "BottomAnchor")
-                         }
-                    }
-                    .onAppear {
-                        // Use simpler scrollToBottom from old version
-                        scrollToBottom(proxy: scrollView, anchor: "BottomAnchor")
-                    }
-                    // Add clear background with gestures (from old)
-                    .background(
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .onTapGesture {
+                        .frame(height: geometry.size.height)
+                        .onTapGesture {
+                            // Dismiss keyboard on tap
+                            if isInputFocused {
                                 isInputFocused = false
                             }
-                    )
-                    .simultaneousGesture(
-                        DragGesture(minimumDistance: 5)
-                            .onChanged { _ in
-                                isInputFocused = false
+                        }
+                        // SIMPLIFIED: Only scroll on essential events with NO ANIMATION
+                        .onChange(of: chatManager.currentChat.messages.count) { _, _ in
+                            if scrollAtBottom {
+                                scrollView.scrollTo("BottomAnchor", anchor: .bottom)
                             }
-                    )
-                } // End ScrollViewReader
-
-                // Message input container - only shown when bottom sheet is closed (Reverted to Old Structure)
+                        }
+                        .onChange(of: chatManager.isTyping) { _, newValue in
+                            if newValue && scrollAtBottom {
+                                scrollView.scrollTo("BottomAnchor", anchor: .bottom)
+                            }
+                        }
+                        .onAppear {
+                            // Initial scroll without animation
+                            scrollView.scrollTo("BottomAnchor", anchor: .bottom)
+                        }
+                        // Track scroll position
+                        .simultaneousGesture(
+                            DragGesture().onChanged { _ in
+                                scrollAtBottom = false
+                            }
+                        )
+                    }
+                }
+                
+                // Input area - FIXED HEIGHT to prevent layout shifts
                 if !bottomSheetExpanded {
                     VStack(spacing: 0) {
                         HStack(alignment: .bottom, spacing: styles.layout.spacingM) {
-                            // Input field with dynamic height (Old structure)
+                            // Text input field - FIXED HEIGHT
                             ZStack(alignment: .topLeading) {
-                                // Use chatManager.isTyping for disabled state
                                 if messageText.isEmpty && !chatManager.isTyping {
-                                    Text("Ask anything") // Old placeholder
+                                    Text("Ask anything")
                                         .font(styles.typography.bodyFont)
                                         .foregroundColor(styles.colors.placeholderText)
-                                        .padding(.leading, 8 + 5) // Old padding calculation (approx)
-                                        .padding(.top, 8) // Old padding
+                                        .padding(.leading, 8 + 5)
+                                        .padding(.top, 8)
                                         .allowsHitTesting(false)
                                 }
-
-                                GeometryReader { geometry in
-                                    TextEditor(text: chatManager.isTyping ? .constant("") : $messageText)
-                                        .font(styles.typography.bodyFont)
-                                        .padding(4) // Old padding
-                                        .background(Color.clear) // Old background
-                                        .foregroundColor(chatManager.isTyping ? styles.colors.textDisabled : styles.colors.text)
-                                        .frame(height: textEditorHeight) // Use state variable
-                                        .colorScheme(.dark) // Old setting
-                                        .disabled(chatManager.isTyping)
-                                        .scrollContentBackground(.hidden) // Old setting
-                                        .focused($isInputFocused)
-                                        .onChange(of: messageText) { _, newValue in
-                                            // Old height calculation logic
-                                            let availableWidth = geometry.size.width - 16 // Old calculation (approx)
-                                            let font = UIFont.monospacedSystemFont(ofSize: 16, weight: .regular) // Assuming same font
-                                            let attributes = [NSAttributedString.Key.font: font]
-                                            let size = (newValue as NSString).size(withAttributes: attributes)
-
-                                            withAnimation(.easeInOut(duration: 0.1)) {
-                                                // Check width OR newline for expansion
-                                                if size.width > availableWidth || newValue.contains("\n") {
-                                                    textEditorHeight = 60 // Old expanded height
-                                                } else {
-                                                    textEditorHeight = 30 // Old single line height
-                                                }
-                                            }
-                                        }
-                                }
-                                .frame(height: textEditorHeight) // Apply calculated height
+                                
+                                // FIXED HEIGHT TextEditor
+                                TextEditor(text: chatManager.isTyping ? .constant("") : $messageText)
+                                    .font(styles.typography.bodyFont)
+                                    .padding(4)
+                                    .background(Color.clear)
+                                    .foregroundColor(chatManager.isTyping ? styles.colors.textDisabled : styles.colors.text)
+                                    .frame(height: 40) // FIXED HEIGHT
+                                    .colorScheme(.dark)
+                                    .disabled(chatManager.isTyping)
+                                    .scrollContentBackground(.hidden)
+                                    .focused($isInputFocused)
                             }
-                            .padding(8) // Old padding
-                            .background(styles.colors.reflectionsNavBackground) // Old background color
-                            .cornerRadius(20) // Old corner radius
-
-                            // Send button (Old structure)
-                            Button(action: sendMessage) { // Keep calling current sendMessage
+                            .frame(height: 40) // FIXED HEIGHT
+                            .padding(8)
+                            .background(styles.colors.reflectionsNavBackground)
+                            .cornerRadius(20)
+                            
+                            // Send button
+                            Button(action: sendMessage) {
                                 if chatManager.isTyping {
                                     Image(systemName: "stop.fill")
                                         .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(styles.colors.appBackground) // Old color
+                                        .foregroundColor(styles.colors.appBackground)
                                 } else {
                                     Image(systemName: "arrow.up")
                                         .font(.system(size: 24, weight: .bold))
-                                        .foregroundColor(styles.colors.appBackground) // Old color
+                                        .foregroundColor(styles.colors.appBackground)
                                 }
                             }
                             .frame(width: 40, height: 40)
                             .background(styles.colors.accent)
                             .clipShape(Circle())
-                            .disabled(messageText.isEmpty && !chatManager.isTyping) // Use chatManager.isTyping
-                            .opacity((messageText.isEmpty && !chatManager.isTyping) ? 0.5 : 1.0) // Use chatManager.isTyping
+                            .disabled(messageText.isEmpty && !chatManager.isTyping)
+                            .opacity((messageText.isEmpty && !chatManager.isTyping) ? 0.5 : 1.0)
                         }
-                        .padding(.vertical, styles.layout.paddingM) // Old padding
-                        .padding(.horizontal, styles.layout.paddingL) // Old padding
-
-                        Spacer().frame(height: 40) // Old spacer height
+                        .padding(.vertical, styles.layout.paddingM)
+                        .padding(.horizontal, styles.layout.paddingL)
+                        
+                        Spacer().frame(height: 40)
                     }
-                    .background( // Old background container
+                    .background(
                         styles.colors.reflectionsNavBackground
                             .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight]))
-                             .ignoresSafeArea(.container, edges: .bottom) // Keep ignoresSafeArea
+                            .ignoresSafeArea(.container, edges: .bottom)
                     )
-                    .transition(.move(edge: .bottom).combined(with: .opacity)) // Keep transition
-                } // End if !bottomSheetExpanded
-            } // End VStack
-        } // End ZStack
-        .alert(isPresented: $showingSubscriptionPrompt) { // Keep alert
+                }
+            }
+        }
+        .alert(isPresented: $showingSubscriptionPrompt) {
             Alert(
                 title: Text("Daily Limit Reached"),
                 message: Text("You've used all your free reflections for today. Upgrade to premium for unlimited reflections."),
                 primaryButton: .default(Text("Upgrade")) {
-                    // TODO: Show subscription options / navigate to settings?
+                    // TODO: Show subscription options
                 },
                 secondaryButton: .cancel(Text("Maybe Later"))
             )
         }
-         // Keep commented-out receiver
-         /*
-         .onReceive(chatManager.limitReachedPublisher) { _ in
-             showingSubscriptionPrompt = true
-         }
-         */
-    } // End body
-
-    // Function to calculate TextEditor height dynamically (Keep current version as it's better)
-    private func calculateEditorHeight(text: String, geometry: GeometryProxy) -> CGFloat {
-        let font = UIFont.monospacedSystemFont(ofSize: 16, weight: .regular) // Match TextEditor font
-        let attributes = [NSAttributedString.Key.font: font]
-        let textWidth = geometry.size.width - (8 * 2) - (5 * 2) // Account for ZStack padding and TextEditor internal padding
-
-        // Calculate the bounding box for the text
-        let size = CGSize(width: textWidth, height: .greatestFiniteMagnitude)
-        let estimatedSize = (text as NSString).boundingRect(with: size, options: .usesLineFragmentOrigin, attributes: attributes, context: nil)
-
-        let baseHeight: CGFloat = 30 // Minimum height for roughly one line + padding
-        let maxHeight: CGFloat = 100 // Maximum height (e.g., 4-5 lines)
-        let calculatedHeight = max(baseHeight, estimatedSize.height + (8 * 2)) // Add vertical padding
-
-        return min(calculatedHeight, maxHeight)
+        // CRITICAL: Reset scroll position when sending a message
+        .onChange(of: isInputFocused) { _, newValue in
+            if !newValue {
+                // When keyboard is dismissed, we want to stay where we are
+            } else {
+                // When keyboard appears, we want to scroll to bottom
+                scrollAtBottom = true
+            }
+        }
     }
-
-
-    // Local function to handle sending the message via the chatManager (Keep Current Logic)
+    
     private func sendMessage() {
         if chatManager.isTyping {
-            // TODO: Implement stop functionality if needed in ChatManager/LLMService
             print("Stop request (not implemented in ChatManager yet)")
             return
         }
-
+        
         let messageToSend = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !messageToSend.isEmpty else { return }
-
-        isInputFocused = false // Dismiss keyboard
-        let textToSend = messageText // Capture current text
-        messageText = "" // Clear input field immediately
-
-        // Reset height after clearing text (Use old logic's height)
-         withAnimation(.easeInOut(duration: 0.1)) {
-             textEditorHeight = 30 // Reset to single line height
-         }
-
-        // Call the correct method on the observed object instance
+        
+        // Capture text before clearing
+        let textToSend = messageText
+        
+        // Clear input and dismiss keyboard in one step
+        messageText = ""
+        
+        // CRITICAL: Set scroll to bottom when sending
+        scrollAtBottom = true
+        
+        // Dismiss keyboard AFTER setting scroll position
+        isInputFocused = false
+        
+        // Send the message
         chatManager.sendUserMessageToAI(text: textToSend)
     }
-
-    // Simplified scrolling function (Keep Current Version)
-    private func scrollToBottom(proxy: ScrollViewProxy, anchor: String) {
-         DispatchQueue.main.async { // Ensure scroll happens after UI updates
-             withAnimation(.easeOut(duration: 0.3)) { // Add animation
-                 proxy.scrollTo(anchor, anchor: .bottom)
-             }
-         }
-    }
 }
 
-// Extension for TextEditor height calculation (Keep)
-extension View {
-     func calculateEditorHeight(text: String, geometry: GeometryProxy) -> CGFloat {
-         let font = UIFont.monospacedSystemFont(ofSize: 16, weight: .regular) // Match TextEditor font
-         let attributes = [NSAttributedString.Key.font: font]
-         // Calculate width available inside TextEditor (Geometry - ZStack Padding - TextEditor Padding)
-         let textWidth = geometry.size.width - (8 * 2) - (5 * 2)
+// Keep the existing ChatBubble, ChatBubbleShape, and TypingIndicator implementations
 
-         let size = CGSize(width: textWidth, height: .greatestFiniteMagnitude)
-         let estimatedSize = (text as NSString).boundingRect(with: size, options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: attributes, context: nil)
-
-         let baseHeight: CGFloat = 30 // Minimum height for roughly one line + internal padding
-         let maxHeight: CGFloat = 100 // Maximum height (e.g., ~4-5 lines)
-         // Add TextEditor's vertical padding (approx 8 top + 8 bottom)
-         let calculatedHeight = max(baseHeight, ceil(estimatedSize.height) + 16)
-
-         return min(calculatedHeight, maxHeight)
-     }
-}
