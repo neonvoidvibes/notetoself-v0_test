@@ -34,7 +34,8 @@ struct JournalView: View {
 
     // Computed property to filter the journal entries
     private var filteredEntries: [JournalEntry] {
-        appState.journalEntries.filtered(
+        // Rely on appState.journalEntries being sorted descending by date
+        return appState.journalEntries.filtered(
             by: searchTags,
             moods: selectedMoods,
             dateFilter: dateFilterType,
@@ -65,212 +66,13 @@ struct JournalView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Header
-                ZStack(alignment: .center) {
-                    // Title truly centered
-                    VStack(spacing: 8) {
-                        Text("Journal")
-                            .font(styles.typography.title1)
-                            .foregroundColor(styles.colors.text)
-
-                        Rectangle()
-                            .fill(styles.colors.accent)
-                            .frame(width: 20, height: 3)
-                    }
-
-                    // Menu button on left and filter button on right
-                    HStack {
-                        Button(action: {
-                            NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
-                        }) {
-                            VStack(spacing: 6) {
-                                HStack {
-                                    Rectangle().fill(styles.colors.accent).frame(width: 28, height: 2); Spacer()
-                                }
-                                HStack {
-                                    Rectangle().fill(styles.colors.accent).frame(width: 20, height: 2); Spacer()
-                                }
-                            }
-                            .frame(width: 36, height: 36)
-                        }
-
-                        Spacer()
-
-                        // Filter button
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                showingFilterPanel.toggle()
-                            }
-                        }) {
-                            Image(systemName: "slider.horizontal.2.square")
-                                .font(.system(size: 20))
-                                .foregroundColor(showingFilterPanel || !searchTags.isEmpty || !selectedMoods.isEmpty || dateFilterType != .all ? styles.colors.accent : styles.colors.text)
-                        }
-                    }
-                    .padding(.horizontal, styles.layout.paddingXL)
-                }
-                .padding(.top, 8)
-                .padding(.bottom, 8)
-
-                // Filter panel
-                if showingFilterPanel {
-                    FilterPanel(
-                        searchText: $searchText,
-                        searchTags: $searchTags,
-                        selectedMoods: $selectedMoods,
-                        dateFilterType: $dateFilterType,
-                        customStartDate: $customStartDate,
-                        customEndDate: $customEndDate,
-                        onClearFilters: {
-                            clearFilters()
-                        }
-                    )
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                }
-
-                // Journal entries list
-                ScrollViewReader { scrollProxy in
-                    ScrollView {
-                         GeometryReader { geometry in
-                             Color.clear.preference(
-                                 key: ScrollOffsetPreferenceKey.self,
-                                 value: geometry.frame(in: .named("scrollView")).minY
-                             )
-                         }
-                         .frame(height: 0)
-
-                         // Inspiring prompt
-                         if !appState.journalEntries.isEmpty && !filteredEntries.isEmpty && !showingFilterPanel {
-                             VStack(alignment: .center, spacing: styles.layout.spacingL) {
-                                 Text("My Journal")
-                                     .font(styles.typography.headingFont)
-                                     .foregroundColor(styles.colors.text)
-                                     .padding(.bottom, 4)
-                                 Text("Capture your thoughts, reflect on your journey.")
-                                     .font(styles.typography.bodyLarge)
-                                     .foregroundColor(styles.colors.accent)
-                                     .multilineTextAlignment(.center)
-                             }
-                             .padding(.horizontal, styles.layout.paddingXL)
-                             .padding(.vertical, styles.layout.spacingXL * 1.5)
-                             .padding(.top, 80)
-                             .padding(.bottom, 40)
-                             .frame(maxWidth: .infinity)
-                             .background(
-                                 LinearGradient(
-                                     gradient: Gradient(colors: [styles.colors.appBackground, styles.colors.appBackground.opacity(0.9)]),
-                                     startPoint: .top,
-                                     endPoint: .bottom
-                                 )
-                             )
-                         }
-
-                         // Entry List / Empty State
-                         if filteredEntries.isEmpty {
-                           VStack(alignment: .center, spacing: 16) {
-                               if !searchTags.isEmpty || !selectedMoods.isEmpty || dateFilterType != .all {
-                                   Text("No Matching Entries")
-                                        .font(styles.typography.bodyFont)
-                                        .foregroundColor(styles.colors.text)
-                                        .padding(.top, 60)
-                                   Text("Try adjusting your filters")
-                                       .font(styles.typography.bodySmall)
-                                       .foregroundColor(styles.colors.textSecondary)
-                                   Button("Clear Filters") { clearFilters(closePanel: true) }
-                                   .font(styles.typography.bodyFont)
-                                   .foregroundColor(styles.colors.accent)
-                                   .padding(.top, 8)
-                               } else {
-                                   Text("No journal entries yet.")
-                                       .font(styles.typography.headingFont)
-                                       .foregroundColor(styles.colors.text)
-                                       .padding(.top, 60)
-                                   Text("Tap the + button to add your first entry.")
-                                       .font(styles.typography.bodyFont)
-                                       .foregroundColor(styles.colors.textSecondary)
-                               }
-                               Spacer()
-                           }
-                           .frame(maxWidth: .infinity)
-                           .padding()
-                         } else {
-                             LazyVStack(spacing: styles.layout.radiusM, pinnedViews: [.sectionHeaders]) { // Pinned views attempt stickiness
-                                 let groupedEntries = JournalDateGrouping.groupEntriesByTimePeriod(filteredEntries)
-                                 ForEach(groupedEntries, id: \.0) { section, entries in
-                                     // Use the RENAMED component, passing the correct background
-                                     Section(header: SharedSectionHeader(title: section, backgroundColor: styles.colors.appBackground)
-                                                        .id("header-\(section)")
-                                     ) {
-                                         ForEach(entries) { entry in
-                                             JournalEntryCard(
-                                                 entry: entry,
-                                                 isExpanded: expandedEntryId == entry.id, // Restore binding
-                                                 onTap: { // Restore onTap for expansion
-                                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                                         expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
-                                                     }
-                                                 },
-                                                 onExpand: { fullscreenEntry = entry }, // Restore onExpand
-                                                 onStar: { toggleStar(entry) } // Keep star action
-                                             )
-                                             .transition(.opacity.combined(with: .move(edge: .top)))
-                                         }
-                                     }
-                                 }
-                             }
-                             .padding(.horizontal, 20)
-                             .padding(.bottom, 100)
-                         }
-                    } // End ScrollView
-                    .coordinateSpace(name: "scrollView")
-                    .disabled(mainScrollingDisabled)
-                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                        let scrollingDown = value < lastScrollPosition
-                        if abs(value - lastScrollPosition) > 10 {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
-                                else { tabBarOffset = 0; tabBarVisible = true }
-                            }
-                            lastScrollPosition = value
-                        }
-                    }
-                    .simultaneousGesture(
-                        TapGesture().onEnded {
-                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                        }
-                    )
-                } // End ScrollViewReader
-            } // End VStack
-
-            // Floating add button
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    Button(action: { showingNewEntrySheet = true }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(styles.colors.appBackground)
-                            .frame(width: 60, height: 60)
-                            .background(
-                                ZStack {
-                                    Circle().fill(styles.colors.accent)
-                                    Circle().fill(LinearGradient(gradient: Gradient(colors: [Color.white.opacity(0.3), Color.clear]), startPoint: .topLeading, endPoint: .bottomTrailing)).padding(2)
-                                }
-                            )
-                            .shadow(color: styles.colors.accent.opacity(0.2), radius: 8, x: 0, y: 4)
-                    }
-                    .padding(.trailing, 24)
-                    .padding(.bottom, 24)
-                    .offset(y: tabBarOffset * 0.7)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: tabBarOffset)
-                }
+                headerView
+                filterPanelView
+                journalContent // Extracted ScrollView content
             }
 
-            // Add this code near the end of the body, just before the closing bracket of the ZStack
-            // Confirmation modal for delete
-
-        } // End ZStack
+            floatingAddButton // Extracted floating button
+        }
         .fullScreenCover(isPresented: $showingNewEntrySheet) {
             EditableFullscreenEntryView(
                 initialMood: .neutral,
@@ -336,12 +138,248 @@ struct JournalView: View {
                 autoFocusText: true
             )
         }
-        .onAppear { // Ensure latest *filtered* entry is expanded
-            if expandedEntryId == nil, let firstEntry = filteredEntries.first {
+        .onChange(of: appState.journalEntries) { _, newEntries in
+             // If nothing is expanded and entries load, expand the first one.
+             if expandedEntryId == nil, let firstEntry = newEntries.first {
                  expandedEntryId = firstEntry.id
+                 print("onChange(entries): Set initial expandedEntryId to \(firstEntry.id)")
+             }
+             // If the currently expanded entry is no longer in the list (e.g., deleted), reset.
+             else if let currentId = expandedEntryId, !newEntries.contains(where: { $0.id == currentId }) {
+                  expandedEntryId = newEntries.first?.id // Expand the new first one, or nil if empty
+                  // Corrected print statement
+                  print("onChange(entries): Previously expanded entry gone. Set expandedEntryId to \(newEntries.first?.id.uuidString ?? "nil").")
+             }
+        }
+        .onChange(of: showingFilterPanel) { _, isShowing in
+             if !isShowing { // When filter panel is closed
+                 // Re-evaluate default expansion based on current filters
+                 if expandedEntryId == nil || (expandedEntryId != nil && !filteredEntries.contains(where: { $0.id == expandedEntryId })) {
+                     expandedEntryId = filteredEntries.first?.id
+                     // Corrected print statement
+                     print("onChange(showingFilterPanel=false): Set expandedEntryId to \(filteredEntries.first?.id.uuidString ?? "nil").")
+                 }
+             }
+        }
+
+    } // End Body
+
+    // MARK: - Computed View Properties
+
+    private var headerView: some View {
+        ZStack(alignment: .center) {
+            // Title truly centered
+            VStack(spacing: 8) {
+                Text("Journal")
+                    .font(styles.typography.title1)
+                    .foregroundColor(styles.colors.text)
+
+                Rectangle()
+                    .fill(styles.colors.accent)
+                    .frame(width: 20, height: 3)
+            }
+
+            // Menu button on left and filter button on right
+            HStack {
+                Button(action: {
+                    NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
+                }) {
+                    VStack(spacing: 6) {
+                        HStack {
+                            Rectangle().fill(styles.colors.accent).frame(width: 28, height: 2); Spacer()
+                        }
+                        HStack {
+                            Rectangle().fill(styles.colors.accent).frame(width: 20, height: 2); Spacer()
+                        }
+                    }
+                    .frame(width: 36, height: 36)
+                }
+
+                Spacer()
+
+                // Filter button
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        showingFilterPanel.toggle()
+                    }
+                }) {
+                    Image(systemName: "slider.horizontal.2.square")
+                        .font(.system(size: 20))
+                        .foregroundColor(showingFilterPanel || !searchTags.isEmpty || !selectedMoods.isEmpty || dateFilterType != .all ? styles.colors.accent : styles.colors.text)
+                }
+            }
+            .padding(.horizontal, styles.layout.paddingXL)
+        }
+        .padding(.top, 8)
+        .padding(.bottom, 8)
+    }
+
+    @ViewBuilder // Use ViewBuilder for conditional content
+    private var filterPanelView: some View {
+        if showingFilterPanel {
+            FilterPanel(
+                searchText: $searchText,
+                searchTags: $searchTags,
+                selectedMoods: $selectedMoods,
+                dateFilterType: $dateFilterType,
+                customStartDate: $customStartDate,
+                customEndDate: $customEndDate,
+                onClearFilters: {
+                    clearFilters()
+                }
+            )
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
+    }
+
+    private var journalContent: some View {
+        ScrollViewReader { scrollProxy in
+            ScrollView {
+                 GeometryReader { geometry in
+                     Color.clear.preference(
+                         key: ScrollOffsetPreferenceKey.self,
+                         value: geometry.frame(in: .named("scrollView")).minY
+                     )
+                 }
+                 .frame(height: 0)
+
+                 // Inspiring prompt
+                 if !appState.journalEntries.isEmpty && !filteredEntries.isEmpty && !showingFilterPanel {
+                     VStack(alignment: .center, spacing: styles.layout.spacingL) {
+                         Text("My Journal")
+                             .font(styles.typography.headingFont)
+                             .foregroundColor(styles.colors.text)
+                             .padding(.bottom, 4)
+                         Text("Capture your thoughts, reflect on your journey.")
+                             .font(styles.typography.bodyLarge)
+                             .foregroundColor(styles.colors.accent)
+                             .multilineTextAlignment(.center)
+                     }
+                     .padding(.horizontal, styles.layout.paddingXL)
+                     .padding(.vertical, styles.layout.spacingXL * 1.5)
+                     .padding(.top, 80)
+                     .padding(.bottom, 40)
+                     .frame(maxWidth: .infinity)
+                     .background(
+                         LinearGradient(
+                             gradient: Gradient(colors: [styles.colors.appBackground, styles.colors.appBackground.opacity(0.9)]),
+                             startPoint: .top,
+                             endPoint: .bottom
+                         )
+                     )
+                 }
+
+                 // Entry List / Empty State
+                 if filteredEntries.isEmpty {
+                    emptyState
+                 } else {
+                    journalList
+                 }
+            } // End ScrollView
+            .coordinateSpace(name: "scrollView")
+            .disabled(mainScrollingDisabled)
+            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                let scrollingDown = value < lastScrollPosition
+                if abs(value - lastScrollPosition) > 10 {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
+                        else { tabBarOffset = 0; tabBarVisible = true }
+                    }
+                    lastScrollPosition = value
+                }
+            }
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+            )
+        } // End ScrollViewReader
+    }
+
+    private var journalList: some View {
+        LazyVStack(spacing: styles.layout.radiusM, pinnedViews: [.sectionHeaders]) { // Pinned views attempt stickiness
+             let groupedEntries = JournalDateGrouping.groupEntriesByTimePeriod(filteredEntries)
+             ForEach(groupedEntries, id: \.0) { section, entries in
+                 // Use the RENAMED component, passing the correct background
+                 Section(header: SharedSectionHeader(title: section, backgroundColor: styles.colors.appBackground)
+                                     .id("header-\(section)")
+                 ) {
+                     ForEach(entries) { entry in
+                         JournalEntryCard(
+                             entry: entry,
+                             isExpanded: expandedEntryId == entry.id, // Restore binding
+                             onTap: { // Restore onTap for expansion
+                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                     expandedEntryId = expandedEntryId == entry.id ? nil : entry.id
+                                 }
+                             },
+                             onExpand: { fullscreenEntry = entry }, // Restore onExpand
+                             onStar: { toggleStar(entry) } // Keep star action
+                         )
+                         .transition(.opacity.combined(with: .move(edge: .top)))
+                     }
+                 }
+             }
+         }
+         .padding(.horizontal, 20)
+         .padding(.bottom, 100)
+    }
+
+    private var emptyState: some View {
+        VStack(alignment: .center, spacing: 16) {
+           if !searchTags.isEmpty || !selectedMoods.isEmpty || dateFilterType != .all {
+               Text("No Matching Entries")
+                    .font(styles.typography.bodyFont)
+                    .foregroundColor(styles.colors.text)
+                    .padding(.top, 60)
+               Text("Try adjusting your filters")
+                   .font(styles.typography.bodySmall)
+                   .foregroundColor(styles.colors.textSecondary)
+               Button("Clear Filters") { clearFilters(closePanel: true) }
+               .font(styles.typography.bodyFont)
+               .foregroundColor(styles.colors.accent)
+               .padding(.top, 8)
+           } else {
+               Text("No journal entries yet.")
+                   .font(styles.typography.headingFont)
+                   .foregroundColor(styles.colors.text)
+                   .padding(.top, 60)
+               Text("Tap the + button to add your first entry.")
+                   .font(styles.typography.bodyFont)
+                   .foregroundColor(styles.colors.textSecondary)
+           }
+           Spacer()
+       }
+       .frame(maxWidth: .infinity)
+       .padding()
+    }
+
+    private var floatingAddButton: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
+                Button(action: { showingNewEntrySheet = true }) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(styles.colors.appBackground)
+                        .frame(width: 60, height: 60)
+                        .background(
+                            ZStack {
+                                Circle().fill(styles.colors.accent)
+                                Circle().fill(LinearGradient(gradient: Gradient(colors: [Color.white.opacity(0.3), Color.clear]), startPoint: .topLeading, endPoint: .bottomTrailing)).padding(2)
+                            }
+                        )
+                        .shadow(color: styles.colors.accent.opacity(0.2), radius: 8, x: 0, y: 4)
+                }
+                .padding(.trailing, 24)
+                .padding(.bottom, 24)
+                .offset(y: tabBarOffset * 0.7)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: tabBarOffset)
             }
         }
-    } // End Body
+    }
+
 
     // MARK: - Helper Functions
 
@@ -367,7 +405,8 @@ struct JournalView: View {
         }
         Task.detached(priority: .background) {
             do {
-                try databaseService.deleteJournalEntry(id: entry.id)
+                // Add await here as deleteJournalEntry might become async later
+                try await databaseService.deleteJournalEntry(id: entry.id)
                 print("✅ Successfully deleted journal entry \(entry.id) from DB.")
             } catch {
                 print("‼️ Error deleting journal entry \(entry.id) from DB: \(error)")
@@ -544,7 +583,7 @@ struct JournalEntryCard: View {
         .onLongPressGesture {
             onStar() // Handle long press for starring
         }
-        // .contextMenu { ... } // REMOVED context menu entirely
+        // Removed context menu entirely
     }
 
     // Restored original formatDate logic
