@@ -106,7 +106,7 @@ struct InsightsView: View {
                             LazyVStack(spacing: styles.layout.cardSpacing, pinnedViews: [.sectionHeaders]) {
                                 // Subscription Tier Toggle (for testing)
                                 #if DEBUG
-                                Section { // Wrap in Section for consistency, though no header needed here
+                                Section { // Use correct Section initializer
                                     HStack {
                                         Text("Sub:").font(styles.typography.bodySmall).foregroundColor(styles.colors.textSecondary)
                                         Picker("", selection: $appState.subscriptionTier) {
@@ -117,17 +117,15 @@ struct InsightsView: View {
                                         Spacer()
                                     }
                                     .padding(.horizontal, styles.layout.paddingXL).padding(.top, 8)
-                                }
+                                } // End Section content
                                 #endif
 
                                 // Today's Highlights Section
-                                Section(header: SharedSectionHeader(title: "Today's Highlights", backgroundColor: styles.colors.appBackground) // Use renamed header
-                                ) {
-                                    // Streak Card
+                                Section(header: SharedSectionHeader(title: "Today's Highlights", backgroundColor: styles.colors.appBackground)) { // Use correct Section initializer
+                                    // Content for this section
                                     StreakInsightCard(streak: appState.currentStreak)
                                         .padding(.horizontal, styles.layout.paddingXL)
 
-                                    // Weekly Summary Card (Pass raw data)
                                     WeeklySummaryInsightCard(
                                         jsonString: summaryJson,
                                         generatedDate: summaryDate,
@@ -135,17 +133,15 @@ struct InsightsView: View {
                                         subscriptionTier: appState.subscriptionTier
                                     )
                                     .padding(.horizontal, styles.layout.paddingXL)
-                                }
+                                } // End Section content
 
                                 // Deeper Insights Section
-                                Section(header: SharedSectionHeader(title: "Deeper Insights", backgroundColor: styles.colors.appBackground) // Use renamed header
-                                ) {
-                                    // AI Reflection Card
+                                Section(header: SharedSectionHeader(title: "Deeper Insights", backgroundColor: styles.colors.appBackground)) { // Use correct Section initializer
+                                    // Content for this section
                                     ChatInsightCard()
                                         .padding(.horizontal, styles.layout.paddingXL)
                                         .accessibilityLabel("AI Reflection")
 
-                                    // Mood Analysis Card (Pass raw data)
                                     MoodTrendsInsightCard(
                                         jsonString: trendJson,
                                         generatedDate: trendDate,
@@ -154,19 +150,18 @@ struct InsightsView: View {
                                     .padding(.horizontal, styles.layout.paddingXL)
                                     .accessibilityLabel("Mood Analysis")
 
-                                    // Recommendations Card (Pass raw data)
                                     RecommendationsInsightCard(
                                         jsonString: recommendationsJson,
                                         generatedDate: recommendationsDate,
                                         subscriptionTier: appState.subscriptionTier
                                     )
                                     .padding(.horizontal, styles.layout.paddingXL)
-                                }
+                                } // End Section content
 
                                 // Bottom padding
-                                Section {
+                                Section { // Use correct Section initializer
                                      Spacer().frame(height: styles.layout.paddingXL + 80)
-                                }
+                                } // End Section content
 
                             } // End LazyVStack for cards
                         } // End else (isLoadingInsights or has data)

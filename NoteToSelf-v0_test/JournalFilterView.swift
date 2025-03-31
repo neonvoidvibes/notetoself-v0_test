@@ -202,7 +202,7 @@ struct FilterPanel: View {
                     .padding(.horizontal, 12)
                     .background(
                         RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                            .fill(dateFilterType == filterType ? styles.colors.secondaryBackground : styles.colors.appBackground)
+                            .fill(dateFilterType == filterType ? styles.colors.secondaryBackground : Color.clear) // Use Color.clear for unselected
                     )
                 }
             }
@@ -235,27 +235,18 @@ struct FilterPanel: View {
                             .background(styles.colors.divider)
                             .padding(.horizontal, 8)
                         
-                        VStack(alignment: .leading, spacing: 2) { // Reduced spacing between rows
-                            // Start date row with padding above
+                        VStack(alignment: .leading, spacing: styles.layout.spacingS) { // Use standard spacing
+                            // Start date row
                             HStack(alignment: .center) {
                                 Text("Start:")
                                     .font(styles.typography.caption)
                                     .foregroundColor(styles.colors.textSecondary)
                                     .frame(width: 50, alignment: .leading)
-                                    .padding(.leading, 12) // Same padding as Custom Range text
                                 
-                                DatePicker("", selection: $customStartDate, displayedComponents: .date)
-                                    .datePickerStyle(CompactDatePickerStyle())
-                                    .labelsHidden()
-                                    .foregroundColor(styles.colors.text)
-                                    .accentColor(styles.colors.accent)
-                                    .scaleEffect(0.9)
-                                    .frame(maxHeight: 30)
+                                StyledDatePicker(selection: $customStartDate, displayedComponents: .date)
                                 
                                 Spacer()
                             }
-                            .padding(.top, 8) // Added padding above Start row
-                            .padding(.bottom, 2) // Minimal padding between rows
                             
                             // End date row
                             HStack(alignment: .center) {
@@ -263,25 +254,19 @@ struct FilterPanel: View {
                                     .font(styles.typography.caption)
                                     .foregroundColor(styles.colors.textSecondary)
                                     .frame(width: 50, alignment: .leading)
-                                    .padding(.leading, 12) // Same padding as Custom Range text
                                 
-                                DatePicker("", selection: $customEndDate, displayedComponents: .date)
-                                    .datePickerStyle(CompactDatePickerStyle())
-                                    .labelsHidden()
-                                    .foregroundColor(styles.colors.text)
-                                    .accentColor(styles.colors.accent)
-                                    .scaleEffect(0.9)
-                                    .frame(maxHeight: 30)
+                                StyledDatePicker(selection: $customEndDate, displayedComponents: .date)
                                 
                                 Spacer()
                             }
-                            .padding(.bottom, 8) // Bottom padding for the container
                         }
+                        .padding(.horizontal, 12) // Add horizontal padding to inner VStack
+                        .padding(.vertical, 8) // Add vertical padding to inner VStack
                     }
                 }
                 .background(
                     RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                        .fill(dateFilterType == .custom ? styles.colors.secondaryBackground : styles.colors.appBackground)
+                        .fill(dateFilterType == .custom ? styles.colors.secondaryBackground : Color.clear) // Use Color.clear for unselected
                 )
             }
         }
@@ -386,6 +371,7 @@ extension Array where Element == JournalEntry {
                 let calendar = Calendar.current
                 let startOfDay = calendar.startOfDay(for: customStartDate)
                 let endOfDay = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: customEndDate))!
+                // Ensure comparison includes start day and excludes day after end day
                 return $0.date >= startOfDay && $0.date < endOfDay
             }
         case .all:
@@ -396,4 +382,3 @@ extension Array where Element == JournalEntry {
         return entries
     }
 }
-

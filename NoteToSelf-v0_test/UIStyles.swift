@@ -16,14 +16,14 @@ struct Colors {
     let secondaryBackground: Color = Color(hex: "#111111")
     let tertiaryBackground: Color = Color(hex: "#313131")
     let quaternaryBackground: Color = Color(hex: "#555555")
-    
+
     // Mood colors - updated for Russell's Circumplex Model
     let moodHappy: Color = Color(hex: "#66FF66")
     let moodNeutral: Color = Color(hex: "#CCCCCC")
     let moodSad: Color = Color(hex: "#CC33FF")
     let moodAnxious: Color = Color(hex: "#FF3399") // Renamed to distressed in the model
     let moodExcited: Color = Color(hex: "#99FF33")
-    
+
     // Additional mood colors from the circumplex model
     let moodAlert: Color = Color(hex: "#CCFF00")
     let moodContent: Color = Color(hex: "#33FFCC")
@@ -34,7 +34,7 @@ struct Colors {
     let moodDistressed: Color = Color(hex: "#FF3399")
     let moodAngry: Color = Color(hex: "#FF3333")
     let moodTense: Color = Color(hex: "#FF9900")
-    
+
     let inputBackground: Color = Color(hex: "#111111")
     let inputFieldInnerBackground: Color = Color.clear
     let surface: Color = Color(hex: "#313131")
@@ -45,20 +45,20 @@ struct Colors {
     let placeholderText: Color = Color(hex: "#999999")
     let textDisabled: Color = Color.gray.opacity(0.5)
     let tabBarBackground: Color = Color.black
-    
+
     // Navigation sheet colors
     let bottomSheetBackground: Color = Color(hex: "#444444")
     let bottomSheetPeek: Color = Color(hex: "#222222")
     let bottomSheetIndicator: Color = Color(hex: "#444444")
     let bottomSheetShadow: Color = Color.black.opacity(0.3)
-    
+
     // Update the menu icon background color to be slightly brighter
     // In the Colors struct, add:
     let menuIconBackground: Color = Color(hex: "#222222") // Slightly brighter than black
 
     // Add a new property for the menu background
     let menuBackground: Color = Color(hex: "#111111") // Slightly brighter than app background
-    
+
     // Navigation colors - updated with new app background and gradient colors
     let appBackgroundDarker: Color = Color(hex: "#1A1A1A") // Slightly darker gray for app background
     let navBackgroundTop: Color = Color(hex: "#1A1A1A") // Same as app background at top
@@ -66,7 +66,7 @@ struct Colors {
     let navIconDefault: Color = Color(hex: "#666666") // Darker gray for non-selected icons
     let navIconSelected: Color = Color(hex: "#000000") // Black for selected icons
     let navSelectionCircle: Color = Color.white.opacity(0.3) // Light gray circle for selection
-    
+
     // Chat bubble colors
     let userBubbleColor: Color = Color(hex: "#CCCCCC") // Light gray for user bubbles
     let userBubbleText: Color = Color.black // Black text for user bubbles
@@ -74,7 +74,7 @@ struct Colors {
     let assistantBubbleText: Color = Color.white // White text for assistant bubbles
     let inputContainerBackground: Color = Color.black // Black for outer input container
     let inputAreaBackground: Color = Color.clear // Transparent for input area
-    
+
     // Bottom nav area color for ReflectionsView
     let reflectionsNavBackground: Color = Color(hex: "#1A1A1A") // Gray for bottom nav in ReflectionsView
 }
@@ -130,7 +130,7 @@ struct Layout {
     let entryFormInputMinHeightKeyboardOpen: CGFloat = 160
     let topSafeAreaPadding: CGFloat = 50 // Added for universal top padding
     let settingsMenuWidth: CGFloat = 300 // Width for the slide-in settings menu
-    
+
     // Bottom sheet layout
     let bottomSheetPeekHeight: CGFloat = 40 // Height of the peeking portion
     let bottomSheetPeekRadius: CGFloat = 20 // Radius for the top corners
@@ -139,7 +139,7 @@ struct Layout {
     let bottomSheetIndicatorHeight: CGFloat = 4 // Height of the handle indicator
     let bottomSheetCornerRadius: CGFloat = 24 // Corner radius of the bottom sheet
     let mainContentCornerRadius: CGFloat = 20 // Corner radius for the main content card
-    
+
     let inputAreaHeight: CGFloat = 40 // Fixed height for input area
 
     // New properties for improved card spacing and styling
@@ -147,7 +147,7 @@ struct Layout {
     let cardInnerPadding: CGFloat = 24  // Increased inner padding for cards (was paddingL = 20)
     let cardShadowRadius: CGFloat = 8   // Reduced shadow radius (was 15)
     let cardShadowOpacity: CGFloat = 0.15 // Reduced shadow opacity (was 0.2)
-    
+
     // Section header spacing
     let sectionHeaderSpacing: CGFloat = 16
     let sectionBottomSpacing: CGFloat = 24
@@ -184,7 +184,7 @@ func headerTitleWithAccent(_ title: String) -> some View {
         Text(title)
             .font(typography.title1)
             .foregroundColor(colors.text)
-        
+
         accentBar()
     }
     .frame(maxWidth: .infinity, alignment: .center)
@@ -197,11 +197,12 @@ struct PrimaryButtonStyle: ButtonStyle {
     let colors: Colors
     let typography: Typography
     let layout: Layout
-    
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(typography.bodyFont)
+            .font(typography.bodyFont.weight(.semibold)) // Make primary button text bold
             .padding(layout.paddingM)
+            .frame(maxWidth: .infinity) // Make primary button take full width
             .background(colors.accent)
             .foregroundColor(.black)
             .cornerRadius(layout.radiusM)
@@ -213,11 +214,12 @@ struct SecondaryButtonStyle: ButtonStyle {
     let colors: Colors
     let typography: Typography
     let layout: Layout
-    
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(typography.bodyFont)
             .padding(layout.paddingM)
+            .frame(maxWidth: .infinity) // Make secondary button take full width
             .background(colors.secondaryBackground)
             .foregroundColor(colors.text)
             .cornerRadius(layout.radiusM)
@@ -229,12 +231,15 @@ struct GhostButtonStyle: ButtonStyle {
     let colors: Colors
     let typography: Typography
     let layout: Layout
-    
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(typography.bodyFont)
             .padding(layout.paddingM)
+            // Default to accent color. Specific overrides (like .error) should be applied using .foregroundColor modifier on the Button itself.
             .foregroundColor(colors.accent)
+            .frame(maxWidth: .infinity) // Make ghost button take full width
+            .contentShape(Rectangle()) // Ensure tap area covers full width
     }
 }
 
@@ -274,10 +279,10 @@ func sectionHeader(_ title: String) -> some View {
             Text(title)
                 .font(typography.sectionHeader)
                 .foregroundColor(colors.text)
-            
+
             Spacer()
         }
-        
+
         Rectangle()
             .fill(colors.accent.opacity(0.3))
             .frame(height: 1)
@@ -313,9 +318,9 @@ func cardHeader(title: String, icon: String) -> some View {
         Text(title)
             .font(typography.title3)
             .foregroundColor(colors.text)
-        
+
         Spacer()
-        
+
         Image(systemName: icon)
             .foregroundColor(colors.accent)
             .font(.system(size: layout.iconSizeL))
@@ -379,4 +384,3 @@ struct RoundedCorner: Shape {
       return Path(path.cgPath)
   }
 }
-
