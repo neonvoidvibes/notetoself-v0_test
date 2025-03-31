@@ -119,8 +119,10 @@ struct ChatHistoryView: View {
                                 .foregroundColor(styles.colors.text)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.leading, styles.layout.paddingM)
+                                .padding(.top, 12) // Add top padding for sticky headers
                                 .padding(.bottom, 5)
                                 .listRowInsets(EdgeInsets())
+                                .background(styles.colors.menuBackground) // Ensure consistent background color
                         ) {
                             // Chats in this section
                             ForEach(chats) { chat in
