@@ -149,29 +149,9 @@ struct MainTabView: View {
   
   var body: some View {
       ZStack {
-          // Background - conditional based on nav area state and selected tab
-          ZStack {
-              // Base background - use gray for Reflections tab, black for others
-              (selectedTab == 2 ? styles.colors.reflectionsNavBackground : styles.colors.appBackground)
-                  .ignoresSafeArea()
-              
-              // Conditional gradient background when nav is expanded
-              if bottomSheetExpanded {
-                  // Single continuous gradient for the entire screen
-                  LinearGradient(
-                      gradient: Gradient(
-                          colors: [
-                              styles.colors.appBackground, // Start with black at the top
-                              styles.colors.appBackgroundDarker.opacity(0.8), // Transition to dark gray
-                              styles.colors.navBackgroundBottom // End with the nav bottom color
-                          ]
-                      ),
-                      startPoint: .top,
-                      endPoint: .bottom
-                  )
-                  .ignoresSafeArea()
-              }
-          }
+          // Background: Use accent when expanded, otherwise conditional
+          (bottomSheetExpanded ? styles.colors.accent : (selectedTab == 2 ? styles.colors.reflectionsNavBackground : styles.colors.appBackground))
+              .ignoresSafeArea()
               
           // Status bar area
           VStack(spacing: 0) {
@@ -258,13 +238,13 @@ struct MainTabView: View {
                               VStack(spacing: 4) { // Add spacing for the text
                                   Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
                                       .font(.system(size: 18, weight: .bold))
-                                      .foregroundColor(Color.white) // Always white for better contrast
+                                      .foregroundColor(Color.white) // Keep chevron white
                                   
                                   // Add Navigation text below the chevron, only when not expanded
                                   if !bottomSheetExpanded {
                                       Text("Navigation")
                                           .font(.system(size: 10, weight: .regular, design: .monospaced))
-                                          .foregroundColor(styles.colors.accent)
+                                          .foregroundColor(Color.white) // Change text color to white
                                   }
                               }
                               .frame(height: peekHeight)
@@ -335,10 +315,14 @@ struct MainTabView: View {
                       .background(
                           Group {
                               if bottomSheetExpanded {
-                                  // Make the nav area background transparent to let the main gradient show through
-                                  Color.clear
+                                  // Use accent color gradient when expanded (This is correct)
+                                  LinearGradient(
+                                      gradient: Gradient(colors: [styles.colors.accent, styles.colors.accent.opacity(0.8)]),
+                                      startPoint: .top,
+                                      endPoint: .bottom
+                                  )
                               } else {
-                                  // Use reflectionsNavBackground for Reflections tab, black for others
+                                  // Use original conditional background when collapsed (This is correct)
                                   selectedTab == 2 ? styles.colors.reflectionsNavBackground : styles.colors.appBackground
                               }
                           }
@@ -556,15 +540,15 @@ struct NavigationTabButton: View {
                   .font(isSelected ? 
                         .system(size: 12, weight: .bold, design: .monospaced) : 
                         styles.typography.caption)
-                  .foregroundColor(isSelected ? styles.colors.accent : Color.white)
+                  .foregroundColor(Color.white) // Always use white color
                   .frame(height: textHeight)
                   .padding(.bottom, 5) // Fixed padding from bottom
               
               // Icon - positioned relative to text
               Image(systemName: icon)
                   .font(.system(size: iconSize, 
-                               weight: isSelected ? .bold : .regular))
-                  .foregroundColor(isSelected ? styles.colors.accent : Color.white)
+                               weight: isSelected ? .bold : .regular)) // Keep weight change
+                  .foregroundColor(Color.white) // Always use white color
                   .frame(height: iconSize)
                   .offset(y: isSelected ? -30 : -textHeight - 10) // Position icon above text
           }

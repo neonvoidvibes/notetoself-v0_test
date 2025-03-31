@@ -366,7 +366,8 @@ extension View {
   func mainCardStyle() -> some View {
       self
           .background(UIStyles.shared.colors.cardBackground)
-          .clipShape(RoundedCorner(radius: UIStyles.shared.layout.mainContentCornerRadius, corners: [.bottomLeft, .bottomRight]))
+          // Set radius to 0 to remove rounded corners as requested
+          .clipShape(RoundedCorner(radius: 0, corners: [.bottomLeft, .bottomRight]))
           .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
   }
 }
