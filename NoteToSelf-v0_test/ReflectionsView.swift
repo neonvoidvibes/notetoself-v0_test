@@ -273,33 +273,33 @@ struct ReflectionsView: View {
                                 isInputFocused = false
                             }
                         }
-                        // SIMPLIFIED: Only scroll on essential events with NO ANIMATION
+                        // --- Refined Scrolling Logic ---
                         .onChange(of: chatManager.currentChat.messages.count) { _, _ in
-                            if scrollAtBottom {
-                                // Use a very short delay to ensure layout is complete
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    scrollView.scrollTo("BottomAnchor", anchor: .bottom)
-                                }
+                            // Scroll to the *last message* when the count changes
+                            if scrollAtBottom, let lastMessageId = chatManager.currentChat.messages.last?.id {
+                                // Scroll immediately, ScrollViewReader waits for the ID
+                                scrollView.scrollTo(lastMessageId, anchor: .bottom)
+                                print("Scrolled to last message: \(lastMessageId)")
                             }
                         }
-                        .onChange(of: chatManager.isTyping) { _, newValue in
-                            if newValue && scrollAtBottom {
-                                // Use a very short delay to ensure layout is complete
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    scrollView.scrollTo("BottomAnchor", anchor: .bottom)
-                                }
+                        .onChange(of: chatManager.isTyping) { _, isTyping in
+                            // Scroll to the indicator *when it appears*
+                            if isTyping && scrollAtBottom {
+                                // Scroll immediately, ScrollViewReader waits for the ID
+                                scrollView.scrollTo("TypingIndicator", anchor: .bottom)
+                                print("Scrolled to TypingIndicator")
                             }
                         }
                         .onAppear {
-                            // Initial scroll without animation
-                            scrollView.scrollTo("BottomAnchor", anchor: .bottom)
-                        }
-                        // Track scroll position
-                        .simultaneousGesture(
-                            DragGesture().onChanged { _ in
-                                scrollAtBottom = false
+                            // Initial scroll: Target last message if available, else anchor
+                            if let lastMessageId = chatManager.currentChat.messages.last?.id {
+                                scrollView.scrollTo(lastMessageId, anchor: .bottom)
+                            } else {
+                                scrollView.scrollTo("BottomAnchor", anchor: .bottom)
                             }
-                        )
+                        }
+                        // Removed DragGesture interaction with scrollAtBottom
+                        // --- End Refined Scrolling Logic ---
                     }
                 }
 
