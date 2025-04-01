@@ -149,9 +149,25 @@ struct MainTabView: View {
   
   var body: some View {
       ZStack {
-          // Background: Use accent when expanded, otherwise conditional
-          (bottomSheetExpanded ? styles.colors.accent : (selectedTab == 2 ? styles.colors.reflectionsNavBackground : styles.colors.appBackground))
+          // Conditional Background: Gradient for Reflections, solid for others
+          if selectedTab == 2 {
+              // Gradient for ReflectionsView tab (Tab 2)
+              LinearGradient(
+                  gradient: Gradient(stops: [
+                      .init(color: styles.colors.appBackground, location: 0.0), // Top color (view bg)
+                      .init(color: styles.colors.appBackground, location: 0.45), // Start transition below top
+                      .init(color: styles.colors.reflectionsNavBackground, location: 0.55), // End transition above bottom
+                      .init(color: styles.colors.reflectionsNavBackground, location: 1.0)  // Bottom color (input area bg)
+                  ]),
+                  startPoint: .top,
+                  endPoint: .bottom
+              )
               .ignoresSafeArea()
+          } else {
+              // Standard background for Journal (Tab 0) and Insights (Tab 1)
+              styles.colors.appBackground
+                  .ignoresSafeArea()
+          }
               
           // Status bar area
           VStack(spacing: 0) {
@@ -331,7 +347,7 @@ struct MainTabView: View {
                                       endPoint: .bottom
                                   )
                               } else {
-                                  // Use original conditional background when collapsed (This is correct)
+                                  // Match the main background logic when collapsed
                                   selectedTab == 2 ? styles.colors.reflectionsNavBackground : styles.colors.appBackground
                               }
                           }

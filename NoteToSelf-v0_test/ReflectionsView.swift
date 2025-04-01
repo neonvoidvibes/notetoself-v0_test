@@ -173,7 +173,7 @@ struct TypingIndicator: View {
 struct ReflectionsView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var chatManager: ChatManager
-    
+
     @Environment(\.bottomSheetExpanded) private var bottomSheetExpanded
     @State private var messageText: String = ""
     @State private var showingSubscriptionPrompt: Bool = false
@@ -182,22 +182,22 @@ struct ReflectionsView: View {
     @Binding var tabBarVisible: Bool
     @FocusState private var isInputFocused: Bool
     @State private var expandedMessageId: UUID? = nil
-    
+
     // CRITICAL: Track scroll position manually
     @State private var scrollAtBottom: Bool = true
-    
+
     // Function to show chat history (passed from parent)
     var showChatHistory: () -> Void
-    
+
     // Access to shared styles
     private let styles = UIStyles.shared
-    
+
     var body: some View {
         ZStack {
-            // Background
+            // Background (Reverted to original)
             styles.colors.appBackground
                 .ignoresSafeArea()
-            
+
             VStack(spacing: 0) {
                 // Header
                 ZStack(alignment: .center) {
@@ -238,7 +238,7 @@ struct ReflectionsView: View {
                 }
                 .padding(.top, 8)
                 .padding(.bottom, 8)
-                
+
                 // Chat content - FIXED HEIGHT to prevent layout shifts
                 GeometryReader { geometry in
                     ScrollViewReader { scrollView in
@@ -271,7 +271,7 @@ struct ReflectionsView: View {
                                     )
                                 )
                             }
-                            
+
                             // Messages - NO ANIMATIONS on the container
                             LazyVStack(spacing: styles.layout.spacingL) {
                                 ForEach(chatManager.currentChat.messages) { message in
@@ -284,13 +284,13 @@ struct ReflectionsView: View {
                                     )
                                     .id(message.id)
                                 }
-                                
+
                                 // Typing indicator
                                 if chatManager.isTyping {
                                     TypingIndicator()
                                         .id("TypingIndicator")
                                 }
-                                
+
                                 // Scroll anchor - make it stick directly to the last message with minimal height
                                 Color.clear
                                     .frame(height: 1)
@@ -337,7 +337,7 @@ struct ReflectionsView: View {
                         )
                     }
                 }
-                
+
                 // Input area - FIXED HEIGHT to prevent layout shifts
                 if !bottomSheetExpanded {
                     VStack(spacing: 0) {
@@ -352,7 +352,7 @@ struct ReflectionsView: View {
                                         .padding(.top, 8)
                                         .allowsHitTesting(false)
                                 }
-                                
+
                                 // FIXED HEIGHT TextEditor
                                 TextEditor(text: chatManager.isTyping ? .constant("") : $messageText)
                                     .font(styles.typography.bodyFont) // Use larger font to match messages
@@ -370,7 +370,7 @@ struct ReflectionsView: View {
                             .padding(8)
                             .background(styles.colors.reflectionsNavBackground)
                             .cornerRadius(20)
-                            
+
                             // Send button
                             Button(action: sendMessage) {
                                 if chatManager.isTyping {
@@ -391,10 +391,10 @@ struct ReflectionsView: View {
                         }
                         .padding(.vertical, styles.layout.paddingM)
                         .padding(.horizontal, styles.layout.paddingL)
-                        
+
                         Spacer().frame(height: 40)
                     }
-                    .background(
+                    .background( // Reverted to original
                         styles.colors.reflectionsNavBackground
                             .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight]))
                             .ignoresSafeArea(.container, edges: .bottom)
@@ -422,28 +422,28 @@ struct ReflectionsView: View {
             }
         }
     }
-    
+
     private func sendMessage() {
         if chatManager.isTyping {
             print("Stop request (not implemented in ChatManager yet)")
             return
         }
-        
+
         let messageToSend = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !messageToSend.isEmpty else { return }
-        
+
         // Capture text before clearing
         let textToSend = messageText
-        
+
         // Clear input
         messageText = ""
-        
+
         // CRITICAL: Set scroll to bottom when sending
         scrollAtBottom = true
-        
+
         // Send the message
         chatManager.sendUserMessageToAI(text: textToSend)
-        
+
         // Dismiss keyboard
         isInputFocused = false
     }
