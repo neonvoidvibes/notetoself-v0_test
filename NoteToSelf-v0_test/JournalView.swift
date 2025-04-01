@@ -276,6 +276,18 @@ struct JournalView: View {
             } // End ScrollView
             .coordinateSpace(name: "scrollView")
             .disabled(mainScrollingDisabled)
+            // Add onAppear here to restore scroll position when tab becomes active
+            .onAppear {
+                // Check if there's a previously expanded entry
+                if let entryId = appState.journalExpandedEntryId {
+                    // Scroll to that entry without animation
+                    // Use a slight delay to ensure the view hierarchy is ready
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                         scrollProxy.scrollTo(entryId, anchor: .top)
+                         print("[JournalView.onAppear] Restored scroll to expanded entry: \(entryId)")
+                    }
+                }
+            }
             .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                 let scrollingDown = value < lastScrollPosition
                 if abs(value - lastScrollPosition) > 10 {
