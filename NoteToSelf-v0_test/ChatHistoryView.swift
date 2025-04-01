@@ -186,6 +186,11 @@ struct ChatHistoryView: View {
           },
           onStar: {
               chatManager.toggleStarChat(chat)
+          },
+          onDelete: {
+              // Set the chat to delete and show the confirmation modal
+              chatToDelete = chat
+              showingDeleteConfirmation = true
           }
       )
       .padding(.horizontal, styles.layout.paddingL)
@@ -336,6 +341,7 @@ struct ChatHistoryCard: View {
     let onTap: () -> Void
     let onOpen: () -> Void
     let onStar: () -> Void
+    let onDelete: () -> Void  // Add this new parameter
     
     private let styles = UIStyles.shared
     
@@ -368,6 +374,13 @@ struct ChatHistoryCard: View {
         }
         .onLongPressGesture {
             onStar()
+        }
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) {
+                onDelete()
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
         }
     }
     
@@ -490,8 +503,18 @@ struct ChatHistoryCard: View {
     // Action button view
     private func actionButtonView() -> some View {
         HStack {
+            // Add delete button on the left with a more subtle gray color
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .font(.system(size: styles.layout.iconSizeS))
+                    .foregroundColor(styles.colors.textSecondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            
             Spacer()
             
+            // Continue button (existing)
             Button(action: onOpen) {
                 HStack(spacing: 4) {
                     Image(systemName: "bubble.left.and.bubble.right")
