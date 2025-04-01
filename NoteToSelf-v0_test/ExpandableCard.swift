@@ -1,5 +1,15 @@
 import SwiftUI
 
+// Create a global state object to track which card is expanded
+class ExpandableCardManager: ObservableObject {
+    static let shared = ExpandableCardManager()
+    @Published var expandedCardId: String? = nil
+    
+    func setExpandedCard(id: String?) {
+        expandedCardId = id
+    }
+}
+
 struct ExpandableCard<Content: View, DetailContent: View>: View {
     // Content builders
     let content: () -> Content
@@ -23,6 +33,9 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
     @State private var detailContentHeight: CGFloat = 0
     @State private var isAnimating: Bool = false
     @State private var hovered: Bool = false
+    
+    // Access to the shared card manager
+    @StateObject private var cardManager = ExpandableCardManager.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -47,7 +60,7 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
                     // Add padding at the bottom to make room for the button
                     if !isExpanded {
                         Spacer()
-                            .frame(height: 44)
+                            .frame(height: 70)
                     }
                 }
             }
@@ -63,9 +76,9 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
                             toggleExpansion()
                         }
                 }
-                .padding(.top, -40) // Overlap with the bottom padding
-                .padding(.bottom, 8)
-                .padding(.trailing, layout.paddingM)
+                .padding(.top, -44)
+                .padding(.bottom, 0)
+                .padding(.trailing, 4)
             }
 
             // Detail content (expandable)
@@ -90,7 +103,7 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 16)
 
-                    // Collapse Button at the bottom of details
+                    // Collapse Button at the bottom of details - match position with Details button
                     HStack {
                         Spacer()
                         ExpandCollapseButtonInternal(isExpanded: $isExpanded, hovered: hovered)
@@ -101,8 +114,8 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
                             }
                     }
                     .padding(.top, layout.paddingM)
-                    .padding(.bottom, 8)
-                    .padding(.trailing, layout.paddingM)
+                    .padding(.bottom, 0)
+                    .padding(.trailing, 4)
                 }
                 .transition(.asymmetric(
                     insertion: .opacity.combined(with: .move(edge: .top)),
@@ -154,13 +167,40 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
         .onHover { isHovered in
             hovered = isHovered
         }
+        // Listen for changes to the expanded card ID
+        .onChange(of: cardManager.expandedCardId) { oldValue, newValue in
+            // If another card was expanded and this card is expanded, collapse this card
+            if let newExpandedId = newValue, 
+               let thisCardId = cardId, 
+               newExpandedId != thisCardId && 
+               isExpanded {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                    isExpanded = false
+                    isAnimating = true
+                }
+                
+                // Reset animation flag after animation completes
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    isAnimating = false
+                }
+            }
+        }
     }
 
     // Function to handle toggling expansion and scrolling
     private func toggleExpansion() {
         let wasExpanded = isExpanded // Capture state before toggle
+        
         withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
             isExpanded.toggle()
+            
+            // Update the global expanded card tracker
+            if isExpanded, let id = cardId {
+                cardManager.setExpandedCard(id: id)
+            } else if !isExpanded && cardManager.expandedCardId == cardId {
+                cardManager.setExpandedCard(id: nil)
+            }
+            
             if !isExpanded { // If collapsing
                 isAnimating = true // Keep animating flag for smooth transition out
             }
