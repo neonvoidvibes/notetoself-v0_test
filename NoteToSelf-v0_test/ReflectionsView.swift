@@ -19,7 +19,7 @@ struct ChatBubble: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(message.text)
                         .textSelection(.enabled) // Keep text selection
-                        .font(styles.typography.bodyFont) // Larger font
+                        .font(styles.typography.bodyLarge) // Larger font
                         .lineSpacing(6) // Add more line spacing
                         .foregroundColor(styles.colors.userBubbleText)
                         .padding(styles.layout.paddingM)
@@ -65,7 +65,7 @@ struct ChatBubble: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(message.text)
                         .textSelection(.enabled) // Keep text selection
-                        .font(styles.typography.bodyFont) // Larger font
+                        .font(styles.typography.bodyLarge) // Larger font
                         .lineSpacing(6) // Add more line spacing
                         .foregroundColor(styles.colors.assistantBubbleText)
                         .padding(styles.layout.paddingM) // Added padding like user bubble
@@ -290,14 +290,15 @@ struct ReflectionsView: View {
                                         .id("TypingIndicator")
                                 }
                                 
-                                // Scroll anchor
+                                // Scroll anchor - make it stick directly to the last message with minimal height
                                 Color.clear
                                     .frame(height: 1)
                                     .id("BottomAnchor")
                             }
                             .padding(.horizontal, styles.layout.paddingL)
                             .padding(.vertical, styles.layout.paddingL)
-                            .padding(.bottom, 20)
+                            // Reduce bottom padding to prevent excessive scrolling space
+                            .padding(.bottom, 8)
                         }
                         .frame(height: geometry.size.height)
                         .onTapGesture {
@@ -309,12 +310,18 @@ struct ReflectionsView: View {
                         // SIMPLIFIED: Only scroll on essential events with NO ANIMATION
                         .onChange(of: chatManager.currentChat.messages.count) { _, _ in
                             if scrollAtBottom {
-                                scrollView.scrollTo("BottomAnchor", anchor: .bottom)
+                                // Use a very short delay to ensure layout is complete
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    scrollView.scrollTo("BottomAnchor", anchor: .bottom)
+                                }
                             }
                         }
                         .onChange(of: chatManager.isTyping) { _, newValue in
                             if newValue && scrollAtBottom {
-                                scrollView.scrollTo("BottomAnchor", anchor: .bottom)
+                                // Use a very short delay to ensure layout is complete
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    scrollView.scrollTo("BottomAnchor", anchor: .bottom)
+                                }
                             }
                         }
                         .onAppear {
@@ -426,17 +433,17 @@ struct ReflectionsView: View {
         // Capture text before clearing
         let textToSend = messageText
         
-        // Clear input and dismiss keyboard in one step
+        // Clear input
         messageText = ""
         
         // CRITICAL: Set scroll to bottom when sending
         scrollAtBottom = true
         
-        // Dismiss keyboard AFTER setting scroll position
-        isInputFocused = false
-        
         // Send the message
         chatManager.sendUserMessageToAI(text: textToSend)
+        
+        // Dismiss keyboard
+        isInputFocused = false
     }
 }
 
