@@ -22,7 +22,7 @@ struct SettingsView: View {
                     // Subscription section
                     SubscriptionSection(subscriptionTier: appState.subscriptionTier)
                         .transition(.scale.combined(with: .opacity))
-                        .padding(.top, 20) // Add padding at the top to make it less cramped
+                        .padding(.top, 40) // Increased top padding from 20 to 40
 
                     // Notifications section
                     NotificationsSection(
