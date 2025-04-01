@@ -66,7 +66,7 @@ struct InsightDetailView: View {
   let entries: [JournalEntry] // Keep entries for context if needed by some detail views
   @Environment(\.presentationMode) var presentationMode
 
-  private let styles = UIStyles.shared
+  @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
   var body: some View {
       // Use NavigationView or NavigationStack based on deployment target

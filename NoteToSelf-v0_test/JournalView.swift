@@ -30,7 +30,7 @@ struct JournalView: View {
     @State private var customEndDate: Date = Date()
 
     // Access to shared styles
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     // Computed property to filter the journal entries
     private var filteredEntries: [JournalEntry] {
@@ -374,7 +374,9 @@ struct JournalView: View {
                 Button(action: { showingNewEntrySheet = true }) {
                     Image(systemName: "plus")
                         .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(styles.colors.appBackground)
+                        // Use a contrasting color for the icon based on the accent color
+                        // This might need adjustment per theme if accent is light
+                        .foregroundColor(.black) // Assuming accent is generally light enough
                         .frame(width: 60, height: 60)
                         .background(
                             ZStack {
@@ -478,7 +480,7 @@ struct JournalEntryCard: View {
     let onExpand: () -> Void // For fullscreen view
     let onStar: () -> Void // Callback for starring
 
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -546,7 +548,7 @@ struct JournalEntryCard: View {
             // Expanded content
             if isExpanded { // Restored expanded content section
                 Divider()
-                    .background(Color(hex: "#222222"))
+                    .background(styles.colors.divider) // Use theme color
                     .padding(.horizontal, 16)
 
                 Text(entry.text) // Show full text when expanded
@@ -580,13 +582,13 @@ struct JournalEntryCard: View {
         }
         .background(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                .fill(Color("CardBackground")) // Ensure "CardBackground" is defined in Assets
+                .fill(styles.colors.cardBackground) // Use theme color
                 .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
         )
         .overlay(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
                 // Highlight border if starred, similar to ChatHistoryItem
-                .stroke(entry.isStarred ? styles.colors.accent : Color(hex: "#222222"), lineWidth: entry.isStarred ? 2 : 1)
+                .stroke(entry.isStarred ? styles.colors.accent : styles.colors.divider, lineWidth: entry.isStarred ? 2 : 1) // Use divider color
         )
         .contentShape(Rectangle()) // Make whole card tappable
         .onTapGesture {

@@ -8,7 +8,7 @@ struct StyledDatePicker: View {
     var displayedComponents: DatePickerComponents = .date // Default to date only
 
     @State private var showPickerSheet: Bool = false
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     var body: some View {
         Button {
@@ -66,7 +66,7 @@ private struct DatePickerSheetView: View {
     let displayedComponents: DatePickerComponents
     @Binding var showPickerSheet: Bool // To dismiss the sheet
 
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     var body: some View {
         NavigationView { // Embed in NavigationView for title and Done button
@@ -96,11 +96,11 @@ private struct DatePickerSheetView: View {
                     }
                     .foregroundColor(styles.colors.accent)
                 }
-            }
-        }
-        .preferredColorScheme(.dark) // Ensure sheet respects dark mode
-    }
-}
+             }
+         }
+         // .preferredColorScheme(.dark) // REMOVED
+     }
+ }
 
 
 // Corrected Extension to check DatePickerComponents easily

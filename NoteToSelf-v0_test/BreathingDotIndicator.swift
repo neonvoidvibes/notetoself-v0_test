@@ -2,7 +2,7 @@ import SwiftUI
 
 struct BreathingDotIndicator: View {
     @State private var isAnimating: Bool = false
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     var body: some View {
         HStack { // Use HStack to align left, similar to old indicator

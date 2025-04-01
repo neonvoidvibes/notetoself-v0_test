@@ -21,10 +21,10 @@ struct ChatHistoryView: View {
   // Confirmation modal state
   @State private var showingDeleteConfirmation = false
   @State private var chatToDelete: Chat? = nil
-  
+
   // Access to shared styles
-  private let styles = UIStyles.shared
-  
+  @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
   var body: some View {
     ZStack {
         styles.colors.menuBackground
@@ -342,9 +342,9 @@ struct ChatHistoryCard: View {
     let onOpen: () -> Void
     let onStar: () -> Void
     let onDelete: () -> Void  // Add this new parameter
-    
-    private let styles = UIStyles.shared
-    
+
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header always visible
@@ -353,20 +353,21 @@ struct ChatHistoryCard: View {
             // Expanded content
             if isExpanded {
                 Divider()
-                    .background(Color(hex: "#222222"))
+                    .background(styles.colors.divider) // Use theme color
                     .padding(.horizontal, 16)
-                
+
                 expandedContent()
             }
         }
         .background(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                .fill(Color("CardBackground"))
+                .fill(styles.colors.cardBackground) // Use theme color
                 .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
         )
         .overlay(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                .stroke(chat.isStarred ? styles.colors.accent : Color(hex: "#222222"), lineWidth: chat.isStarred ? 2 : 1)
+                // Use divider color for default border
+                .stroke(chat.isStarred ? styles.colors.accent : styles.colors.divider, lineWidth: chat.isStarred ? 2 : 1)
         )
         .contentShape(Rectangle())
         .onTapGesture {

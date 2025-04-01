@@ -9,7 +9,7 @@ struct ChatBubble: View {
     @Environment(\.colorScheme) private var colorScheme
     // @EnvironmentObject var chatManager: ChatManager // Not needed in old bubble
 
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     var body: some View {
         HStack {
@@ -154,7 +154,7 @@ struct ReflectionsView: View {
     var showChatHistory: () -> Void
 
     // Access to shared styles
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     var body: some View {
         ZStack {
@@ -333,7 +333,8 @@ struct ReflectionsView: View {
                             }
                             .frame(height: 40) // FIXED HEIGHT
                             .padding(8)
-                            .background(styles.colors.reflectionsNavBackground)
+                            // Use secondary background for the field itself
+                            .background(styles.colors.secondaryBackground)
                             .cornerRadius(20)
 
                             // Send button
@@ -345,7 +346,8 @@ struct ReflectionsView: View {
                                 } else {
                                     Image(systemName: "arrow.up")
                                         .font(.system(size: 24, weight: .bold))
-                                        .foregroundColor(styles.colors.appBackground)
+                                         // Use contrasting color (like user bubble text)
+                                        .foregroundColor(styles.colors.userBubbleText)
                                 }
                             }
                             .frame(width: 40, height: 40)

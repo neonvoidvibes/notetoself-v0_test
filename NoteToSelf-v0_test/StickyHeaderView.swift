@@ -7,9 +7,9 @@ struct StickyHeaderView: View {
     var topPadding: CGFloat = 16
     var bottomPadding: CGFloat = 8
     var horizontalPadding: CGFloat = 20
-    
-    private let styles = UIStyles.shared
-    
+
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     var body: some View {
         Text(title)
             .font(styles.typography.title3)
@@ -60,4 +60,3 @@ struct StickyHeaderView_Previews: PreviewProvider {
         }
     }
 }
-

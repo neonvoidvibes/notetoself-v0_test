@@ -5,7 +5,7 @@ struct SharedSectionHeader: View {
     let title: String
     let backgroundColor: Color // Parameter to control background
 
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     // Initializer explicitly accepting the background color
     init(title: String, backgroundColor: Color) {

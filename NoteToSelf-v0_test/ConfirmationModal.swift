@@ -8,10 +8,10 @@ struct ConfirmationModal: View {
     var confirmAction: () -> Void
     var cancelAction: () -> Void
     var isDestructive: Bool = false
-    
+
     @Environment(\.colorScheme) private var colorScheme
-    private let styles = UIStyles.shared
-    
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     var body: some View {
         ZStack {
             // Background overlay
@@ -75,4 +75,3 @@ struct ConfirmationModal: View {
         .transition(.opacity.combined(with: .scale))
     }
 }
-

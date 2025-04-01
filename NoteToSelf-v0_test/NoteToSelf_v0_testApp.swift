@@ -10,9 +10,14 @@ struct NoteToSelf_v0_testApp: App {
     @StateObject private var appState: AppState
     @StateObject private var subscriptionManager: SubscriptionManager
     @StateObject private var chatManager: ChatManager
+    @StateObject private var themeManager: ThemeManager // Add ThemeManager
 
     init() {
-        // Initialize services first
+        // Initialize Theme Manager First (it interacts with UIStyles singleton)
+        let themeMgr = ThemeManager.shared
+        _themeManager = StateObject(wrappedValue: themeMgr)
+
+        // Initialize other services
         let dbService = DatabaseService()
         let llmSvc = LLMService.shared // Use singleton
         let subMgr = SubscriptionManager.shared // Use singleton
@@ -45,10 +50,16 @@ struct NoteToSelf_v0_testApp: App {
                 .environmentObject(appState)
                 .environmentObject(chatManager)
                 .environmentObject(subscriptionManager)
-                .environmentObject(databaseService) // Provide if needed by MainTabView or children
+                .environmentObject(databaseService)
+                .environmentObject(themeManager) // Inject ThemeManager
                 // REMOVED: .environmentObject(llmService)
-                .preferredColorScheme(.dark)
+                // .preferredColorScheme(.dark) // REMOVED - Let theme/system control scheme
                 // Removed onAppear here, data loading triggered from init
+                // Add temporary developer theme toggle (Triple tap)
+                .onTapGesture(count: 3) {
+                    print("Triple tap detected - cycling theme.")
+                    themeManager.cycleTheme()
+                }
         }
     }
 

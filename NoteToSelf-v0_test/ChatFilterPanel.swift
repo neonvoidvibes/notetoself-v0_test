@@ -8,11 +8,11 @@ struct ChatFilterPanel: View {
   @Binding var customStartDate: Date
   @Binding var customEndDate: Date
   var onClearFilters: () -> Void
-  
+
   @State private var activeTab: FilterTab = .keywords
-  
-  private let styles = UIStyles.shared
-  
+
+  @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
   enum FilterTab {
       case keywords, starred, date
   }
@@ -64,9 +64,9 @@ struct ChatFilterPanel: View {
           .padding(.horizontal, styles.layout.paddingM)
       }
       .padding(styles.layout.paddingM)
-      .background(Color(hex: "#1A1A1A")) // Darker gray for contrast
+      .background(styles.colors.reflectionsNavBackground) // Use theme color (similar context)
       .cornerRadius(styles.layout.radiusL)
-      .shadow(color: Color.black.opacity(0.3), radius: 15, x: 0, y: 8)
+      .shadow(color: Color.black.opacity(0.3), radius: 15, x: 0, y: 8) // Shadow color can be themed later
       .padding(.horizontal, styles.layout.paddingL)
       .contentShape(Rectangle()) // Make the entire filter panel tappable
       .onTapGesture {

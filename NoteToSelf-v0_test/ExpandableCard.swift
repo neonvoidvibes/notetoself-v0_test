@@ -33,9 +33,11 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
     @State private var detailContentHeight: CGFloat = 0
     @State private var isAnimating: Bool = false
     @State private var hovered: Bool = false
-    
+
     // Access to the shared card manager
     @StateObject private var cardManager = ExpandableCardManager.shared
+    // Observe UIStyles for theme changes
+    @ObservedObject private var internalStyles = UIStyles.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -86,19 +88,10 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // Animated divider
                     Divider()
-                        .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    colors.accent.opacity(0.5),
-                                    colors.tertiaryBackground
-                                ]),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .background(colors.divider.opacity(0.5)) // Use theme divider color
                         .padding(.vertical, 8)
                         .padding(.horizontal, 16)
-
+        
                     detailContent()
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 16)
@@ -127,18 +120,10 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
         .padding(layout.cardInnerPadding)
         .background(
             RoundedRectangle(cornerRadius: layout.radiusM)
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color("CardBackground"),
-                            Color("CardBackground").opacity(0.95)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                 // Use theme card background color
+                .fill(colors.cardBackground)
                 .shadow(
-                    color: isPrimary ? colors.accent.opacity(0.15) : Color.black.opacity(0.15),
+                    color: isPrimary ? colors.accent.opacity(0.15) : Color.black.opacity(0.15), // Shadow color can be themed
                     radius: 10,
                     x: 0,
                     y: 5
@@ -147,14 +132,8 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
         .overlay(
             RoundedRectangle(cornerRadius: layout.radiusM)
                 .strokeBorder(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            isPrimary ? colors.accent.opacity(0.3) : Color(hex: "#333333"),
-                            isPrimary ? colors.accent.opacity(0.1) : Color(hex: "#222222")
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
+                    // Use theme divider or accent color for border
+                    isPrimary ? colors.accent.opacity(0.3) : colors.divider.opacity(0.5),
                     lineWidth: isPrimary ? 1.5 : 1
                 )
         )
@@ -226,7 +205,7 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
 struct ExpandCollapseButtonInternal: View {
     @Binding var isExpanded: Bool
     var hovered: Bool
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     var body: some View {
         HStack(spacing: 4) {
@@ -276,4 +255,3 @@ struct ContentHeightPreferenceKey: PreferenceKey {
         value = nextValue()
     }
 }
-

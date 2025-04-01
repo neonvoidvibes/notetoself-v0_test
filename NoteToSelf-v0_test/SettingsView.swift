@@ -10,7 +10,7 @@ struct SettingsView: View {
 
 
     // Access to shared styles
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     var body: some View {
         ZStack {
@@ -57,7 +57,7 @@ struct SubscriptionSection: View {
     let subscriptionTier: SubscriptionTier
 
     // Access to shared styles
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     var body: some View {
         VStack(alignment: .leading, spacing: styles.layout.spacingM) {
@@ -126,20 +126,18 @@ struct SubscriptionSection: View {
 }
 
 struct GlowingButtonStyle: ButtonStyle {
-    let colors: UIStyles.Colors
-    let typography: UIStyles.Typography
-    let layout: UIStyles.Layout
+    @ObservedObject var styles = UIStyles.shared // Use @ObservedObject
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(typography.bodyFont)
-            .padding(layout.paddingM)
+            .font(styles.typography.bodyFont)
+            .padding(styles.layout.paddingM)
             .background(
-                RoundedRectangle(cornerRadius: layout.radiusM)
-                    .fill(colors.accent)
-                    .shadow(color: colors.accent.opacity(configuration.isPressed ? 0.3 : 0.6), radius: configuration.isPressed ? 5 : 10, x: 0, y: 0)
+                RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                    .fill(styles.colors.accent)
+                    .shadow(color: styles.colors.accent.opacity(configuration.isPressed ? 0.3 : 0.6), radius: configuration.isPressed ? 5 : 10, x: 0, y: 0)
             )
-            .foregroundColor(.black)
+            .foregroundColor(.black) // Contrasting color
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .frame(maxWidth: .infinity) // Ensure button takes full width
     }
@@ -154,7 +152,7 @@ struct NotificationsSection: View {
     @Binding var notificationTime: Date
 
     // Access to shared styles
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     var body: some View {
         VStack(alignment: .leading, spacing: styles.layout.spacingM) {
@@ -196,10 +194,34 @@ struct NotificationsSection: View {
 }
 
 struct ModernToggleStyle: ToggleStyle {
-    let colors: UIStyles.Colors
+    @ObservedObject var styles = UIStyles.shared // Use @ObservedObject
 
     func makeBody(configuration: Configuration) -> some View {
         HStack {
+            configuration.label
+
+            Spacer()
+
+            ZStack {
+                Capsule()
+                    .fill(configuration.isOn ? styles.colors.accent : Color.gray.opacity(0.3)) // Use theme color
+                    .frame(width: 50, height: 30)
+
+                Circle()
+                     // Use theme text color for knob
+                    .fill(styles.colors.text)
+                    .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
+                    .frame(width: 26, height: 26)
+                    .offset(x: configuration.isOn ? 10 : -10)
+            }
+            .onTapGesture {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    configuration.isOn.toggle()
+                }
+            }
+        }
+    }
+}
             configuration.label
 
             Spacer()
@@ -228,7 +250,7 @@ struct ModernToggleStyle: ToggleStyle {
 
 struct PrivacySection: View {
     // Access to shared styles
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     var body: some View {
         VStack(alignment: .leading, spacing: styles.layout.spacingM) {
@@ -276,7 +298,7 @@ struct PrivacySection: View {
 
 struct AboutSection: View {
     // Access to shared styles
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     var body: some View {
         VStack(alignment: .leading, spacing: styles.layout.spacingM) {

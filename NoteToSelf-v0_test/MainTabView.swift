@@ -23,7 +23,7 @@ struct MainTabView: View {
   @State private var isDragging = false
 
   // Shared UI styles
-  private let styles = UIStyles.shared
+  @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
   // Computed geometry
   private var screenHeight: CGFloat {
@@ -479,7 +479,7 @@ struct MainTabView: View {
       // IMPORTANT: Remove the mainScrollingDisabled environment variable to allow scrolling
       .environment(\.settingsScrollingDisabled, isSwipingSettings)
       // No need to pass environment objects down again here
-      .preferredColorScheme(.dark)
+      // .preferredColorScheme(.dark) // REMOVED
       .onAppear {
           bottomSheetOffset = peekHeight - fullSheetHeight
           // Remove sample data loading
@@ -548,7 +548,7 @@ struct NavigationTabButton: View {
   let title: String
   let isSelected: Bool
   let action: () -> Void
-  private let styles = UIStyles.shared
+  @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
   // Fixed dimensions
   private let buttonWidth: CGFloat = 80 // Define button width

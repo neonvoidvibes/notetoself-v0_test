@@ -26,7 +26,7 @@ struct InsightsView: View {
     @State private var cardsAppeared = false
     @State private var selectedSection: String? = nil
 
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     private var isWeeklySummaryFresh: Bool {
         guard let generatedDate = summaryDate else { return false }
@@ -500,9 +500,9 @@ struct AnimatedSectionHeader: View {
     let title: String
     let isSelected: Bool
     let onTap: () -> Void
-    
-    private let styles = UIStyles.shared
-    
+
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -605,4 +605,3 @@ struct InsightsView_Previews: PreviewProvider {
         }
     }
 }
-

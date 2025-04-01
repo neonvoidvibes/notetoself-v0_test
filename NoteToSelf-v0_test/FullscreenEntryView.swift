@@ -9,7 +9,7 @@ struct FullscreenEntryView: View {
     var onDelete: (() -> Void)?
 
     // Access to shared styles
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     @State private var showingDeleteConfirmation = false
 
@@ -144,7 +144,7 @@ struct FullscreenEntryView: View {
                 .animation(.spring(), value: showingDeleteConfirmation)
             }
         }
-        .preferredColorScheme(.dark)
+        // .preferredColorScheme(.dark) // REMOVED
     }
 
     private func formatDate(_ date: Date) -> String {
@@ -182,7 +182,7 @@ struct EditableFullscreenEntryView: View {
     private let isNewEntry: Bool
     private let isLocked: Bool
 
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     init(initialMood: Mood = .neutral, onSave: @escaping (String, Mood, Int) -> Void, onDelete: (() -> Void)? = nil, onCancel: (() -> Void)? = nil, autoFocusText: Bool = false) {
         self.initialMood = initialMood
@@ -424,13 +424,13 @@ struct EditableFullscreenEntryView: View {
                     },
                     isDestructive: true
                 )
-                .animation(.spring(), value: showingDeleteConfirmation)
-            }
-        }
-        .preferredColorScheme(.dark)
-        .onAppear {
-            if autoFocusText {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                 }
+             }
+         }
+         // .preferredColorScheme(.dark) // REMOVED
+         .onAppear {
+             if autoFocusText {
+                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     isTextFieldFocused = true
                 }
             }

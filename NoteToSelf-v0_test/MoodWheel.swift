@@ -5,10 +5,10 @@ struct MoodWheel: View {
     @Binding var selectedIntensity: Int
     @State private var isDragging: Bool = false
     @State private var dragLocation: CGPoint = .zero
-    
+
     // Access to shared styles
-    private let styles = UIStyles.shared
-    
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     // Constants for wheel dimensions
     private let wheelDiameter: CGFloat = 260 // Reduced from 280 to make wheel slightly smaller
     private let centerDiameter: CGFloat = 100
@@ -55,9 +55,9 @@ struct MoodWheel: View {
                             y: wheelDiameter/2 + wheelDiameter/2 * sin(angle * .pi / 180)
                         )
                     )
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    .stroke(styles.colors.divider, lineWidth: 1) // Use theme divider color
                 }
-                
+
                 // Draw the 12 mood segments (3 per quadrant)
                 ForEach(0..<12) { index in
                     MoodSegment(
@@ -70,28 +70,31 @@ struct MoodWheel: View {
                         outerRadius: wheelDiameter/2
                     )
                 }
-                
-                // Center neutral zone - always white background
+
+                // Center neutral zone - use theme text/secondary colors
                 Circle()
-                    .fill(Color.white)
+                    .fill(styles.colors.text) // Fill with primary text color (e.g., white/black)
                     .frame(width: centerDiameter, height: centerDiameter)
                     .overlay(
                         Circle()
-                            .stroke(selectedMood == .neutral ? Color.white.opacity(0.8) : Color.white.opacity(0.3), 
+                            // Border using secondary text color
+                            .stroke(styles.colors.textSecondary.opacity(selectedMood == .neutral ? 0.8 : 0.3),
                                    lineWidth: selectedMood == .neutral ? 3 : 1)
                     )
-                
-                // Center label for selected mood - always black text
+
+                // Center label for selected mood - Use contrasting color to text fill
                 VStack(spacing: 2) { // Reduced spacing for better centering
                     Text(selectedMood.name)
                         .font(styles.typography.smallLabelFont) // Even smaller font
-                        .foregroundColor(Color.black) // Always black text
+                         // Use app background color for contrast against text fill
+                        .foregroundColor(styles.colors.appBackground)
                         .fontWeight(.bold)
-                    
+
                     if selectedMood != .neutral {
                         Text(intensityText(selectedIntensity))
                             .font(styles.typography.caption)
-                            .foregroundColor(Color.black.opacity(0.7)) // Always black text with opacity
+                             // Use app background color with opacity
+                            .foregroundColor(styles.colors.appBackground.opacity(0.7))
                     }
                 }
                 .frame(width: centerDiameter, height: centerDiameter)
@@ -274,9 +277,9 @@ struct MoodSegment: View {
     let selectedIntensity: Int
     let innerRadius: CGFloat
     let outerRadius: CGFloat
-    
-    private let styles = UIStyles.shared
-    
+
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     var body: some View {
         // Calculate angle ranges for this segment
         let segmentAngle = 360.0 / Double(totalSegments)
@@ -286,15 +289,15 @@ struct MoodSegment: View {
         ZStack {
             // Full segment highlight with white border when selected
             if isSelected {
-                // Full segment with white border
+                // Full segment with theme text color border
                 AngularArc(
                     startAngle: .degrees(startAngle),
                     endAngle: .degrees(endAngle),
                     innerRadius: innerRadius,
                     outerRadius: outerRadius
                 )
-                .stroke(Color.white, lineWidth: 3)
-                
+                .stroke(styles.colors.text, lineWidth: 3) // Use theme text color
+
                 // Background for the entire segment
                 AngularArc(
                     startAngle: .degrees(startAngle),
@@ -413,7 +416,7 @@ struct CircleMoodBackground: View {
                             Color(hex: "#99FF33"), // Excited - 30-60° (2 o'clock)
                             
                             // Back to start (for smooth gradient)
-                            Color(hex: "#66FF66")  // Happy (0°)
+                            Color(hex: "#66FF66")  // Happy (0°) // TODO: Use theme mood colors
                         ]),
                         center: .center,
                         startAngle: .degrees(0),
@@ -423,9 +426,9 @@ struct CircleMoodBackground: View {
                 .opacity(isDimmed ? 0.3 : 1.0) // Dim when a mood is selected
                 .overlay(
                     Circle()
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        // Use theme divider color for overlay
+                        .stroke(styles.colors.divider.opacity(0.5), lineWidth: 1)
                 )
         }
     }
 }
-
