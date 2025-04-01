@@ -132,42 +132,6 @@ struct ChatBubbleShape: Shape {
   }
 }
 
-// Old TypingIndicator struct definition (restored)
-struct TypingIndicator: View {
-    private let styles = UIStyles.shared
-    @State private var scale: CGFloat = 0.5 // Matches current implementation start
-
-    var body: some View {
-        HStack { // Keep outer HStack from old
-            HStack(spacing: styles.layout.spacingS) { // Use spacing from old
-                ForEach(0..<3) { index in
-                    Circle()
-                        .fill(styles.colors.offWhite) // Use offWhite from old
-                        .frame(width: 8, height: 8)
-                        .scaleEffect(scale)
-                        .animation(
-                            Animation.easeInOut(duration: 0.6) // Use duration from old
-                                .repeatForever(autoreverses: true)
-                                .delay(Double(index) * 0.2), // Use delay from old
-                            value: scale
-                        )
-                }
-            }
-            .padding(styles.layout.paddingM) // Use padding from old
-            .background(
-                styles.colors.assistantBubbleColor // Use assistant color from old
-                    .clipShape(ChatBubbleShape(isUser: false)) // Use shape from old
-            )
-            Spacer() // Keep spacer from old
-        }
-        .padding(.leading, 0) // Remove left padding completely
-        .padding(.trailing, 40) // Ensure it doesn't go full width
-        .onAppear {
-            scale = 1.0 // Animate to full size
-        }
-    }
-}
-
 // Replace the entire ReflectionsView implementation with this cleaner approach
 
 struct ReflectionsView: View {
@@ -287,8 +251,9 @@ struct ReflectionsView: View {
 
                                 // Typing indicator
                                 if chatManager.isTyping {
-                                    TypingIndicator()
-                                        .id("TypingIndicator")
+                                    BreathingDotIndicator() // Use the new component
+                                        .id("TypingIndicator") // Keep ID for scrolling if needed
+                                        .transition(.opacity) // Add fade transition
                                 }
 
                                 // Scroll anchor - make it stick directly to the last message with minimal height
