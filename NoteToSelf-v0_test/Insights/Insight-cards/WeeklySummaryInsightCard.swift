@@ -128,8 +128,8 @@ struct WeeklySummaryInsightCard: View {
                                 .foregroundColor(styles.colors.text)
                                 .multilineTextAlignment(.leading)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .lineLimit(3)
                                 .padding(.vertical, 4)
+                                .fixedSize(horizontal: false, vertical: true)
 
                             if !result.keyThemes.isEmpty {
                                 ScrollView(.horizontal, showsIndicators: false) {

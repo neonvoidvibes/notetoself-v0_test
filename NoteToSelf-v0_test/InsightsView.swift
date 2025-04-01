@@ -36,6 +36,21 @@ struct InsightsView: View {
     private var hasAnyEntries: Bool {
         !appState.journalEntries.isEmpty
     }
+    
+    // Determine if the weekly summary should be shown in highlights section
+    private var showWeeklySummaryInHighlights: Bool {
+        // Check if today is Sunday
+        let isSunday = Calendar.current.component(.weekday, from: Date()) == 1
+        
+        // Check if user has been journaling for at least 6 days
+        let hasBeenJournalingLongEnough: Bool = {
+            guard let oldestEntry = appState.journalEntries.last else { return false }
+            let daysSinceFirstEntry = Calendar.current.dateComponents([.day], from: oldestEntry.date, to: Date()).day ?? 0
+            return daysSinceFirstEntry >= 6
+        }()
+        
+        return isSunday && hasBeenJournalingLongEnough
+    }
 
     var body: some View {
         ZStack {
@@ -333,21 +348,23 @@ struct InsightsView: View {
                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
                 .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                 
-                // Weekly Summary Card
-                WeeklySummaryInsightCard(
-                    jsonString: summaryJson,
-                    generatedDate: summaryDate,
-                    isFresh: isWeeklySummaryFresh,
-                    subscriptionTier: appState.subscriptionTier,
-                    scrollProxy: scrollProxy,
-                    cardId: "summaryCard"
-                )
-                .id("summaryCard")
-                .padding(.horizontal, styles.layout.paddingXL)
-                .scaleEffect(cardsAppeared ? 1 : 0.95)
-                .opacity(cardsAppeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
-                .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+                // Weekly Summary Card - only show in highlights if it's Sunday and user has been journaling for 6+ days
+                if showWeeklySummaryInHighlights {
+                    WeeklySummaryInsightCard(
+                        jsonString: summaryJson,
+                        generatedDate: summaryDate,
+                        isFresh: isWeeklySummaryFresh,
+                        subscriptionTier: appState.subscriptionTier,
+                        scrollProxy: scrollProxy,
+                        cardId: "summaryCard"
+                    )
+                    .id("summaryCard")
+                    .padding(.horizontal, styles.layout.paddingXL)
+                    .scaleEffect(cardsAppeared ? 1 : 0.95)
+                    .opacity(cardsAppeared ? 1 : 0)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
+                    .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+                }
             }
             
             // Deeper Insights Section
@@ -368,6 +385,24 @@ struct InsightsView: View {
                 .opacity(cardsAppeared ? 1 : 0)
                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
                 .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+                
+                // Weekly Summary Card - show in deeper insights if not showing in highlights
+                if !showWeeklySummaryInHighlights {
+                    WeeklySummaryInsightCard(
+                        jsonString: summaryJson,
+                        generatedDate: summaryDate,
+                        isFresh: isWeeklySummaryFresh,
+                        subscriptionTier: appState.subscriptionTier,
+                        scrollProxy: scrollProxy,
+                        cardId: "summaryCard"
+                    )
+                    .id("summaryCard")
+                    .padding(.horizontal, styles.layout.paddingXL)
+                    .scaleEffect(cardsAppeared ? 1 : 0.95)
+                    .opacity(cardsAppeared ? 1 : 0)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.35), value: cardsAppeared)
+                    .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+                }
                 
                 // Mood Trends Card
                 MoodTrendsInsightCard(
@@ -483,6 +518,9 @@ struct AnimatedSectionHeader: View {
             .padding(.vertical, styles.layout.spacingS)
             .contentShape(Rectangle())
             .background(styles.colors.appBackground)
+            .onTapGesture {
+                onTap()
+            }
             
             // Animated accent line
             Rectangle()

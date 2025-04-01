@@ -129,7 +129,7 @@ struct ChatInsightCard: View {
                                     )
                             )
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             },
