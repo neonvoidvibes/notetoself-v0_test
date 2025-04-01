@@ -134,9 +134,9 @@ struct ChatFilterPanel: View {
           Toggle("Show Starred Chats Only", isOn: $showStarredOnly)
               .font(styles.typography.bodySmall)
               .foregroundColor(styles.colors.text)
-              .toggleStyle(ModernToggleStyle(colors: styles.colors))
+              .toggleStyle(ModernToggleStyle()) // Remove the argument
               .padding(.vertical, 8)
-          
+  
           if showStarredOnly {
               Text("Only showing chats you've starred by long-pressing on them.")
                   .font(styles.typography.bodySmall)

@@ -395,7 +395,8 @@ struct AngularArc: Shape {
 // Update the CircleMoodBackground to align colors with mood placements
 struct CircleMoodBackground: View {
     var isDimmed: Bool = false
-    
+    @ObservedObject private var styles = UIStyles.shared // Add observed object
+
     var body: some View {
         ZStack {
             Circle()

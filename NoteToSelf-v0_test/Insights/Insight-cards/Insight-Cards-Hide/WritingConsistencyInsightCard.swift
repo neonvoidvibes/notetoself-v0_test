@@ -3,10 +3,10 @@ import SwiftUI
 struct WritingConsistencyInsightCard: View {
     let entries: [JournalEntry]
     @State private var isExpanded: Bool = false
-    
+
     // Access to shared styles
-    private let styles = UIStyles.shared
-    
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     private var lastMonth: Date {
         Calendar.current.date(byAdding: .month, value: -1, to: Date())!
     }
@@ -264,8 +264,11 @@ struct WritingConsistencyInsightCard: View {
 struct ConsistencyDayView: View {
     let day: Date
     let hasEntry: Bool
-    let styles: UIStyles
-    
+    // Make styles observed or ensure it's passed correctly if needed
+    // Assuming it's passed from parent, keep 'let'. If parent doesn't pass, use @ObservedObject.
+    // For safety, let's add @ObservedObject here too, assuming it might be used independently.
+    @ObservedObject var styles = UIStyles.shared
+
     var body: some View {
         ZStack {
             if hasEntry {
@@ -284,4 +287,3 @@ struct ConsistencyDayView: View {
         }
     }
 }
-

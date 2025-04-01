@@ -23,9 +23,10 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
     var cardId: String? = nil
 
     // Styling
-    let colors: UIStyles.Colors
-    let typography: UIStyles.Typography
-    let layout: UIStyles.Layout
+    // Use the theme-specific structs defined in ThemeProtocol.swift
+    let colors: ThemeColors
+    let typography: ThemeTypography
+    let layout: UIStyles.Layout // Layout remains the same for now
     let isPrimary: Bool
 
     // Internal state for animations

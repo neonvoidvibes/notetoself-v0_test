@@ -4,10 +4,10 @@ struct SentimentAnalysisInsightCard: View {
     let entries: [JournalEntry]
     let subscriptionTier: SubscriptionTier
     @State private var isExpanded: Bool = false
-    
+
     // Access to shared styles
-    private let styles = UIStyles.shared
-    
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     // Simulated sentiment data for demonstration
     private let sentimentData = [
         ("Jan", 0.2),
@@ -83,17 +83,13 @@ struct SentimentAnalysisInsightCard: View {
                             Button("Upgrade") {
                                 // Show subscription options
                             }
-                            .buttonStyle(UIStyles.PrimaryButtonStyle(
-                                colors: styles.colors,
-                                typography: styles.typography,
-                                layout: styles.layout
-                            ))
+                            .buttonStyle(UIStyles.PrimaryButtonStyle()) // No arguments needed
                             .frame(width: 150)
                         }
                         .padding(styles.layout.paddingL)
                         .background(
                             RoundedRectangle(cornerRadius: styles.layout.radiusL)
-                                .fill(styles.colors.surface.opacity(0.9))
+                                .fill(styles.colors.menuBackground.opacity(0.9)) // Use menuBackground instead of surface
                                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 10)
                         )
                     }
@@ -114,4 +110,3 @@ struct SentimentAnalysisInsightCard: View {
         }
     }
 }
-

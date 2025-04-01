@@ -8,8 +8,8 @@ struct FullscreenEntryView: View {
     var onEdit: (() -> Void)?
     var onDelete: (() -> Void)?
 
-    // Access to shared styles
-    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+    // Access to shared styles - Use @ObservedObject
+    @ObservedObject private var styles = UIStyles.shared
 
     @State private var showingDeleteConfirmation = false
 
@@ -29,17 +29,17 @@ struct FullscreenEntryView: View {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 16, weight: .semibold))
                             Text("Back")
-                                .font(styles.typography.bodyFont)
+                                .font(styles.typography.bodyFont) // Use styles instance
                         }
-                        .foregroundColor(styles.colors.accent)
+                        .foregroundColor(styles.colors.accent) // Use styles instance
                     }
 
                     Spacer()
 
                     // Date display
                     Text(formatDate(entry.date))
-                        .font(styles.typography.smallLabelFont)
-                        .foregroundColor(styles.colors.textSecondary)
+                        .font(styles.typography.smallLabelFont) // Use styles instance
+                        .foregroundColor(styles.colors.textSecondary) // Use styles instance
                 }
                 .padding(.horizontal, styles.layout.paddingXL)
                 .padding(.top, styles.layout.topSafeAreaPadding)
@@ -54,8 +54,8 @@ struct FullscreenEntryView: View {
 
                             // Mood pill with formatted intensity
                             Text(formattedMoodText(entry.mood, intensity: entry.intensity))
-                                .font(styles.typography.caption)
-                                .foregroundColor(styles.colors.text)
+                                .font(styles.typography.caption) // Use styles instance
+                                .foregroundColor(styles.colors.text) // Use styles instance
                                 .padding(.vertical, 6)
                                 .padding(.horizontal, 12)
                                 .background(
@@ -76,12 +76,12 @@ struct FullscreenEntryView: View {
                                         Image(systemName: "pencil")
                                             .font(.system(size: styles.layout.iconSizeS))
                                         Text("Edit")
-                                            .font(styles.typography.caption)
+                                            .font(styles.typography.caption) // Use styles instance
                                     }
-                                    .foregroundColor(styles.colors.accent)
+                                    .foregroundColor(styles.colors.accent) // Use styles instance
                                     .padding(.vertical, 6)
                                     .padding(.horizontal, 12)
-                                    .background(styles.colors.secondaryBackground)
+                                    .background(styles.colors.secondaryBackground) // Use styles instance
                                     .cornerRadius(styles.layout.radiusM)
                                 }
                             }
@@ -90,10 +90,10 @@ struct FullscreenEntryView: View {
                             if entry.isLocked {
                                 Image(systemName: "lock.fill")
                                     .font(.system(size: 14))
-                                    .foregroundColor(styles.colors.textSecondary)
+                                    .foregroundColor(styles.colors.textSecondary) // Use styles instance
                                     .padding(.vertical, 6)
                                     .padding(.horizontal, 12)
-                                    .background(styles.colors.secondaryBackground)
+                                    .background(styles.colors.secondaryBackground) // Use styles instance
                                     .cornerRadius(styles.layout.radiusM)
                             }
 
@@ -104,10 +104,10 @@ struct FullscreenEntryView: View {
                                 }) {
                                     Image(systemName: "trash")
                                         .font(.system(size: styles.layout.iconSizeS))
-                                        .foregroundColor(styles.colors.textSecondary)
+                                        .foregroundColor(styles.colors.textSecondary) // Use styles instance
                                         .padding(.vertical, 6)
                                         .padding(.horizontal, 12)
-                                        .background(styles.colors.secondaryBackground)
+                                        .background(styles.colors.secondaryBackground) // Use styles instance
                                         .cornerRadius(styles.layout.radiusM)
                                 }
                             }
@@ -117,8 +117,8 @@ struct FullscreenEntryView: View {
 
                         // Entry text
                         Text(entry.text)
-                            .font(styles.typography.bodyLarge)
-                            .foregroundColor(styles.colors.text)
+                            .font(styles.typography.bodyLarge) // Use styles instance
+                            .foregroundColor(styles.colors.text) // Use styles instance
                             .lineSpacing(8)
                             .padding(.horizontal, styles.layout.paddingXL)
 
@@ -128,6 +128,7 @@ struct FullscreenEntryView: View {
             }
             // Delete confirmation modal
             if showingDeleteConfirmation {
+                // Pass styles explicitly if needed, or ensure ConfirmationModal uses @ObservedObject
                 ConfirmationModal(
                     title: "Delete Entry",
                     message: "Are you sure you want to delete this journal entry? This action cannot be undone.",
@@ -144,7 +145,7 @@ struct FullscreenEntryView: View {
                 .animation(.spring(), value: showingDeleteConfirmation)
             }
         }
-        // .preferredColorScheme(.dark) // REMOVED
+        // .preferredColorScheme(.dark) // REMOVED - Let theme handle it
     }
 
     private func formatDate(_ date: Date) -> String {
@@ -168,7 +169,7 @@ struct EditableFullscreenEntryView: View {
     var onDelete: (() -> Void)?
     var onCancel: (() -> Void)?
     var autoFocusText: Bool = false
-    
+
     @Environment(\.dismiss) private var dismiss
     @State private var entryText: String
     @State private var selectedMood: Mood
@@ -182,15 +183,17 @@ struct EditableFullscreenEntryView: View {
     private let isNewEntry: Bool
     private let isLocked: Bool
 
-    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+    // Access shared styles - Use @ObservedObject
+    @ObservedObject private var styles = UIStyles.shared
 
+    // Initializers remain the same, no styles passed here
     init(initialMood: Mood = .neutral, onSave: @escaping (String, Mood, Int) -> Void, onDelete: (() -> Void)? = nil, onCancel: (() -> Void)? = nil, autoFocusText: Bool = false) {
         self.initialMood = initialMood
         self.onSave = onSave
         self.onDelete = onDelete
         self.onCancel = onCancel
         self.autoFocusText = autoFocusText
-        
+
         self._entryText = State(initialValue: "")
         self._selectedMood = State(initialValue: initialMood)
         self._selectedIntensity = State(initialValue: 2)
@@ -206,7 +209,7 @@ struct EditableFullscreenEntryView: View {
         self.onDelete = onDelete
         self.onCancel = onCancel
         self.autoFocusText = autoFocusText
-        
+
         self._entryText = State(initialValue: entry.text)
         self._selectedMood = State(initialValue: entry.mood)
         self._selectedIntensity = State(initialValue: entry.intensity)
@@ -215,11 +218,10 @@ struct EditableFullscreenEntryView: View {
         self.isLocked = entry.isLocked
     }
 
-    // Corrected: Ensure body property exists and encloses the view content
     var body: some View {
         ZStack {
             // Background
-            styles.colors.appBackground
+            styles.colors.appBackground // Use styles instance
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -245,12 +247,12 @@ struct EditableFullscreenEntryView: View {
                     }) {
                         Image(systemName: "xmark")
                             .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(styles.colors.text)
+                            .foregroundColor(styles.colors.text) // Use styles instance
                     }
                     Spacer()
                     Text(formatDate(date))
-                        .font(styles.typography.smallLabelFont)
-                        .foregroundColor(styles.colors.textSecondary)
+                        .font(styles.typography.smallLabelFont) // Use styles instance
+                        .foregroundColor(styles.colors.textSecondary) // Use styles instance
                 }
                 .padding(.horizontal, styles.layout.paddingXL)
                 .padding(.top, styles.layout.topSafeAreaPadding)
@@ -269,8 +271,8 @@ struct EditableFullscreenEntryView: View {
                                 }
                             }) {
                                 Text(formattedMoodText(selectedMood, intensity: selectedIntensity))
-                                    .font(styles.typography.caption)
-                                    .foregroundColor(styles.colors.text)
+                                    .font(styles.typography.caption) // Use styles instance
+                                    .foregroundColor(styles.colors.text) // Use styles instance
                                     .padding(.vertical, 6)
                                     .padding(.horizontal, 12)
                                     .background(
@@ -288,10 +290,10 @@ struct EditableFullscreenEntryView: View {
                                 }) {
                                     Image(systemName: "trash")
                                         .font(.system(size: styles.layout.iconSizeS))
-                                        .foregroundColor(styles.colors.textSecondary)
+                                        .foregroundColor(styles.colors.textSecondary) // Use styles instance
                                         .padding(.vertical, 6)
                                         .padding(.horizontal, 12)
-                                        .background(styles.colors.secondaryBackground)
+                                        .background(styles.colors.secondaryBackground) // Use styles instance
                                         .cornerRadius(styles.layout.radiusM)
                                 }
                             }
@@ -302,10 +304,11 @@ struct EditableFullscreenEntryView: View {
                         // Mood wheel selector panel
                         if showMoodSelector {
                             VStack {
+                                // Ensure MoodWheel observes UIStyles if needed, or pass style info
                                 MoodWheel(selectedMood: $selectedMood, selectedIntensity: $selectedIntensity)
                                     .padding(.horizontal, styles.layout.spacingM)
                             }
-                            .background(styles.colors.secondaryBackground)
+                            .background(styles.colors.secondaryBackground) // Use styles instance
                             .cornerRadius(styles.layout.radiusL)
                             .padding(.horizontal, styles.layout.paddingXL)
                             .transition(.opacity.combined(with: .move(edge: .top)))
@@ -313,13 +316,13 @@ struct EditableFullscreenEntryView: View {
 
                         // Text editor
                         TextEditor(text: $entryText)
-                            .font(styles.typography.bodyLarge)
-                            .foregroundColor(styles.colors.text)
+                            .font(styles.typography.bodyLarge) // Use styles instance
+                            .foregroundColor(styles.colors.text) // Use styles instance
                             .lineSpacing(8)
                             .padding(.horizontal, styles.layout.paddingXL - 5)
                             .frame(minHeight: 200)
-                            .background(Color.clear)
-                            .scrollContentBackground(.hidden)
+                            .background(Color.clear) // Keep clear
+                            .scrollContentBackground(.hidden) // Keep hidden
                             .focused($isTextFieldFocused)
                             .onChange(of: isTextFieldFocused) { oldValue, newValue in
                                 if newValue {
@@ -330,8 +333,8 @@ struct EditableFullscreenEntryView: View {
                                 Group {
                                     if entryText.isEmpty {
                                         Text("What's on your mind today?")
-                                            .font(styles.typography.bodyLarge)
-                                            .foregroundColor(styles.colors.placeholderText)
+                                            .font(styles.typography.bodyLarge) // Use styles instance
+                                            .foregroundColor(styles.colors.placeholderText) // Use styles instance
                                             .padding(.horizontal, styles.layout.paddingXL)
                                             .padding(.top, 8)
                                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -360,11 +363,11 @@ struct EditableFullscreenEntryView: View {
                             }
                         }) {
                             Text("Confirm")
-                                .font(styles.typography.bodyFont)
-                                .foregroundColor(.black)
+                                .font(styles.typography.bodyFont) // Use styles instance
+                                .foregroundColor(.black) // Contrast color
                                 .padding(.vertical, 10)
                                 .padding(.horizontal, 20)
-                                .background(RoundedRectangle(cornerRadius: styles.layout.radiusM).fill(styles.colors.accent))
+                                .background(RoundedRectangle(cornerRadius: styles.layout.radiusM).fill(styles.colors.accent)) // Use styles instance
                         }
                         .padding([.trailing, .bottom], 24)
                     } else {
@@ -375,11 +378,11 @@ struct EditableFullscreenEntryView: View {
                             }
                         }) {
                             Text("Save")
-                                .font(styles.typography.bodyFont)
-                                .foregroundColor(.black)
+                                .font(styles.typography.bodyFont) // Use styles instance
+                                .foregroundColor(.black) // Contrast color
                                 .padding(.vertical, 10)
                                 .padding(.horizontal, 20)
-                                .background(RoundedRectangle(cornerRadius: styles.layout.radiusM).fill(styles.colors.accent))
+                                .background(RoundedRectangle(cornerRadius: styles.layout.radiusM).fill(styles.colors.accent)) // Use styles instance
                         }
                         .disabled(entryText.isEmpty)
                         .opacity(entryText.isEmpty ? 0.5 : 1.0)
@@ -389,6 +392,7 @@ struct EditableFullscreenEntryView: View {
             }
             // Cancel confirmation modal
             if showingCancelConfirmation {
+                 // Pass styles explicitly if needed, or ensure ConfirmationModal uses @ObservedObject
                 ConfirmationModal(
                     title: "Discard Changes",
                     message: "Are you sure you want to discard this journal entry? Your changes will be lost.",
@@ -410,6 +414,7 @@ struct EditableFullscreenEntryView: View {
             }
             // Delete confirmation modal
             if showingDeleteConfirmation {
+                 // Pass styles explicitly if needed, or ensure ConfirmationModal uses @ObservedObject
                 ConfirmationModal(
                     title: "Delete Entry",
                     message: "Are you sure you want to delete this journal entry? This action cannot be undone.",
@@ -424,13 +429,13 @@ struct EditableFullscreenEntryView: View {
                     },
                     isDestructive: true
                 )
-                 }
-             }
-         }
-         // .preferredColorScheme(.dark) // REMOVED
-         .onAppear {
-             if autoFocusText {
-                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                .animation(.spring(), value: showingDeleteConfirmation)
+            }
+        }
+        // .preferredColorScheme(.dark) // REMOVED - Let theme handle it
+        .onAppear {
+            if autoFocusText {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     isTextFieldFocused = true
                 }
             }
@@ -453,6 +458,7 @@ struct EditableFullscreenEntryView: View {
 
 struct FullscreenEntryView_Previews: PreviewProvider {
     static var previews: some View {
+        // Sample data setup remains the same
         let sampleEntry = JournalEntry(
             text: "This is a sample journal entry with some text to preview how it would look in the fullscreen view. The text should be displayed prominently and be easy to read.",
             mood: .happy,
@@ -469,5 +475,7 @@ struct FullscreenEntryView_Previews: PreviewProvider {
             EditableFullscreenEntryView(onSave: { _, _, _ in })
                 .previewDisplayName("New Entry Mode")
         }
+         // Add environment object for preview if UIStyles is needed by previews
+         .environmentObject(UIStyles.shared)
     }
 }

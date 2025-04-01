@@ -15,7 +15,7 @@ struct RecommendationsInsightCard: View {
     var cardId: String? = nil
 
     @State private var isExpanded: Bool = false
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     // Helper to get icon based on category string
     private func iconForCategory(_ category: String) -> String {
@@ -152,12 +152,12 @@ struct RecommendationsInsightCard: View {
                          Text("Upgrade for Recommendations").font(styles.typography.title3).foregroundColor(styles.colors.text)
                          Text("Unlock personalized recommendations based on your journal entries with Premium.")
                               .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary).multilineTextAlignment(.center)
-                         // Optional Upgrade Button
-                         Button("Upgrade Now") { /* TODO: Trigger upgrade flow */ }
-                         .buttonStyle(GlowingButtonStyle(colors: styles.colors, typography: styles.typography, layout: styles.layout))
-                         .padding(.top)
-                    }
-                }
+                          // Optional Upgrade Button
+                          Button("Upgrade Now") { /* TODO: Trigger upgrade flow */ }
+                          .buttonStyle(GlowingButtonStyle()) // Remove arguments
+                          .padding(.top)
+                     }
+                 }
             } // End detailContent
         ) // End expandableCard
         // Add the onChange modifier to decode the JSON string
@@ -204,8 +204,8 @@ struct RecommendationsInsightCard: View {
 struct RecommendationRow: View {
     let recommendation: RecommendationResult.RecommendationItem
     let iconName: String
-    private let styles = UIStyles.shared
-    
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     var body: some View {
         HStack(alignment: .top, spacing: styles.layout.spacingM) {
             ZStack { // Icon
@@ -229,4 +229,3 @@ struct RecommendationRow: View {
         .padding(.vertical, 4)
     }
 }
-

@@ -3,10 +3,10 @@ import SwiftUI
 struct OnboardingView: View {
     @Binding var hasSeenOnboarding: Bool
     @State private var currentPage = 0
-    
+
     // Access to shared styles
-    private let styles = UIStyles.shared
-    
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     var body: some View {
         ZStack {
             styles.colors.appBackground
@@ -66,27 +66,24 @@ struct OnboardingView: View {
                             }
                         }
                     }
-.buttonStyle(UIStyles.PrimaryButtonStyle(
-                        colors: styles.colors,
-                        typography: styles.typography,
-                        layout: styles.layout
-                    ))
+                    // Initialize style without arguments, as it observes UIStyles internally
+                    .buttonStyle(UIStyles.PrimaryButtonStyle())
                     .frame(width: 150)
                 }
                 .padding(.horizontal, styles.layout.paddingL)
                 .padding(.bottom, styles.layout.paddingL)
-            }
-        }
-        .preferredColorScheme(.dark)
-    }
-}
+             }
+         }
+         // .preferredColorScheme(.dark) // REMOVED
+     }
+ }
 
 // MARK: - Onboarding Pages
 
 struct WelcomePage: View {
     // Access to shared styles
-    private let styles = UIStyles.shared
-    
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     var body: some View {
         VStack(spacing: styles.layout.spacingXL) {
             Spacer()
@@ -116,8 +113,8 @@ struct WelcomePage: View {
 
 struct TabsOverviewPage: View {
     // Access to shared styles
-    private let styles = UIStyles.shared
-    
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     var body: some View {
         VStack(spacing: styles.layout.spacingXL) {
             Spacer()
@@ -156,8 +153,8 @@ struct TabsOverviewPage: View {
 
 struct PrivacyPage: View {
     // Access to shared styles
-    private let styles = UIStyles.shared
-    
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     var body: some View {
         VStack(spacing: styles.layout.spacingXL) {
             Spacer()
@@ -193,8 +190,8 @@ struct PrivacyPage: View {
 
 struct SubscriptionPage: View {
     // Access to shared styles
-    private let styles = UIStyles.shared
-    
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     var body: some View {
         VStack(spacing: styles.layout.spacingXL) {
             Spacer()
@@ -235,10 +232,10 @@ struct FeatureItem: View {
     let icon: String
     let title: String
     let description: String
-    
+
     // Access to shared styles
-    private let styles = UIStyles.shared
-    
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     var body: some View {
         HStack(spacing: styles.layout.spacingL) {
             Image(systemName: icon)
@@ -263,10 +260,10 @@ struct FeatureItem: View {
 
 struct PremiumFeatureItem: View {
     let text: String
-    
+
     // Access to shared styles
-    private let styles = UIStyles.shared
-    
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     var body: some View {
         HStack(spacing: styles.layout.spacingM) {
             Image(systemName: "checkmark.circle.fill")

@@ -6,7 +6,7 @@ struct CalendarInsightCard: View {
     @State private var isExpanded: Bool = false
 
     // Access to shared styles
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
     private let weekdaySymbols = Calendar.current.veryShortWeekdaySymbols
@@ -366,7 +366,9 @@ struct MonthlyStatItem: View {
     let title: String
     let value: String
     let icon: String
-    let styles: UIStyles
+    // Pass styles if used independently, otherwise remove. Assume parent passes or use ObservedObject.
+    // Let's add ObservedObject for robustness.
+    @ObservedObject var styles = UIStyles.shared
 
     var body: some View {
         VStack(spacing: 8) {
@@ -393,7 +395,7 @@ struct CalendarDayView: View {
     let entries: [JournalEntry]
 
     // Access to shared styles
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     private var hasEntry: Bool {
         let calendar = Calendar.current

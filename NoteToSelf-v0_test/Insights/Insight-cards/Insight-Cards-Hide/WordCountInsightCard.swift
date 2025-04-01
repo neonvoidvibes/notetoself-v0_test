@@ -3,10 +3,10 @@ import SwiftUI
 struct WordCountInsightCard: View {
     let entries: [JournalEntry]
     @State private var isExpanded: Bool = false
-    
+
     // Access to shared styles
-    private let styles = UIStyles.shared
-    
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+
     private var totalWords: Int {
         entries.reduce(0) { $0 + $1.text.split(separator: " ").count }
     }
@@ -82,4 +82,3 @@ struct WordCountInsightCard: View {
         }
     }
 }
-
