@@ -5,26 +5,26 @@ struct MainTabView: View {
   @EnvironmentObject private var appState: AppState // Use EnvironmentObject
   @EnvironmentObject private var chatManager: ChatManager // Use EnvironmentObject
   @State private var selectedTab = 0
-  
+
   // Settings-related states
   @State private var showingSettings = false
   @State private var settingsOffset: CGFloat = -UIScreen.main.bounds.width // Changed to negative for left side
   @State private var dragOffset: CGFloat = 0
   @State private var isSwipingSettings = false
-  
+
   // Chat History-related states
   @State private var showingChatHistory = false
   @State private var chatHistoryOffset: CGFloat = UIScreen.main.bounds.width // Start offscreen to the right
   @State private var isSwiping = false
-  
+
   // Bottom sheet / tab bar states
   @State private var bottomSheetOffset: CGFloat = 0
   @State private var bottomSheetExpanded = false
   @State private var isDragging = false
-  
+
   // Shared UI styles
   private let styles = UIStyles.shared
-  
+
   // Computed geometry
   private var screenHeight: CGFloat {
       UIScreen.main.bounds.height
@@ -38,7 +38,7 @@ struct MainTabView: View {
   private var fullSheetHeight: CGFloat {
       styles.layout.bottomSheetFullHeight
   }
-  
+
   // Drag gesture for bottom sheet
   private var bottomSheetDrag: some Gesture {
       DragGesture()
@@ -75,7 +75,7 @@ struct MainTabView: View {
               }
           }
   }
-  
+
   // Drag gesture for Settings: Allow swipe from left edge to open
   private var settingsDrag: some Gesture {
       DragGesture(minimumDistance: 10)
@@ -87,10 +87,10 @@ struct MainTabView: View {
                       bottomSheetOffset = peekHeight - fullSheetHeight
                   }
               }
-              
+
               let isHorizontal = abs(value.translation.width) > abs(value.translation.height)
               let isSignificant = abs(value.translation.width) > 10
-              
+
               if !showingSettings {
                   // Opening from left edge - check for right swipe from left edge
                   if isHorizontal && isSignificant && value.translation.width > 0 && value.startLocation.x < 50 {
@@ -111,7 +111,7 @@ struct MainTabView: View {
               if isSwipingSettings {
                   let horizontalAmount = value.translation.width
                   let velocity = value.predictedEndLocation.x - value.location.x
-                  
+
                   if !showingSettings {
                       // Opening gesture
                       if horizontalAmount > screenWidth * 0.3 || (horizontalAmount > 20 && velocity > 100) {
@@ -138,18 +138,18 @@ struct MainTabView: View {
                       }
                   }
               }
-              
+
               isSwipingSettings = false
               dragOffset = 0
           }
   }
-  
+
   // Add a new state variable to track keyboard visibility
   @State private var isKeyboardVisible = false
-  
+
   var body: some View {
       ZStack {
-          // Conditional Background: Accent when sheet expanded, otherwise gradient/solid based on tab
+          // Conditional Background: Accent when sheet expanded, otherwise gradient/solid based on tab (Restored Logic)
           if bottomSheetExpanded {
               // Use accent color when bottom sheet is expanded
               styles.colors.accent
@@ -175,7 +175,7 @@ struct MainTabView: View {
                       .ignoresSafeArea()
               }
           }
-              
+
           // Status bar area
           VStack(spacing: 0) {
               Color.black
@@ -183,7 +183,7 @@ struct MainTabView: View {
               Spacer()
           }
           .ignoresSafeArea()
-          
+
           // Main content: disabled during settings swipes
           VStack(spacing: 0) {
               ZStack {
@@ -250,7 +250,7 @@ struct MainTabView: View {
                       }
                   }
               )
-              
+
               // Bottom sheet / tab bar - using GeometryReader for precise positioning
               GeometryReader { geometry in
                   if !isKeyboardVisible {
@@ -265,7 +265,7 @@ struct MainTabView: View {
                                   Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
                                       .font(.system(size: 18, weight: .bold))
                                       .foregroundColor(Color.white) // Keep chevron white
-                                  
+
                                   // Add Navigation text below the chevron, only when not expanded
                                   if !bottomSheetExpanded {
                                       Text("Navigation")
@@ -283,7 +283,7 @@ struct MainTabView: View {
                               .padding(.bottom, bottomSheetExpanded ? 16 : 8)
                           }
                           .buttonStyle(PlainButtonStyle())
-                          
+
                           // Tab buttons - only shown when expanded
                           if bottomSheetExpanded {
                               HStack(spacing: 0) {
@@ -293,10 +293,9 @@ struct MainTabView: View {
                                       title: "Journal",
                                       isSelected: selectedTab == 0
                                   ) {
-                                      withAnimation(styles.animation.tabSwitchAnimation) {
-                                          selectedTab = 0
-                                      }
-                                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                      // Move selectedTab change inside asyncAfter
+                                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Short delay before starting collapse
+                                          selectedTab = 0 // Change tab state *just before* animating sheet collapse
                                           withAnimation(styles.animation.bottomSheetAnimation) {
                                               bottomSheetExpanded = false
                                               bottomSheetOffset = peekHeight - fullSheetHeight
@@ -309,10 +308,9 @@ struct MainTabView: View {
                                       title: "Insights",
                                       isSelected: selectedTab == 1
                                   ) {
-                                      withAnimation(styles.animation.tabSwitchAnimation) {
+                                      // Move selectedTab change inside asyncAfter
+                                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Short delay
                                           selectedTab = 1
-                                      }
-                                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                           withAnimation(styles.animation.bottomSheetAnimation) {
                                               bottomSheetExpanded = false
                                               bottomSheetOffset = peekHeight - fullSheetHeight
@@ -325,10 +323,9 @@ struct MainTabView: View {
                                       title: "Reflect",
                                       isSelected: selectedTab == 2
                                   ) {
-                                      withAnimation(styles.animation.tabSwitchAnimation) {
+                                      // Move selectedTab change inside asyncAfter
+                                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Short delay
                                           selectedTab = 2
-                                      }
-                                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                           withAnimation(styles.animation.bottomSheetAnimation) {
                                               bottomSheetExpanded = false
                                               bottomSheetOffset = peekHeight - fullSheetHeight
@@ -345,7 +342,7 @@ struct MainTabView: View {
                       }
                       .frame(width: geometry.size.width, height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
                       .background(
-                          Group {
+                          Group { // Restore conditional background for bottom sheet
                               if bottomSheetExpanded {
                                   // Restore gradient, make it subtle (accent to accent 0.9 opacity)
                                   LinearGradient(
@@ -368,7 +365,7 @@ struct MainTabView: View {
           }
           .disabled(isSwipingSettings || showingChatHistory)
           .gesture(settingsDrag)
-          
+
           // Dim overlay for Settings
           Color.black
               .opacity(showingSettings ? 0.5 : 0)
@@ -381,13 +378,13 @@ struct MainTabView: View {
               )
               .ignoresSafeArea()
               .allowsHitTesting(false)
-          
+
           // Dim overlay for Chat History
           Color.black
               .opacity(showingChatHistory ? 0.5 : 0)
               .ignoresSafeArea()
               .allowsHitTesting(false)
-          
+
           // Settings overlay, no disable so we can swipe inside it
           ZStack(alignment: .top) {
               VStack(spacing: 0) {
@@ -398,16 +395,16 @@ struct MainTabView: View {
                           Text("Settings")
                               .font(styles.typography.title1)
                               .foregroundColor(styles.colors.text)
-                          
+
                           Rectangle()
                               .fill(styles.colors.accent)
                               .frame(width: 20, height: 3)
                       }
-                      
+
                       // Close button on right
                       HStack {
                           Spacer()
-                          
+
                           // Close button (double chevron) at right side
                           Button(action: {
                               withAnimation(.easeInOut(duration: 0.3)) {
@@ -425,7 +422,7 @@ struct MainTabView: View {
                   }
                   .padding(.top, 8) // Further reduced top padding
                   .padding(.bottom, 8)
-                  
+
                   // Actual Settings content
                   SettingsView()
                       .background(styles.colors.menuBackground)
@@ -439,28 +436,27 @@ struct MainTabView: View {
           .background(styles.colors.menuBackground)
           .offset(x: settingsOffset)
           .zIndex(2)
-          
+
           // Chat History overlay
           ZStack(alignment: .top) {
               VStack(spacing: 0) {
                   // The header is now handled inside ChatHistoryView
-                  
+
                   // Actual Chat History content
                   ChatHistoryView(chatManager: chatManager, onSelectChat: { selectedChat in
                       // Load the selected chat
                       chatManager.loadChat(selectedChat)
-                      
+
                       // Close the chat history view
                       withAnimation(.easeInOut(duration: 0.3)) {
                           showingChatHistory = false
                           chatHistoryOffset = screenWidth
                       }
-                      
+
                       // Make sure we're on the Reflections tab
                       if selectedTab != 2 {
-                          withAnimation {
-                              selectedTab = 2
-                          }
+                          // No animation needed here, change happens before view appears
+                          selectedTab = 2
                       }
                   }, onDismiss: {
                       // Close the chat history view
@@ -487,13 +483,13 @@ struct MainTabView: View {
       .onAppear {
           bottomSheetOffset = peekHeight - fullSheetHeight
           // Remove sample data loading
-          
+
           if !appState.hasSeenOnboarding {
               // This logic might need review - should onboarding status be persisted?
               // For now, keep the logic but remove sample data load.
               appState.hasSeenOnboarding = true
           }
-          
+
           // Add notification observer for menu button
           NotificationCenter.default.addObserver(forName: NSNotification.Name("ToggleSettings"), object: nil, queue: .main) { _ in
               withAnimation(.easeInOut(duration: 0.3)) {
@@ -505,7 +501,7 @@ struct MainTabView: View {
                   }
               }
           }
-          
+
           // Add notification observer for chat history button
           NotificationCenter.default.addObserver(forName: NSNotification.Name("ToggleChatHistory"), object: nil, queue: .main) { _ in
               withAnimation(.easeInOut(duration: 0.3)) {
@@ -517,14 +513,14 @@ struct MainTabView: View {
                   }
               }
           }
-          
+
           // Add keyboard observers
           NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { _ in
               withAnimation {
                   isKeyboardVisible = true
               }
           }
-          
+
           NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in
               withAnimation {
                   isKeyboardVisible = false
@@ -553,12 +549,12 @@ struct NavigationTabButton: View {
   let isSelected: Bool
   let action: () -> Void
   private let styles = UIStyles.shared
-  
+
   // Fixed dimensions
   private let buttonWidth: CGFloat = 80 // Define button width
   private let iconSize: CGFloat = 24
   private let underscoreHeight: CGFloat = 4 // Increased thickness
-  
+
   var body: some View {
       Button(action: action) {
           VStack(spacing: 6) { // Increased spacing from 4 to 6
@@ -569,20 +565,20 @@ struct NavigationTabButton: View {
                   .font(.system(size: iconSize, weight: isSelected ? .bold : .regular))
                   .foregroundColor(Color.white)
                   .frame(height: iconSize) // Keep icon height fixed
-              
+
               // Text label
               Text(title)
-                  .font(isSelected ? 
-                        .system(size: 12, weight: .bold, design: .monospaced) : 
+                  .font(isSelected ?
+                        .system(size: 12, weight: .bold, design: .monospaced) :
                         styles.typography.caption)
                   .foregroundColor(Color.white)
-              
+
               // Underscore indicator
               Rectangle()
                   .fill(Color.white) // Use white color like text/icon
                   .frame(width: 40, height: underscoreHeight) // Increased width from 35 to 40
                   .opacity(isSelected ? 1 : 0)
-              
+
               Spacer(minLength: 2) // Add small spacer below underscore if needed
           }
           // Remove horizontal padding from VStack to allow text full width
