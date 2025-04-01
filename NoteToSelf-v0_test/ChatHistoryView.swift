@@ -265,19 +265,15 @@ struct ChatHistoryView: View {
   
   // Helper function to check if a chat passes the search tag filter
   private func searchTagFilterPasses(_ chat: Chat) -> Bool {
-      if searchTags.isEmpty {
-          return true
-      }
-      
-      return chat.messages.contains { message in
-          guard let messageWithProperties = message as? (any MessageProtocol) else {
-              return false
-          }
-        
-          return searchTags.contains { tag in
-              messageWithProperties.text.lowercased().contains(tag.lowercased())
-          }
-      }
+    if searchTags.isEmpty {
+        return true
+    }
+    
+    return chat.messages.contains { message in
+        searchTags.contains { tag in
+            (message as? MessageDisplayable)?.text.lowercased().contains(tag.lowercased()) ?? false
+        }
+    }
   }
   
   // Helper function to check if a date passes the date filter
@@ -515,23 +511,17 @@ struct ChatHistoryCard: View {
     }
     
     // Helper function to find the last user message
-    private func findLastUserMessage() -> (any MessageProtocol)? {
-        return chat.messages.compactMap { message in
-            guard let messageWithProperties = message as? (any MessageProtocol) else {
-                return nil
-            }
-            return messageWithProperties.isUser ? messageWithProperties : nil
-        }.last
+    private func findLastUserMessage() -> MessageDisplayable? {
+        return chat.messages.compactMap { $0 as? MessageDisplayable }
+                           .filter { $0.isUser }
+                           .last
     }
     
     // Helper function to find the last AI message
-    private func findLastAIMessage() -> (any MessageProtocol)? {
-        return chat.messages.compactMap { message in
-            guard let messageWithProperties = message as? (any MessageProtocol) else {
-                return nil
-            }
-            return !messageWithProperties.isUser ? messageWithProperties : nil
-        }.last
+    private func findLastAIMessage() -> MessageDisplayable? {
+        return chat.messages.compactMap { $0 as? MessageDisplayable }
+                           .filter { !$0.isUser }
+                           .last
     }
     
     // Format date similar to JournalEntryCard
@@ -557,8 +547,13 @@ struct ChatHistoryCard: View {
     }
 }
 
-protocol MessageProtocol {
+// Define a protocol that matches the properties we need
+protocol MessageDisplayable {
     var text: String { get }
     var isUser: Bool { get }
+    var id: UUID { get }
 }
+
+// Extend ChatMessage to conform to our protocol if needed
+extension ChatMessage: MessageDisplayable {}
 
