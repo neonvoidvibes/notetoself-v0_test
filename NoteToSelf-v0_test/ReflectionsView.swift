@@ -19,7 +19,7 @@ struct ChatBubble: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(message.text)
                         .textSelection(.enabled) // Keep text selection
-                        .font(styles.typography.bodyLarge) // Larger font
+                        .font(styles.typography.bodyFont) // Larger font
                         .lineSpacing(6) // Add more line spacing
                         .foregroundColor(styles.colors.userBubbleText)
                         .padding(styles.layout.paddingM)
@@ -65,7 +65,7 @@ struct ChatBubble: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(message.text)
                         .textSelection(.enabled) // Keep text selection
-                        .font(styles.typography.bodyLarge) // Larger font
+                        .font(styles.typography.bodyFont) // Larger font
                         .lineSpacing(6) // Add more line spacing
                         .foregroundColor(styles.colors.assistantBubbleText)
                         .padding(styles.layout.paddingM) // Added padding like user bubble
@@ -105,7 +105,8 @@ struct ChatBubble: View {
                         .transition(.opacity)
                     }
                 }
-                 .padding(.trailing, 0) // Give assistant messages full width
+                .padding(.trailing, 0)
+                .padding(.leading, 0) // Remove left padding completely
 
                 Spacer()
             }
@@ -159,7 +160,7 @@ struct TypingIndicator: View {
             )
             Spacer() // Keep spacer from old
         }
-        .padding(.leading, styles.layout.paddingL) // Add leading padding like old bubbles
+        .padding(.leading, 0) // Remove left padding completely
         .padding(.trailing, 40) // Ensure it doesn't go full width
         .onAppear {
             scale = 1.0 // Animate to full size
@@ -345,17 +346,18 @@ struct ReflectionsView: View {
                             ZStack(alignment: .topLeading) {
                                 if messageText.isEmpty && !chatManager.isTyping {
                                     Text("Ask anything")
-                                        .font(styles.typography.bodyFont)
+                                        .font(styles.typography.bodyFont) // Use larger font to match messages
                                         .foregroundColor(styles.colors.placeholderText)
-                                        .padding(.leading, 8 + 5)
+                                        .padding(.leading, 5) // Reduced padding to align with assistant messages
                                         .padding(.top, 8)
                                         .allowsHitTesting(false)
                                 }
                                 
                                 // FIXED HEIGHT TextEditor
                                 TextEditor(text: chatManager.isTyping ? .constant("") : $messageText)
-                                    .font(styles.typography.bodyFont)
+                                    .font(styles.typography.bodyFont) // Use larger font to match messages
                                     .padding(4)
+                                    .padding(.leading, 1) // Reduced padding to align with assistant messages
                                     .background(Color.clear)
                                     .foregroundColor(chatManager.isTyping ? styles.colors.textDisabled : styles.colors.text)
                                     .frame(height: 40) // FIXED HEIGHT
