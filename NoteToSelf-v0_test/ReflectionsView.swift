@@ -19,7 +19,8 @@ struct ChatBubble: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(message.text)
                         .textSelection(.enabled) // Keep text selection
-                        .font(styles.typography.bodyFont)
+                        .font(styles.typography.bodyFont) // Larger font
+                        .lineSpacing(6) // Add more line spacing
                         .foregroundColor(styles.colors.userBubbleText)
                         .padding(styles.layout.paddingM)
                         .background(styles.colors.userBubbleColor)
@@ -59,12 +60,13 @@ struct ChatBubble: View {
                         .transition(.opacity)
                     }
                 }
-                 .padding(.leading, 40) // Indent user messages more from old
+                 .padding(.leading, UIScreen.main.bounds.width * 0.25) // Make user messages 3/4 width
             } else {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(message.text)
                         .textSelection(.enabled) // Keep text selection
-                        .font(styles.typography.bodyFont)
+                        .font(styles.typography.bodyFont) // Larger font
+                        .lineSpacing(6) // Add more line spacing
                         .foregroundColor(styles.colors.assistantBubbleText)
                         .padding(styles.layout.paddingM) // Added padding like user bubble
                         .background(styles.colors.assistantBubbleColor)
@@ -103,7 +105,7 @@ struct ChatBubble: View {
                         .transition(.opacity)
                     }
                 }
-                 .padding(.trailing, 40) // Indent AI messages more from old
+                 .padding(.trailing, 0) // Give assistant messages full width
 
                 Spacer()
             }
@@ -439,4 +441,3 @@ struct ReflectionsView: View {
 }
 
 // Keep the existing ChatBubble, ChatBubbleShape, and TypingIndicator implementations
-

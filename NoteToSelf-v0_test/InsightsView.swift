@@ -348,6 +348,19 @@ struct InsightsView: View {
                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
                 .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                 
+                // Chat Insight Card - moved to Today's Highlights section
+                ChatInsightCard(
+                    scrollProxy: scrollProxy,
+                    cardId: "chatCard"
+                )
+                .id("chatCard")
+                .padding(.horizontal, styles.layout.paddingXL)
+                .accessibilityLabel("AI Reflection")
+                .scaleEffect(cardsAppeared ? 1 : 0.95)
+                .opacity(cardsAppeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
+                .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+                
                 // Weekly Summary Card - only show in highlights if it's Sunday and user has been journaling for 6+ days
                 if showWeeklySummaryInHighlights {
                     WeeklySummaryInsightCard(
@@ -362,7 +375,7 @@ struct InsightsView: View {
                     .padding(.horizontal, styles.layout.paddingXL)
                     .scaleEffect(cardsAppeared ? 1 : 0.95)
                     .opacity(cardsAppeared ? 1 : 0)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
                     .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                 }
             }
@@ -373,37 +386,6 @@ struct InsightsView: View {
                 isSelected: selectedSection == "deeper",
                 onTap: { selectedSection = selectedSection == "deeper" ? nil : "deeper" }
             )) {
-                // Chat Insight Card
-                ChatInsightCard(
-                    scrollProxy: scrollProxy,
-                    cardId: "chatCard"
-                )
-                .id("chatCard")
-                .padding(.horizontal, styles.layout.paddingXL)
-                .accessibilityLabel("AI Reflection")
-                .scaleEffect(cardsAppeared ? 1 : 0.95)
-                .opacity(cardsAppeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
-                .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
-                
-                // Weekly Summary Card - show in deeper insights if not showing in highlights
-                if !showWeeklySummaryInHighlights {
-                    WeeklySummaryInsightCard(
-                        jsonString: summaryJson,
-                        generatedDate: summaryDate,
-                        isFresh: isWeeklySummaryFresh,
-                        subscriptionTier: appState.subscriptionTier,
-                        scrollProxy: scrollProxy,
-                        cardId: "summaryCard"
-                    )
-                    .id("summaryCard")
-                    .padding(.horizontal, styles.layout.paddingXL)
-                    .scaleEffect(cardsAppeared ? 1 : 0.95)
-                    .opacity(cardsAppeared ? 1 : 0)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.35), value: cardsAppeared)
-                    .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
-                }
-                
                 // Mood Trends Card
                 MoodTrendsInsightCard(
                     jsonString: trendJson,
@@ -417,7 +399,7 @@ struct InsightsView: View {
                 .accessibilityLabel("Mood Analysis")
                 .scaleEffect(cardsAppeared ? 1 : 0.95)
                 .opacity(cardsAppeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
                 .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                 
                 // Recommendations Card
@@ -432,8 +414,26 @@ struct InsightsView: View {
                 .padding(.horizontal, styles.layout.paddingXL)
                 .scaleEffect(cardsAppeared ? 1 : 0.95)
                 .opacity(cardsAppeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
                 .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+                
+                // Weekly Summary Card - moved to the end when not in highlights
+                if !showWeeklySummaryInHighlights {
+                    WeeklySummaryInsightCard(
+                        jsonString: summaryJson,
+                        generatedDate: summaryDate,
+                        isFresh: isWeeklySummaryFresh,
+                        subscriptionTier: appState.subscriptionTier,
+                        scrollProxy: scrollProxy,
+                        cardId: "summaryCard"
+                    )
+                    .id("summaryCard")
+                    .padding(.horizontal, styles.layout.paddingXL)
+                    .scaleEffect(cardsAppeared ? 1 : 0.95)
+                    .opacity(cardsAppeared ? 1 : 0)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared)
+                    .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
+                }
             }
             
             // Bottom padding
