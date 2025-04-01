@@ -394,8 +394,9 @@ struct ChatHistoryCard: View {
                     .foregroundColor(styles.colors.secondaryAccent)
                 
                 if !isExpanded {
-                    if let lastUserMessage = findLastUserMessage() {
-                        Text(lastUserMessage.text)
+                    // Use the first user message for the preview text when collapsed
+                    if let firstUserMessage = findFirstUserMessage() {
+                        Text(firstUserMessage.text)
                             .lineLimit(1)
                             .font(styles.typography.bodyFont)
                             .foregroundColor(styles.colors.text)
@@ -444,15 +445,15 @@ struct ChatHistoryCard: View {
     // Expanded content view
     private func expandedContent() -> some View {
         VStack(spacing: 0) {
-            // Show the last user message and AI response
-            if let lastUserMessage = findLastUserMessage(),
-               let lastAIMessage = findLastAIMessage() {
+            // Show the FIRST user message and AI response
+            if let firstUserMessage = findFirstUserMessage(), // Use first user message
+               let firstAIMessage = findFirstAIMessage() { // Use first AI message (if available)
                 
                 // User message
-                userMessageView(text: lastUserMessage.text)
+                userMessageView(text: firstUserMessage.text)
                 
-                // AI message
-                aiMessageView(text: lastAIMessage.text)
+                // AI message - Use the correct variable name
+                aiMessageView(text: firstAIMessage.text)
             }
             
             // Action button - Open chat
@@ -533,18 +534,14 @@ struct ChatHistoryCard: View {
         .padding(.bottom, 16)
     }
     
-    // Helper function to find the last user message
-    private func findLastUserMessage() -> MessageDisplayable? {
-        return chat.messages.compactMap { $0 as? MessageDisplayable }
-                           .filter { $0.isUser }
-                           .last
+    // Helper function to find the FIRST user message
+    private func findFirstUserMessage() -> ChatMessage? { // Return concrete type
+        return chat.messages.first { $0.isUser } // Directly filter and find first
     }
     
-    // Helper function to find the last AI message
-    private func findLastAIMessage() -> MessageDisplayable? {
-        return chat.messages.compactMap { $0 as? MessageDisplayable }
-                           .filter { !$0.isUser }
-                           .last
+    // Helper function to find the FIRST AI message
+    private func findFirstAIMessage() -> ChatMessage? { // Return concrete type
+        return chat.messages.first { !$0.isUser } // Directly filter and find first
     }
     
     // Format date similar to JournalEntryCard
@@ -579,4 +576,3 @@ protocol MessageDisplayable {
 
 // Extend ChatMessage to conform to our protocol if needed
 extension ChatMessage: MessageDisplayable {}
-
