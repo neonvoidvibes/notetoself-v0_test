@@ -319,7 +319,7 @@ extension View {
       self
           .background(UIStyles.shared.colors.cardBackground) // Now uses theme color
           .clipShape(RoundedCorner(radius: UIStyles.shared.layout.mainContentCornerRadius, corners: [.bottomLeft, .bottomRight]))
-          .shadow(color: Color.black.opacity(isExpanded ? 0 : 0.2), radius: 20, x: 0, y: 10)
+          .shadow(color: Color.black.opacity(isExpanded ? 0 : 0.2), radius: 0, x: 0, y: 10)
   }
 }
 
