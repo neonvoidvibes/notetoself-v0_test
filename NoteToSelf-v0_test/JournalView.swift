@@ -373,6 +373,7 @@ struct JournalView: View {
                 Spacer()
                 Button(action: { showingNewEntrySheet = true }) {
                     Image(systemName: "plus")
+                        .renderingMode(.template) // Ensure foregroundColor takes effect
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(styles.colors.accentIconForeground) // Use specific icon color
                         .frame(width: 60, height: 60)
@@ -382,6 +383,7 @@ struct JournalView: View {
                         )
                         .shadow(color: styles.colors.accent.opacity(0.2), radius: 8, x: 0, y: 4) // Keep shadow for depth
                 }
+                // REMOVED: .buttonStyle(PlainButtonStyle())
                 .padding(.trailing, 24)
                 .padding(.bottom, 24)
                 .offset(y: tabBarOffset * 0.7)

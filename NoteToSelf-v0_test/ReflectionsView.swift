@@ -1,6 +1,23 @@
 import SwiftUI
 
-// REMOVED duplicate RoundedCorner struct definition
+// Original ChatBubbleShape definition
+struct ChatBubbleShape: Shape {
+  var isUser: Bool
+  private let cornerRadius: CGFloat = 12
+
+  func path(in rect: CGRect) -> Path {
+      let path = UIBezierPath(
+          roundedRect: rect,
+          // User rounds all but bottom-right, Assistant rounds all but bottom-right
+          byRoundingCorners: isUser
+              ? [.topLeft, .topRight, .bottomLeft]
+              : [.topLeft, .topRight, .bottomRight],
+          cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
+      )
+      return Path(path.cgPath)
+  }
+}
+
 
 // Old ChatBubble struct definition (restored)
 struct ChatBubble: View {
@@ -26,15 +43,19 @@ struct ChatBubble: View {
                         .lineSpacing(6) // Add more line spacing
                         .foregroundColor(styles.colors.userBubbleText)
                         .padding(styles.layout.paddingM) // Restore original padding
-                        .background(styles.colors.userBubbleColor) // Restore background
-                        .clipShape(ChatBubbleShape(isUser: true))
-                        .clipShape(ChatBubbleShape(isUser: false)) // Apply shape to Text content only
-                        .contentShape(Rectangle())
+                        .background(
+                             styles.colors.userBubbleColor // Restore background
+                                 .clipShape(ChatBubbleShape(isUser: true)) // Apply shape directly to background
+                         )
+                        // REMOVED: .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                        .contentShape(Rectangle()) // Ensure tap area covers padding
+                        // .padding(.vertical, 8) // Remove extra vertical padding from old
                         .onTapGesture {
                             // Dismiss keyboard first, then handle the tap
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                             onTap()
                         }
+
 
                     if isExpanded {
                         Button(action: {
@@ -70,6 +91,7 @@ struct ChatBubble: View {
                         .font(styles.typography.bodyFont) // Larger font
                         .lineSpacing(6) // Add more line spacing
                         .foregroundColor(styles.colors.assistantBubbleText)
+                        .frame(maxWidth: .infinity, alignment: .leading) // Ensure text expands horizontally
                         .padding(.vertical, styles.layout.paddingM) // Apply only vertical padding
                         // REMOVED: .background(styles.colors.assistantBubbleColor)
                         // REMOVED: .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
@@ -80,6 +102,7 @@ struct ChatBubble: View {
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                             onTap()
                         }
+
 
                     if isExpanded {
                         Button(action: {
@@ -118,22 +141,6 @@ struct ChatBubble: View {
     }
 }
 
-// Old ChatBubbleShape (restored radius)
-struct ChatBubbleShape: Shape {
-  var isUser: Bool
-  private let cornerRadius: CGFloat = 12 // Use original radius
-
-  func path(in rect: CGRect) -> Path {
-      let path = UIBezierPath(
-          roundedRect: rect,
-          byRoundingCorners: isUser
-              ? [.topLeft, .topRight, .bottomLeft]
-              : [.topLeft, .topRight, .bottomRight],
-          cornerRadii: CGSize(width: cornerRadius, height: cornerRadius)
-      )
-      return Path(path.cgPath)
-  }
-}
 
 // Replace the entire ReflectionsView implementation with this cleaner approach
 
@@ -335,7 +342,6 @@ struct ReflectionsView: View {
                                     .disabled(chatManager.isTyping)
                                     .scrollContentBackground(.hidden)
                                     .focused($isInputFocused)
-                                    // REMOVED: .modifier(AdaptiveColorSchemeModifier())
                             }
                             .frame(height: 40) // FIXED HEIGHT
                             .padding(8)
@@ -351,6 +357,7 @@ struct ReflectionsView: View {
                                         .foregroundColor(styles.colors.appBackground) // Stop icon uses background color
                                 } else {
                                     Image(systemName: "arrow.up")
+                                        .renderingMode(.template) // Ensure foregroundColor takes effect
                                         .font(.system(size: 20, weight: .bold)) // Make arrow slightly smaller
                                         .foregroundColor(styles.colors.accentIconForeground) // Use specific icon color
                                 }
@@ -358,6 +365,7 @@ struct ReflectionsView: View {
                             .frame(width: 40, height: 40)
                             .background(styles.colors.accent)
                             .clipShape(Circle())
+                            // REMOVED: .buttonStyle(PlainButtonStyle())
                             .disabled(messageText.isEmpty && !chatManager.isTyping)
                             .opacity((messageText.isEmpty && !chatManager.isTyping) ? 0.5 : 1.0)
                         }
@@ -422,4 +430,5 @@ struct ReflectionsView: View {
     }
 }
 
-// Keep the existing ChatBubble, ChatBubbleShape, and TypingIndicator implementations
+// Keep the existing TypingIndicator implementations if needed elsewhere
+// (BreathingDotIndicator is now used)

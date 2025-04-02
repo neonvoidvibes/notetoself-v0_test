@@ -339,9 +339,11 @@ struct MoodSegment: View {
         .overlay(
             Group {
                 if isSelected {
+                    // Apply slight inset to angles to prevent visual overlap with dividers
+                    let insetAngle = 0.1
                     AngularArc(
-                        startAngle: .degrees(startAngle),
-                        endAngle: .degrees(endAngle),
+                        startAngle: Angle(degrees: startAngle + insetAngle),
+                        endAngle: Angle(degrees: endAngle - insetAngle),
                         innerRadius: innerRadius,
                         outerRadius: outerRadius
                     )
