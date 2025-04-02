@@ -68,8 +68,8 @@ struct MoodWheel: View {
                             y: wheelDiameter/2 + wheelDiameter/2 * sin(angle * .pi / 180)
                         )
                     )
-                    // Stroke with divider color only if this segment *is* the selected mood
-                    .stroke(moodForSegment(index) == selectedMood ? styles.colors.divider : Color.clear, lineWidth: 1)
+                    // Stroke only if this segment AND the previous segment are NOT selected
+                    .stroke(shouldDrawDivider(at: index) ? styles.colors.divider : Color.clear, lineWidth: 1)
                 }
 
                 // Center neutral zone - use theme text/secondary colors
@@ -254,6 +254,18 @@ struct MoodWheel: View {
         selectedMood = moodForSegment(segment)
         selectedIntensity = intensity
     }
+
+    // Helper to determine if a divider line should be drawn at a specific index
+    private func shouldDrawDivider(at index: Int) -> Bool {
+        guard selectedMood != .neutral else { return false } // Don't draw any if neutral selected
+
+        let currentMood = moodForSegment(index)
+        let previousIndex = (index - 1 + 12) % 12 // Wrap around for index 0
+        let previousMood = moodForSegment(previousIndex)
+
+        // Draw line only if neither the current nor the previous segment is the selected one
+        return currentMood != selectedMood && previousMood != selectedMood
+    }
 }
 
 // Line shape for drawing segment dividers
@@ -339,11 +351,10 @@ struct MoodSegment: View {
         .overlay(
             Group {
                 if isSelected {
-                    // Apply slight inset to angles to prevent visual overlap with dividers
-                    let insetAngle = 0.1
+                    // Remove angle inset
                     AngularArc(
-                        startAngle: Angle(degrees: startAngle + insetAngle),
-                        endAngle: Angle(degrees: endAngle - insetAngle),
+                        startAngle: Angle(degrees: startAngle), // Use original angle
+                        endAngle: Angle(degrees: endAngle),     // Use original angle
                         innerRadius: innerRadius,
                         outerRadius: outerRadius
                     )

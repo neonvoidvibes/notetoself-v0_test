@@ -153,7 +153,10 @@ struct RecommendationsInsightCard: View {
                          Text("Unlock personalized recommendations based on your journal entries with Premium.")
                               .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary).multilineTextAlignment(.center)
                           // Optional Upgrade Button
-                          Button("Upgrade Now") { /* TODO: Trigger upgrade flow */ }
+                          Button { /* TODO: Trigger upgrade flow */ } label: {
+                              Text("Upgrade Now")
+                                  .foregroundColor(styles.colors.primaryButtonText) // Apply color directly to Text
+                          }
                           .buttonStyle(GlowingButtonStyle()) // Remove arguments
                           .padding(.top)
                      }

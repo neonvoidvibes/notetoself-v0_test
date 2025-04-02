@@ -87,21 +87,30 @@ struct SubscriptionSection: View {
                     }
 
                     if subscriptionTier == .free {
-                        Button("Upgrade to Premium") {
-                            // Show subscription options
-                        }
-                         // Pass the styles instance to the button style initializer
-                        .buttonStyle(GlowingButtonStyle()) // Style observes internally
+                         Button {
+                             // Show subscription options
+                         } label: {
+                              Text("Upgrade to Premium")
+                                  .foregroundColor(styles.colors.primaryButtonText) // Apply color directly to Text
+                         }
+                          // Pass the styles instance to the button style initializer
+                         .buttonStyle(GlowingButtonStyle()) // Style observes internally
                     } else {
-                        Button("Manage Subscription") {
+                        Button {
                             // Show subscription management
+                        } label: {
+                             Text("Manage Subscription") // Example: Assuming Text is label
+                                 .foregroundColor(styles.colors.text) // Secondary style uses text color
                         }
                         // Pass the styles instance to the button style initializer
                         .buttonStyle(UIStyles.SecondaryButtonStyle()) // Style observes internally
                     }
 
-                    Button("Restore Purchases") {
-                        // Restore purchases logic
+                    Button {
+                         // Restore purchases logic
+                    } label: {
+                         Text("Restore Purchases") // Example: Assuming Text is label
+                             .foregroundColor(styles.colors.accent) // Ghost style uses accent color
                     }
                     // Pass the styles instance to the button style initializer
                     .buttonStyle(UIStyles.GhostButtonStyle()) // Style observes internally
