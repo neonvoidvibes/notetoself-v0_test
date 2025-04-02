@@ -327,7 +327,7 @@ struct ReflectionsView: View {
                                     .background(Color.clear)
                                     .foregroundColor(chatManager.isTyping ? styles.colors.textDisabled : styles.colors.text)
                                     .frame(height: 40) // FIXED HEIGHT
-                                    .colorScheme(.dark)
+                                    // REMOVED: .colorScheme(.dark)
                                     .disabled(chatManager.isTyping)
                                     .scrollContentBackground(.hidden)
                                     .focused($isInputFocused)
@@ -335,9 +335,9 @@ struct ReflectionsView: View {
                             }
                             .frame(height: 40) // FIXED HEIGHT
                             .padding(8)
-                            // Use secondary background for the field itself
-                            .background(styles.colors.secondaryBackground)
-                            .cornerRadius(20)
+                            // Make the text field area transparent
+                            .background(Color.clear)
+                            .cornerRadius(20) // Keep the rounding for visual consistency if needed
 
                             // Send button
                             Button(action: sendMessage) {
@@ -362,7 +362,12 @@ struct ReflectionsView: View {
 
                         Spacer().frame(height: 40)
                     }
-                    // REMOVED: .background(...) for input area VStack
+                    // Restore the background for the input area container
+                    .background(
+                        styles.colors.reflectionsNavBackground
+                            .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight]))
+                            .ignoresSafeArea(.container, edges: .bottom)
+                    )
                 }
             }
         }
