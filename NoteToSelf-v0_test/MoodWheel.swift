@@ -41,8 +41,21 @@ struct MoodWheel: View {
             ZStack {
                 // Background circle with gradient - dimmed when a mood is selected
                 CircleMoodBackground(isDimmed: selectedMood != .neutral)
-                
-                // Draw segment dividing lines
+
+                // Draw the 12 mood segments (3 per quadrant) FIRST
+                ForEach(0..<12) { index in
+                    MoodSegment(
+                        index: index,
+                        totalSegments: 12,
+                        mood: moodForSegment(index),
+                        isSelected: selectedMood == moodForSegment(index) && selectedMood != .neutral,
+                        selectedIntensity: selectedMood == moodForSegment(index) ? selectedIntensity : 0,
+                        innerRadius: centerDiameter/2,
+                        outerRadius: wheelDiameter/2
+                    )
+                }
+
+                // Draw segment dividing lines ON TOP
                 ForEach(0..<12) { index in
                     let angle = Double(index) * 30.0
                     Line(
@@ -55,20 +68,8 @@ struct MoodWheel: View {
                             y: wheelDiameter/2 + wheelDiameter/2 * sin(angle * .pi / 180)
                         )
                     )
-                    .stroke(selectedMood != .neutral ? styles.colors.divider : Color.clear, lineWidth: 1) // Only show if mood selected
-                }
-
-                // Draw the 12 mood segments (3 per quadrant)
-                ForEach(0..<12) { index in
-                    MoodSegment(
-                        index: index,
-                        totalSegments: 12,
-                        mood: moodForSegment(index),
-                        isSelected: selectedMood == moodForSegment(index) && selectedMood != .neutral,
-                        selectedIntensity: selectedMood == moodForSegment(index) ? selectedIntensity : 0,
-                        innerRadius: centerDiameter/2,
-                        outerRadius: wheelDiameter/2
-                    )
+                    // Stroke with divider color only if a mood is selected, otherwise clear
+                    .stroke(selectedMood != .neutral ? styles.colors.divider : Color.clear, lineWidth: 1)
                 }
 
                 // Center neutral zone - use theme text/secondary colors

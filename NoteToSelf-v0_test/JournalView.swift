@@ -377,12 +377,10 @@ struct JournalView: View {
                         .foregroundColor(styles.colors.userBubbleText) // Use theme-defined contrast color
                         .frame(width: 60, height: 60)
                         .background(
-                            ZStack {
-                                Circle().fill(styles.colors.accent)
-                                Circle().fill(LinearGradient(gradient: Gradient(colors: [Color.white.opacity(0.3), Color.clear]), startPoint: .topLeading, endPoint: .bottomTrailing)).padding(2)
-                            }
+                            // Simpler background - just the accent color circle
+                            Circle().fill(styles.colors.accent)
                         )
-                        .shadow(color: styles.colors.accent.opacity(0.2), radius: 8, x: 0, y: 4)
+                        .shadow(color: styles.colors.accent.opacity(0.2), radius: 8, x: 0, y: 4) // Keep shadow for depth
                 }
                 .padding(.trailing, 24)
                 .padding(.bottom, 24)

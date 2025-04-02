@@ -21,10 +21,10 @@ struct ChatBubble: View {
                         .textSelection(.enabled) // Keep text selection
                         .font(styles.typography.bodyFont) // Larger font
                         .lineSpacing(6) // Add more line spacing
-                        .foregroundColor(styles.colors.userBubbleText)
-                        .padding(styles.layout.paddingM)
-                        .background(styles.colors.userBubbleColor)
-                        .clipShape(ChatBubbleShape(isUser: true))
+                        .foregroundColor(styles.colors.assistantBubbleText)
+                        .padding([.top, .bottom], styles.layout.paddingM) // Keep vertical padding, remove horizontal
+                        // REMOVED: .background(styles.colors.assistantBubbleColor)
+                        .clipShape(ChatBubbleShape(isUser: false))
                         // REMOVED: .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
                         .contentShape(Rectangle()) // Ensure tap area covers padding
                         // .padding(.vertical, 8) // Remove extra vertical padding from old
@@ -307,7 +307,8 @@ struct ReflectionsView: View {
                 // Input area - FIXED HEIGHT to prevent layout shifts
                 if !bottomSheetExpanded {
                     VStack(spacing: 0) {
-                        HStack(alignment: .bottom, spacing: styles.layout.spacingM) {
+                        // Change alignment to .center for vertical alignment
+                        HStack(alignment: .center, spacing: styles.layout.spacingM) {
                             // Text input field - FIXED HEIGHT
                             ZStack(alignment: .topLeading) {
                                 if messageText.isEmpty && !chatManager.isTyping {
@@ -344,11 +345,11 @@ struct ReflectionsView: View {
                                 if chatManager.isTyping {
                                     Image(systemName: "stop.fill")
                                         .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(styles.colors.appBackground)
+                                        .foregroundColor(styles.colors.appBackground) // Stop icon uses background color
                                 } else {
                                     Image(systemName: "arrow.up")
-                                        .font(.system(size: 24, weight: .bold))
-                                        .foregroundColor(styles.colors.userBubbleText) // Use theme-defined contrast color
+                                        .font(.system(size: 20, weight: .bold)) // Make arrow slightly smaller
+                                        .foregroundColor(styles.colors.userBubbleText) // Confirm contrast color
                                 }
                             }
                             .frame(width: 40, height: 40)
