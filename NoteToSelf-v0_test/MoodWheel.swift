@@ -68,8 +68,8 @@ struct MoodWheel: View {
                             y: wheelDiameter/2 + wheelDiameter/2 * sin(angle * .pi / 180)
                         )
                     )
-                    // Stroke with divider color only if a mood is selected, otherwise clear
-                    .stroke(selectedMood != .neutral ? styles.colors.divider : Color.clear, lineWidth: 1)
+                    // Stroke with divider color only if this segment *is* the selected mood
+                    .stroke(moodForSegment(index) == selectedMood ? styles.colors.divider : Color.clear, lineWidth: 1)
                 }
 
                 // Center neutral zone - use theme text/secondary colors
@@ -288,16 +288,9 @@ struct MoodSegment: View {
         let endAngle = startAngle + segmentAngle
         
         ZStack {
-            // Full segment highlight with white border when selected
+            // Full segment highlight when selected
             if isSelected {
-                // Full segment with theme text color border
-                AngularArc(
-                    startAngle: .degrees(startAngle),
-                    endAngle: .degrees(endAngle),
-                    innerRadius: innerRadius,
-                    outerRadius: outerRadius
-                )
-                .stroke(styles.colors.text, lineWidth: 3) // Use theme text color
+                // REMOVED: .stroke(styles.colors.text, lineWidth: 3)
 
                 // Background for the entire segment
                 AngularArc(

@@ -21,13 +21,12 @@ struct ChatBubble: View {
                         .textSelection(.enabled) // Keep text selection
                         .font(styles.typography.bodyFont) // Larger font
                         .lineSpacing(6) // Add more line spacing
-                        .foregroundColor(styles.colors.assistantBubbleText)
-                        .padding([.top, .bottom], styles.layout.paddingM) // Keep vertical padding, remove horizontal
-                        // REMOVED: .background(styles.colors.assistantBubbleColor)
-                        .clipShape(ChatBubbleShape(isUser: false))
-                        // REMOVED: .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
-                        .contentShape(Rectangle()) // Ensure tap area covers padding
-                        // .padding(.vertical, 8) // Remove extra vertical padding from old
+                        .foregroundColor(styles.colors.userBubbleText)
+                        .padding(styles.layout.paddingM) // Restore original padding
+                        .background(styles.colors.userBubbleColor) // Restore background
+                        .clipShape(ChatBubbleShape(isUser: true))
+                        .clipShape(ChatBubbleShape(isUser: false)) // Apply shape to Text content only
+                        .contentShape(Rectangle())
                         .onTapGesture {
                             // Dismiss keyboard first, then handle the tap
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
