@@ -85,8 +85,7 @@ struct FilterPanel: View {
                     .padding(styles.layout.paddingS)
                     .background(styles.colors.secondaryBackground)
                     .cornerRadius(styles.layout.radiusM)
-                    // Apply preferred color scheme based on environment
-                    .modifier(AdaptiveColorSchemeModifier())
+                    // REMOVED: .modifier(AdaptiveColorSchemeModifier())
                     .onSubmit {
                         addSearchTag()
                     }

@@ -331,8 +331,7 @@ struct ReflectionsView: View {
                                     .disabled(chatManager.isTyping)
                                     .scrollContentBackground(.hidden)
                                     .focused($isInputFocused)
-                                    // Apply preferred color scheme based on environment
-                                    .modifier(AdaptiveColorSchemeModifier())
+                                    // REMOVED: .modifier(AdaptiveColorSchemeModifier())
                             }
                             .frame(height: 40) // FIXED HEIGHT
                             .padding(8)
