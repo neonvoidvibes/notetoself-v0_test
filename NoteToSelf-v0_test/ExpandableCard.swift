@@ -123,12 +123,7 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
             RoundedRectangle(cornerRadius: layout.radiusM)
                  // Use theme card background color
                 .fill(colors.cardBackground)
-                .shadow(
-                    color: isPrimary ? colors.accent.opacity(0.15) : Color.black.opacity(0.15), // Shadow color can be themed
-                    radius: 10,
-                    x: 0,
-                    y: 5
-                )
+                // REMOVED: .shadow(...)
         )
         .overlay(
             RoundedRectangle(cornerRadius: layout.radiusM)

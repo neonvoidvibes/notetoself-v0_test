@@ -264,14 +264,15 @@ struct MainTabView: View {
                               VStack(spacing: 4) { // Add spacing for the text
                                   Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
                                       .font(.system(size: 18, weight: .bold))
-                                      .foregroundColor(Color.white) // Keep chevron white
+                                      // Use textSecondary when closed, white when expanded
+                                      .foregroundColor(bottomSheetExpanded ? Color.white : styles.colors.textSecondary)
 
                                   // Add Navigation text below the chevron, only when not expanded
                                   if !bottomSheetExpanded {
                                       Text("Navigation")
                                           .font(.system(size: 10, weight: .regular, design: .monospaced))
-                                          // Conditional color: Accent when closed, white when open
-                                          .foregroundColor(bottomSheetExpanded ? Color.white : styles.colors.accent)
+                                           // Use textSecondary when closed, white when expanded
+                                          .foregroundColor(bottomSheetExpanded ? Color.white : styles.colors.textSecondary)
                                   }
                               }
                               // Apply conditional height for chevron button area

@@ -374,9 +374,7 @@ struct JournalView: View {
                 Button(action: { showingNewEntrySheet = true }) {
                     Image(systemName: "plus")
                         .font(.system(size: 24, weight: .bold))
-                        // Use a contrasting color for the icon based on the accent color
-                        // This might need adjustment per theme if accent is light
-                        .foregroundColor(.black) // Assuming accent is generally light enough
+                        .foregroundColor(styles.colors.userBubbleText) // Use theme-defined contrast color
                         .frame(width: 60, height: 60)
                         .background(
                             ZStack {
@@ -583,7 +581,7 @@ struct JournalEntryCard: View {
         .background(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
                 .fill(styles.colors.cardBackground) // Use theme color
-                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+                // REMOVED: .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
         )
         .overlay(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)

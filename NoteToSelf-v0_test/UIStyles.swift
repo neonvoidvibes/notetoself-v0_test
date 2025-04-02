@@ -337,3 +337,13 @@ struct RoundedCorner: Shape {
       return Path(path.cgPath)
   }
 }
+
+// MARK: - Adaptive Color Scheme Modifier for Input Fields
+struct AdaptiveColorSchemeModifier: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content
+            .preferredColorScheme(colorScheme == .dark ? .dark : .light)
+    }
+}

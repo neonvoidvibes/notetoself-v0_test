@@ -362,7 +362,7 @@ struct ChatHistoryCard: View {
         .background(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
                 .fill(styles.colors.cardBackground) // Use theme color
-                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+                // REMOVED: .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
         )
         .overlay(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)

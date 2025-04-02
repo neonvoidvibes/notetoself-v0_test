@@ -25,7 +25,7 @@ struct ChatBubble: View {
                         .padding(styles.layout.paddingM)
                         .background(styles.colors.userBubbleColor)
                         .clipShape(ChatBubbleShape(isUser: true))
-                        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                        // REMOVED: .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
                         .contentShape(Rectangle()) // Ensure tap area covers padding
                         // .padding(.vertical, 8) // Remove extra vertical padding from old
                         .onTapGesture {
@@ -69,9 +69,9 @@ struct ChatBubble: View {
                         .lineSpacing(6) // Add more line spacing
                         .foregroundColor(styles.colors.assistantBubbleText)
                         .padding(styles.layout.paddingM) // Added padding like user bubble
-                        .background(styles.colors.assistantBubbleColor)
+                        // REMOVED: .background(styles.colors.assistantBubbleColor)
                         .clipShape(ChatBubbleShape(isUser: false))
-                        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                        // REMOVED: .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
                         .contentShape(Rectangle())
                         .onTapGesture {
                             // Dismiss keyboard first, then handle the tap
@@ -105,8 +105,9 @@ struct ChatBubble: View {
                         .transition(.opacity)
                     }
                 }
+                // Ensure padding is explicitly zero
                 .padding(.trailing, 0)
-                .padding(.leading, 0) // Remove left padding completely
+                .padding(.leading, 0)
 
                 Spacer()
             }
@@ -330,6 +331,8 @@ struct ReflectionsView: View {
                                     .disabled(chatManager.isTyping)
                                     .scrollContentBackground(.hidden)
                                     .focused($isInputFocused)
+                                    // Apply preferred color scheme based on environment
+                                    .modifier(AdaptiveColorSchemeModifier())
                             }
                             .frame(height: 40) // FIXED HEIGHT
                             .padding(8)
@@ -346,8 +349,7 @@ struct ReflectionsView: View {
                                 } else {
                                     Image(systemName: "arrow.up")
                                         .font(.system(size: 24, weight: .bold))
-                                         // Use contrasting color (like user bubble text)
-                                        .foregroundColor(styles.colors.userBubbleText)
+                                        .foregroundColor(styles.colors.userBubbleText) // Use theme-defined contrast color
                                 }
                             }
                             .frame(width: 40, height: 40)
@@ -361,11 +363,7 @@ struct ReflectionsView: View {
 
                         Spacer().frame(height: 40)
                     }
-                    .background( // Reverted to original
-                        styles.colors.reflectionsNavBackground
-                            .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight]))
-                            .ignoresSafeArea(.container, edges: .bottom)
-                    )
+                    // REMOVED: .background(...) for input area VStack
                 }
             }
         }

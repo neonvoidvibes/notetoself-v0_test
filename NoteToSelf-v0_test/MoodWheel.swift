@@ -55,7 +55,7 @@ struct MoodWheel: View {
                             y: wheelDiameter/2 + wheelDiameter/2 * sin(angle * .pi / 180)
                         )
                     )
-                    .stroke(styles.colors.divider, lineWidth: 1) // Use theme divider color
+                    .stroke(selectedMood != .neutral ? styles.colors.divider : Color.clear, lineWidth: 1) // Only show if mood selected
                 }
 
                 // Draw the 12 mood segments (3 per quadrant)

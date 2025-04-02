@@ -66,7 +66,7 @@ struct ChatFilterPanel: View {
       .padding(styles.layout.paddingM)
       .background(styles.colors.reflectionsNavBackground) // Use theme color (similar context)
       .cornerRadius(styles.layout.radiusL)
-      .shadow(color: Color.black.opacity(0.3), radius: 15, x: 0, y: 8) // Shadow color can be themed later
+      // REMOVED: .shadow(color: Color.black.opacity(0.3), radius: 15, x: 0, y: 8) // Shadow color can be themed later
       .padding(.horizontal, styles.layout.paddingL)
       .contentShape(Rectangle()) // Make the entire filter panel tappable
       .onTapGesture {
@@ -85,6 +85,8 @@ struct ChatFilterPanel: View {
                   .padding(styles.layout.paddingS)
                   .background(styles.colors.secondaryBackground)
                   .cornerRadius(styles.layout.radiusM)
+                  // Apply preferred color scheme based on environment
+                  .modifier(AdaptiveColorSchemeModifier())
                   .onSubmit {
                       addSearchTag()
                   }
