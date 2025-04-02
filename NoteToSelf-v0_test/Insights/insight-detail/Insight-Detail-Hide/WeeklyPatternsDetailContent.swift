@@ -203,19 +203,15 @@ struct WeeklyPatternsDetailContent: View {
     }
   }
   
-  private func moodColor(for mood: Double) -> Color {
-      switch mood {
-      case 0..<1.5:
-          return Color.red
-      case 1.5..<2.5:
-          return Color.orange
-      case 2.5..<3.5:
-          return Color.yellow
-      case 3.5..<4.5:
-          return Color.green
-      default:
-          return Color.blue
-      }
+  private func moodColor(for moodValue: Double) -> Color {
+      // Determine the approximate mood enum based on the numeric value
+      // This is an approximation and might need adjustment based on moodToDouble logic
+      if moodValue >= 4.5 { return Mood.excited.color }
+      else if moodValue >= 3.5 { return Mood.happy.color }
+      else if moodValue >= 2.5 { return Mood.neutral.color }
+      else if moodValue >= 1.5 { return Mood.stressed.color } // Or anxious/angry
+      else if moodValue > 0 { return Mood.sad.color } // Or depressed
+      else { return styles.colors.textSecondary } // Default for 0 (no entry)
   }
   
   private func generateDayOfWeekInsights() -> [String] {

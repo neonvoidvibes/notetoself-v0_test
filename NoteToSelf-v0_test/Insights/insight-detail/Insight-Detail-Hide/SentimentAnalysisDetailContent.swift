@@ -46,9 +46,9 @@ struct SentimentChartView: View {
                     VStack(spacing: 8) {
                         // Bar
                         Rectangle()
-                            .fill(data.1 >= 0 ? styles.colors.moodHappy : styles.colors.moodSad)
+                            .fill(data.1 >= 0 ? Mood.happy.color : Mood.sad.color) // Use Mood enum colors
                             .frame(width: 24, height: abs(CGFloat(data.1) * 150))
-                        
+
                         // Month label
                         Text(data.0)
                             .font(styles.typography.caption)
@@ -63,19 +63,19 @@ struct SentimentChartView: View {
             HStack(spacing: styles.layout.spacingL) {
                 HStack(spacing: 8) {
                     Rectangle()
-                        .fill(styles.colors.moodHappy)
+                        .fill(Mood.happy.color) // Use Mood enum color
                         .frame(width: 16, height: 16)
-                    
+
                     Text("Positive")
                         .font(styles.typography.caption)
                         .foregroundColor(styles.colors.text)
                 }
-                
+
                 HStack(spacing: 8) {
                     Rectangle()
-                        .fill(styles.colors.moodSad)
+                        .fill(Mood.sad.color) // Use Mood enum color
                         .frame(width: 16, height: 16)
-                    
+
                     Text("Negative")
                         .font(styles.typography.caption)
                         .foregroundColor(styles.colors.text)
@@ -129,11 +129,11 @@ struct SentimentInsightsView: View {
                     label: "Trend",
                     icon: sentimentTrend == "Improving" ? "arrow.up.circle.fill" : 
                            sentimentTrend == "Declining" ? "arrow.down.circle.fill" : "arrow.right.circle.fill",
-                    color: sentimentTrend == "Improving" ? styles.colors.moodHappy : 
-                           sentimentTrend == "Declining" ? styles.colors.moodSad : styles.colors.moodNeutral
+                    color: sentimentTrend == "Improving" ? Mood.happy.color : // Use Mood enum colors
+                           sentimentTrend == "Declining" ? Mood.sad.color : Mood.neutral.color // Use Mood enum colors
                 )
             }
-            
+
             // Sentiment analysis
             VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                 Text("What This Means")
@@ -149,4 +149,3 @@ struct SentimentInsightsView: View {
         }
     }
 }
-

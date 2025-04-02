@@ -335,6 +335,20 @@ struct MoodSegment: View {
                 .fill(mood.color.opacity(0.8))
             }
         }
+        // Add border overlay only when selected
+        .overlay(
+            Group {
+                if isSelected {
+                    AngularArc(
+                        startAngle: .degrees(startAngle),
+                        endAngle: .degrees(endAngle),
+                        innerRadius: innerRadius,
+                        outerRadius: outerRadius
+                    )
+                    .stroke(styles.colors.text, lineWidth: 3) // Thick border with theme text color
+                }
+            }
+        )
     }
 }
 

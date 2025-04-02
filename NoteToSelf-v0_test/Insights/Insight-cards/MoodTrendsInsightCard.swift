@@ -23,11 +23,12 @@ struct MoodTrendsInsightCard: View {
         if let moodEnum = Mood.allCases.first(where: { $0.name.lowercased() == name.lowercased() }) {
             return moodEnum.color
         }
+        // Fallback using Mood enum colors directly
         switch name.lowercased() {
-        case "positive", "improving": return styles.colors.moodHappy
-        case "negative", "declining": return styles.colors.moodSad
-        case "neutral", "stable", "mixed": return styles.colors.moodNeutral
-        default: return styles.colors.textSecondary
+        case "positive", "improving": return Mood.happy.color
+        case "negative", "declining": return Mood.sad.color
+        case "neutral", "stable", "mixed": return Mood.neutral.color
+        default: return styles.colors.textSecondary // Keep default for unknown strings
         }
     }
 
@@ -219,4 +220,3 @@ struct MoodTrendsInsightCard: View {
         }
     }
 }
-

@@ -1,5 +1,7 @@
 import SwiftUI
 
+// REMOVED duplicate RoundedCorner struct definition
+
 // Old ChatBubble struct definition (restored)
 struct ChatBubble: View {
     let message: ChatMessage // Use the correct model type
@@ -9,7 +11,8 @@ struct ChatBubble: View {
     @Environment(\.colorScheme) private var colorScheme
     // @EnvironmentObject var chatManager: ChatManager // Not needed in old bubble
 
-    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+    // Accept styles instance from parent
+    let styles: UIStyles
 
     var body: some View {
         HStack {
@@ -67,10 +70,10 @@ struct ChatBubble: View {
                         .font(styles.typography.bodyFont) // Larger font
                         .lineSpacing(6) // Add more line spacing
                         .foregroundColor(styles.colors.assistantBubbleText)
-                        .padding(styles.layout.paddingM) // Added padding like user bubble
+                        .padding(.vertical, styles.layout.paddingM) // Apply only vertical padding
                         // REMOVED: .background(styles.colors.assistantBubbleColor)
-                        .clipShape(ChatBubbleShape(isUser: false))
                         // REMOVED: .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                        .clipShape(ChatBubbleShape(isUser: false)) // Apply shape to Text content only
                         .contentShape(Rectangle())
                         .onTapGesture {
                             // Dismiss keyboard first, then handle the tap
@@ -244,7 +247,8 @@ struct ReflectionsView: View {
                                         isExpanded: expandedMessageId == message.id,
                                         onTap: {
                                             expandedMessageId = (expandedMessageId == message.id) ? nil : message.id
-                                        }
+                                        },
+                                        styles: self.styles // Pass styles instance
                                     )
                                     .id(message.id)
                                 }
@@ -348,7 +352,7 @@ struct ReflectionsView: View {
                                 } else {
                                     Image(systemName: "arrow.up")
                                         .font(.system(size: 20, weight: .bold)) // Make arrow slightly smaller
-                                        .foregroundColor(styles.colors.userBubbleText) // Confirm contrast color
+                                        .foregroundColor(styles.colors.accentIconForeground) // Use specific icon color
                                 }
                             }
                             .frame(width: 40, height: 40)

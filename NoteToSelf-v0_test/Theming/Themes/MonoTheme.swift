@@ -27,20 +27,7 @@ struct MonoTheme: Theme {
         error: Color("MonoError"), // Use standard red
         divider: Color("MonoDivider"), // Existing #222222
 
-        // Mood colors (can keep original hex for consistency across themes, or make them themeable)
-        moodHappy: Color(hex: "#66FF66"),
-        moodNeutral: Color(hex: "#CCCCCC"),
-        moodSad: Color(hex: "#CC33FF"),
-        moodAnxious: Color(hex: "#FF3399"),
-        moodExcited: Color(hex: "#99FF33"),
-        moodAlert: Color(hex: "#CCFF00"),
-        moodContent: Color(hex: "#33FFCC"),
-        moodRelaxed: Color(hex: "#33CCFF"),
-        moodCalm: Color(hex: "#3399FF"),
-        moodBored: Color(hex: "#6666FF"),
-        moodDepressed: Color(hex: "#9933FF"),
-        moodAngry: Color(hex: "#FF3333"),
-        moodStressed: Color(hex: "#FF9900"),
+        // Mood colors removed - use Mood.color
 
         // Specific UI Elements
         inputBackground: Color("MonoInputBackground"), // e.g., Reflections input area outer
@@ -50,7 +37,11 @@ struct MonoTheme: Theme {
         reflectionsNavBackground: Color("MonoReflectionsNavBackground"), // Dark Gray #1A1A1A
 
         // New: Dedicated status bar background color
-        statusBarBackground: Color("MonoStatusBarBackground") // Use the new asset
+        statusBarBackground: Color("MonoStatusBarBackground"), // Use the new asset
+
+        // Initialize new button/icon colors
+        primaryButtonText: Color("MonoPrimaryButtonText"),
+        accentIconForeground: Color("MonoAccentIconForeground")
     )
 
     let typography = ThemeTypography(fontDesign: .monospaced)

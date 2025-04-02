@@ -155,24 +155,9 @@ enum Mood: String, CaseIterable, Codable, Hashable { // Added Hashable
      }
 
     var color: Color {
-         // Using hex initializer assumes it exists (it's in UIStyles.swift, but keep here for model independence if needed)
-         // Or define colors directly here. Let's use direct definition for robustness.
-         switch self {
-         case .alert: return Color(red: 0.8, green: 1.0, blue: 0.0) // #CCFF00 Limish Yellow
-         case .excited: return Color(red: 0.6, green: 1.0, blue: 0.2) // #99FF33 Bright Green
-         case .happy: return Color(red: 0.4, green: 1.0, blue: 0.4) // #66FF66 Green
-         case .content: return Color(red: 0.2, green: 1.0, blue: 0.8) // #33FFCC Turquoise
-         case .relaxed: return Color(red: 0.2, green: 0.8, blue: 1.0) // #33CCFF Light Blue
-         case .calm: return Color(red: 0.2, green: 0.6, blue: 1.0) // #3399FF Blue
-         case .bored: return Color(red: 0.4, green: 0.4, blue: 1.0) // #6666FF Indigo
-         case .depressed: return Color(red: 0.6, green: 0.2, blue: 1.0) // #9933FF Purple
-         case .sad: return Color(red: 0.8, green: 0.2, blue: 1.0) // #CC33FF Magenta
-         case .anxious: return Color(red: 1.0, green: 0.2, blue: 0.6) // #FF3399 Pink
-         case .angry: return Color(red: 1.0, green: 0.2, blue: 0.2) // #FF3333 Red
-         case .stressed: return Color(red: 1.0, green: 0.6, blue: 0.0) // #FF9900 Orange
-         case .neutral: return Color(red: 0.8, green: 0.8, blue: 0.8) // #CCCCCC Light Gray
-         }
-     }
+        // Reference Named Colors from Assets
+        return Color("Mood\(self.name)") // e.g., Color("MoodHappy"), Color("MoodNeutral")
+    }
 
     // Computed property for direct use in SwiftUI Views
     var icon: Image { Image(systemName: systemIconName) }

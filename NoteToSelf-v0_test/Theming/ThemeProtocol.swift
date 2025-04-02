@@ -36,20 +36,7 @@ struct ThemeColors {
     let error: Color
     let divider: Color
 
-    // Mood colors - can be consistent or theme-specific
-    let moodHappy: Color
-    let moodNeutral: Color
-    let moodSad: Color
-    let moodAnxious: Color // Represents high-arousal negative
-    let moodExcited: Color // Represents high-arousal positive
-    let moodAlert: Color
-    let moodContent: Color
-    let moodRelaxed: Color
-    let moodCalm: Color
-    let moodBored: Color
-    let moodDepressed: Color
-    let moodAngry: Color
-    let moodStressed: Color // Added, was missing
+    // Mood colors are now accessed via Mood.color which uses Asset Catalog
 
     // Specific UI Elements
     let inputBackground: Color // e.g., Reflections input area outer background
@@ -58,6 +45,10 @@ struct ThemeColors {
     let bottomSheetBackground: Color
     let reflectionsNavBackground: Color // Specific bg for Reflections input area
     let statusBarBackground: Color
+
+    // New colors for button text/icons
+    let primaryButtonText: Color
+    let accentIconForeground: Color
 }
 
 // MARK: - Theme Typography Struct

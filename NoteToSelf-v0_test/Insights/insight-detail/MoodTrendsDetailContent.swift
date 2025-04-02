@@ -329,8 +329,8 @@ struct MoodInsightsView: View {
                 HStack {
                     Image(systemName: moodTrend == "Improving" ? "arrow.up.circle.fill" : 
                                      moodTrend == "Declining" ? "arrow.down.circle.fill" : "equal.circle.fill") // Use equal for stable
-                        .foregroundColor(moodTrend == "Improving" ? styles.colors.moodHappy : 
-                                         moodTrend == "Declining" ? styles.colors.moodSad : styles.colors.moodNeutral)
+                        .foregroundColor(moodTrend == "Improving" ? Mood.happy.color : // Use Mood enum color
+                                         moodTrend == "Declining" ? Mood.sad.color : Mood.neutral.color) // Use Mood enum color
                         .font(.system(size: 32))
 
                     VStack(alignment: .leading, spacing: 4) {

@@ -122,7 +122,7 @@ class UIStyles: ObservableObject {
                 .padding(styles.layout.paddingM)
                 .frame(maxWidth: .infinity)
                 .background(styles.colors.accent) // Uses theme color
-                .foregroundColor(Color.black) // Consider making button text color themeable?
+                .foregroundColor(styles.colors.primaryButtonText) // Use new theme color
                 .cornerRadius(styles.layout.radiusM)
                 .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
         }
@@ -307,6 +307,8 @@ extension UIColor {
 
 
 // MARK: - Custom Corner Radius Extension (Keep as is)
+// Note: This was moved into ReflectionsView.swift, but keeping it here too
+// might be safer if other views need it eventually. Let's keep it here for now.
 extension View {
   func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
       clipShape(RoundedCorner(radius: radius, corners: corners))
@@ -323,7 +325,8 @@ extension View {
   }
 }
 
-// MARK: - RoundedCorner Shape (Keep as is)
+// MARK: - RoundedCorner Shape (Keep as is, moved from here initially but restored)
+// Let's keep this here for potential wider use, and remove the duplicate from ReflectionsView.swift
 struct RoundedCorner: Shape {
   var radius: CGFloat = .infinity
   var corners: UIRectCorner = .allCorners
@@ -337,5 +340,3 @@ struct RoundedCorner: Shape {
       return Path(path.cgPath)
   }
 }
-
-// REMOVED AdaptiveColorSchemeModifier

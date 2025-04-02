@@ -27,20 +27,7 @@ struct WarmTheme: Theme {
         error: Color("WarmError"), // Muted Red/Orange
         divider: Color("WarmDivider"), // Subtle Warm Gray
 
-        // Mood colors (can adjust hues slightly for warmth, or keep originals)
-        moodHappy: Color(hex: "#FFA726"), // Warmer Green/Orange
-        moodNeutral: Color(hex: "#BCAAA4"), // Warm Gray
-        moodSad: Color(hex: "#8D6E63"), // Muted Purple/Brown
-        moodAnxious: Color(hex: "#FF8A65"), // Warm Pink/Coral
-        moodExcited: Color(hex: "#FFB74D"), // Warm Yellow/Orange
-        moodAlert: Color(hex: "#FFF176"), // Warm Yellow
-        moodContent: Color(hex: "#AED581"), // Earthy Green
-        moodRelaxed: Color(hex: "#81C784"), // Muted Green
-        moodCalm: Color(hex: "#4DB6AC"), // Teal/Aqua
-        moodBored: Color(hex: "#90A4AE"), // Blue Gray
-        moodDepressed: Color(hex: "#795548"), // Deep Brown
-        moodAngry: Color(hex: "#E57373"), // Muted Red
-        moodStressed: Color(hex: "#FFB74D"), // Orange
+        // Mood colors removed - use Mood.color
 
         // Specific UI Elements
         inputBackground: Color("WarmInputBackground"),
@@ -50,7 +37,11 @@ struct WarmTheme: Theme {
         reflectionsNavBackground: Color("WarmReflectionsNavBackground"), // Match Menu Background
 
         // New: Dedicated status bar background color
-        statusBarBackground: Color("WarmStatusBarBackground") // Use the new asset
+        statusBarBackground: Color("WarmStatusBarBackground"), // Use the new asset
+
+        // Initialize new button/icon colors
+        primaryButtonText: Color("WarmPrimaryButtonText"),
+        accentIconForeground: Color("WarmAccentIconForeground")
     )
 
     let typography = ThemeTypography(fontDesign: .default) // Use default (SF Pro) for non-mono

@@ -374,7 +374,7 @@ struct JournalView: View {
                 Button(action: { showingNewEntrySheet = true }) {
                     Image(systemName: "plus")
                         .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(styles.colors.userBubbleText) // Use theme-defined contrast color
+                        .foregroundColor(styles.colors.accentIconForeground) // Use specific icon color
                         .frame(width: 60, height: 60)
                         .background(
                             // Simpler background - just the accent color circle
