@@ -47,7 +47,10 @@ struct MonoTheme: Theme {
         inputFieldInnerBackground: Color("MonoInputFieldInnerBackground"), // Often clear or same as secondary
         tabBarBackground: Color("MonoTabBarBackground"), // Black
         bottomSheetBackground: Color("MonoBottomSheetBackground"), // Dark Gray
-        reflectionsNavBackground: Color("MonoReflectionsNavBackground") // Dark Gray #1A1A1A
+        reflectionsNavBackground: Color("MonoReflectionsNavBackground"), // Dark Gray #1A1A1A
+
+        // New: Dedicated status bar background color
+        statusBarBackground: Color("MonoStatusBarBackground") // Use the new asset
     )
 
     let typography = ThemeTypography(fontDesign: .monospaced)

@@ -178,7 +178,7 @@ struct MainTabView: View {
 
           // Status bar area
           VStack(spacing: 0) {
-              Color.black
+              styles.colors.statusBarBackground // Use dedicated status bar background color
                   .frame(height: styles.layout.topSafeAreaPadding)
               Spacer()
           }

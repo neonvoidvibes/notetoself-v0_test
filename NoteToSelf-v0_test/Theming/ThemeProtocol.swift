@@ -57,6 +57,7 @@ struct ThemeColors {
     let tabBarBackground: Color
     let bottomSheetBackground: Color
     let reflectionsNavBackground: Color // Specific bg for Reflections input area
+    let statusBarBackground: Color
 }
 
 // MARK: - Theme Typography Struct

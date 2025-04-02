@@ -47,7 +47,10 @@ struct WarmTheme: Theme {
         inputFieldInnerBackground: Color("WarmInputFieldInnerBackground"),
         tabBarBackground: Color("WarmTabBarBackground"), // Dark Warm Gray or match App Background Dark
         bottomSheetBackground: Color("WarmBottomSheetBackground"), // Medium Warm Gray
-        reflectionsNavBackground: Color("WarmReflectionsNavBackground") // Match Menu Background
+        reflectionsNavBackground: Color("WarmReflectionsNavBackground"), // Match Menu Background
+
+        // New: Dedicated status bar background color
+        statusBarBackground: Color("WarmStatusBarBackground") // Use the new asset
     )
 
     let typography = ThemeTypography(fontDesign: .default) // Use default (SF Pro) for non-mono
