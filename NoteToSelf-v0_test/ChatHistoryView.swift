@@ -22,11 +22,14 @@ struct ChatHistoryView: View {
   @State private var showingDeleteConfirmation = false
   @State private var chatToDelete: Chat? = nil
 
+  // Header animation state
+  @State private var headerAppeared = false
+
   // Access to shared styles
   @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
   var body: some View {
-    ZStack {
+      ZStack {
         styles.colors.menuBackground
             .ignoresSafeArea()
         
@@ -78,11 +81,16 @@ struct ChatHistoryView: View {
         // Set the first chat as expanded by default if there are any chats
         if expandedChatId == nil, let firstChat = filteredChats.first {
             expandedChatId = firstChat.id
-        }
-    }
-  }
-  
-  // Header view with title and buttons
+          }
+      }
+    .onAppear { // Trigger animation when view appears
+         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+             headerAppeared = true
+         }
+     }
+}
+
+// Header view with title and buttons
   private func headerView() -> some View {
       ZStack(alignment: .center) {
           // Title truly centered
@@ -90,12 +98,23 @@ struct ChatHistoryView: View {
               Text("Chats")
                   .font(styles.typography.title1)
                   .foregroundColor(styles.colors.text)
-              
-              Rectangle()
-                  .fill(styles.colors.accent)
-                  .frame(width: 20, height: 3)
+
+               // Animated accent bar
+               Rectangle()
+                   .fill(
+                       LinearGradient(
+                           gradient: Gradient(colors: [
+                               styles.colors.accent.opacity(0.7),
+                               styles.colors.accent
+                           ]),
+                           startPoint: .leading,
+                           endPoint: .trailing
+                       )
+                   )
+                   .frame(width: headerAppeared ? 30 : 0, height: 3)
+                   .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: headerAppeared)
           }
-          
+
           // Left-aligned back button
           HStack {
               // Back button (double chevron left) at left side

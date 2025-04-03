@@ -20,11 +20,11 @@ struct InsightsView: View {
     @State private var recommendationsJson: String? = nil
     @State private var recommendationsDate: Date? = nil
     @State private var isLoadingInsights: Bool = false
-    
+
     // Animation states
     @State private var headerAppeared = false
     @State private var cardsAppeared = false
-    @State private var selectedSection: String? = nil
+    @State private var selectedSection: String? = nil // Kept for potential future use, though header doesn't visually change
 
     @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
@@ -36,19 +36,19 @@ struct InsightsView: View {
     private var hasAnyEntries: Bool {
         !appState.journalEntries.isEmpty
     }
-    
+
     // Determine if the weekly summary should be shown in highlights section
     private var showWeeklySummaryInHighlights: Bool {
         // Check if today is Sunday
         let isSunday = Calendar.current.component(.weekday, from: Date()) == 1
-        
+
         // Check if user has been journaling for at least 6 days
         let hasBeenJournalingLongEnough: Bool = {
             guard let oldestEntry = appState.journalEntries.last else { return false }
             let daysSinceFirstEntry = Calendar.current.dateComponents([.day], from: oldestEntry.date, to: Date()).day ?? 0
             return daysSinceFirstEntry >= 6
         }()
-        
+
         return isSunday && hasBeenJournalingLongEnough
     }
 
@@ -64,7 +64,7 @@ struct InsightsView: View {
                 endPoint: .bottom
             )
             .ignoresSafeArea()
-            
+
             VStack(spacing: 0) {
                 // Header with animated accent
                 ZStack(alignment: .center) {
@@ -73,7 +73,7 @@ struct InsightsView: View {
                         Text("Insights")
                             .font(styles.typography.title1)
                             .foregroundColor(styles.colors.text)
-                            .shadow(color: styles.colors.accent.opacity(0.3), radius: 2, x: 0, y: 0)
+                             // Removed shadow
 
                         // Animated accent bar
                         Rectangle()
@@ -141,45 +141,21 @@ struct InsightsView: View {
                                     .font(styles.typography.headingFont)
                                     .foregroundColor(styles.colors.text)
                                     .padding(.bottom, 4)
-                                    .shadow(color: styles.colors.accent.opacity(0.3), radius: 2, x: 0, y: 0)
-                                
+                                     // Removed shadow
+
                                 Text("Discover patterns, make better choices.")
                                     .font(styles.typography.bodyLarge)
                                     .foregroundColor(styles.colors.accent)
                                     .multilineTextAlignment(.center)
-                                    .shadow(color: styles.colors.accent.opacity(0.3), radius: 1, x: 0, y: 0)
+                                    // Removed shadow
                             }
                             .padding(.horizontal, styles.layout.paddingXL)
                             .padding(.vertical, styles.layout.spacingXL * 1.5)
                             .padding(.top, 80)
                             .padding(.bottom, 40)
                             .frame(maxWidth: .infinity)
-                            .background(
-                                ZStack {
-                                    // Subtle gradient background
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            styles.colors.appBackground,
-                                            styles.colors.appBackground.opacity(0.85)
-                                        ]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                    
-                                    // Subtle pattern overlay
-                                    GeometryReader { geo in
-                                        ForEach(0..<10) { i in
-                                            Circle()
-                                                .fill(styles.colors.accent.opacity(0.03))
-                                                .frame(width: CGFloat.random(in: 40...100))
-                                                .position(
-                                                    x: CGFloat.random(in: 0...geo.size.width),
-                                                    y: CGFloat.random(in: 0...geo.size.height)
-                                                )
-                                        }
-                                    }
-                                }
-                            )
+                            // Simplified background - Removed gradient and pattern overlay
+                            .background(styles.colors.appBackground)
                             .opacity(headerAppeared ? 1 : 0)
                             .offset(y: headerAppeared ? 0 : -20)
                             .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: headerAppeared)
@@ -210,12 +186,12 @@ struct InsightsView: View {
         }
         .onAppear {
             loadStoredInsights()
-            
+
             // Trigger animations
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 headerAppeared = true
             }
-            
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 cardsAppeared = true
             }
@@ -230,13 +206,13 @@ struct InsightsView: View {
             }
         }
     }
-    
+
     // MARK: - Component Views
-    
+
     private var emptyStateView: some View {
         VStack(spacing: styles.layout.spacingL) {
             Spacer(minLength: 100)
-            
+
             // Animated icon
             ZStack {
                 ForEach(0..<3) { i in
@@ -247,7 +223,7 @@ struct InsightsView: View {
                         .opacity(headerAppeared ? 1 : 0)
                         .animation(.spring(response: 0.6, dampingFraction: 0.6).delay(0.1 + Double(i) * 0.1), value: headerAppeared)
                 }
-                
+
                 Image(systemName: "sparkles.rectangle.stack")
                     .font(.system(size: 60))
                     .foregroundColor(styles.colors.accent.opacity(0.7))
@@ -256,7 +232,7 @@ struct InsightsView: View {
                     .opacity(headerAppeared ? 1 : 0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.6).delay(0.4), value: headerAppeared)
             }
-            
+
             Text("Unlock Your Insights")
                 .font(styles.typography.title1)
                 .foregroundColor(styles.colors.text)
@@ -264,7 +240,7 @@ struct InsightsView: View {
                 .offset(y: headerAppeared ? 0 : 20)
                 .opacity(headerAppeared ? 1 : 0)
                 .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.5), value: headerAppeared)
-            
+
             Text("Start journaling regularly to discover patterns and receive personalized insights here.")
                 .font(styles.typography.bodyFont)
                 .foregroundColor(styles.colors.textSecondary)
@@ -273,12 +249,12 @@ struct InsightsView: View {
                 .offset(y: headerAppeared ? 0 : 20)
                 .opacity(headerAppeared ? 1 : 0)
                 .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.6), value: headerAppeared)
-            
+
             Spacer()
         }
         .padding(.vertical, 50)
     }
-    
+
     private var loadingView: some View {
         VStack(spacing: 20) {
             // Custom loading animation
@@ -286,7 +262,7 @@ struct InsightsView: View {
                 Circle()
                     .stroke(styles.colors.tertiaryBackground, lineWidth: 4)
                     .frame(width: 60, height: 60)
-                
+
                 Circle()
                     .trim(from: 0, to: 0.7)
                     .stroke(
@@ -301,14 +277,14 @@ struct InsightsView: View {
                     .rotationEffect(Angle(degrees: headerAppeared ? 360 : 0))
                     .animation(Animation.linear(duration: 1).repeatForever(autoreverses: false), value: headerAppeared)
             }
-            
+
             Text("Loading Insights...")
                 .font(styles.typography.bodyFont)
                 .foregroundColor(styles.colors.accent)
         }
         .padding(.vertical, 50)
     }
-    
+
     @ViewBuilder
     private func insightsContent(scrollProxy: ScrollViewProxy) -> some View {
         LazyVStack(spacing: styles.layout.cardSpacing, pinnedViews: [.sectionHeaders]) {
@@ -328,11 +304,11 @@ struct InsightsView: View {
                 .padding(.top, 8)
             }
             #endif
-            
+
             // Today's Highlights Section
             Section(header: AnimatedSectionHeader(
                 title: "Today's Highlights",
-                isSelected: selectedSection == "highlights",
+                // isSelected: selectedSection == "highlights", // Removed isSelected logic
                 onTap: { selectedSection = selectedSection == "highlights" ? nil : "highlights" }
             )) {
                 // Streak Card
@@ -347,7 +323,7 @@ struct InsightsView: View {
                 .opacity(cardsAppeared ? 1 : 0)
                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
                 .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
-                
+
                 // Chat Insight Card - moved to Today's Highlights section
                 ChatInsightCard(
                     scrollProxy: scrollProxy,
@@ -360,7 +336,7 @@ struct InsightsView: View {
                 .opacity(cardsAppeared ? 1 : 0)
                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
                 .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
-                
+
                 // Weekly Summary Card - only show in highlights if it's Sunday and user has been journaling for 6+ days
                 if showWeeklySummaryInHighlights {
                     WeeklySummaryInsightCard(
@@ -379,11 +355,11 @@ struct InsightsView: View {
                     .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                 }
             }
-            
+
             // Deeper Insights Section
             Section(header: AnimatedSectionHeader(
                 title: "Deeper Insights",
-                isSelected: selectedSection == "deeper",
+                // isSelected: selectedSection == "deeper", // Removed isSelected logic
                 onTap: { selectedSection = selectedSection == "deeper" ? nil : "deeper" }
             )) {
                 // Mood Trends Card
@@ -401,7 +377,7 @@ struct InsightsView: View {
                 .opacity(cardsAppeared ? 1 : 0)
                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
                 .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
-                
+
                 // Recommendations Card
                 RecommendationsInsightCard(
                     jsonString: recommendationsJson,
@@ -416,7 +392,7 @@ struct InsightsView: View {
                 .opacity(cardsAppeared ? 1 : 0)
                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
                 .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
-                
+
                 // Weekly Summary Card - moved to the end when not in highlights
                 if !showWeeklySummaryInHighlights {
                     WeeklySummaryInsightCard(
@@ -435,7 +411,7 @@ struct InsightsView: View {
                     .transition(.asymmetric(insertion: .scale.combined(with: .opacity), removal: .opacity))
                 }
             }
-            
+
             // Bottom padding
             Section {
                 Spacer().frame(height: styles.layout.paddingXL + 80)
@@ -495,10 +471,10 @@ struct InsightsView: View {
     }
 }
 
-// Replace the AnimatedSectionHeader implementation with this simplified version without chevrons
+// Simplified AnimatedSectionHeader - Visually matches SharedSectionHeader more closely
 struct AnimatedSectionHeader: View {
     let title: String
-    let isSelected: Bool
+    // isSelected removed as it's no longer used visually
     let onTap: () -> Void
 
     @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
@@ -508,39 +484,31 @@ struct AnimatedSectionHeader: View {
             HStack {
                 Text(title)
                     .font(styles.typography.sectionHeader)
-                    .foregroundColor(isSelected ? styles.colors.accent : styles.colors.text)
-                    .shadow(color: isSelected ? styles.colors.accent.opacity(0.3) : .clear, radius: 1, x: 0, y: 0)
-                
+                    // Always use standard text color, remove selection change and shadow
+                    .foregroundColor(styles.colors.text)
                 Spacer()
             }
-            .padding(.leading, styles.layout.paddingXL)
+            // Use standard section header padding
+            .padding(.leading, styles.layout.paddingL * 2)
             .padding(.trailing, styles.layout.paddingL)
             .padding(.vertical, styles.layout.spacingS)
             .contentShape(Rectangle())
-            .background(styles.colors.appBackground)
+            // Removed background override, let pinned view handle it
             .onTapGesture {
-                onTap()
+                onTap() // Keep tap action if needed for future expansion
             }
-            
-            // Animated accent line
+
+            // Animated accent line (simplify gradient)
             Rectangle()
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            styles.colors.accent.opacity(isSelected ? 0.8 : 0.3),
-                            styles.colors.accent.opacity(isSelected ? 0.5 : 0.1)
-                        ]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .frame(height: isSelected ? 2 : 1)
-                .padding(.horizontal, styles.layout.paddingXL)
-                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+                .fill(styles.colors.accent.opacity(0.3)) // Use simple accent opacity
+                .frame(height: 1) // Keep standard height
+                .padding(.horizontal, styles.layout.paddingXL) // Keep padding
+                // Removed animation based on selection
         }
-        .background(styles.colors.appBackground)
+        .background(styles.colors.appBackground) // Ensure background matches app
     }
 }
+
 
 // MARK: - Preview Provider
 struct InsightsView_Previews: PreviewProvider {
@@ -565,6 +533,8 @@ struct InsightsView_Previews: PreviewProvider {
             .environmentObject(chatManager)
             .environmentObject(databaseService)
             .environmentObject(subscriptionManager)
+            // Provide theme manager for preview
+             .environmentObject(ThemeManager.shared)
         }
     }
 

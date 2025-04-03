@@ -6,6 +6,9 @@ struct SettingsView: View {
     @State private var notificationTime: Date = Date() // Should load saved time
     @State private var notificationsEnabled: Bool = false // Should load saved state
 
+    // Header animation state
+    @State private var headerAppeared = false
+
     // Access shared styles - Use @ObservedObject
     @ObservedObject private var styles = UIStyles.shared
 
@@ -14,40 +17,76 @@ struct SettingsView: View {
             styles.colors.menuBackground // Use styles instance
                 .ignoresSafeArea()
 
-            ScrollView(.vertical, showsIndicators: true) {
-                VStack(spacing: styles.layout.spacingXL) {
-                    // Subscription section
-                    // SubscriptionSection observes styles internally now
-                    SubscriptionSection(subscriptionTier: appState.subscriptionTier)
+            VStack(spacing: 0) { // Use VStack to hold header and ScrollView
+                // Header with Title and animated accent
+                 ZStack(alignment: .center) {
+                     VStack(spacing: 8) {
+                         Text("Settings")
+                             .font(styles.typography.title1)
+                             .foregroundColor(styles.colors.text)
+
+                         // Animated accent bar
+                         Rectangle()
+                             .fill(
+                                 LinearGradient(
+                                     gradient: Gradient(colors: [
+                                         styles.colors.accent.opacity(0.7),
+                                         styles.colors.accent
+                                     ]),
+                                     startPoint: .leading,
+                                     endPoint: .trailing
+                                 )
+                             )
+                             .frame(width: headerAppeared ? 30 : 0, height: 3)
+                             .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: headerAppeared)
+                     }
+                     // Add close button if needed, or keep it simple as it's in MainTabView
+                 }
+                 .padding(.top, 8)
+                 .padding(.bottom, 8)
+                 // Add background matching the scrollview content if needed
+                 // .background(styles.colors.menuBackground)
+
+                ScrollView(.vertical, showsIndicators: true) {
+                    VStack(spacing: styles.layout.spacingXL) {
+                        // Subscription section
+                        // SubscriptionSection observes styles internally now
+                        SubscriptionSection(subscriptionTier: appState.subscriptionTier)
+                            .transition(.scale.combined(with: .opacity))
+                            .padding(.top, 40)
+
+                        // Notifications section
+                        // NotificationsSection observes styles internally now
+                        NotificationsSection(
+                            notificationsEnabled: $notificationsEnabled,
+                            notificationTime: $notificationTime
+                        )
                         .transition(.scale.combined(with: .opacity))
-                        .padding(.top, 40)
 
-                    // Notifications section
-                    // NotificationsSection observes styles internally now
-                    NotificationsSection(
-                        notificationsEnabled: $notificationsEnabled,
-                        notificationTime: $notificationTime
-                    )
-                    .transition(.scale.combined(with: .opacity))
+                        // Privacy & Export section
+                        // PrivacySection observes styles internally now
+                        PrivacySection()
+                            .transition(.scale.combined(with: .opacity))
 
-                    // Privacy & Export section
-                    // PrivacySection observes styles internally now
-                    PrivacySection()
-                        .transition(.scale.combined(with: .opacity))
+                        // About section
+                        // AboutSection observes styles internally now
+                        AboutSection()
+                            .transition(.scale.combined(with: .opacity))
 
-                    // About section
-                    // AboutSection observes styles internally now
-                    AboutSection()
-                        .transition(.scale.combined(with: .opacity))
-
+                    }
+                    .padding(.horizontal, styles.layout.paddingL)
+                    // Removed top padding as it's now part of the outer VStack spacing/header
+                    .padding(.bottom, 50)
                 }
-                .padding(.horizontal, styles.layout.paddingL)
-                .padding(.top, styles.layout.topSafeAreaPadding) // Use top padding from styles
-                .padding(.bottom, 50)
+                .disabled(settingsScrollingDisabled)
             }
-            .disabled(settingsScrollingDisabled)
         }
         // .preferredColorScheme(.dark) // REMOVED - Let theme handle it
+        .onAppear { // Trigger animation when view appears
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                headerAppeared = true
+            }
+        }
     }
 }
 
@@ -345,6 +384,7 @@ struct SettingsView_Previews: PreviewProvider {
         SettingsView()
             .environmentObject(AppState())
             .environmentObject(UIStyles.shared) // Provide UIStyles for preview
+            .environmentObject(ThemeManager.shared) // Provide ThemeManager for preview
             // Removed preferredColorScheme, let preview system decide
     }
 }

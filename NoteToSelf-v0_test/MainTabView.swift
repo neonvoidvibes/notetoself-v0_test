@@ -358,8 +358,8 @@ struct MainTabView: View {
                                       endPoint: .bottom
                                   )
                               } else {
-                                  // Always use AppBackground when collapsed for Focus theme consistency
-                                  styles.colors.appBackground
+                                  // Use bottomSheetBackground when expanded, inputBackground when collapsed
+                                  bottomSheetExpanded ? styles.colors.bottomSheetBackground : styles.colors.inputBackground
                               }
                           }
                       )

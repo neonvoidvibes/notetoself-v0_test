@@ -14,7 +14,6 @@ struct JournalView: View {
     @State private var editingEntry: JournalEntry? = nil
     @State private var fullscreenEntry: JournalEntry? = nil
 
-
     // Tab Bar State (Bindings)
     @Binding var tabBarOffset: CGFloat
     @Binding var lastScrollPosition: CGFloat
@@ -28,6 +27,9 @@ struct JournalView: View {
     @State private var dateFilterType: DateFilterType = .all
     @State private var customStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
     @State private var customEndDate: Date = Date()
+
+    // Header animation state
+    @State private var headerAppeared = false
 
     // Access to shared styles
     @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
@@ -72,6 +74,12 @@ struct JournalView: View {
             }
 
             floatingAddButton // Extracted floating button
+        } // End ZStack
+        .onAppear { // Trigger animation when view appears
+            // Use DispatchQueue to delay slightly if needed for visual effect
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                headerAppeared = true
+            }
         }
         .fullScreenCover(isPresented: $showingNewEntrySheet) {
             EditableFullscreenEntryView(
@@ -159,11 +167,12 @@ struct JournalView: View {
                  }
              }
         }
-
     } // End Body
+
 
     // MARK: - Computed View Properties
 
+    // Restore the headerView definition
     private var headerView: some View {
         ZStack(alignment: .center) {
             // Title truly centered
@@ -172,9 +181,20 @@ struct JournalView: View {
                     .font(styles.typography.title1)
                     .foregroundColor(styles.colors.text)
 
+                // Animated accent bar
                 Rectangle()
-                    .fill(styles.colors.accent)
-                    .frame(width: 20, height: 3)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                styles.colors.accent.opacity(0.7),
+                                styles.colors.accent
+                            ]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: headerAppeared ? 30 : 0, height: 3)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: headerAppeared)
             }
 
             // Menu button on left and filter button on right
@@ -211,6 +231,7 @@ struct JournalView: View {
         .padding(.top, 8)
         .padding(.bottom, 8)
     }
+
 
     @ViewBuilder // Use ViewBuilder for conditional content
     private var filterPanelView: some View {
