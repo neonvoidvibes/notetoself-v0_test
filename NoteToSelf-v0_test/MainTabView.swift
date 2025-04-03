@@ -152,7 +152,7 @@ struct MainTabView: View {
           // Conditional Background: Accent when sheet expanded, otherwise gradient/solid based on tab
           if bottomSheetExpanded {
               // Use accent color when bottom sheet is expanded
-              styles.colors.accent // Might want bottomSheetBackground here? Keeping accent for now.
+              styles.colors.bottomSheetBackground // Might want bottomSheetBackground here? Keeping accent for now.
                   .ignoresSafeArea()
           } else {
               // Use background logic based on tab when bottom sheet is collapsed
