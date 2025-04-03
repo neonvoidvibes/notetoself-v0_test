@@ -15,7 +15,7 @@ struct RecommendationsInsightCard: View {
     var cardId: String? = nil
 
     @State private var isExpanded: Bool = false
-    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+    @ObservedObject private var styles = UIStyles.shared
 
     // Helper to get icon based on category string
     private func iconForCategory(_ category: String) -> String {
@@ -44,106 +44,77 @@ struct RecommendationsInsightCard: View {
     var body: some View {
         styles.expandableCard(
             isExpanded: $isExpanded,
-            scrollProxy: scrollProxy, // Pass proxy
-            cardId: cardId,           // Pass ID
+            scrollProxy: scrollProxy,
+            cardId: cardId,
             content: {
-                // Preview content
-                VStack(spacing: styles.layout.spacingM) {
-                    HStack {
-                        Text("Recommendations")
-                            .font(styles.typography.title3).foregroundColor(styles.colors.text)
-                        Spacer()
-                         if subscriptionTier == .free {
-                             Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
-                         }
-                    }
+                // Collapsed View: 1-2 snippets, helping text
+                VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                     HStack {
+                         Text("Recommendations")
+                             .font(styles.typography.title3).foregroundColor(styles.colors.text)
+                         Spacer()
+                          if subscriptionTier == .free {
+                              Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
+                          }
+                     }
 
-                    // Show recommendations if available and subscribed
                     if subscriptionTier == .premium {
-                        // Use decodedRecommendations for display
                         if let recommendations = decodedRecommendations?.recommendations, !recommendations.isEmpty {
-                            ForEach(recommendations.prefix(2)) { rec in
-                                RecommendationRow(recommendation: rec, iconName: iconForCategory(rec.category))
-                                if rec.id != recommendations.prefix(2).last?.id {
-                                     Divider().background(styles.colors.tertiaryBackground.opacity(0.5))
+                            // Show 1 or 2 snippets
+                            VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                                ForEach(recommendations.prefix(2)) { rec in
+                                    HStack(spacing: styles.layout.spacingS) {
+                                        Image(systemName: iconForCategory(rec.category))
+                                            .foregroundColor(styles.colors.accent)
+                                            .frame(width: 20, alignment: .center)
+                                        Text(rec.title) // Show title as snippet
+                                            .font(styles.typography.bodyFont)
+                                            .foregroundColor(styles.colors.text)
+                                            .lineLimit(1)
+                                    }
                                 }
                             }
-                            if recommendations.count > 2 {
-                                 Text("+\(recommendations.count - 2) more...")
-                                     .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
-                                     .frame(maxWidth: .infinity, alignment: .trailing).padding(.top, 4)
-                            }
+                            .padding(.bottom, styles.layout.spacingS)
+
+                            Text("Personalized tips just for you—tap for more details.") // Helping text
+                                .font(styles.typography.caption)
+                                .foregroundColor(styles.colors.accent)
                         } else {
                             // Premium user, but no decoded data yet or error
                              Text(placeholderMessage)
                                  .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                                 .frame(maxWidth: .infinity, minHeight: 80, alignment: .center)
+                                 .frame(maxWidth: .infinity, minHeight: 60, alignment: .center) // Adjusted height
                                  .multilineTextAlignment(.center)
                                  if jsonString != nil && decodedRecommendations == nil && !decodingError {
                                      ProgressView().tint(styles.colors.accent).padding(.top, 4)
                                  }
                         }
                     } else {
-                         // Free tier locked state
+                        // Free tier locked state
                          Text("Unlock personalized recommendations with Premium.")
                              .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                             .frame(maxWidth: .infinity, minHeight: 80, alignment: .center)
+                             .frame(maxWidth: .infinity, minHeight: 60, alignment: .center) // Adjusted height
                              .multilineTextAlignment(.center)
                     }
-                } // End VStack
-            }, // End content closure
+                }
+            },
             detailContent: {
-                // Expanded detail content (only shown if premium and data exists)
+                // Expanded View: Use RecommendationsDetailContent (unchanged for now)
                 if subscriptionTier == .premium {
                     if let recommendations = decodedRecommendations?.recommendations, !recommendations.isEmpty {
-                         VStack(spacing: styles.layout.spacingL) {
-                            // ... (Detailed content using 'recommendations' - unchanged from previous version) ...
-                            VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                                Text("Personalized Recommendations")
-                                    .font(styles.typography.title3).foregroundColor(styles.colors.text)
-                                Text("Based on your recent journal entries, here are some suggestions:")
-                                    .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-
-                            VStack(alignment: .leading, spacing: styles.layout.spacingL) {
-                                ForEach(recommendations) { recommendation in
-                                    VStack(alignment: .leading, spacing: 12) {
-                                        HStack {
-                                            Image(systemName: iconForCategory(recommendation.category))
-                                                .foregroundColor(styles.colors.accent).font(.system(size: 20))
-                                                .frame(width: 24, height: 24)
-                                            Text(recommendation.title)
-                                                .font(styles.typography.bodyLarge.weight(.semibold)).foregroundColor(styles.colors.text)
-                                        }
-                                        Text(recommendation.description)
-                                            .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                                            .fixedSize(horizontal: false, vertical: true)
-                                        Text("Rationale: \(recommendation.rationale)")
-                                            .font(styles.typography.caption.italic()).foregroundColor(styles.colors.textSecondary.opacity(0.8))
-                                            .fixedSize(horizontal: false, vertical: true).padding(.top, 4)
-                                         if recommendation.id != recommendations.last?.id {
-                                             Divider().background(styles.colors.tertiaryBackground.opacity(0.5)).padding(.top, 8)
-                                         }
-                                    }.padding(.vertical, 8)
-                                }
-                            }
-
-                            Text("These recommendations are AI-generated based on patterns and are not a substitute for professional advice.")
-                                .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
-                                .multilineTextAlignment(.center).padding(.top, 8)
-
-                             if let date = generatedDate {
-                                 Text("Generated on \(date.formatted(date: .long, time: .shortened))")
-                                     .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
-                                     .frame(maxWidth: .infinity, alignment: .center).padding(.top)
-                             }
-                        } // End VStack for detail content
+                        // Pass the array directly to the detail view
+                        RecommendationsDetailContent(recommendations: recommendations)
+                         // Add generation date if available
+                         if let date = generatedDate {
+                             Text("Generated on \(date.formatted(date: .long, time: .shortened))")
+                                 .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
+                                 .frame(maxWidth: .infinity, alignment: .center).padding(.top)
+                         }
                     } else {
-                        // Premium, but no recommendations generated yet
-                        Text("Personalized recommendations are not available yet. Keep journaling!")
-                            .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
+                         // Premium, but no recommendations
+                         Text("Personalized recommendations are not available yet. Keep journaling!")
+                             .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
+                             .frame(maxWidth: .infinity, alignment: .center).padding()
                     }
                 } else {
                     // Free tier expanded view
@@ -152,83 +123,55 @@ struct RecommendationsInsightCard: View {
                          Text("Upgrade for Recommendations").font(styles.typography.title3).foregroundColor(styles.colors.text)
                          Text("Unlock personalized recommendations based on your journal entries with Premium.")
                               .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary).multilineTextAlignment(.center)
-                          // Optional Upgrade Button
                           Button { /* TODO: Trigger upgrade flow */ } label: {
-                              Text("Upgrade Now")
-                                  .foregroundColor(styles.colors.primaryButtonText) // Apply color directly to Text
-                          }
-                          .buttonStyle(GlowingButtonStyle()) // Remove arguments
-                          .padding(.top)
-                     }
+                              Text("Upgrade Now").foregroundColor(styles.colors.primaryButtonText)
+                          }.buttonStyle(GlowingButtonStyle())
+                           .padding(.top)
+                     }.padding() // Add padding to the Vstack
                  }
-            } // End detailContent
-        ) // End expandableCard
-        // Add the onChange modifier to decode the JSON string
+            }
+        )
         .onChange(of: jsonString) { oldValue, newValue in
              decodeJSON(json: newValue)
         }
-        // Decode initially as well
         .onAppear {
             decodeJSON(json: jsonString)
         }
-    } // End body
+    }
 
-    // Decoding function
+    // Decoding function (remains the same)
     private func decodeJSON(json: String?) {
         guard let json = json, !json.isEmpty else {
-            if decodedRecommendations != nil { decodedRecommendations = nil }
-            decodingError = false
-            return
+            decodedRecommendations = nil; decodingError = false; return
         }
         decodingError = false
         guard let data = json.data(using: .utf8) else {
-            print("⚠️ [RecommendationsCard] Failed to convert JSON string to Data.")
-            if decodedRecommendations != nil { decodedRecommendations = nil }
-            decodingError = true
-            return
+            print("⚠️ [RecommendationsCard] Failed convert JSON string to Data."); decodingError = true; decodedRecommendations = nil; return
         }
         do {
-            let decoder = JSONDecoder()
-            let result = try decoder.decode(RecommendationResult.self, from: data)
-            // Update state only if decoded data is different
-            if result != decodedRecommendations {
-                 decodedRecommendations = result
-                 print("[RecommendationsCard] Successfully decoded new recommendations.")
-            }
+            let result = try JSONDecoder().decode(RecommendationResult.self, from: data)
+            if result != decodedRecommendations { decodedRecommendations = result; print("[RecommendationsCard] Decoded new recommendations.") }
         } catch {
-            print("‼️ [RecommendationsCard] Failed to decode RecommendationResult: \(error). JSON: \(json)")
-            if decodedRecommendations != nil { decodedRecommendations = nil }
-            decodingError = true
+            print("‼️ [RecommendationsCard] Failed decode RecommendationResult: \(error). JSON: \(json)"); decodingError = true; decodedRecommendations = nil
         }
     }
 }
 
-// Simplified RecommendationRow for preview
-struct RecommendationRow: View {
-    let recommendation: RecommendationResult.RecommendationItem
-    let iconName: String
-    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+#Preview {
+    // Example RecommendationResult for preview
+    let previewRecs = RecommendationResult(recommendations: [
+        .init(title: "5-Minute Mindfulness", description: "Take a short break to focus on your breath.", category: "Mindfulness", rationale: "Helps calm the mind based on recent stress indicators."),
+        .init(title: "Quick Walk Outside", description: "Get some fresh air and light movement.", category: "Activity", rationale: "Can boost mood and energy levels when feeling low.")
+    ])
+    let encoder = JSONEncoder()
+    let data = try? encoder.encode(previewRecs)
+    let jsonString = String(data: data ?? Data(), encoding: .utf8)
 
-    var body: some View {
-        HStack(alignment: .top, spacing: styles.layout.spacingM) {
-            ZStack { // Icon
-                Circle().fill(styles.colors.tertiaryBackground).frame(width: 40, height: 40)
-                Image(systemName: iconName)
-                    .foregroundColor(styles.colors.accent)
-                    .font(.system(size: 18))
-            }
-            VStack(alignment: .leading, spacing: 4) { // Content
-                Text(recommendation.title)
-                    .font(styles.typography.insightCaption)
-                    .foregroundColor(styles.colors.text)
-                Text(recommendation.description)
-                    .font(styles.typography.bodySmall)
-                    .foregroundColor(styles.colors.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .lineLimit(2)
-            }
-            Spacer()
-        }
-        .padding(.vertical, 4)
+    return ScrollView {
+        RecommendationsInsightCard(jsonString: jsonString, generatedDate: Date(), subscriptionTier: .premium)
+            .padding()
+            .environmentObject(UIStyles.shared)
+            .environmentObject(ThemeManager.shared)
     }
+    .background(Color.gray.opacity(0.1))
 }

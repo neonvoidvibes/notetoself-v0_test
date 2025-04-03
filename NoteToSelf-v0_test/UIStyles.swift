@@ -223,9 +223,35 @@ class UIStyles: ObservableObject {
             colors: self.colors,
             typography: self.typography,
             layout: self.layout,
-            isPrimary: isPrimary
+            isPrimary: isPrimary,
+            highlightColor: nil // Default to no highlight
         )
     }
+
+    // Overload to accept highlightColor
+    func expandableCard<Content: View, DetailContent: View>(
+        isExpanded: Binding<Bool>,
+        isPrimary: Bool = false,
+        highlightColor: Color? = nil, // Added highlightColor parameter
+        scrollProxy: ScrollViewProxy? = nil,
+        cardId: String? = nil,
+        @ViewBuilder content: @escaping () -> Content,
+        @ViewBuilder detailContent: @escaping () -> DetailContent
+    ) -> some View {
+        ExpandableCard(
+            content: content,
+            detailContent: detailContent,
+            isExpanded: isExpanded,
+            scrollProxy: scrollProxy,
+            cardId: cardId,
+            colors: self.colors,
+            typography: self.typography,
+            layout: self.layout,
+            isPrimary: isPrimary,
+            highlightColor: highlightColor // Pass highlightColor
+        )
+    }
+
 
     // MARK: - Card Header Helper
     func cardHeader(title: String, icon: String) -> some View {

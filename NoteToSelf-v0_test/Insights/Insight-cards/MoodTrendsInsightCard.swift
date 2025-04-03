@@ -1,7 +1,8 @@
 import SwiftUI
-import Charts // Keep Charts import if needed for potential future visualization
+import Charts // Keep Charts import for expanded view
 
-struct MoodTrendsInsightCard: View {
+// Renamed from MoodTrendsInsightCard
+struct MoodAnalysisInsightCard: View {
     // Input: Raw JSON string, generation date, and subscription status
     let jsonString: String?
     let generatedDate: Date?
@@ -16,207 +17,181 @@ struct MoodTrendsInsightCard: View {
     var cardId: String? = nil
 
     @State private var isExpanded: Bool = false
-    private let styles = UIStyles.shared
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+    @EnvironmentObject var appState: AppState // Needed for full entry data in detail view
 
+    // Helper to get color from Mood enum
     private func moodColor(forName moodName: String?) -> Color {
-        guard let name = moodName else { return styles.colors.textSecondary }
-        if let moodEnum = Mood.allCases.first(where: { $0.name.lowercased() == name.lowercased() }) {
-            return moodEnum.color
+        guard let name = moodName, let mood = Mood.allCases.first(where: { $0.name.lowercased() == name.lowercased() }) else {
+            return styles.colors.textSecondary // Default color
         }
-        // Fallback using Mood enum colors directly
+        return mood.color
+    }
+
+    // Helper to get icon name from Mood enum
+    private func moodIcon(forName moodName: String?) -> String {
+        guard let name = moodName, let mood = Mood.allCases.first(where: { $0.name.lowercased() == name.lowercased() }) else {
+            return "questionmark.circle.fill" // Default icon
+        }
+        return mood.systemIconName
+    }
+
+    // Helper for trend icon
+    private func trendIcon(forName trendName: String?) -> String {
+        guard let name = trendName else { return "arrow.right.circle.fill" }
         switch name.lowercased() {
-        case "positive", "improving": return Mood.happy.color
-        case "negative", "declining": return Mood.sad.color
-        case "neutral", "stable", "mixed": return Mood.neutral.color
-        default: return styles.colors.textSecondary // Keep default for unknown strings
+        case "improving": return "arrow.up.trendline.chart.hi" // More visual trend icon
+        case "declining": return "arrow.down.trendline.chart.hi"
+        case "stable": return "chart.dots.scatter"
+        case "fluctuating": return "waveform.path.ecg"
+        default: return "chart.line.flattrend.xyaxis"
         }
     }
 
-    private func trendIcon(forName trendName: String?) -> String {
-         guard let name = trendName else { return "arrow.right.circle.fill" }
-         switch name.lowercased() {
-         case "improving": return "arrow.up.circle.fill"
-         case "declining": return "arrow.down.circle.fill"
-         case "stable": return "equal.circle.fill"
-         case "fluctuating": return "arrow.up.arrow.down.circle.fill"
-         default: return "arrow.right.circle.fill"
-         }
-     }
-
-     private var placeholderMessage: String {
-         if jsonString == nil {
-             return "Keep journaling regularly (at least 3 entries needed) to analyze your mood trends!"
-         } else if decodedTrend == nil && !decodingError {
-             return "Loading mood analysis..."
-         } else if decodingError {
-             return "Could not load mood analysis. Please try again later."
-         } else {
-             return "Mood trend analysis is not available yet."
-         }
-     }
+    // Placeholder message logic
+    private var placeholderMessage: String {
+        if jsonString == nil {
+            return "Keep journaling regularly (at least 3 entries needed) to analyze your mood trends!"
+        } else if decodedTrend == nil && !decodingError {
+            return "Loading mood analysis..."
+        } else if decodingError {
+            return "Could not load mood analysis. Please try again later."
+        } else {
+            return "Mood trend analysis is not available yet."
+        }
+    }
 
     var body: some View {
         styles.expandableCard(
             isExpanded: $isExpanded,
-            scrollProxy: scrollProxy, // Pass proxy
-            cardId: cardId,           // Pass ID
+            scrollProxy: scrollProxy,
+            cardId: cardId,
             content: {
-    // Preview content based on decodedTrend
-    VStack(spacing: styles.layout.spacingM) {
-        HStack {
-            Text("Mood Analysis")
-                .font(styles.typography.title3).foregroundColor(styles.colors.text)
-            Spacer()
-            if subscriptionTier == .free {
-                 Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
-            }
-        }
-
-        if subscriptionTier == .premium {
-            // Use decodedTrend for display
-            if let result = decodedTrend {
-                HStack(spacing: styles.layout.spacingL) {
-                    // Overall Trend
-                    VStack(spacing: 8) {
-                        Image(systemName: trendIcon(forName: result.overallTrend))
-                            .font(.system(size: 32)).foregroundColor(moodColor(forName: result.overallTrend))
-                        Text(result.overallTrend).font(styles.typography.bodyFont).foregroundColor(styles.colors.text)
-                        Text("Overall Trend").font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
-                    }.frame(maxWidth: .infinity)
-                    // Dominant Mood
-                    VStack(spacing: 8) {
-                        let moodEnum = Mood.allCases.first { $0.name.lowercased() == result.dominantMood.lowercased() }
-                        Image(systemName: moodEnum?.systemIconName ?? "questionmark.circle.fill")
-                            .font(.system(size: 32)).foregroundColor(moodColor(forName: result.dominantMood))
-                        Text(result.dominantMood).font(styles.typography.bodyFont).foregroundColor(styles.colors.text)
-                        Text("Dominant Mood").font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
-                    }.frame(maxWidth: .infinity)
-                }.padding(.vertical, styles.layout.spacingS)
-
-                // Analysis Text Preview
-                Text(result.analysis)
-                    .font(styles.typography.bodySmall).foregroundColor(styles.colors.text)
-                    .multilineTextAlignment(.center).padding(.top, styles.layout.spacingS).lineLimit(2)
-
-            } else {
-                // Premium user, but no decoded data yet or error
-                 Text(placeholderMessage)
-                     .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                     .frame(maxWidth: .infinity, minHeight: 100, alignment: .center)
-                     .multilineTextAlignment(.center)
-                     if jsonString != nil && decodedTrend == nil && !decodingError {
-                         ProgressView().tint(styles.colors.accent).padding(.top, 4)
-                     }
-            }
-        } else {
-             // Free tier locked state
-             Text("Unlock mood trend analysis and insights with Premium.")
-                 .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                 .frame(maxWidth: .infinity, minHeight: 100, alignment: .center)
-                 .multilineTextAlignment(.center)
-        }
-    }
-},
-            detailContent: {
-                // Expanded detail content (Only show if premium and data exists)
-                if subscriptionTier == .premium, let result = decodedTrend {
-                     VStack(spacing: styles.layout.spacingL) {
-                        // ... (Detailed content using 'result' - unchanged from previous version) ...
-                        VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                            Text("Detailed Analysis")
-                                .font(styles.typography.title3).foregroundColor(styles.colors.text)
-                            Text(result.analysis)
-                                .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
+                // Collapsed View: Mood indicator, brief text, helping text
+                VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                    HStack {
+                        Text("Mood Analysis")
+                            .font(styles.typography.title3).foregroundColor(styles.colors.text)
+                        Spacer()
+                        if subscriptionTier == .free {
+                            Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
                         }
+                    }
 
-                        if !result.moodShifts.isEmpty {
-                            VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                                Text("Notable Mood Shifts")
-                                    .font(styles.typography.title3).foregroundColor(styles.colors.text)
-                                ForEach(result.moodShifts, id: \.self) { shift in
-                                    HStack(alignment: .top, spacing: styles.layout.spacingS) {
-                                        Image(systemName: "arrow.right.arrow.left.circle.fill")
-                                            .foregroundColor(styles.colors.accent).padding(.top, 2)
-                                        Text(shift)
-                                            .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                                    }
+                    if subscriptionTier == .premium {
+                        if let result = decodedTrend {
+                            HStack(spacing: styles.layout.spacingM) {
+                                // Mood Indicator (Dominant Mood Icon + Trend Arrow)
+                                ZStack(alignment: .bottomTrailing) {
+                                     Image(systemName: moodIcon(forName: result.dominantMood))
+                                         .font(.system(size: 40)) // Larger icon
+                                         .foregroundColor(moodColor(forName: result.dominantMood))
+
+                                     Image(systemName: trendIcon(forName: result.overallTrend))
+                                         .font(.system(size: 18))
+                                         .foregroundColor(styles.colors.accent)
+                                         .padding(4)
+                                         .background(styles.colors.secondaryBackground.opacity(0.8).clipShape(Circle()))
+                                         .offset(x: 8, y: 8) // Offset trend icon
                                 }
+                                .frame(width: 50) // Fixed width for indicator
+
+                                // Brief Text & Helping Text
+                                VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                                    Text("Overall: \(result.overallTrend), Dominant: \(result.dominantMood)")
+                                        .font(styles.typography.bodyFont) // Main text
+                                        .foregroundColor(styles.colors.text)
+                                        .lineLimit(2)
+
+                                    Text("See how your mood has been evolving this week.") // Helping text
+                                        .font(styles.typography.caption)
+                                        .foregroundColor(styles.colors.accent)
+                                }
+                                Spacer() // Push content left
+                            }
+                        } else {
+                            // Premium user, but no decoded data yet or error
+                            Text(placeholderMessage)
+                                .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
+                                .frame(maxWidth: .infinity, minHeight: 60, alignment: .center) // Adjusted height
+                                .multilineTextAlignment(.center)
+                            if jsonString != nil && decodedTrend == nil && !decodingError {
+                                ProgressView().tint(styles.colors.accent).padding(.top, 4)
                             }
                         }
-
-                         VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                             Text("Dominant Mood: \(result.dominantMood)")
-                                 .font(styles.typography.title3).foregroundColor(styles.colors.text)
-                             Text("Understanding your most frequent mood can highlight your baseline emotional state or recurring feelings.")
-                                 .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                         }
-
-                         VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                             Text("Overall Trend: \(result.overallTrend)")
-                                 .font(styles.typography.title3).foregroundColor(styles.colors.text)
-                             Text("Tracking the general direction of your mood helps identify broader patterns over time.")
-                                 .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                         }
-
-                        if let date = generatedDate {
-                            Text("Generated on \(date.formatted(date: .long, time: .shortened))")
-                                .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
-                                .frame(maxWidth: .infinity, alignment: .center).padding(.top)
-                        }
-                    } // End VStack for detail content
-                } else if subscriptionTier == .free {
-                     // Free tier expanded state
-                      VStack(spacing: styles.layout.spacingL) {
-                          Image(systemName: "lock.fill").font(.system(size: 40)).foregroundColor(styles.colors.accent)
-                          Text("Upgrade for Details").font(styles.typography.title3).foregroundColor(styles.colors.text)
-                          Text("Unlock detailed mood analysis and insights with Premium.")
-                               .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary).multilineTextAlignment(.center)
-                          // Optional Upgrade Button
-                      }
-                 } else {
-                    // Premium, but no data
-                    Text("Mood trend details are not available yet.")
-                        .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                    } else {
+                        // Free tier locked state
+                        Text("Unlock mood trend analysis and insights with Premium.")
+                            .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
+                            .frame(maxWidth: .infinity, minHeight: 60, alignment: .center) // Adjusted height
+                            .multilineTextAlignment(.center)
+                    }
                 }
-            } // End detailContent
-        ) // End expandableCard
-        // Add the onChange modifier to decode the JSON string
+            },
+            detailContent: {
+                // Expanded View: Use MoodAnalysisDetailContent
+                if subscriptionTier == .premium {
+                    // Pass all entries for detailed chart generation
+                    MoodAnalysisDetailContent(entries: appState.journalEntries)
+                } else {
+                    // Free tier expanded state (same as summary/recs)
+                    VStack(spacing: styles.layout.spacingL) {
+                        Image(systemName: "lock.fill").font(.system(size: 40)).foregroundColor(styles.colors.accent)
+                        Text("Upgrade for Details").font(styles.typography.title3).foregroundColor(styles.colors.text)
+                        Text("Unlock detailed mood charts and analysis with Premium.")
+                             .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary).multilineTextAlignment(.center)
+                        Button { /* TODO: Trigger upgrade flow */ } label: {
+                             Text("Upgrade Now").foregroundColor(styles.colors.primaryButtonText)
+                        }.buttonStyle(GlowingButtonStyle())
+                         .padding(.top)
+                    }
+                }
+            }
+        )
         .onChange(of: jsonString) { oldValue, newValue in
             decodeJSON(json: newValue)
         }
-        // Decode initially as well
         .onAppear {
             decodeJSON(json: jsonString)
         }
-    } // End body
+    }
 
-    // Decoding function
+    // Decoding function (remains the same)
     private func decodeJSON(json: String?) {
         guard let json = json, !json.isEmpty else {
-            if decodedTrend != nil { decodedTrend = nil }
-            decodingError = false
-            return
+            decodedTrend = nil; decodingError = false; return
         }
         decodingError = false
         guard let data = json.data(using: .utf8) else {
-            print("⚠️ [MoodTrendsCard] Failed to convert JSON string to Data.")
-            if decodedTrend != nil { decodedTrend = nil }
-            decodingError = true
-            return
+            print("⚠️ [MoodAnalysisCard] Failed convert JSON string to Data."); decodingError = true; decodedTrend = nil; return
         }
         do {
-            let decoder = JSONDecoder()
-            let result = try decoder.decode(MoodTrendResult.self, from: data)
-            if result != decodedTrend {
-                 decodedTrend = result
-                 print("[MoodTrendsCard] Successfully decoded new trend.")
-            }
+            let result = try JSONDecoder().decode(MoodTrendResult.self, from: data)
+            if result != decodedTrend { decodedTrend = result; print("[MoodAnalysisCard] Decoded new trend.") }
         } catch {
-            print("‼️ [MoodTrendsCard] Failed to decode MoodTrendResult: \(error). JSON: \(json)")
-            if decodedTrend != nil { decodedTrend = nil }
-            decodingError = true
+            print("‼️ [MoodAnalysisCard] Failed decode MoodTrendResult: \(error). JSON: \(json)"); decodingError = true; decodedTrend = nil
         }
+    }
+}
+
+#Preview {
+    ScrollView{
+        MoodAnalysisInsightCard(jsonString: MoodTrendResult.empty().toJsonString(), generatedDate: Date(), subscriptionTier: .premium)
+            .padding()
+            .environmentObject(AppState()) // Provide mock data if needed
+            .environmentObject(UIStyles.shared)
+            .environmentObject(ThemeManager.shared)
+    }
+    .background(Color.gray.opacity(0.1))
+}
+
+// Helper extension for preview
+extension MoodTrendResult {
+    func toJsonString() -> String? {
+        let encoder = JSONEncoder()
+        guard let data = try? encoder.encode(self), let jsonString = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        return jsonString
     }
 }

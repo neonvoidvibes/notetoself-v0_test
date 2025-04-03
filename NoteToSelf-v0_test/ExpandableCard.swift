@@ -4,7 +4,7 @@ import SwiftUI
 class ExpandableCardManager: ObservableObject {
     static let shared = ExpandableCardManager()
     @Published var expandedCardId: String? = nil
-    
+
     func setExpandedCard(id: String?) {
         expandedCardId = id
     }
@@ -23,11 +23,11 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
     var cardId: String? = nil
 
     // Styling
-    // Use the theme-specific structs defined in ThemeProtocol.swift
     let colors: ThemeColors
     let typography: ThemeTypography
-    let layout: UIStyles.Layout // Layout remains the same for now
-    let isPrimary: Bool
+    let layout: UIStyles.Layout
+    let isPrimary: Bool // Kept for potential future use, though highlightColor is more specific now
+    let highlightColor: Color? // Added for optional highlighting border
 
     // Internal state for animations
     @State private var contentHeight: CGFloat = 0
@@ -59,15 +59,15 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
                         .onPreferenceChange(ContentHeightPreferenceKey.self) { height in
                             self.contentHeight = height
                         }
-                    
+
                     // Add padding at the bottom to make room for the button
                     if !isExpanded {
                         Spacer()
-                            .frame(height: 70)
+                            .frame(height: 70) // Keep space for button
                     }
                 }
             }
-            
+
             // Expand button in its own container below content
             if !isExpanded {
                 HStack {
@@ -79,7 +79,7 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
                             toggleExpansion()
                         }
                 }
-                .padding(.top, -44)
+                .padding(.top, -44) // Adjust position relative to content
                 .padding(.bottom, 0)
                 .padding(.trailing, 4)
             }
@@ -89,15 +89,15 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // Animated divider
                     Divider()
-                        .background(colors.divider.opacity(0.5)) // Use theme divider color
+                        .background(colors.divider.opacity(0.5))
                         .padding(.vertical, 8)
                         .padding(.horizontal, 16)
-        
+
                     detailContent()
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 16)
 
-                    // Collapse Button at the bottom of details - match position with Details button
+                    // Collapse Button at the bottom of details
                     HStack {
                         Spacer()
                         ExpandCollapseButtonInternal(isExpanded: $isExpanded, hovered: hovered)
@@ -121,12 +121,17 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
         .padding(layout.cardInnerPadding)
         .background(
             RoundedRectangle(cornerRadius: layout.radiusM)
-                 // Use theme card background color
                 .fill(colors.cardBackground)
-                // ADDED shadow to match SettingsView cards
                 .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
         )
-        // REMOVED border overlay
+        // Apply border conditionally based on highlightColor
+        .overlay(
+            RoundedRectangle(cornerRadius: layout.radiusM)
+                .strokeBorder(
+                    highlightColor ?? Color.clear, // Use highlight color or clear
+                    lineWidth: highlightColor != nil ? 3 : 0 // Apply thicker border if highlighted
+                )
+        )
         .scaleEffect(hovered ? 1.01 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hovered)
         .contentShape(Rectangle())
@@ -136,9 +141,7 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
         .onHover { isHovered in
             hovered = isHovered
         }
-        // Listen for changes to the expanded card ID
         .onChange(of: cardManager.expandedCardId) { oldValue, newValue in
-            // If another card was expanded and this card is expanded, collapse this card
             if let newExpandedId = newValue, 
                let thisCardId = cardId, 
                newExpandedId != thisCardId && 
@@ -147,8 +150,6 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
                     isExpanded = false
                     isAnimating = true
                 }
-                
-                // Reset animation flag after animation completes
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                     isAnimating = false
                 }
@@ -158,31 +159,28 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
 
     // Function to handle toggling expansion and scrolling
     private func toggleExpansion() {
-        let wasExpanded = isExpanded // Capture state before toggle
-        
+        let wasExpanded = isExpanded
+
         withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
             isExpanded.toggle()
-            
-            // Update the global expanded card tracker
+
             if isExpanded, let id = cardId {
                 cardManager.setExpandedCard(id: id)
             } else if !isExpanded && cardManager.expandedCardId == cardId {
                 cardManager.setExpandedCard(id: nil)
             }
-            
-            if !isExpanded { // If collapsing
-                isAnimating = true // Keep animating flag for smooth transition out
+
+            if !isExpanded {
+                isAnimating = true
             }
         }
 
-        // Scroll smoothly to top if collapsing
         if wasExpanded && !isExpanded, let proxy = scrollProxy, let id = cardId {
-            withAnimation(.easeInOut(duration: 0.4)) { // Smooth animation
+            withAnimation(.easeInOut(duration: 0.4)) {
                 proxy.scrollTo(id, anchor: .top)
             }
         }
 
-        // Reset animation flag after animation completes if collapsed
         if !isExpanded {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 isAnimating = false
@@ -191,11 +189,11 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
     }
 }
 
-// Internal button view with enhanced styling
+// Internal button view (remains the same)
 struct ExpandCollapseButtonInternal: View {
     @Binding var isExpanded: Bool
     var hovered: Bool
-    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+    @ObservedObject private var styles = UIStyles.shared
 
     var body: some View {
         HStack(spacing: 4) {
@@ -224,24 +222,16 @@ struct ExpandCollapseButtonInternal: View {
 }
 
 
-// Height preference keys for measuring content (Unchanged)
+// Height preference keys (Unchanged)
 struct HeightPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
-
 struct DetailHeightPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
-
 struct ContentHeightPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }

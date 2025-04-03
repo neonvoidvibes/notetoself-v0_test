@@ -1,6 +1,7 @@
 import SwiftUI
 
-struct StreakInsightCard: View {
+// Renamed from StreakInsightCard
+struct StreakNarrativeInsightCard: View {
     let streak: Int
 
     // Scroll behavior properties
@@ -11,179 +12,79 @@ struct StreakInsightCard: View {
     @EnvironmentObject var appState: AppState
 
     // Access to shared styles
-    private let styles = UIStyles.shared
-    
+    @ObservedObject private var styles = UIStyles.shared
+
+    // Placeholder for AI-generated story snippet
+    private var storySnippet: String {
+        // TODO: Replace with actual AI-generated snippet based on recent entries
+        if streak > 5 {
+            return "You've been building momentum, exploring new themes..."
+        } else if streak > 0 {
+            return "Getting started on your reflection journey..."
+        } else {
+            return "Begin your story by journaling today."
+        }
+    }
+
     var body: some View {
         styles.expandableCard(
             isExpanded: $isExpanded,
-            isPrimary: true,
-            scrollProxy: scrollProxy, // Pass proxy
-            cardId: cardId,           // Pass ID
+            isPrimary: streak > 0, // Highlight if streak is active
+            scrollProxy: scrollProxy,
+            cardId: cardId,
             content: {
-                // Preview content
-                VStack(spacing: styles.layout.spacingM) {
-                    styles.cardHeader(title: "Current Streak", icon: "flame.fill")
-                    
-                    HStack(alignment: .firstTextBaseline) {
+                // Collapsed View: Larger streak, fewer items, helping text
+                HStack(alignment: .center, spacing: styles.layout.spacingL) {
+                    // Large Flame Icon & Streak Number
+                    VStack {
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 36))
+                            .foregroundColor(styles.colors.accent)
                         Text("\(streak)")
-                            .font(styles.typography.insightValue)
+                            .font(.system(size: 28, weight: .bold, design: .monospaced)) // Larger, bolder
                             .foregroundColor(styles.colors.text)
-                        
                         Text(streak == 1 ? "day" : "days")
-                            .font(styles.typography.bodyFont)
+                            .font(styles.typography.caption)
                             .foregroundColor(styles.colors.textSecondary)
-                            .padding(.leading, 4)
                     }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 8)
-                    
-                    // More conversational and personal text
-                    Text(streakMessage)
-                        .font(styles.typography.bodySmall)
-                        .foregroundColor(styles.colors.text)
-                        .multilineTextAlignment(.center)
-                        .padding(.top, styles.layout.spacingS)
-                        .lineLimit(2)
+                    .frame(width: 60) // Fixed width for icon/number
+
+                    // Story Snippet & Helping Text
+                    VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                        Text("Your Journey") // Clearer title
+                            .font(styles.typography.smallLabelFont)
+                            .foregroundColor(styles.colors.textSecondary)
+
+                        Text(storySnippet)
+                            .font(styles.typography.bodyFont) // Main text for snippet
+                            .foregroundColor(styles.colors.text)
+                            .lineLimit(2)
+
+                        Text("Tap to see your journey's turning points!") // Helping text
+                            .font(styles.typography.caption)
+                            .foregroundColor(styles.colors.accent)
+                    }
+                    Spacer() // Push content to left
                 }
+                .padding(.vertical, styles.layout.paddingS) // Add some vertical padding
             },
             detailContent: {
-                // Expanded detail content
-                VStack(spacing: styles.layout.spacingL) {
-                    Divider()
-                        .background(styles.colors.tertiaryBackground)
-                        .padding(.vertical, 8)
-                    
-                    // Streak history visualization
-                    VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                        Text("Streak History")
-                            .font(styles.typography.title3)
-                            .foregroundColor(styles.colors.text)
-                        
-                        HStack(spacing: 4) {
-                            ForEach(0..<7, id: \.self) { index in
-                                let isActive = index < min(streak, 7)
-                                Circle()
-                                    .fill(isActive ? styles.colors.accent : styles.colors.tertiaryBackground)
-                                    .frame(height: 12)
-                                    .overlay(
-                                        Circle()
-                                            .strokeBorder(
-                                                isActive ? styles.colors.accent.opacity(0.3) : styles.colors.tertiaryBackground,
-                                                lineWidth: 1
-                                            )
-                                    )
-                            }
-                            
-                            if streak > 7 {
-                                Text("+\(streak - 7)")
-                                    .font(styles.typography.caption)
-                                    .foregroundColor(styles.colors.accent)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(styles.colors.accent.opacity(0.1))
-                                    )
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                    
-                    // Streak benefits
-                    VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                        Text("Benefits of Consistent Journaling")
-                            .font(styles.typography.title3)
-                            .foregroundColor(styles.colors.text)
-                        
-                        VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                            StreakBenefitRow(
-                                icon: "brain.head.profile",
-                                title: "Self-Awareness",
-                                description: "Regular journaling helps you recognize patterns in your thoughts and behaviors."
-                            )
-                            
-                            StreakBenefitRow(
-                                icon: "heart.text.square",
-                                title: "Emotional Processing",
-                                description: "Writing helps process emotions and reduce stress by externalizing thoughts."
-                            )
-                            
-                            StreakBenefitRow(
-                                icon: "chart.line.uptrend.xyaxis",
-                                title: "Progress Tracking",
-                                description: "See your growth over time and celebrate small wins along the way."
-                            )
-                        }
-                    }
-                    
-                    // Call to action
-                    Button(action: {
-                        // Navigate to journal entry screen
-                        NotificationCenter.default.post(
-                            name: NSNotification.Name("SwitchToTab"),
-                            object: nil,
-                            userInfo: ["tabIndex": 0]
-                        )
-                    }) {
-                        Text("Write Today's Entry")
-                            .font(styles.typography.bodyFont)
-                            .foregroundColor(.white)
-                            .padding(.vertical, 12)
-                            .frame(maxWidth: .infinity)
-                            .background(
-                                RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                                    .fill(styles.colors.accent)
-                            )
-                    }
-                }
+                // Expanded View: Use StreakNarrativeDetailContent
+                StreakNarrativeDetailContent(streak: streak, entries: appState.journalEntries) // Pass entries
             }
         )
         .transition(.scale.combined(with: .opacity))
     }
-
-    // Personalized streak messages
-    private var streakMessage: String {
-        if streak == 0 {
-            return "Start your journaling habit today. Even a short entry makes a difference!"
-        } else if streak == 1 {
-            return "You've started your journey! Keep going to build momentum."
-        } else if streak < 5 {
-            return "You're building a great habit! Consistency is key to self-reflection."
-        } else if streak < 10 {
-            return "Impressive dedication! Your consistent journaling is helping you track patterns."
-        } else {
-            return "Amazing streak! Your commitment to self-reflection is truly remarkable."
-        }
-    }
 }
 
-// Helper view for streak benefits
-struct StreakBenefitRow: View {
-    let icon: String
-    let title: String
-    let description: String
-    
-    private let styles = UIStyles.shared
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: styles.layout.spacingM) {
-            Image(systemName: icon)
-                .foregroundColor(styles.colors.accent)
-                .font(.system(size: 18))
-                .frame(width: 24, height: 24)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(styles.typography.bodyLarge)
-                    .foregroundColor(styles.colors.text)
-                
-                Text(description)
-                    .font(styles.typography.bodySmall)
-                    .foregroundColor(styles.colors.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(.vertical, 4)
+// Preview remains similar, just update the name
+#Preview {
+    ScrollView {
+        StreakNarrativeInsightCard(streak: 5)
+            .padding()
+            .environmentObject(AppState()) // Provide mock data if needed
+            .environmentObject(UIStyles.shared)
+            .environmentObject(ThemeManager.shared)
     }
+    .background(Color.gray.opacity(0.1))
 }
-

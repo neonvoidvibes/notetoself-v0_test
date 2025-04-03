@@ -220,7 +220,23 @@ struct RecommendationResult: Codable, Equatable {
     static func empty() -> RecommendationResult {
         RecommendationResult(recommendations: [])
     }
+    static func empty() -> RecommendationResult {
+        RecommendationResult(recommendations: [])
+    }
 }
+
+// Structure for Forecast Insight (Placeholder Structure)
+struct ForecastResult: Codable, Equatable {
+    var moodPrediction: String? = "Stable mood expected."
+    var moodChartData: [MoodDataPoint]? = nil // Optional: For chart visualization
+    var generalTrends: [String]? = ["Focus on wellness topics may increase."]
+    var preemptiveActionPlan: [String]? = ["Schedule a short break tomorrow."]
+
+    static func empty() -> ForecastResult {
+        ForecastResult(moodPrediction: nil, moodChartData: nil, generalTrends: nil, preemptiveActionPlan: nil)
+    }
+}
+
 
 // MARK: - Insight Card Helper Structs
 
