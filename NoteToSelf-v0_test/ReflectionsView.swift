@@ -291,7 +291,7 @@ struct ReflectionsView: View {
                             // Reduce bottom padding to prevent excessive scrolling space
                             .padding(.bottom, 8)
                         }
-                        .frame(height: geometry.size.height)
+                        // REMOVED: .frame(height: geometry.size.height)
                         .onTapGesture {
                             // Dismiss keyboard on tap
                             if isInputFocused {
