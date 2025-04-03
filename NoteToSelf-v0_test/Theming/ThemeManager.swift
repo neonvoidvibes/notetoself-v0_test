@@ -7,9 +7,9 @@ class ThemeManager: ObservableObject {
 
     @Published private(set) var activeTheme: Theme
     // Add FocusTheme to the list
-    let availableThemes: [Theme] = [MonoTheme(), WarmTheme(), StandardTheme(), AuraTheme(), BrightTheme(), FocusTheme()]
+    let availableThemes: [Theme] = [FocusMainTheme()]
 
-    private var currentThemeIndex = 5
+    private var currentThemeIndex = 0
     private var cancellables = Set<AnyCancellable>()
 
     private init() {

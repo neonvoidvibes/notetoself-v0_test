@@ -7,7 +7,7 @@ class UIStyles: ObservableObject {
 
     // Publish the current theme
     // private(set) makes it readable publicly but only settable via updateTheme
-    @Published private(set) var currentTheme: Theme = MonoTheme() // Start with Mono theme
+    @Published private(set) var currentTheme: Theme = FocusMainTheme() // Start with Mono theme
 
     // Computed property for colors, derived from the current theme
     var colors: ThemeColors {
