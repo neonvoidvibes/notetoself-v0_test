@@ -9,7 +9,7 @@ class ThemeManager: ObservableObject {
     // Add StandardTheme to the list
     let availableThemes: [Theme] = [MonoTheme(), WarmTheme(), StandardTheme()]
 
-    private var currentThemeIndex = 0
+    private var currentThemeIndex = 2
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
