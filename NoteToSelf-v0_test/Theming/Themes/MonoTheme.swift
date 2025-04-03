@@ -45,7 +45,25 @@ struct MonoTheme: Theme {
         accentIconForeground: Color("MonoAccentIconForeground")
     )
 
-    let typography = ThemeTypography(fontDesign: .monospaced)
+    let typography = ThemeTypography(
+        headingFont: .system(size: 36, weight: .bold, design: .monospaced),
+        bodyFont: .system(size: 16, weight: .regular, design: .monospaced),
+        smallLabelFont: .system(size: 14, weight: .regular, design: .monospaced),
+        tinyHeadlineFont: .system(size: 12, weight: .regular, design: .monospaced),
+        bodyLarge: .system(size: 18, weight: .regular, design: .monospaced),
+        caption: .system(size: 12, weight: .regular, design: .monospaced),
+        label: .system(size: 14, weight: .medium, design: .monospaced),
+        bodySmall: .system(size: 12, weight: .regular, design: .monospaced),
+        title1: .system(size: 20, weight: .bold, design: .monospaced),
+        title3: .system(size: 20, weight: .semibold, design: .monospaced),
+        largeTitle: .system(size: 34, weight: .bold, design: .monospaced),
+        navLabel: .system(size: 10, weight: .medium, design: .monospaced),
+        moodLabel: .system(size: 14, weight: .medium, design: .monospaced),
+        wheelplusminus: .system(size: 24, weight: .medium, design: .monospaced),
+        sectionHeader: .system(size: 18, weight: .semibold, design: .monospaced),
+        insightValue: .system(size: 24, weight: .bold, design: .monospaced),
+        insightCaption: .system(size: 14, weight: .medium, design: .monospaced)
+    )
 
     // Blur styles
     let blurStyleLight: UIBlurEffect.Style = .systemUltraThinMaterialLight // Example

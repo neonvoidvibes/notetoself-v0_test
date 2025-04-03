@@ -53,26 +53,23 @@ struct ThemeColors {
 }
 
 // MARK: - Theme Typography Struct
-// Defines the font design and semantic font styles.
+// Defines explicit semantic Font styles.
 struct ThemeTypography {
-    let fontDesign: Font.Design
-
-    // Semantic font styles (size/weight remain consistent, design changes)
-    var headingFont: Font { Font.system(size: 36, weight: .bold, design: fontDesign) }
-    var bodyFont: Font { Font.system(size: 16, weight: .regular, design: fontDesign) }
-    var smallLabelFont: Font { Font.system(size: 14, weight: .regular, design: fontDesign) }
-    var tinyHeadlineFont: Font { Font.system(size: 12, weight: .regular, design: fontDesign) } // Consider renaming?
-    var bodyLarge: Font { Font.system(size: 18, weight: .regular, design: fontDesign) }
-    var caption: Font { Font.system(size: 12, weight: .regular, design: fontDesign) }
-    var label: Font { Font.system(size: 14, weight: .medium, design: fontDesign) }
-    var bodySmall: Font { Font.system(size: 12, weight: .regular, design: fontDesign) }
-    var title1: Font { Font.system(size: 20, weight: .bold, design: fontDesign) }
-    var title3: Font { Font.system(size: 20, weight: .semibold, design: fontDesign) }
-    var largeTitle: Font { Font.system(size: 34, weight: .bold, design: fontDesign) }
-    var navLabel: Font { Font.system(size: 10, weight: .medium, design: fontDesign) }
-    var moodLabel: Font { Font.system(size: 14, weight: .medium, design: fontDesign) }
-    var wheelplusminus: Font { Font.system(size: 24, weight: .medium, design: fontDesign) }
-    var sectionHeader: Font { Font.system(size: 18, weight: .semibold, design: fontDesign) }
-    var insightValue: Font { Font.system(size: 24, weight: .bold, design: fontDesign) }
-    var insightCaption: Font { Font.system(size: 14, weight: .medium, design: fontDesign) }
+    let headingFont: Font
+    let bodyFont: Font
+    let smallLabelFont: Font
+    let tinyHeadlineFont: Font
+    let bodyLarge: Font
+    let caption: Font
+    let label: Font
+    let bodySmall: Font
+    let title1: Font
+    let title3: Font
+    let largeTitle: Font
+    let navLabel: Font
+    let moodLabel: Font
+    let wheelplusminus: Font
+    let sectionHeader: Font
+    let insightValue: Font
+    let insightCaption: Font
 }
