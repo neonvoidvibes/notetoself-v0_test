@@ -17,6 +17,7 @@ struct MonoTheme: Theme {
         placeholderText: Color("MonoPlaceholderText"),
 
         accent: Color("MonoAccent"),
+        accentContrastText: Color("MonoAccentContrastText"), // Black/White
         secondaryAccent: Color("MonoSecondaryAccent"), // Existing #989898
 
         userBubbleColor: Color("MonoUserBubbleColor"), // Light gray #CCCCCC

@@ -136,7 +136,7 @@ struct GlowingButtonStyle: ButtonStyle {
                     .fill(styles.colors.accent) // Use styles instance
                     .shadow(color: styles.colors.accent.opacity(configuration.isPressed ? 0.3 : 0.6), radius: configuration.isPressed ? 5 : 10, x: 0, y: 0) // Use styles instance
             )
-            .foregroundColor(.black) // Contrast color
+            .foregroundColor(styles.colors.accentContrastText) // Use theme color
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .frame(maxWidth: .infinity)
     }

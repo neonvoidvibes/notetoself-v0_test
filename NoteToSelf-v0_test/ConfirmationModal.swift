@@ -44,13 +44,13 @@ struct ConfirmationModal: View {
                     }) {
                         Text(confirmText)
                             .font(styles.typography.bodyFont)
-                            .foregroundColor(isDestructive ? .white : .black)
+                            .foregroundColor(isDestructive ? .white : styles.colors.accentContrastText) // Use theme color for non-destructive
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
                             .background(isDestructive ? Color.red : styles.colors.accent)
                             .cornerRadius(styles.layout.radiusM)
                     }
-                    
+
                     // Cancel button
                     Button(action: {
                         cancelAction()

@@ -26,6 +26,7 @@ struct ThemeColors {
     let placeholderText: Color
 
     let accent: Color
+    let accentContrastText: Color // Color for text on accent background
     let secondaryAccent: Color // Often gray
 
     let userBubbleColor: Color

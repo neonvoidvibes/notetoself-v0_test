@@ -17,6 +17,7 @@ struct WarmTheme: Theme {
         placeholderText: Color("WarmPlaceholderText"),
 
         accent: Color("WarmAccent"), // Warm Orange/Terracotta
+        accentContrastText: Color("WarmAccentContrastText"), // Dark Brown / Light Beige
         secondaryAccent: Color("WarmSecondaryAccent"), // Muted Warm Gray/Brown
 
         userBubbleColor: Color("WarmUserBubbleColor"), // Light Warm Gray/Beige

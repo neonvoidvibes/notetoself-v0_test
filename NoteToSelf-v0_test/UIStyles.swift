@@ -122,7 +122,7 @@ class UIStyles: ObservableObject {
                 .padding(styles.layout.paddingM)
                 .frame(maxWidth: .infinity)
                 .background(styles.colors.accent) // Uses theme color
-                .foregroundColor(styles.colors.primaryButtonText) // Restore theme color for text
+                .foregroundColor(styles.colors.accentContrastText) // Use theme color
                 .cornerRadius(styles.layout.radiusM)
                 .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
         }
