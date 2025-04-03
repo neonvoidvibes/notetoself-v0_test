@@ -37,40 +37,50 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
             scrollProxy: scrollProxy,
             cardId: cardId,
             content: {
-                // Collapsed View: Larger streak, fewer items, helping text
-                HStack(alignment: .center, spacing: styles.layout.spacingL) {
-                    // Large Flame Icon & Streak Number
-                    VStack {
+                // Collapsed View: Standard Header + Streak Display + Snippet
+                VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                    // Standard Header
+                    HStack {
+                        Text("Streak & Narrative") // Use standard title format
+                            .font(styles.typography.title3)
+                            .foregroundColor(styles.colors.text)
+                        Spacer()
+                        // Icon on the right
                         Image(systemName: "flame.fill")
-                            .font(.system(size: 36))
+                            .font(.system(size: 20)) // Slightly smaller icon in header
                             .foregroundColor(styles.colors.accent)
+                    }
+
+                    // Streak Display (Centered below header)
+                    HStack(alignment: .firstTextBaseline) {
                         Text("\(streak)")
-                            .font(.system(size: 28, weight: .bold, design: .monospaced)) // Larger, bolder
+                            .font(.system(size: 40, weight: .bold, design: .monospaced)) // Large streak number
                             .foregroundColor(styles.colors.text)
                         Text(streak == 1 ? "day" : "days")
-                            .font(styles.typography.caption)
+                            .font(styles.typography.bodyFont)
                             .foregroundColor(styles.colors.textSecondary)
+                            .padding(.leading, 4)
                     }
-                    .frame(width: 60) // Fixed width for icon/number
+                    .frame(maxWidth: .infinity, alignment: .center) // Center the streak
 
-                    // Story Snippet & Helping Text
-                    VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                        Text("Your Journey") // Clearer title
-                            .font(styles.typography.smallLabelFont)
-                            .foregroundColor(styles.colors.textSecondary)
 
-                        Text(storySnippet)
-                            .font(styles.typography.bodyFont) // Main text for snippet
-                            .foregroundColor(styles.colors.text)
-                            .lineLimit(2)
+                    // Story Snippet & Helping Text (Centered below streak)
+                    VStack(spacing: styles.layout.spacingS) {
+                         Text(storySnippet)
+                             .font(styles.typography.bodyFont) // Main text for snippet
+                             .foregroundColor(styles.colors.text)
+                             .multilineTextAlignment(.center)
+                             .lineLimit(2)
+                             .fixedSize(horizontal: false, vertical: true) // Allow wrapping
 
-                        Text("Tap to see your journey's turning points!") // Helping text
-                            .font(styles.typography.caption)
-                            .foregroundColor(styles.colors.accent)
+                         Text("Tap to see your journey's turning points!") // Helping text
+                             .font(styles.typography.caption)
+                             .foregroundColor(styles.colors.accent)
+                             .multilineTextAlignment(.center)
                     }
-                    Spacer() // Push content to left
+                     .frame(maxWidth: .infinity, alignment: .center) // Center the text block
+
                 }
-                .padding(.vertical, styles.layout.paddingS) // Add some vertical padding
             },
             detailContent: {
                 // Pass the narrative result to the detail view

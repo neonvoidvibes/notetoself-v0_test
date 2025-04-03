@@ -39,50 +39,39 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
             scrollProxy: scrollProxy,
             cardId: cardId,
             content: {
-                // Collapsed View: AI Avatar, Insight Snippet, Helping Text
-                HStack(spacing: styles.layout.spacingM) {
-                    // AI Avatar
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        styles.colors.accent,
-                                        styles.colors.accent.opacity(0.7)
-                                    ]),
-                                    startPoint: animateGradient ? .topLeading : .bottomTrailing,
-                                    endPoint: animateGradient ? .bottomTrailing : .topLeading
-                                )
-                            )
-                            .frame(width: 50, height: 50) // Slightly larger avatar
-                        Image(systemName: "sparkles") // Keep sparkles
-                            .foregroundColor(.white)
-                            .font(.system(size: 20))
-                    }
-                    .onAppear { // Keep animation logic
-                        withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                            animateGradient.toggle()
-                        }
-                    }
+                 // Collapsed View: Standard Header + AI message snippet
+                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                     // Standard Header with AI icon
+                     HStack {
+                         Text("AI Reflection")
+                             .font(styles.typography.title3)
+                             .foregroundColor(styles.colors.text)
+                         Spacer()
+                         // AI Avatar Icon in header
+                         ZStack {
+                              Circle()
+                                  .fill(styles.colors.accent.opacity(0.2)) // Subtle background
+                                  .frame(width: 30, height: 30)
+                              Image(systemName: "sparkles")
+                                  .foregroundColor(styles.colors.accent)
+                                  .font(.system(size: 16))
+                          }
+                     }
 
-                    // Insight Snippet & Helping Text
-                    VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                        Text("AI Reflection") // Clearer title
-                           .font(styles.typography.smallLabelFont)
-                           .foregroundColor(styles.colors.textSecondary)
+                     // Insight Snippet (using bodyFont)
+                     Text(insightMessage)
+                         .font(styles.typography.bodyFont)
+                         .foregroundColor(styles.colors.text)
+                         .lineLimit(3) // Allow slightly more text if needed
+                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                        Text(insightMessage)
-                            .font(styles.typography.bodyFont) // Main font for snippet
-                            .foregroundColor(styles.colors.text)
-                            .lineLimit(2) // Limit lines in collapsed view
+                      // Helping Text
+                      Text("Tap to reflect deeper on today’s thoughts.")
+                          .font(styles.typography.caption)
+                          .foregroundColor(styles.colors.accent)
+                          .frame(maxWidth: .infinity, alignment: .leading)
 
-                        Text("Tap to reflect deeper on today’s thoughts.") // Helping text
-                            .font(styles.typography.caption)
-                            .foregroundColor(styles.colors.accent)
-                    }
-                    Spacer() // Push content left
-                }
-                .padding(.vertical, styles.layout.paddingS) // Add vertical padding
+                 }
             },
             detailContent: {
                 // Expanded View: Use AIReflectionDetailContent, pass result data

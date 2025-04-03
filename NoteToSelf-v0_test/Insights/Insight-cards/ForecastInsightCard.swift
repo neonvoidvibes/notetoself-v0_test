@@ -48,39 +48,48 @@ struct ForecastInsightCard: View {
             scrollProxy: scrollProxy,
             cardId: cardId,
             content: {
-                // Collapsed View: Icon, Quick Prediction Label, Helping Text
-                HStack(spacing: styles.layout.spacingM) {
-                    // Futuristic Icon
-                    Image(systemName: "chart.line.uptrend.xyaxis.circle.fill") // Example icon
-                        .font(.system(size: 40))
-                        .foregroundColor(styles.colors.accent)
+                 // Collapsed View: Standard Header + Forecast Label + Helping Text
+                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                     // Standard Header
+                     HStack {
+                         Text("Future Forecast")
+                             .font(styles.typography.title3)
+                             .foregroundColor(styles.colors.text)
+                         Spacer()
+                          // Icon on the right
+                          Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
+                              .font(.system(size: 20)) // Standard header icon size
+                              .foregroundColor(styles.colors.accent)
 
-                    // Prediction Label & Helping Text
-                    VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                         Text("Future Forecast") // Clearer title
-                            .font(styles.typography.smallLabelFont)
-                            .foregroundColor(styles.colors.textSecondary)
+                          // Lock icon if free tier
+                          if subscriptionTier == .free {
+                               Image(systemName: "lock.fill")
+                                   .foregroundColor(styles.colors.textSecondary)
+                                   .padding(.leading, styles.layout.spacingS)
+                           }
+                     }
 
-                        if subscriptionTier == .premium {
-                            // Show dynamic label
-                            Text(forecastLabel) // Use computed property
-                                .font(styles.typography.bodyFont)
-                                .foregroundColor(loadError ? styles.colors.error : styles.colors.text) // Indicate error
-                                .lineLimit(1)
+                     // Forecast Label (dynamic text)
+                     Text(forecastLabel)
+                         .font(styles.typography.bodyFont)
+                         .foregroundColor(loadError ? styles.colors.error : styles.colors.text)
+                         .lineLimit(2) // Allow two lines for label
+                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                            Text("Tap to see your personalized forecast and plan ahead.") // Helping text
-                                .font(styles.typography.caption)
-                                .foregroundColor(styles.colors.accent)
-                        } else {
-                             Text("Unlock predictive insights with Premium.")
-                                 .font(styles.typography.bodyFont)
-                                 .foregroundColor(styles.colors.textSecondary)
-                                 .lineLimit(2)
-                        }
-                    }
-                    Spacer() // Push content left
-                }
-                 .padding(.vertical, styles.layout.paddingS) // Add vertical padding
+                     // Helping Text (only if premium)
+                     if subscriptionTier == .premium {
+                         Text("Tap to see your personalized forecast and plan ahead.")
+                             .font(styles.typography.caption)
+                             .foregroundColor(styles.colors.accent)
+                             .frame(maxWidth: .infinity, alignment: .leading)
+                     } else {
+                          // Placeholder or alternative text for free users in collapsed state
+                          Text("Forecasting requires Premium.")
+                              .font(styles.typography.caption)
+                              .foregroundColor(styles.colors.textSecondary)
+                              .frame(maxWidth: .infinity, alignment: .leading)
+                     }
+                 }
             },
             detailContent: {
                 // Expanded View: Use ForecastDetailContent
