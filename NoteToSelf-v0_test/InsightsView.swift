@@ -98,20 +98,13 @@ struct InsightsView: View {
                         }) {
                             VStack(spacing: 6) {
                                 HStack {
-                                    Rectangle().fill(styles.colors.accent).frame(width: 28, height: 2)
-                                    Spacer()
+                                    Rectangle().fill(styles.colors.accent).frame(width: 28, height: 2); Spacer()
                                 }
                                 HStack {
-                                    Rectangle().fill(styles.colors.accent).frame(width: 20, height: 2)
-                                    Spacer()
+                                    Rectangle().fill(styles.colors.accent).frame(width: 20, height: 2); Spacer()
                                 }
                             }
                             .frame(width: 36, height: 36)
-                            .background(
-                                Circle()
-                                    .fill(styles.colors.secondaryBackground.opacity(0.5))
-                                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-                            )
                         }
 
                         Spacer()
