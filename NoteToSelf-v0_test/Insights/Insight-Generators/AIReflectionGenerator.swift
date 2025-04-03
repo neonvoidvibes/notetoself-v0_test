@@ -15,7 +15,7 @@ actor AIReflectionGenerator {
     }
 
     func generateAndStoreIfNeeded() async {
-        print("[AIReflectionGenerator] Checking if generation is needed...")
+        print("➡️ [AIReflectionGenerator] Starting generateAndStoreIfNeeded...")
 
         let calendar = Calendar.current
         var shouldGenerate = true
@@ -39,6 +39,7 @@ actor AIReflectionGenerator {
             print("‼️ [AIReflectionGenerator] Error loading latest insight: \(error). Proceeding.")
         }
 
+        print("[AIReflectionGenerator] Should Generate based on date threshold? \(shouldGenerate)")
         guard shouldGenerate else { return }
 
         // Fetch necessary data (e.g., last 1-3 entries for context)
@@ -56,16 +57,21 @@ actor AIReflectionGenerator {
                   return
              }
               print("[AIReflectionGenerator] New entries found or first time generation. Proceeding.")
+         } else if !entries.isEmpty {
+              print("[AIReflectionGenerator] First generation run or new entries found. Proceeding.")
+         } else {
+              print("[AIReflectionGenerator] Condition check completed (Should not reach here if skipping).")
          }
+
 
         // Need at least one entry usually to generate meaningful reflection
         guard !entries.isEmpty else {
-            print("[AIReflectionGenerator] Skipping generation: No entries found for reflection context.")
+            print("⚠️ [AIReflectionGenerator] Skipping generation: No entries found for reflection context.")
             // Optionally save an "empty" insight state if needed
             return
         }
 
-        print("[AIReflectionGenerator] Found \(entries.count) recent entries for context.")
+        print("[AIReflectionGenerator] Using \(entries.count) recent entries for context.")
 
         // Format prompt context
         let context = entries.map { entry in
@@ -75,6 +81,7 @@ actor AIReflectionGenerator {
         // Get system prompt
         let systemPrompt = SystemPrompts.aiReflectionPrompt(entriesContext: context)
 
+         print("[AIReflectionGenerator] Preparing to call LLM...")
         // Call LLMService
         do {
             let result: AIReflectionResult = try await llmService.generateStructuredOutput(
@@ -83,7 +90,7 @@ actor AIReflectionGenerator {
                 responseModel: AIReflectionResult.self
             )
 
-            print("[AIReflectionGenerator] Successfully generated insight message: \(result.insightMessage)")
+            print("✅ [AIReflectionGenerator] LLM Success. Insight: \(result.insightMessage)")
 
             // Encode result
             let encoder = JSONEncoder()
@@ -99,10 +106,12 @@ actor AIReflectionGenerator {
                 date: Date(),
                 jsonData: jsonString
             )
-            print("✅ [AIReflectionGenerator] Successfully saved generated insight to database.")
+            print("✅ [AIReflectionGenerator] Insight saved to database.")
 
         } catch let error as LLMService.LLMError {
             print("‼️ [AIReflectionGenerator] LLM generation failed: \(error.localizedDescription)")
+        } catch let error as DatabaseError {
+             print("‼️ [AIReflectionGenerator] Database save failed: \(error)")
         } catch {
             print("‼️ [AIReflectionGenerator] An unexpected error occurred: \(error)")
         }

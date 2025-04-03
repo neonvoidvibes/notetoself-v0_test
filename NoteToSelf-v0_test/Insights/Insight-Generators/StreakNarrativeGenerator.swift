@@ -15,7 +15,7 @@ actor StreakNarrativeGenerator {
     }
 
     func generateAndStoreIfNeeded() async {
-        print("[StreakNarrativeGenerator] Checking if generation is needed...")
+        print("➡️ [StreakNarrativeGenerator] Starting generateAndStoreIfNeeded...")
 
         let calendar = Calendar.current
         var shouldGenerate = true
@@ -39,6 +39,7 @@ actor StreakNarrativeGenerator {
             print("‼️ [StreakNarrativeGenerator] Error loading latest insight: \(error). Proceeding.")
         }
 
+        print("[StreakNarrativeGenerator] Should Generate based on date threshold? \(shouldGenerate)")
         guard shouldGenerate else { return }
 
         // Fetch necessary data (e.g., last 5-7 entries for context)
@@ -56,16 +57,24 @@ actor StreakNarrativeGenerator {
                  return
             }
              print("[StreakNarrativeGenerator] New entries found or first time generation. Proceeding.")
+        } else if !entries.isEmpty {
+             // This path means lastGenDate was nil (first run) or the check above passed
+             print("[StreakNarrativeGenerator] First generation run or new entries found. Proceeding.")
+        } else {
+             // This means lastGenDate existed, and no new entries were found.
+             // The check above already returned, but adding log here for completeness.
+              print("[StreakNarrativeGenerator] Condition check completed (Should not reach here if skipping).")
         }
+
 
         // Need at least one entry usually to generate meaningful narrative
         guard !entries.isEmpty else {
-            print("[StreakNarrativeGenerator] Skipping generation: No entries found for narrative context.")
+            print("⚠️ [StreakNarrativeGenerator] Skipping generation: No entries found for narrative context.")
             // Optionally save an "empty" insight state if needed
             return
         }
 
-        print("[StreakNarrativeGenerator] Found \(entries.count) recent entries for context.")
+        print("[StreakNarrativeGenerator] Using \(entries.count) recent entries for context.")
         // Add await here because appState is MainActor and this is a background actor
         let currentStreak = await appState.currentStreak
 
@@ -77,6 +86,7 @@ actor StreakNarrativeGenerator {
         // Get system prompt
         let systemPrompt = SystemPrompts.streakNarrativePrompt(entriesContext: context, streakCount: currentStreak)
 
+        print("[StreakNarrativeGenerator] Preparing to call LLM...")
         // Call LLMService
         do {
             let result: StreakNarrativeResult = try await llmService.generateStructuredOutput(
@@ -85,7 +95,7 @@ actor StreakNarrativeGenerator {
                 responseModel: StreakNarrativeResult.self
             )
 
-            print("[StreakNarrativeGenerator] Successfully generated narrative snippet: \(result.storySnippet)")
+            print("✅ [StreakNarrativeGenerator] LLM Success. Snippet: \(result.storySnippet)")
 
             // Encode result
             let encoder = JSONEncoder()
@@ -101,10 +111,12 @@ actor StreakNarrativeGenerator {
                 date: Date(),
                 jsonData: jsonString
             )
-            print("✅ [StreakNarrativeGenerator] Successfully saved generated insight to database.")
+            print("✅ [StreakNarrativeGenerator] Insight saved to database.")
 
         } catch let error as LLMService.LLMError {
             print("‼️ [StreakNarrativeGenerator] LLM generation failed: \(error.localizedDescription)")
+        } catch let error as DatabaseError {
+             print("‼️ [StreakNarrativeGenerator] Database save failed: \(error)")
         } catch {
             print("‼️ [StreakNarrativeGenerator] An unexpected error occurred: \(error)")
         }

@@ -15,7 +15,7 @@ actor ForecastGenerator {
     }
 
     func generateAndStoreIfNeeded() async {
-        print("[ForecastGenerator] Checking if generation is needed...")
+        print("➡️ [ForecastGenerator] Starting generateAndStoreIfNeeded...")
 
         let calendar = Calendar.current
         var shouldGenerate = true
@@ -40,6 +40,7 @@ actor ForecastGenerator {
             print("‼️ [ForecastGenerator] Error loading latest insight: \(error). Proceeding.")
         }
 
+         print("[ForecastGenerator] Should Generate based on date threshold? \(shouldGenerate)")
         guard shouldGenerate else { return }
 
         // 2. Fetch necessary data
@@ -70,16 +71,20 @@ actor ForecastGenerator {
                   return
              }
               print("[ForecastGenerator] New entries found or first time generation. Proceeding.")
-        }
+         } else if !entries.isEmpty {
+              print("[ForecastGenerator] First generation run or new entries found. Proceeding.")
+         } else {
+              print("[ForecastGenerator] Condition check completed (Should not reach here if skipping).")
+         }
 
 
         // Need some entries for a forecast
         guard entries.count >= 3 else {
-            print("[ForecastGenerator] Skipping generation: Insufficient entries (\(entries.count)) for forecast.")
+            print("⚠️ [ForecastGenerator] Skipping generation: Insufficient entries (\(entries.count)) for forecast.")
             return
         }
 
-        print("[ForecastGenerator] Found \(entries.count) entries, mood trend: \(moodTrendString != nil), recs: \(recommendationsString != nil) for context.")
+        print("[ForecastGenerator] Using \(entries.count) entries, mood trend: \(moodTrendString != nil), recs: \(recommendationsString != nil) for context.")
 
         // 3. Format prompt context
         let entryContext = entries.map { entry in
@@ -97,6 +102,7 @@ actor ForecastGenerator {
             recommendationsContext: recsContext
         )
 
+         print("[ForecastGenerator] Preparing to call LLM...")
         // 5. Call LLMService
         do {
             let result: ForecastResult = try await llmService.generateStructuredOutput(
@@ -105,7 +111,7 @@ actor ForecastGenerator {
                 responseModel: ForecastResult.self
             )
 
-            print("[ForecastGenerator] Successfully generated forecast. Mood Prediction: \(result.moodPredictionText ?? "N/A")")
+            print("✅ [ForecastGenerator] LLM Success. Mood Prediction: \(result.moodPredictionText ?? "N/A")")
 
             // 6. Encode result
             let encoder = JSONEncoder()
@@ -123,10 +129,12 @@ actor ForecastGenerator {
                 date: Date(),
                 jsonData: jsonString
             )
-            print("✅ [ForecastGenerator] Successfully saved generated insight to database.")
+            print("✅ [ForecastGenerator] Insight saved to database.")
 
         } catch let error as LLMService.LLMError {
             print("‼️ [ForecastGenerator] LLM generation failed: \(error.localizedDescription)")
+        } catch let error as DatabaseError {
+             print("‼️ [ForecastGenerator] Database save failed: \(error)")
         } catch {
             print("‼️ [ForecastGenerator] An unexpected error occurred: \(error)")
         }
