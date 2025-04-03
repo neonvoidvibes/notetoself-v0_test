@@ -44,8 +44,8 @@ struct SettingsView: View {
                  }
                  .padding(.top, 8)
                  .padding(.bottom, 8)
-                 // Add background matching the scrollview content if needed
-                 // .background(styles.colors.menuBackground)
+                 // Add background matching the scrollview content
+                 .background(styles.colors.menuBackground)
 
                 ScrollView(.vertical, showsIndicators: true) {
                     VStack(spacing: styles.layout.spacingXL) {

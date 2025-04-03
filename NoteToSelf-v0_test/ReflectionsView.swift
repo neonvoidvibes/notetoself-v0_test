@@ -166,10 +166,13 @@ struct ReflectionsView: View {
     // Access to shared styles
     @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
+    // Header animation state
+    @State private var headerAppeared = false
+
     var body: some View {
         ZStack {
-            // Background (Reverted to original)
-            styles.colors.appBackground
+            // Use inputBackground for ReflectionsView main background
+            styles.colors.inputBackground
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -179,9 +182,20 @@ struct ReflectionsView: View {
                         Text("Reflect")
                             .font(styles.typography.title1)
                             .foregroundColor(styles.colors.text)
-                        Rectangle()
-                            .fill(styles.colors.accent)
-                            .frame(width: 20, height: 3)
+                         // Animated accent bar
+                         Rectangle()
+                             .fill(
+                                 LinearGradient(
+                                     gradient: Gradient(colors: [
+                                         styles.colors.accent.opacity(0.7),
+                                         styles.colors.accent
+                                     ]),
+                                     startPoint: .leading,
+                                     endPoint: .trailing
+                                 )
+                             )
+                             .frame(width: headerAppeared ? 30 : 0, height: 3)
+                             .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: headerAppeared)
                     }
                     HStack {
                         Button(action: {
@@ -402,6 +416,11 @@ struct ReflectionsView: View {
                 scrollAtBottom = true
             }
         }
+        .onAppear { // Trigger animation when view appears
+             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                 headerAppeared = true
+             }
+         }
     }
 
     private func sendMessage() {

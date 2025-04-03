@@ -149,32 +149,24 @@ struct MainTabView: View {
 
   var body: some View {
       ZStack {
-          // Conditional Background: Accent when sheet expanded, otherwise gradient/solid based on tab (Restored Logic)
+          // Conditional Background: Accent when sheet expanded, otherwise gradient/solid based on tab
           if bottomSheetExpanded {
               // Use accent color when bottom sheet is expanded
-              styles.colors.accent
+              styles.colors.accent // Might want bottomSheetBackground here? Keeping accent for now.
                   .ignoresSafeArea()
           } else {
-              // Use gradient/solid color when bottom sheet is collapsed
+              // Use background logic based on tab when bottom sheet is collapsed
               if selectedTab == 2 {
-                  // Gradient for ReflectionsView tab (Tab 2)
-                  LinearGradient(
-                      gradient: Gradient(stops: [
-                          .init(color: styles.colors.appBackground, location: 0.0), // Top color (view bg)
-                          .init(color: styles.colors.appBackground, location: 0.45), // Start transition below top
-                          .init(color: styles.colors.reflectionsNavBackground, location: 0.55), // End transition above bottom
-                          .init(color: styles.colors.reflectionsNavBackground, location: 1.0)  // Bottom color (input area bg)
-                      ]),
-                      startPoint: .top,
-                      endPoint: .bottom
-                  )
-                  .ignoresSafeArea()
+                  // Specific background for ReflectionsView tab (Tab 2) when closed
+                  styles.colors.inputBackground // Use input background for reflections
+                      .ignoresSafeArea()
               } else {
-                  // Standard background for Journal (Tab 0) and Insights (Tab 1)
+                  // Standard background for Journal (Tab 0) and Insights (Tab 1) when closed
                   styles.colors.appBackground
                       .ignoresSafeArea()
               }
           }
+
 
           // Status bar area
           VStack(spacing: 0) {
@@ -265,7 +257,7 @@ struct MainTabView: View {
                                   Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
                                       .font(.system(size: 18, weight: .bold))
                                       // Use Accent when closed, White when expanded (will be overridden below)
-                                      .foregroundColor(bottomSheetExpanded ? Color.white : styles.colors.accent)
+                                      .foregroundColor(bottomSheetExpanded ? Color.white : styles.colors.accent) // Color.white for expanded state
 
                                   // Add Navigation text below the chevron, only when not expanded
                                   if !bottomSheetExpanded {
@@ -348,26 +340,25 @@ struct MainTabView: View {
                           }
                       }
                       .frame(width: geometry.size.width, height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
+                      .opacity(isKeyboardVisible ? 0 : 1)
+                      .animation(.easeInOut(duration: 0.25), value: isKeyboardVisible)
                       .background(
-                          Group { // Restore conditional background for bottom sheet
-                              if bottomSheetExpanded {
-                                  // Restore gradient, make it subtle (accent to accent 0.9 opacity)
-                                  LinearGradient(
-                                      gradient: Gradient(colors: [styles.colors.accent, styles.colors.accent.opacity(0.9)]),
-                                      startPoint: .top,
-                                      endPoint: .bottom
-                                  )
-                              } else {
-                                  // Use bottomSheetBackground when expanded, inputBackground when collapsed
-                                  bottomSheetExpanded ? styles.colors.bottomSheetBackground : styles.colors.inputBackground
-                              }
-                          }
+                           Group {
+                               // Determine background based on expanded state and current tab
+                               if bottomSheetExpanded {
+                                   styles.colors.bottomSheetBackground // Use specific color when open
+                               } else {
+                                   if selectedTab == 2 { // Reflections View
+                                       styles.colors.inputBackground // Specific color for Reflections closed nav
+                                   } else { // Journal or Insights View
+                                       styles.colors.appBackground // Match main app background
+                                   }
+                               }
+                           }
                       )
                   }
               }
               .frame(height: isKeyboardVisible ? 0 : (bottomSheetExpanded ? fullSheetHeight : peekHeight))
-              .opacity(isKeyboardVisible ? 0 : 1)
-              .animation(.easeInOut(duration: 0.25), value: isKeyboardVisible)
               .gesture(bottomSheetDrag)
           }
           .disabled(isSwipingSettings || showingChatHistory)
@@ -395,40 +386,7 @@ struct MainTabView: View {
           // Settings overlay, no disable so we can swipe inside it
           ZStack(alignment: .top) {
               VStack(spacing: 0) {
-                  // Header with title and close button
-                  ZStack(alignment: .center) {
-                      // Title truly centered
-                      VStack(spacing: 8) {
-                          Text("Settings")
-                              .font(styles.typography.title1)
-                              .foregroundColor(styles.colors.text)
-
-                          Rectangle()
-                              .fill(styles.colors.accent)
-                              .frame(width: 20, height: 3)
-                      }
-
-                      // Close button on right
-                      HStack {
-                          Spacer()
-
-                          // Close button (double chevron) at right side
-                          Button(action: {
-                              withAnimation(.easeInOut(duration: 0.3)) {
-                                  showingSettings = false
-                                  settingsOffset = -screenWidth
-                              }
-                          }) {
-                              Image(systemName: "chevron.right.2")
-                                  .font(.system(size: 20, weight: .bold))
-                                  .foregroundColor(styles.colors.accent)
-                                  .frame(width: 36, height: 36)
-                          }
-                      }
-                      .padding(.horizontal, styles.layout.paddingXL)
-                  }
-                  .padding(.top, 8) // Further reduced top padding
-                  .padding(.bottom, 8)
+                  // Header is now handled inside SettingsView
 
                   // Actual Settings content
                   SettingsView()
