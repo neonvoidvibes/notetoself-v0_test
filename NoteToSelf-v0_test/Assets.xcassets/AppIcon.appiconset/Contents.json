@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "neonvoidvibes_gray_background_363636_yellow_thick_ring_in_mono__dec100ff-d8c7-4da5-af41-c331c91a7208_1024.png",
+      "filename" : "applogo.005-light.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,6 +13,7 @@
           "value" : "dark"
         }
       ],
+      "filename" : "applogo.005-dark.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
