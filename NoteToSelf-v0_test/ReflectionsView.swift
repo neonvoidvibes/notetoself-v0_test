@@ -157,6 +157,12 @@ struct ReflectionsView: View {
     @FocusState private var isInputFocused: Bool
     @State private var expandedMessageId: UUID? = nil
 
+    // State variable to store the calculated height
+    @State private var textEditorHeight: CGFloat = 0
+    private let baseEditorHeight: CGFloat = 22 // Approximate height for one line
+    private let maxEditorHeight: CGFloat = 66 // Approximate height for three lines
+
+
     // CRITICAL: Track scroll position manually
     @State private var scrollAtBottom: Bool = true
 
@@ -291,7 +297,7 @@ struct ReflectionsView: View {
                             // Reduce bottom padding to prevent excessive scrolling space
                             .padding(.bottom, 8)
                         }
-                        // REMOVED: .frame(height: geometry.size.height)
+                        .frame(height: geometry.size.height)
                         .onTapGesture {
                             // Dismiss keyboard on tap
                             if isInputFocused {
@@ -328,72 +334,88 @@ struct ReflectionsView: View {
                     }
                 }
 
-                // Input area - FIXED HEIGHT to prevent layout shifts
+                // Input area - Dynamic Height
                 if !bottomSheetExpanded {
                     VStack(spacing: 0) {
-                        // Change alignment to .center for vertical alignment
-                        HStack(alignment: .center, spacing: styles.layout.spacingM) {
-                            // Text input field - FIXED HEIGHT
+                        // Use .bottom alignment to keep button aligned with the bottom edge of the expanding TextEditor
+                        HStack(alignment: .bottom, spacing: styles.layout.spacingM) {
+                            // Text input field - Container ZStack
                             ZStack(alignment: .topLeading) {
+
+                                // --- Transparent Measurer Text ---
+                                Text(messageText.isEmpty ? " " : messageText) // Use space if empty for min height
+                                    .font(styles.typography.bodyFont)
+                                    .padding(.horizontal, 4) // Match TextEditor internal padding
+                                    .padding(.vertical, 4)  // Match TextEditor internal padding
+                                    .opacity(0) // Make it invisible
+                                    .frame(maxWidth: .infinity) // Allow it to take full width for wrapping calc
+                                    .background(GeometryReader { proxy in
+                                        Color.clear
+                                            .onAppear { updateHeight(proxy.size.height) }
+                                            .onChange(of: messageText) { _, _ in updateHeight(proxy.size.height) }
+                                    })
+
+                                // Placeholder Text - aligned with padding
                                 if messageText.isEmpty && !chatManager.isTyping {
                                     Text("Ask anything")
-                                        .font(styles.typography.bodyFont) // Use larger font to match messages
+                                        .font(styles.typography.bodyFont)
                                         .foregroundColor(styles.colors.placeholderText)
-                                        .padding(.leading, 5) // Reduced padding to align with assistant messages
-                                        .padding(.top, 8)
+                                        .padding(.horizontal, styles.layout.paddingS + 4) // Align with TextEditor text
+                                        .padding(.vertical, styles.layout.paddingS)    // Align with TextEditor text
                                         .allowsHitTesting(false)
                                 }
 
-                                // FIXED HEIGHT TextEditor
+                                // TextEditor uses calculated height
                                 TextEditor(text: chatManager.isTyping ? .constant("") : $messageText)
-                                    .font(styles.typography.bodyFont) // Use larger font to match messages
-                                    .padding(4)
-                                    .padding(.leading, 1) // Reduced padding to align with assistant messages
-                                    .background(Color.clear)
+                                    .font(styles.typography.bodyFont)
+                                    .padding(.horizontal, 4) // Internal padding
+                                    .padding(.vertical, 4)  // Internal padding
+                                    .frame(height: calculatedEditorHeight()) // Use calculated height
+                                    .background(Color.clear) // Transparent background
                                     .foregroundColor(chatManager.isTyping ? styles.colors.textDisabled : styles.colors.text)
-                                    .frame(height: 40) // FIXED HEIGHT
-                                    // REMOVED: .colorScheme(.dark)
                                     .disabled(chatManager.isTyping)
                                     .scrollContentBackground(.hidden)
                                     .focused($isInputFocused)
                             }
-                            .frame(height: 40) // FIXED HEIGHT
-                            .padding(8)
-                            // Make the text field area transparent
-                            .background(Color.clear)
-                            .cornerRadius(20) // Keep the rounding for visual consistency if needed
+                             // Apply padding around the ZStack (TextEditor area)
+                            .padding(.vertical, styles.layout.paddingS / 2)
+                            .padding(.horizontal, styles.layout.paddingS)
+                            .background(
+                                Color.clear // Ensure ZStack background is transparent
+                                    .clipShape(RoundedRectangle(cornerRadius: 20)) // Clip shape if needed
+                            )
 
-                            // Send button
+                            // Send button - alignment handled by HStack(.bottom)
                             Button(action: sendMessage) {
                                 if chatManager.isTyping {
                                     Image(systemName: "stop.fill")
                                         .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(styles.colors.appBackground) // Stop icon uses background color
+                                        .foregroundColor(styles.colors.appBackground)
                                 } else {
                                     Image(systemName: "arrow.up")
-                                        .renderingMode(.template) // Ensure foregroundColor takes effect
-                                        .font(.system(size: 20, weight: .bold)) // Make arrow slightly smaller
-                                        .foregroundColor(styles.colors.accentIconForeground) // Use specific icon color
+                                        .renderingMode(.template)
+                                        .font(.system(size: 20, weight: .bold))
+                                        .foregroundColor(styles.colors.accentIconForeground)
                                 }
                             }
-                            .frame(width: 40, height: 40)
+                            .frame(width: 40, height: 40) // Keep button size fixed
                             .background(styles.colors.accent)
                             .clipShape(Circle())
-                            // REMOVED: .buttonStyle(PlainButtonStyle())
                             .disabled(messageText.isEmpty && !chatManager.isTyping)
                             .opacity((messageText.isEmpty && !chatManager.isTyping) ? 0.5 : 1.0)
                         }
-                        .padding(.vertical, styles.layout.paddingM)
+                        // Adjust padding for the entire HStack
+                        .padding(.vertical, styles.layout.paddingS)
                         .padding(.horizontal, styles.layout.paddingL)
 
-                        Spacer().frame(height: 40)
                     }
-                    // Restore the background for the input area container
+                    // Background for the entire input area container
                     .background(
                         styles.colors.inputBackground // Use inputBackground instead
                             .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight]))
                             .ignoresSafeArea(.container, edges: .bottom)
                     )
+                    .animation(.easeInOut(duration: 0.2), value: textEditorHeight) // Animate based on calculated height
                 }
             }
         }
@@ -420,8 +442,25 @@ struct ReflectionsView: View {
              DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                  headerAppeared = true
              }
+             // Set initial height
+             textEditorHeight = baseEditorHeight
          }
     }
+
+    // --- Height Calculation Helpers ---
+    private func updateHeight(_ height: CGFloat) {
+        DispatchQueue.main.async {
+            // Add a small buffer if needed, clamp between min/max
+            self.textEditorHeight = max(baseEditorHeight, min(height, maxEditorHeight))
+            // print("Measured Height: \(height), Clamped Height: \(self.textEditorHeight)") // Debugging
+        }
+    }
+
+    private func calculatedEditorHeight() -> CGFloat {
+        // Return the state variable which is clamped between min/max
+        return textEditorHeight
+    }
+    // --- End Height Calculation Helpers ---
 
     private func sendMessage() {
         if chatManager.isTyping {
@@ -437,6 +476,9 @@ struct ReflectionsView: View {
 
         // Clear input
         messageText = ""
+        // Reset height manually after clearing text
+        textEditorHeight = baseEditorHeight
+
 
         // CRITICAL: Set scroll to bottom when sending
         scrollAtBottom = true
