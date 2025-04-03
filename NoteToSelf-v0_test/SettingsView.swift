@@ -40,7 +40,23 @@ struct SettingsView: View {
                              .frame(width: headerAppeared ? 30 : 0, height: 3)
                              .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: headerAppeared)
                      }
-                     // Add close button if needed, or keep it simple as it's in MainTabView
+
+                     // Close button HStack restored
+                     HStack {
+                         Spacer()
+
+                         // Close button (double chevron) at right side
+                         Button(action: {
+                             // Post notification to toggle settings visibility (handled by MainTabView)
+                             NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
+                         }) {
+                             Image(systemName: "chevron.right.2")
+                                 .font(.system(size: 20, weight: .bold))
+                                 .foregroundColor(styles.colors.accent)
+                                 .frame(width: 36, height: 36)
+                         }
+                     }
+                     .padding(.horizontal, styles.layout.paddingXL) // Apply standard padding
                  }
                  .padding(.top, 8)
                  .padding(.bottom, 8)
