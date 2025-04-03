@@ -376,7 +376,7 @@ struct ReflectionsView: View {
                     }
                     // Restore the background for the input area container
                     .background(
-                        styles.colors.reflectionsNavBackground
+                        styles.colors.inputBackground // Use inputBackground instead
                             .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight]))
                             .ignoresSafeArea(.container, edges: .bottom)
                     )

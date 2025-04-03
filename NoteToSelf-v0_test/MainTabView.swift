@@ -264,15 +264,15 @@ struct MainTabView: View {
                               VStack(spacing: 4) { // Add spacing for the text
                                   Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
                                       .font(.system(size: 18, weight: .bold))
-                                      // Use textSecondary when closed, white when expanded
-                                      .foregroundColor(bottomSheetExpanded ? Color.white : styles.colors.textSecondary)
+                                      // Use Accent when closed, White when expanded (will be overridden below)
+                                      .foregroundColor(bottomSheetExpanded ? Color.white : styles.colors.accent)
 
                                   // Add Navigation text below the chevron, only when not expanded
                                   if !bottomSheetExpanded {
                                       Text("Navigation")
                                           .font(.system(size: 10, weight: .regular, design: .monospaced))
-                                           // Use textSecondary when closed, white when expanded
-                                          .foregroundColor(bottomSheetExpanded ? Color.white : styles.colors.textSecondary)
+                                          // Use Accent color when closed
+                                          .foregroundColor(styles.colors.accent)
                                   }
                               }
                               // Apply conditional height for chevron button area
@@ -292,7 +292,9 @@ struct MainTabView: View {
                                   NavigationTabButton(
                                       icon: "pencil",
                                       title: "Journal",
-                                      isSelected: selectedTab == 0
+                                      isSelected: selectedTab == 0,
+                                      // Use Accent color when expanded
+                                      foregroundColor: styles.colors.accent
                                   ) {
                                       // Move selectedTab change inside asyncAfter
                                       DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Short delay before starting collapse
@@ -307,7 +309,9 @@ struct MainTabView: View {
                                   NavigationTabButton(
                                       icon: "chart.bar.fill",
                                       title: "Insights",
-                                      isSelected: selectedTab == 1
+                                      isSelected: selectedTab == 1,
+                                      // Use Accent color when expanded
+                                      foregroundColor: styles.colors.accent
                                   ) {
                                       // Move selectedTab change inside asyncAfter
                                       DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Short delay
@@ -322,7 +326,9 @@ struct MainTabView: View {
                                   NavigationTabButton(
                                       icon: "bubble.left.fill",
                                       title: "Reflect",
-                                      isSelected: selectedTab == 2
+                                      isSelected: selectedTab == 2,
+                                      // Use Accent color when expanded
+                                      foregroundColor: styles.colors.accent
                                   ) {
                                       // Move selectedTab change inside asyncAfter
                                       DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Short delay
@@ -352,8 +358,8 @@ struct MainTabView: View {
                                       endPoint: .bottom
                                   )
                               } else {
-                                  // Match the main background logic when collapsed
-                                  selectedTab == 2 ? styles.colors.reflectionsNavBackground : styles.colors.appBackground
+                                  // Always use AppBackground when collapsed for Focus theme consistency
+                                  styles.colors.appBackground
                               }
                           }
                       )
@@ -548,6 +554,8 @@ struct NavigationTabButton: View {
   let icon: String
   let title: String
   let isSelected: Bool
+  // Add foregroundColor parameter with default value
+  var foregroundColor: Color = Color.white
   let action: () -> Void
   @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
@@ -564,19 +572,19 @@ struct NavigationTabButton: View {
               // Icon
               Image(systemName: icon)
                   .font(.system(size: iconSize, weight: isSelected ? .bold : .regular))
-                  .foregroundColor(Color.white)
+                  .foregroundColor(foregroundColor) // Use parameter
                   .frame(height: iconSize) // Keep icon height fixed
 
               // Text label
               Text(title)
                   .font(isSelected ?
-                        .system(size: 12, weight: .bold, design: .monospaced) :
+                        .system(size: 12, weight: .bold, design: .monospaced) : // Consider theme typography?
                         styles.typography.caption)
-                  .foregroundColor(Color.white)
+                  .foregroundColor(foregroundColor) // Use parameter
 
               // Underscore indicator
               Rectangle()
-                  .fill(Color.white) // Use white color like text/icon
+                  .fill(foregroundColor) // Use parameter
                   .frame(width: 40, height: underscoreHeight) // Increased width from 35 to 40
                   .opacity(isSelected ? 1 : 0)
 
