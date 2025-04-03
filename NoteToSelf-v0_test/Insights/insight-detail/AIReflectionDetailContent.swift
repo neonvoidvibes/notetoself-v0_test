@@ -66,14 +66,17 @@ struct AIReflectionDetailContent: View {
 }
 
 #Preview {
-    AIReflectionDetailContent(
+     // Define mock prompts for preview
+      let mockPrompts = [
+          "Preview Prompt 1: What happened?",
+          "Preview Prompt 2: How did it feel?",
+          "Preview Prompt 3: What did you learn?"
+      ]
+
+    return AIReflectionDetailContent(
         insightMessage: "Sample insight message for preview.",
-        reflectionPrompts: [
-            "What was the best part of your day?",
-            "What challenge did you overcome?",
-            "How did you feel overall?"
-        ]
-    )
+        reflectionPrompts: mockPrompts // Pass mock prompts
+        )
         .padding()
         .environmentObject(AppState()) // Provide mock data if needed
         .environmentObject(UIStyles.shared)

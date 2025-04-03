@@ -212,15 +212,15 @@ struct RecommendationResult: Codable, Equatable {
         var title: String
         var description: String
         var category: String // e.g., "Mindfulness", "Activity", "Social"
-        var rationale: String // Why this recommendation is suggested
+        var rationale: String? // Why this recommendation is suggested (Changed to Optional)
 
         // Provide default init for Identifiable conformance if needed, or ensure JSON includes ID
-         init(id: UUID = UUID(), title: String, description: String, category: String, rationale: String) {
+         init(id: UUID = UUID(), title: String, description: String, category: String, rationale: String?) { // Updated init
              self.id = id
              self.title = title
              self.description = description
              self.category = category
-             self.rationale = rationale
+             self.rationale = rationale // Assign optional value
          }
     }
 
@@ -259,9 +259,9 @@ struct AIReflectionResult: Codable, Equatable {
 
 
 // Structure for Forecast Insight (Refined Structure)
-struct ForecastResult: Codable, Equatable {
+struct ForecastResult: Codable, Equatable { // Conformance should now be automatic
     // Mood Prediction
-    var moodPredictionText: String? = "Mood forecast unavailable." // Textual summary (e.g., "Upbeat", "Potential dip mid-week")
+    var moodPredictionText: String? = "Stable mood expected." // Textual summary (e.g., "Upbeat", "Potential dip mid-week")
     // Optional: Add structured data for charts if needed later
     // var moodPredictionChartData: [ForecastDataPoint]?
 
@@ -291,7 +291,9 @@ struct ForecastResult: Codable, Equatable {
     // Nested struct for potential future chart data
     // struct ForecastDataPoint: Codable, Equatable { ... }
 
+    // Corrected empty() function - ensure it's inside the struct
     static func empty() -> ForecastResult {
+        // Directly initialize with nil values matching the optional properties
         ForecastResult(moodPredictionText: nil, emergingTopics: nil, consistencyForecast: nil, actionPlanItems: nil)
     }
 }

@@ -11,16 +11,7 @@ enum InsightType: String, Codable, Equatable, Hashable { // Added Equatable & Ha
     case recommendations
     case forecast // New card
 
-    // Keep old types if needed for data migration or hidden features,
-    // but they won't be directly mapped to visible cards anymore.
-    // case calendar
-    // case writingConsistency
-    // case moodDistribution
-    // case wordCount
-    // case topicAnalysis
-    // case sentimentAnalysis
-    // case journalEntry // Assuming this is handled by JournalView now
-    // case weeklyPatterns
+    // Obsolete types removed as they are no longer displayed insight cards
 }
 
 struct InsightDetail: Identifiable {
@@ -99,8 +90,14 @@ struct InsightDetailView: View {
               Group {
                   switch insight.type {
                   case .streakNarrative:
-                      // Needs streak value and potentially entries from AppState
-                      StreakNarrativeDetailContent(streak: appState.currentStreak, entries: appState.journalEntries)
+                       // Attempt to cast insight.data to the expected type
+                       let narrativeData = insight.data as? StreakNarrativeResult
+                       // Pass the casted data (or nil) to the detail view
+                       StreakNarrativeDetailContent(
+                           streak: appState.currentStreak,
+                           entries: appState.journalEntries,
+                           narrativeResult: narrativeData
+                       )
 
                   case .weeklySummary:
                       // Needs decoded WeeklySummaryResult
@@ -109,17 +106,28 @@ struct InsightDetailView: View {
                            // We need to calculate the period and get the date here or pass it
                            // For simplicity, let's assume necessary info is available or recalculated
                            let period = calculateSummaryPeriod(from: result) // Placeholder function
-                           WeeklySummaryDetailContentExpanded(summaryResult: result, summaryPeriod: period, generatedDate: Date()) // Placeholder date
+                           // TODO: Pass the actual generatedDate if available from insight.data or another source
+                           WeeklySummaryDetailContent(summaryResult: result, summaryPeriod: period, generatedDate: Date()) // Pass optional date
                       } else {
                           Text("Error: Invalid weekly summary data") // Or show empty state
                       }
+                      // Removed cases for obsolete InsightTypes:
+                      // .calendar, .writingConsistency, .moodDistribution, .wordCount,
+                      // .topicAnalysis, .sentimentAnalysis, .journalEntry, .weeklyPatterns
 
                   case .aiReflection:
-                       // Needs the initial insight message, could potentially fetch more prompts
-                       if let message = insight.data as? String {
-                           AIReflectionDetailContent(insightMessage: message)
+                       // Needs AIReflectionResult
+                       if let result = insight.data as? AIReflectionResult {
+                            AIReflectionDetailContent(
+                                insightMessage: result.insightMessage,
+                                reflectionPrompts: result.reflectionPrompts
+                            )
                        } else {
-                           Text("Error: Invalid AI reflection data") // Or show empty state
+                           // Fallback or error view if data isn't the correct type
+                           AIReflectionDetailContent(
+                                insightMessage: "Could not load reflection.",
+                                reflectionPrompts: []
+                           )
                        }
 
                   case .moodAnalysis:
@@ -135,9 +143,9 @@ struct InsightDetailView: View {
                       }
 
                   case .forecast:
-                       // Needs decoded ForecastResult (when implemented)
-                       // For now, show placeholder
-                       ForecastDetailContent()
+                       // Needs decoded ForecastResult
+                       let forecastData = insight.data as? ForecastResult // Attempt to cast
+                       ForecastDetailContent(forecastResult: forecastData) // Pass casted data or nil
                   }
               }
               .padding(styles.layout.paddingL) // Add padding around the detail content
@@ -174,14 +182,10 @@ struct InsightDetailView: View {
 // MARK: - Preview Provider
 
 #Preview {
-     // Create mock InsightDetail instances for previewing different types
-     let mockSummaryData = WeeklySummaryResult(
-         mainSummary: "Preview summary.",
-         keyThemes: ["Theme A", "Theme B"],
-         moodTrend: "Stable",
-         notableQuote: "Preview quote."
-     )
-     let mockInsight = InsightDetail(type: .weeklySummary, title: "Weekly Summary Preview", data: mockSummaryData)
+     // Example: Create insight detail for forecast preview
+     // ForecastDetailContent currently shows placeholders and doesn't require complex data
+     let mockForecastData: ForecastResult? = nil // Explicitly nil or provide mock ForecastResult
+     let mockInsight = InsightDetail(type: .forecast, title: "Forecast Preview", data: mockForecastData)
 
      // Pass necessary environment objects for previews
      return InsightDetailView(insight: mockInsight)

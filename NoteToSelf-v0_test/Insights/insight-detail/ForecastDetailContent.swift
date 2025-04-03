@@ -3,8 +3,13 @@ import Charts // Import Charts if needed for visualizations
 
 // Placeholder Detail View
 struct ForecastDetailContent: View {
-    let forecastResult: ForecastResult? // Accept the optional result
+    let forecastResult: ForecastResult? // Ensure this parameter is present
     @ObservedObject private var styles = UIStyles.shared
+
+    // Explicitly define init if needed, though memberwise should work
+    init(forecastResult: ForecastResult?) {
+         self.forecastResult = forecastResult
+    }
 
     var body: some View {
          ScrollView { // Wrap content in ScrollView if it might exceed screen height

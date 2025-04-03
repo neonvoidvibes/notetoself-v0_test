@@ -1,8 +1,8 @@
 import SwiftUI
 import Charts // Keep Charts import for expanded view
 
-// Renamed from MoodTrendsInsightCard
-struct MoodAnalysisInsightCard: View {
+// Renamed from MoodTrendsInsightCard to MoodAnalysisInsightCard
+struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
     // Input: Raw JSON string, generation date, and subscription status
     let jsonString: String?
     let generatedDate: Date?
@@ -11,6 +11,7 @@ struct MoodAnalysisInsightCard: View {
     // Local state for decoded result
     @State private var decodedTrend: MoodTrendResult? = nil
     @State private var decodingError: Bool = false
+    @State private var isLoading: Bool = false // Added missing state variable
 
     // Scroll behavior properties
     var scrollProxy: ScrollViewProxy? = nil
@@ -19,6 +20,7 @@ struct MoodAnalysisInsightCard: View {
     @State private var isExpanded: Bool = false
     @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
     @EnvironmentObject var appState: AppState // Needed for full entry data in detail view
+    @EnvironmentObject var databaseService: DatabaseService // Inject DatabaseService
 
     // Helper to get color from Mood enum
     private func moodColor(forName moodName: String?) -> Color {
@@ -148,44 +150,94 @@ struct MoodAnalysisInsightCard: View {
                 }
             }
         )
+        .onAppear(perform: loadInsight) // Added loading logic trigger
         .onChange(of: jsonString) { oldValue, newValue in
             decodeJSON(json: newValue)
         }
-        .onAppear {
-            decodeJSON(json: jsonString)
+        // Reload if entries change (might need debounce later)
+         .onChange(of: appState.journalEntries.count) { _, _ in loadInsight() }
+         // Add listener for explicit insight updates
+         .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
+             print("[MoodAnalysisCard] Received insightsDidUpdate notification.")
+             loadInsight()
+         }
+    }
+
+    // Function to load and decode the insight
+    private func loadInsight() {
+        guard !isLoading else { return }
+        isLoading = true
+        decodingError = false // Reset error state on new load attempt
+        print("[MoodAnalysisCard] Loading insight...")
+        Task {
+            do {
+                // Use await as DB call might become async
+                if let (json, _) = try await databaseService.loadLatestInsight(type: "moodTrend") { // Use correct identifier
+                     decodeJSON(json: json) // Call decode function
+                     await MainActor.run { isLoading = false } // Set loading false after decoding attempt
+                      print("[MoodAnalysisCard] Insight loaded.")
+                } else {
+                    await MainActor.run {
+                        decodedTrend = nil // Ensure it's nil if not found
+                        isLoading = false
+                        print("[MoodAnalysisCard] No stored insight found.")
+                    }
+                }
+            } catch {
+                 await MainActor.run {
+                     print("‼️ [MoodAnalysisCard] Failed to load insight: \(error)")
+                     decodedTrend = nil // Clear result on error
+                     decodingError = true // Set error state
+                     isLoading = false
+                 }
+            }
         }
     }
 
-    // Decoding function (remains the same)
+    // Decoding function (can be private)
     private func decodeJSON(json: String?) {
         guard let json = json, !json.isEmpty else {
-            decodedTrend = nil; decodingError = false; return
+            // Don't reset here if it was already nil, just handle empty input
+             if decodedTrend != nil {
+                 Task { await MainActor.run { decodedTrend = nil } }
+             }
+            // decodingError = false // Resetting error here might hide loading errors
+            return
         }
-        decodingError = false
+        // decodingError = false // Reset error before attempting decode
+
         guard let data = json.data(using: .utf8) else {
-            print("⚠️ [MoodAnalysisCard] Failed convert JSON string to Data."); decodingError = true; decodedTrend = nil; return
+            print("⚠️ [MoodAnalysisCard] Failed convert JSON string to Data.");
+            Task { await MainActor.run { decodingError = true; decodedTrend = nil } }
+            return
         }
         do {
             let result = try JSONDecoder().decode(MoodTrendResult.self, from: data)
-            if result != decodedTrend { decodedTrend = result; print("[MoodAnalysisCard] Decoded new trend.") }
+            Task { await MainActor.run { // Ensure state update is on main thread
+                if result != decodedTrend { decodedTrend = result; print("[MoodAnalysisCard] Decoded new trend.") }
+                decodingError = false // Clear error on successful decode
+            }}
         } catch {
-            print("‼️ [MoodAnalysisCard] Failed decode MoodTrendResult: \(error). JSON: \(json)"); decodingError = true; decodedTrend = nil
+            print("‼️ [MoodAnalysisCard] Failed decode MoodTrendResult: \(error). JSON: \(json)");
+            Task { await MainActor.run { decodingError = true; decodedTrend = nil } }
         }
     }
 }
 
+// Update Preview Provider name
 #Preview {
     ScrollView{
         MoodAnalysisInsightCard(jsonString: MoodTrendResult.empty().toJsonString(), generatedDate: Date(), subscriptionTier: .premium)
             .padding()
             .environmentObject(AppState()) // Provide mock data if needed
+            .environmentObject(DatabaseService()) // Provide DatabaseService
             .environmentObject(UIStyles.shared)
             .environmentObject(ThemeManager.shared)
     }
     .background(Color.gray.opacity(0.1))
 }
 
-// Helper extension for preview
+// Helper extension for preview (Keep as is)
 extension MoodTrendResult {
     func toJsonString() -> String? {
         let encoder = JSONEncoder()

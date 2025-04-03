@@ -13,6 +13,7 @@ struct ForecastInsightCard: View {
     @State private var isExpanded: Bool = false
     @ObservedObject private var styles = UIStyles.shared
     @EnvironmentObject var databaseService: DatabaseService // Inject DatabaseService
+    @EnvironmentObject var appState: AppState // Add EnvironmentObject
 
     // State for the decoded result and loading/error status
     @State private var forecastResult: ForecastResult? = nil
@@ -32,7 +33,8 @@ struct ForecastInsightCard: View {
         }
         if let consistency = result.consistencyForecast, !consistency.isEmpty {
              // Maybe shorten consistency forecast for collapsed view if too long
-             components.append("Consistency: \(consistency.prefix(20))...")
+             let snippet = consistency.count > 20 ? "\(consistency.prefix(20))..." : consistency
+             components.append("Consistency: \(snippet)")
         }
         if components.isEmpty {
              return "Future insights ready."
@@ -83,8 +85,8 @@ struct ForecastInsightCard: View {
             detailContent: {
                 // Expanded View: Use ForecastDetailContent
                 if subscriptionTier == .premium {
-                    // Pass forecastResult
-                    ForecastDetailContent(forecastResult: forecastResult)
+                    // Pass forecastResult correctly
+                    ForecastDetailContent(forecastResult: self.forecastResult) // Explicitly pass state var
                 } else {
                      // Free tier expanded state
                      VStack(spacing: styles.layout.spacingL) {
@@ -102,11 +104,10 @@ struct ForecastInsightCard: View {
         )
          // Add loading logic
          .onAppear(perform: loadInsight)
-         .onChange(of: appState.journalEntries.count) { _, _ in loadInsight() } // Reload on entry change
           // Add listener for explicit insight updates
           .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
               print("[ForecastCard] Received insightsDidUpdate notification.")
-              loadInsight()
+              loadInsight() // Reload data when insights update
           }
     }
 
@@ -119,7 +120,8 @@ struct ForecastInsightCard: View {
 
          Task {
              do {
-                 if let (json, _) = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                 // Use await as DB call might become async
+                 if let (json, _) = try await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
                      if let data = json.data(using: .utf8) {
                          let result = try JSONDecoder().decode(ForecastResult.self, from: data)
                          await MainActor.run {
@@ -149,12 +151,14 @@ struct ForecastInsightCard: View {
      }
 }
 
-#Preview {
-     ScrollView {
-         ForecastInsightCard(subscriptionTier: .premium)
-             .padding()
-             .environmentObject(UIStyles.shared)
-             .environmentObject(ThemeManager.shared)
-     }
-     .background(Color.gray.opacity(0.1))
-}
+ #Preview {
+      ScrollView {
+          ForecastInsightCard(subscriptionTier: .premium)
+              .padding()
+              .environmentObject(AppState()) // Ensure AppState is provided
+              .environmentObject(DatabaseService()) // Ensure DatabaseService is provided
+              .environmentObject(UIStyles.shared)
+              .environmentObject(ThemeManager.shared)
+      }
+      .background(Color.gray.opacity(0.1))
+ }
