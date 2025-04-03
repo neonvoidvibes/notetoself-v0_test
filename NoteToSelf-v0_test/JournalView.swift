@@ -98,7 +98,7 @@ struct JournalView: View {
                                  }
                             }
                             // Call global trigger function
-                            await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, subscriptionTier: appState.subscriptionTier)
+                            await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, appState: appState)
                         } catch {
                             print("‼️ Error saving new journal entry \(newEntry.id) to DB: \(error)")
                         }
@@ -136,7 +136,7 @@ struct JournalView: View {
                             try databaseService.saveJournalEntry(updatedEntry, embedding: embeddingVector)
                             await MainActor.run { updateEntryInAppState(updatedEntry) }
                             // Call global trigger function
-                            await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, subscriptionTier: appState.subscriptionTier)
+                            await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, appState: appState)
                         } catch {
                             print("‼️ Error updating journal entry \(updatedEntry.id) in DB: \(error)")
                         }
