@@ -231,17 +231,68 @@ struct RecommendationResult: Codable, Equatable {
     }
 }
 
-// Structure for Forecast Insight (Placeholder Structure)
-struct ForecastResult: Codable, Equatable { // Conformance should now be automatic
-    var moodPrediction: String? = "Stable mood expected."
-    var moodChartData: [MoodDataPoint]? = nil // Uses the single, conforming MoodDataPoint
-    var generalTrends: [String]? = ["Focus on wellness topics may increase."]
-    var preemptiveActionPlan: [String]? = ["Schedule a short break tomorrow."]
+// Structure for Streak Narrative Insight
+struct StreakNarrativeResult: Codable, Equatable {
+    var storySnippet: String = "Begin your story by journaling today." // For collapsed view
+    var narrativeText: String = "Your journaling journey is unfolding." // For expanded view detail
+    // Timeline markers (e.g., "Breakthrough", "Resilience") could be added here if AI generates them.
+    // var timelineMarkers: [TimelineMarker]? = [] // Example future addition
 
-    // Corrected empty() function - ensure it's inside the struct
+    static func empty() -> StreakNarrativeResult {
+        StreakNarrativeResult(storySnippet: "Journal consistently to build your narrative.", narrativeText: "Your detailed storyline will appear here with more data.")
+    }
+}
+
+// Structure for AI Reflection Insight
+struct AIReflectionResult: Codable, Equatable {
+    var insightMessage: String = "How are you feeling today?" // Main insight for collapsed/expanded
+    var reflectionPrompts: [String] = [ // Prompts for expanded view
+        "What's been on your mind lately?",
+        "What are you grateful for today?",
+        "What challenge are you currently facing?"
+    ]
+
+    static func empty() -> AIReflectionResult {
+        AIReflectionResult(insightMessage: "Unlock AI reflections by journaling.", reflectionPrompts: ["What would you like to reflect on?"])
+    }
+}
+
+
+// Structure for Forecast Insight (Refined Structure)
+struct ForecastResult: Codable, Equatable {
+    // Mood Prediction
+    var moodPredictionText: String? = "Mood forecast unavailable." // Textual summary (e.g., "Upbeat", "Potential dip mid-week")
+    // Optional: Add structured data for charts if needed later
+    // var moodPredictionChartData: [ForecastDataPoint]?
+
+    // General Trends
+    var emergingTopics: [String]? = [] // e.g., ["Wellness", "Work/Life Balance"]
+    var consistencyForecast: String? = "Journaling consistency likely stable." // e.g., "Likely stable", "Potential decrease"
+
+    // Preemptive Action Plan
+    var actionPlanItems: [ActionPlanItem]? = [] // Renamed from preemptiveActionPlan for clarity
+
+    // Nested struct for action plan items
+    struct ActionPlanItem: Codable, Equatable, Identifiable { // Added Identifiable
+        let id: UUID // Added for Identifiable
+        var title: String // e.g., "Schedule Short Break"
+        var description: String // e.g., "Plan a 10-min break tomorrow afternoon to maintain energy."
+        var rationale: String? // Optional: Why this is suggested based on forecast
+
+        // Init for Identifiable conformance
+        init(id: UUID = UUID(), title: String, description: String, rationale: String? = nil) {
+            self.id = id
+            self.title = title
+            self.description = description
+            self.rationale = rationale
+        }
+    }
+
+    // Nested struct for potential future chart data
+    // struct ForecastDataPoint: Codable, Equatable { ... }
+
     static func empty() -> ForecastResult {
-        // Directly initialize with nil values matching the optional properties
-        ForecastResult(moodPrediction: nil, moodChartData: nil, generalTrends: nil, preemptiveActionPlan: nil)
+        ForecastResult(moodPredictionText: nil, emergingTopics: nil, consistencyForecast: nil, actionPlanItems: nil)
     }
 }
 
