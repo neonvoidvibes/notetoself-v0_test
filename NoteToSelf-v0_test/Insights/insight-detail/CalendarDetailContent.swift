@@ -93,7 +93,8 @@ struct DetailedCalendarView: View {
         }
     }
 
-    private func daysInMonth() -> [CalendarDay] { // Uses global CalendarDay
+    // Ensure this function uses the single, global CalendarDay struct from Models.swift
+    private func daysInMonth() -> [CalendarDay] {
         let calendar = Calendar.current
 
         let components = calendar.dateComponents([.year, .month], from: month)
@@ -122,7 +123,7 @@ struct DetailedCalendarView: View {
 }
 
 struct DetailedCalendarDayView: View {
-    let day: CalendarDay // Uses global CalendarDay
+    let day: CalendarDay // Ensure this uses the single, global CalendarDay struct from Models.swift
     let entries: [JournalEntry]
     @State private var showingEntry: Bool = false
     @State private var selectedEntry: JournalEntry? = nil

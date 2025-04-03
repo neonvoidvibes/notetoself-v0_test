@@ -208,18 +208,24 @@ struct MoodTrendResult: Codable, Equatable {
 // Structure for Recommendation Insight
 struct RecommendationResult: Codable, Equatable {
     struct RecommendationItem: Codable, Equatable, Identifiable {
-        let id = UUID() // Add identifiable conformance for UI lists
+        let id: UUID // Keep Identifiable, ensure it's decodable/encodable correctly
         var title: String
         var description: String
         var category: String // e.g., "Mindfulness", "Activity", "Social"
         var rationale: String // Why this recommendation is suggested
+
+        // Provide default init for Identifiable conformance if needed, or ensure JSON includes ID
+         init(id: UUID = UUID(), title: String, description: String, category: String, rationale: String) {
+             self.id = id
+             self.title = title
+             self.description = description
+             self.category = category
+             self.rationale = rationale
+         }
     }
 
     var recommendations: [RecommendationItem] = []
 
-    static func empty() -> RecommendationResult {
-        RecommendationResult(recommendations: [])
-    }
     static func empty() -> RecommendationResult {
         RecommendationResult(recommendations: [])
     }
@@ -239,24 +245,7 @@ struct ForecastResult: Codable, Equatable { // Conformance should now be automat
     }
 }
 
-// REMOVED duplicate MoodDataPoint definition if it existed further down
-// Ensure the MoodDataPoint definition above near CalendarDay is the ONLY one.
 
-
-// MARK: - App State (Keep if used globally)
-
-// Defined here for global access
-struct CalendarDay: Hashable {
-    let day: Int
-    let date: Date
-}
-
-// Defined here for global access
-struct MoodDataPoint: Identifiable {
-    let id = UUID() // Add identifiable conformance
-    let date: Date
-    let value: Double
-}
 // MARK: - Insight Card Helper Structs
 
 // Defined here for global access
@@ -278,19 +267,6 @@ struct MoodDataPoint: Identifiable, Codable, Equatable { // Added Codable, Equat
          self.value = value
      }
 }
-
-// Defined here for global access
-// Note: This 'Recommendation' struct might conflict with RecommendationResult.RecommendationItem
-// Let's rename this one or remove it if RecommendationResult.RecommendationItem is sufficient.
-// Removing this one as RecommendationResult.RecommendationItem serves the purpose.
-/*
-struct Recommendation: Identifiable {
-    let id = UUID()
-    let title: String
-    let description: String
-    let icon: String
-}
-*/
 
 
 // MARK: - App State (Keep if used globally)
@@ -338,23 +314,3 @@ class AppState: ObservableObject {
 
     // REMOVED triggerAllInsightGenerations function - moved to InsightUtils.swift
 }
-
-// Helper Color Extension (if not already defined elsewhere, e.g., UIStyles)
-// If UIStyles already defines this, remove it from here.
-/*
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default: (a, r, g, b) = (255, 0, 0, 0)
-        }
-        self.init(.sRGB, red: Double(r) / 255, green: Double(g) / 255, blue: Double(b) / 255, opacity: Double(a) / 255)
-    }
-}
-*/
