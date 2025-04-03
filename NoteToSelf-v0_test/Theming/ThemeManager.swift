@@ -6,8 +6,8 @@ class ThemeManager: ObservableObject {
     static let shared = ThemeManager()
 
     @Published private(set) var activeTheme: Theme
-    // Add AuraTheme to the list
-    let availableThemes: [Theme] = [MonoTheme(), WarmTheme(), StandardTheme(), AuraTheme()]
+    // Add BrightTheme to the list
+    let availableThemes: [Theme] = [MonoTheme(), WarmTheme(), StandardTheme(), AuraTheme(), BrightTheme()]
 
     private var currentThemeIndex = 3
     private var cancellables = Set<AnyCancellable>()
