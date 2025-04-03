@@ -123,16 +123,10 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
             RoundedRectangle(cornerRadius: layout.radiusM)
                  // Use theme card background color
                 .fill(colors.cardBackground)
-                // REMOVED: .shadow(...)
+                // ADDED shadow to match SettingsView cards
+                .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: layout.radiusM)
-                .strokeBorder(
-                    // Use theme divider or accent color for border
-                    isPrimary ? colors.accent.opacity(0.3) : colors.divider.opacity(0.5),
-                    lineWidth: isPrimary ? 1.5 : 1
-                )
-        )
+        // REMOVED border overlay
         .scaleEffect(hovered ? 1.01 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hovered)
         .contentShape(Rectangle())
