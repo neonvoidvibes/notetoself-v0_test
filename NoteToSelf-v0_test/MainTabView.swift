@@ -264,7 +264,7 @@ struct MainTabView: View {
                                       Text("Navigation")
                                           .font(.system(size: 10, weight: .regular, design: .monospaced))
                                           // Use Accent color when closed
-                                          .foregroundColor(styles.colors.accent)
+                                          .foregroundColor(styles.colors.text)
                                   }
                               }
                               // Apply conditional height for chevron button area

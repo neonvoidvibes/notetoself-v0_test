@@ -172,7 +172,7 @@ struct ReflectionsView: View {
     var body: some View {
         ZStack {
             // Use inputBackground for ReflectionsView main background
-            styles.colors.inputBackground
+            styles.colors.appBackground
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
