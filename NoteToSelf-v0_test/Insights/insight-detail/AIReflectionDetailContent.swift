@@ -2,65 +2,8 @@ import SwiftUI
 
 struct AIReflectionDetailContent: View {
     let insightMessage: String // The initial message from the collapsed view
-    @EnvironmentObject var appState: AppState // Access journal entries for prompt generation
+    let reflectionPrompts: [String] // Pass in the generated prompts
     @ObservedObject private var styles = UIStyles.shared
-
-    // Helper method to generate reflection prompts based on recent entries (Copied from old ChatInsightCard)
-    private func generateReflectionPrompts() -> [String] {
-        let calendar = Calendar.current
-        let recentEntries = appState.journalEntries
-            .filter { calendar.isDateInToday($0.date) || calendar.isDateInYesterday($0.date) }
-
-        if let mostRecent = recentEntries.first {
-            // Generate prompts based on most recent entry mood
-            switch mostRecent.mood {
-            case .happy, .excited, .content, .relaxed, .calm:
-                return [
-                    "What specific events or factors contributed to your positive mood?",
-                    "How might you intentionally create more moments like this in the future?",
-                    "What strengths or resources are you drawing on during this positive period?"
-                ]
-            case .sad, .depressed:
-                return [
-                    "What thoughts or situations might be contributing to these feelings?",
-                    "What has helped you navigate similar feelings in the past?",
-                    "What small step could you take today to support your well-being?"
-                ]
-            case .anxious, .stressed:
-                return [
-                    "What specific concerns or uncertainties are you facing right now?",
-                    "What aspects of the situation are within your control, and which aren't?",
-                    "What coping strategies have been effective for you in the past?"
-                ]
-            case .angry:
-                return [
-                    "What underlying needs or values might this frustration be pointing to?",
-                    "How might you address this situation in a way that aligns with your values?",
-                    "What perspective might help you view this situation differently?"
-                ]
-            case .bored:
-                return [
-                    "What activities have engaged you deeply in the past?",
-                    "What new skill or interest have you been curious about exploring?",
-                    "How might this feeling of boredom be guiding you toward something important?"
-                ]
-            default:
-                return [
-                    "What patterns have you noticed in your thoughts or feelings lately?",
-                    "What would be most supportive for you right now?",
-                    "What insights from past experiences might be relevant to your current situation?"
-                ]
-            }
-        } else {
-            // General prompts if no recent entries
-            return [
-                "What's been on your mind lately that might be worth exploring?",
-                "What patterns have you noticed in your mood or energy levels?",
-                "What would you like to focus on or prioritize in the coming days?"
-            ]
-        }
-    }
-
 
     var body: some View {
         VStack(alignment: .leading, spacing: styles.layout.spacingL) {
@@ -78,7 +21,7 @@ struct AIReflectionDetailContent: View {
                 .font(styles.typography.title3)
                 .foregroundColor(styles.colors.text)
 
-            ForEach(generateReflectionPrompts(), id: \.self) { prompt in
+            ForEach(reflectionPrompts, id: \.self) { prompt in // Iterate over passed-in prompts
                 HStack(alignment: .top, spacing: styles.layout.spacingM) {
                     Image(systemName: "bubble.left.fill")
                         .foregroundColor(styles.colors.accent.opacity(0.7))
@@ -123,7 +66,14 @@ struct AIReflectionDetailContent: View {
 }
 
 #Preview {
-    AIReflectionDetailContent(insightMessage: "Sample insight message for preview.")
+    AIReflectionDetailContent(
+        insightMessage: "Sample insight message for preview.",
+        reflectionPrompts: [
+            "What was the best part of your day?",
+            "What challenge did you overcome?",
+            "How did you feel overall?"
+        ]
+    )
         .padding()
         .environmentObject(AppState()) // Provide mock data if needed
         .environmentObject(UIStyles.shared)

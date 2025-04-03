@@ -2,14 +2,14 @@ import SwiftUI
 
 struct StreakNarrativeDetailContent: View {
     let streak: Int
-    let entries: [JournalEntry] // Add entries to generate timeline/narrative
+    let entries: [JournalEntry] // Keep entries for timeline
+    let narrativeResult: StreakNarrativeResult? // Accept optional result
 
     @ObservedObject private var styles = UIStyles.shared
 
-    // Placeholder for AI-generated narrative
-    private var narrativeText: String {
-        // TODO: Implement AI generation based on entries
-        return "Over the past \(entries.count) entries, you've explored themes of [Theme 1] and [Theme 2]. Key moments include a breakthrough around [Date] and showing resilience during [Period]."
+    // Use narrative text from the result, or a placeholder
+    private var narrativeDisplayText: String {
+        narrativeResult?.narrativeText ?? "Your detailed storyline will appear here once enough data is analyzed."
     }
 
     var body: some View {
@@ -18,8 +18,8 @@ struct StreakNarrativeDetailContent: View {
                 .font(styles.typography.title3)
                 .foregroundColor(styles.colors.text)
 
-            // Narrative Text (AI Generated)
-            Text(narrativeText)
+            // Narrative Text (From Result)
+            Text(narrativeDisplayText) // Use computed property
                 .font(styles.typography.bodyFont)
                 .foregroundColor(styles.colors.textSecondary)
                 .padding(.bottom)
@@ -146,10 +146,12 @@ struct StreakMilestone: View {
         JournalEntry(text: "Entry 2", mood: .stressed, date: Calendar.current.date(byAdding: .day, value: -3, to: Date())!),
         JournalEntry(text: "Entry 3", mood: .content, date: Calendar.current.date(byAdding: .day, value: -5, to: Date())!)
     ]
+    let mockResult = StreakNarrativeResult(storySnippet: "Snippet preview", narrativeText: "Longer narrative preview text goes here.")
     ScrollView {
-        StreakNarrativeDetailContent(streak: 5, entries: mockEntries)
+        StreakNarrativeDetailContent(streak: 5, entries: mockEntries, narrativeResult: mockResult)
             .padding()
     }
+    .environmentObject(AppState()) // Provide mock AppState
     .environmentObject(UIStyles.shared)
     .environmentObject(ThemeManager.shared)
 }
