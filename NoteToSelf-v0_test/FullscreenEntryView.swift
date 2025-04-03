@@ -364,11 +364,12 @@ struct EditableFullscreenEntryView: View {
                         }) {
                             Text("Confirm")
                                 .font(styles.typography.bodyFont) // Use styles instance
-                                .foregroundColor(.black) // Contrast color
+                                .foregroundColor(styles.colors.accentContrastText) // Apply to Text
                                 .padding(.vertical, 10)
                                 .padding(.horizontal, 20)
                                 .background(RoundedRectangle(cornerRadius: styles.layout.radiusM).fill(styles.colors.accent)) // Use styles instance
                         }
+                        .tint(styles.colors.accentContrastText) // Apply tint to Button
                         .padding([.trailing, .bottom], 24)
                     } else {
                         Button(action: {
@@ -379,11 +380,12 @@ struct EditableFullscreenEntryView: View {
                         }) {
                             Text("Save")
                                 .font(styles.typography.bodyFont) // Use styles instance
-                                .foregroundColor(.black) // Contrast color
+                                .foregroundColor(styles.colors.accentContrastText) // Apply to Text
                                 .padding(.vertical, 10)
                                 .padding(.horizontal, 20)
                                 .background(RoundedRectangle(cornerRadius: styles.layout.radiusM).fill(styles.colors.accent)) // Use styles instance
                         }
+                        .tint(styles.colors.accentContrastText) // Apply tint to Button
                         .disabled(entryText.isEmpty)
                         .opacity(entryText.isEmpty ? 0.5 : 1.0)
                         .padding([.trailing, .bottom], 24)
