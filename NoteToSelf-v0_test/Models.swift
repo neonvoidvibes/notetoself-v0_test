@@ -226,19 +226,24 @@ struct RecommendationResult: Codable, Equatable {
 }
 
 // Structure for Forecast Insight (Placeholder Structure)
-struct ForecastResult: Codable, Equatable {
+struct ForecastResult: Codable, Equatable { // Conformance should now be automatic
     var moodPrediction: String? = "Stable mood expected."
-    var moodChartData: [MoodDataPoint]? = nil // Optional: For chart visualization
+    var moodChartData: [MoodDataPoint]? = nil // Uses the single, conforming MoodDataPoint
     var generalTrends: [String]? = ["Focus on wellness topics may increase."]
     var preemptiveActionPlan: [String]? = ["Schedule a short break tomorrow."]
 
+    // Corrected empty() function - ensure it's inside the struct
     static func empty() -> ForecastResult {
+        // Directly initialize with nil values matching the optional properties
         ForecastResult(moodPrediction: nil, moodChartData: nil, generalTrends: nil, preemptiveActionPlan: nil)
     }
 }
 
+// REMOVED duplicate MoodDataPoint definition if it existed further down
+// Ensure the MoodDataPoint definition above near CalendarDay is the ONLY one.
 
-// MARK: - Insight Card Helper Structs
+
+// MARK: - App State (Keep if used globally)
 
 // Defined here for global access
 struct CalendarDay: Hashable {
@@ -251,6 +256,27 @@ struct MoodDataPoint: Identifiable {
     let id = UUID() // Add identifiable conformance
     let date: Date
     let value: Double
+}
+// MARK: - Insight Card Helper Structs
+
+// Defined here for global access
+struct CalendarDay: Hashable {
+    let day: Int
+    let date: Date
+}
+
+// Defined here for global access - ENSURE THIS IS THE ONLY DEFINITION
+struct MoodDataPoint: Identifiable, Codable, Equatable { // Added Codable, Equatable
+    var id: UUID // Changed to var to allow decoding
+    let date: Date
+    let value: Double
+
+    // Explicit init to handle default UUID generation if needed when decoding/creating
+     init(id: UUID = UUID(), date: Date, value: Double) {
+         self.id = id
+         self.date = date
+         self.value = value
+     }
 }
 
 // Defined here for global access

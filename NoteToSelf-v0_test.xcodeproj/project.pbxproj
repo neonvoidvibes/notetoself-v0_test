@@ -15,9 +15,29 @@
 		6483FB4C2D8E9E5100E8EA20 /* NoteToSelf-v0_test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NoteToSelf-v0_test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		64D8461B2D9EFE190003CAC1 /* Exceptions for "NoteToSelf-v0_test" folder in "NoteToSelf-v0_test" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Insights/Insight-Cards/Insight-Cards-Hide/CalendarInsightCard.swift",
+				"Insights/Insight-Cards/Insight-Cards-Hide/MoodDistributionInsightCard.swift",
+				"Insights/Insight-Cards/Insight-Cards-Hide/SentimentAnalysisInsightCard.swift",
+				"Insights/Insight-Cards/Insight-Cards-Hide/TopicAnalysisInsightCard.swift",
+				"Insights/Insight-Cards/Insight-Cards-Hide/WeeklyInsightCard.swift",
+				"Insights/Insight-Cards/Insight-Cards-Hide/WordCountInsightCard.swift",
+				"Insights/Insight-Cards/Insight-Cards-Hide/WritingConsistencyInsightCard.swift",
+				"Insights/insight-Detail/Insight-Detail-Hide/MoodDistributionDetailContent.swift",
+			);
+			target = 6483FB4B2D8E9E5100E8EA20 /* NoteToSelf-v0_test */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		6483FB4E2D8E9E5100E8EA20 /* NoteToSelf-v0_test */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				64D8461B2D9EFE190003CAC1 /* Exceptions for "NoteToSelf-v0_test" folder in "NoteToSelf-v0_test" target */,
+			);
 			path = "NoteToSelf-v0_test";
 			sourceTree = "<group>";
 		};

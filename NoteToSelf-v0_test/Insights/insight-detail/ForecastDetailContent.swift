@@ -1,16 +1,6 @@
 import SwiftUI
 import Charts // Import Charts if needed for visualizations
 
-// Placeholder Codable struct for Forecast data (Needs definition)
-struct ForecastResult: Codable, Equatable {
-    var moodPrediction: String? // e.g., "Slight dip expected mid-week"
-    var moodChartData: [MoodDataPoint]? // Optional data for a chart
-    var generalTrends: [String]? // e.g., ["Increased focus on wellness topics"]
-    var preemptiveActionPlan: [String]? // e.g., ["Plan a short break tomorrow"]
-
-    // Add static empty state if needed
-}
-
 // Placeholder Detail View
 struct ForecastDetailContent: View {
     // let forecastResult: ForecastResult? // Will be passed in
