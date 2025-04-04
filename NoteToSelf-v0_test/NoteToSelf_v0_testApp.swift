@@ -14,7 +14,7 @@ struct NoteToSelf_v0_testApp: App {
 
     init() {
         // Initialize Theme Manager First (it interacts with UIStyles singleton)
-        let themeMgr = ThemeManager.shared
+        let themeMgr = ThemeManager.shared // Use singleton pattern
         _themeManager = StateObject(wrappedValue: themeMgr)
 
         // Initialize other services
@@ -43,6 +43,15 @@ struct NoteToSelf_v0_testApp: App {
         loadInitialAppStateData(databaseService: dbService, appState: initialAppState)
     }
 
+    // Helper to map preference to ColorScheme
+    private func colorSchemeForPreference(_ preference: ThemeModePreference) -> ColorScheme? {
+        switch preference {
+        case .light: return .light
+        case .dark: return .dark
+        case .system: return nil // Use system setting
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             MainTabView() // Use MainTabView directly
@@ -52,9 +61,8 @@ struct NoteToSelf_v0_testApp: App {
                 .environmentObject(subscriptionManager)
                 .environmentObject(databaseService)
                 .environmentObject(themeManager) // Inject ThemeManager
-                // REMOVED: .environmentObject(llmService)
-                // .preferredColorScheme(.dark) // REMOVED - Let theme/system control scheme
-                // Removed onAppear here, data loading triggered from init
+                // Apply preferred color scheme based on manager's state
+                .preferredColorScheme(colorSchemeForPreference(themeManager.themeModePreference))
                 // Add temporary developer theme toggle (Triple tap)
                 .onTapGesture(count: 3) {
                     print("Triple tap detected - cycling theme.")

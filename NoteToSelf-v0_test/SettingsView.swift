@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var themeManager: ThemeManager // Inject ThemeManager
     @Environment(\.settingsScrollingDisabled) private var settingsScrollingDisabled
     @State private var notificationTime: Date = Date() // Should load saved time
     @State private var notificationsEnabled: Bool = false // Should load saved state
@@ -65,14 +66,17 @@ struct SettingsView: View {
 
                 ScrollView(.vertical, showsIndicators: true) {
                     VStack(spacing: styles.layout.spacingXL) {
+
+                         // Appearance Section (NEW)
+                         AppearanceSection() // Extracted to subview
+                              .transition(.scale.combined(with: .opacity))
+
                         // Subscription section
-                        // SubscriptionSection observes styles internally now
                         SubscriptionSection(subscriptionTier: appState.subscriptionTier)
                             .transition(.scale.combined(with: .opacity))
-                            .padding(.top, 40)
+                            // .padding(.top, 40) // Removed extra top padding
 
                         // Notifications section
-                        // NotificationsSection observes styles internally now
                         NotificationsSection(
                             notificationsEnabled: $notificationsEnabled,
                             notificationTime: $notificationTime
@@ -80,18 +84,16 @@ struct SettingsView: View {
                         .transition(.scale.combined(with: .opacity))
 
                         // Privacy & Export section
-                        // PrivacySection observes styles internally now
                         PrivacySection()
                             .transition(.scale.combined(with: .opacity))
 
                         // About section
-                        // AboutSection observes styles internally now
                         AboutSection()
                             .transition(.scale.combined(with: .opacity))
 
                     }
                     .padding(.horizontal, styles.layout.paddingL)
-                    // Removed top padding as it's now part of the outer VStack spacing/header
+                    .padding(.top, 40) // Add padding to the top of the scroll content
                     .padding(.bottom, 50)
                 }
                 .disabled(settingsScrollingDisabled)
@@ -105,6 +107,41 @@ struct SettingsView: View {
         }
     }
 }
+
+// MARK: - Appearance Section (NEW)
+struct AppearanceSection: View {
+    @EnvironmentObject var themeManager: ThemeManager // Inject ThemeManager
+    @ObservedObject private var styles = UIStyles.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+            Text("Appearance")
+                .font(styles.typography.title3)
+                .foregroundColor(styles.colors.text)
+
+            styles.card(
+                VStack(spacing: styles.layout.spacingM) {
+                    // Theme Mode Picker
+                    Picker("Color Scheme", selection: $themeManager.themeModePreference) {
+                        ForEach(ThemeModePreference.allCases) { preference in
+                            Text(preference.rawValue).tag(preference)
+                        }
+                    }
+                    .pickerStyle(.segmented) // Use segmented style for concise options
+                    // .colorMultiply(styles.colors.accent) // REMOVED TINT
+
+                    // Add Theme selection later if needed
+                    // Example:
+                    // Picker("Theme", selection: $themeManager.activeThemeName) { ... }
+                }
+                .padding(styles.layout.paddingL)
+                .frame(maxWidth: .infinity)
+            )
+            .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
+        }
+    }
+}
+
 
 // MARK: - Subscription Section
 struct SubscriptionSection: View {
@@ -191,7 +228,7 @@ struct GlowingButtonStyle: ButtonStyle {
                     .fill(styles.colors.accent) // Use styles instance
                     .shadow(color: styles.colors.accent.opacity(configuration.isPressed ? 0.3 : 0.6), radius: configuration.isPressed ? 5 : 10, x: 0, y: 0) // Use styles instance
             )
-            .foregroundColor(styles.colors.accentContrastText) // Use theme color
+            .foregroundColor(styles.colors.primaryButtonText) // Use theme color
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .frame(maxWidth: .infinity)
     }
@@ -212,19 +249,20 @@ struct NotificationsSection: View {
 
             styles.card( // Use styles instance method
                 VStack(spacing: styles.layout.spacingM) {
-                    // Toggle with fixed width
-                    Toggle("Daily Reminder", isOn: $notificationsEnabled)
-                        .font(styles.typography.bodyFont) // Use styles instance
-                        .foregroundColor(styles.colors.text) // Use styles instance
-                        // Pass styles instance to toggle style
-                        .toggleStyle(ModernToggleStyle()) // Style observes internally
+                    // Use closure-based Toggle initializer to apply color directly to Text
+                    Toggle(isOn: $notificationsEnabled) {
+                        Text("Daily Reminder")
+                            .foregroundColor(styles.colors.accent) // Apply accent color here
+                    }
+                    .font(styles.typography.bodyFont) // Apply font to the whole Toggle container
+                    .toggleStyle(ModernToggleStyle()) // Apply custom style to the switch
 
                     // Conditionally show time picker with transition
                     if notificationsEnabled {
                         HStack {
                             Text("Reminder Time")
                                 .font(styles.typography.bodyFont) // Use styles instance
-                                .foregroundColor(styles.colors.text) // Use styles instance
+                                .foregroundColor(styles.colors.text) // Use standard text color here
 
                             Spacer()
 
@@ -250,7 +288,7 @@ struct ModernToggleStyle: ToggleStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         HStack {
-            configuration.label
+            configuration.label // The label (Text view) is passed in here
             Spacer()
             ZStack {
                 Capsule()
@@ -399,8 +437,8 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         SettingsView()
             .environmentObject(AppState())
-            .environmentObject(UIStyles.shared) // Provide UIStyles for preview
             .environmentObject(ThemeManager.shared) // Provide ThemeManager for preview
+            .environmentObject(UIStyles.shared) // Provide UIStyles for preview
             // Removed preferredColorScheme, let preview system decide
     }
 }
