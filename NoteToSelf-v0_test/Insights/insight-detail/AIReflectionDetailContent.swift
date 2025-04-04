@@ -3,7 +3,8 @@ import SwiftUI
 struct AIReflectionDetailContent: View {
     let insightMessage: String // The initial message from the collapsed view
     let reflectionPrompts: [String] // Pass in the generated prompts
-    @ObservedObject private var styles = UIStyles.shared
+     // Ensure styles are observed if passed down or used globally
+     @ObservedObject private var styles = UIStyles.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: styles.layout.spacingL) {

@@ -8,7 +8,8 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
     var scrollProxy: ScrollViewProxy? = nil
     var cardId: String? = nil
 
-    @State private var isExpanded: Bool = false
+    @State private var isExpanded: Bool = false // Remove if unused
+    @State private var showingFullScreen = false // State for full screen presentation
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var databaseService: DatabaseService // Inject DatabaseService
 
@@ -31,9 +32,7 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
 
 
     var body: some View {
-        styles.expandableCard(
-            isExpanded: $isExpanded,
-            isPrimary: streak > 0, // Highlight if streak is active
+        styles.expandableCard( // Removed isPrimary argument
             scrollProxy: scrollProxy,
             cardId: cardId,
             content: {
@@ -81,23 +80,27 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
                      .frame(maxWidth: .infinity, alignment: .center) // Center the text block
 
                 }
-            },
-            detailContent: {
-                // Pass the narrative result to the detail view
-                StreakNarrativeDetailContent(
-                    streak: streak,
-                    entries: appState.journalEntries, // Keep passing entries if detail view needs them
-                    narrativeResult: narrativeResult // Pass the loaded result
-                )
-            }
+            } // Removed detailContent closure
         )
+        .contentShape(Rectangle()) // Make entire card tappable
+        .onTapGesture { showingFullScreen = true } // Trigger fullscreen on tap
         .transition(.scale.combined(with: .opacity))
+        .fullScreenCover(isPresented: $showingFullScreen) {
+            InsightFullScreenView(title: "Your Journey") {
+                 // Embed the detail content view
+                 StreakNarrativeDetailContent(
+                     streak: streak,
+                     entries: appState.journalEntries,
+                     narrativeResult: narrativeResult
+                 )
+             }
+             .environmentObject(styles) // Pass styles if needed by subview
+             .environmentObject(appState) // Pass appState
+             .environmentObject(databaseService) // Pass databaseService
+        }
         // Add loading logic
         .onAppear(perform: loadInsight)
         .onChange(of: appState.journalEntries.count) { _, _ in // Reload if entries change
-             // Optional: Add a debounce or check if generation actually happened recently
-             // to avoid reloading too often if InsightUtils trigger is delayed.
-             // For now, reload on any entry change.
              loadInsight()
          }
          // Add listener for explicit insight updates
@@ -117,7 +120,7 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
 
         Task {
             do {
-                // Use await as loadLatestInsight might become async
+                 // Use await as loadLatestInsight might become async
                 if let (json, _) = try await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
                     if let data = json.data(using: .utf8) {
                         let decoder = JSONDecoder()

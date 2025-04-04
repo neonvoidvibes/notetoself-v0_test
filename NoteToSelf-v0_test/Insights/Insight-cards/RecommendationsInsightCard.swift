@@ -9,13 +9,15 @@ struct RecommendationsInsightCard: View {
     // Local state for decoded result
     @State private var decodedRecommendations: RecommendationResult? = nil
     @State private var decodingError: Bool = false
+    @State private var isLoading: Bool = false // Add loading state
 
     // Scroll behavior properties
     var scrollProxy: ScrollViewProxy? = nil
     var cardId: String? = nil
 
-    @State private var isExpanded: Bool = false
-    @ObservedObject private var styles = UIStyles.shared
+    @State private var showingFullScreen = false // State for full screen presentation
+    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+    @EnvironmentObject var databaseService: DatabaseService // Inject DatabaseService
 
     // Helper to get icon based on category string
     private func iconForCategory(_ category: String) -> String {
@@ -32,18 +34,20 @@ struct RecommendationsInsightCard: View {
     private var placeholderMessage: String {
         if jsonString == nil {
             return "Keep journaling (at least 3 entries needed) to receive personalized recommendations!"
-        } else if decodedRecommendations == nil && !decodingError {
+        } else if decodedRecommendations == nil && !decodingError && isLoading { // Show loading only when actually loading
             return "Loading recommendations..."
         } else if decodingError {
             return "Could not load recommendations. Please try again later."
+        } else if decodedRecommendations == nil && !isLoading { // No data loaded, not loading, no error
+             return "Recommendations are not available yet."
         } else {
-            return "Recommendations are not available yet."
+            return "" // Should have data if no other condition met
         }
     }
 
+
     var body: some View {
-        styles.expandableCard(
-            isExpanded: $isExpanded,
+        styles.expandableCard( // Removed isExpanded
             scrollProxy: scrollProxy,
             cardId: cardId,
             content: {
@@ -80,14 +84,18 @@ struct RecommendationsInsightCard: View {
                                 .font(styles.typography.caption)
                                 .foregroundColor(styles.colors.accent)
                         } else {
-                            // Premium user, but no decoded data yet or error
-                             Text(placeholderMessage)
-                                 .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                                 .frame(maxWidth: .infinity, minHeight: 60, alignment: .center) // Adjusted height
-                                 .multilineTextAlignment(.center)
-                                 if jsonString != nil && decodedRecommendations == nil && !decodingError {
-                                     ProgressView().tint(styles.colors.accent).padding(.top, 4)
+                             // Premium user, loading, error or no data state
+                             HStack { // Use HStack to center ProgressView if shown
+                                 Text(placeholderMessage)
+                                     .font(styles.typography.bodyFont).foregroundColor(decodingError ? styles.colors.error : styles.colors.textSecondary)
+                                     .frame(maxWidth: .infinity, alignment: .leading)
+                                     .multilineTextAlignment(.leading)
+
+                                 if isLoading {
+                                      ProgressView().tint(styles.colors.accent).padding(.leading, 4)
                                  }
+                             }
+                             .frame(minHeight: 60) // Ensure consistent height
                         }
                     } else {
                         // Free tier locked state
@@ -97,71 +105,130 @@ struct RecommendationsInsightCard: View {
                              .multilineTextAlignment(.center)
                     }
                 }
-            },
-            detailContent: {
-                // Expanded View: Use RecommendationsDetailContent (unchanged for now)
-                if subscriptionTier == .premium {
-                    if let recommendations = decodedRecommendations?.recommendations, !recommendations.isEmpty {
-                        // Pass the array directly to the detail view
-                        RecommendationsDetailContent(recommendations: recommendations)
-                         // Add generation date if available
-                         if let date = generatedDate {
-                             Text("Generated on \(date.formatted(date: .long, time: .shortened))")
-                                 .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
-                                 .frame(maxWidth: .infinity, alignment: .center).padding(.top)
-                         }
-                    } else {
-                         // Premium, but no recommendations
-                         Text("Personalized recommendations are not available yet. Keep journaling!")
-                             .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                             .frame(maxWidth: .infinity, alignment: .center).padding()
-                    }
-                } else {
-                    // Free tier expanded view
-                    VStack(spacing: styles.layout.spacingL) {
-                         Image(systemName: "lock.fill").font(.system(size: 40)).foregroundColor(styles.colors.accent)
-                         Text("Upgrade for Recommendations").font(styles.typography.title3).foregroundColor(styles.colors.text)
-                         Text("Unlock personalized recommendations based on your journal entries with Premium.")
-                              .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary).multilineTextAlignment(.center)
-                          Button { /* TODO: Trigger upgrade flow */ } label: {
-                              Text("Upgrade Now").foregroundColor(styles.colors.primaryButtonText)
-                          }.buttonStyle(GlowingButtonStyle())
-                           .padding(.top)
-                     }.padding() // Add padding to the Vstack
-                 }
-            }
-        )
+            } // Removed detailContent closure
+        ) // End expandableCard
+        .contentShape(Rectangle())
+        .onTapGesture { if subscriptionTier == .premium { showingFullScreen = true } } // Only allow open if premium
+        .onAppear(perform: loadInsight) // Load data on appear
+        // Add the onChange modifier to decode the JSON string
         .onChange(of: jsonString) { oldValue, newValue in
              decodeJSON(json: newValue)
         }
-        .onAppear {
-            decodeJSON(json: jsonString)
-        }
-    }
+         // Add listener for explicit insight updates
+         .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
+             print("[RecommendationsCard] Received insightsDidUpdate notification.")
+             loadInsight() // Reload data when insights update
+         }
+        .fullScreenCover(isPresented: $showingFullScreen) {
+             // Ensure we only show content if data exists
+             if let recommendations = decodedRecommendations?.recommendations {
+                 InsightFullScreenView(title: "Suggested Actions") {
+                     RecommendationsDetailContent(recommendations: recommendations)
+                 }
+                 .environmentObject(styles) // Pass styles
+             } else {
+                 ProgressView()
+             }
+         }
+    } // End body
 
-    // Decoding function (remains the same)
+     // Function to load and decode the insight
+     private func loadInsight() {
+         guard !isLoading else { return }
+         isLoading = true
+         decodingError = false // Reset error state
+         print("[RecommendationsCard] Loading insight...")
+         Task {
+             do {
+                 // Use await as DB call might become async
+                 if let (json, _) = try await databaseService.loadLatestInsight(type: "recommendation") { // Use correct identifier
+                      decodeJSON(json: json) // Call decode function
+                      await MainActor.run { isLoading = false } // Set loading false after decoding attempt
+                       print("[RecommendationsCard] Insight loaded.")
+                 } else {
+                     await MainActor.run {
+                         decodedRecommendations = nil // Ensure it's nil if not found
+                         isLoading = false
+                         print("[RecommendationsCard] No stored insight found.")
+                     }
+                 }
+             } catch {
+                  await MainActor.run {
+                      print("‼️ [RecommendationsCard] Failed to load insight: \(error)")
+                      decodedRecommendations = nil // Clear result on error
+                      decodingError = true // Set error state
+                      isLoading = false
+                  }
+             }
+         }
+     }
+
+
+    // Decoding function
     private func decodeJSON(json: String?) {
         guard let json = json, !json.isEmpty else {
-            decodedRecommendations = nil; decodingError = false; return
+             if decodedRecommendations != nil {
+                  Task { await MainActor.run { decodedRecommendations = nil } }
+             }
+            // decodingError = false // Don't reset error here
+            return
         }
-        decodingError = false
+        // decodingError = false // Reset error before trying decode
+
         guard let data = json.data(using: .utf8) else {
-            print("⚠️ [RecommendationsCard] Failed convert JSON string to Data."); decodingError = true; decodedRecommendations = nil; return
+            print("⚠️ [RecommendationsCard] Failed convert JSON string to Data.");
+            Task { await MainActor.run { decodingError = true; decodedRecommendations = nil } }
+            return
         }
         do {
             let result = try JSONDecoder().decode(RecommendationResult.self, from: data)
-            if result != decodedRecommendations { decodedRecommendations = result; print("[RecommendationsCard] Decoded new recommendations.") }
+             Task { await MainActor.run {
+                 if result != decodedRecommendations { decodedRecommendations = result; print("[RecommendationsCard] Decoded new recommendations.") }
+                 decodingError = false // Clear error on success
+             }}
         } catch {
-            print("‼️ [RecommendationsCard] Failed decode RecommendationResult: \(error). JSON: \(json)"); decodingError = true; decodedRecommendations = nil
+            print("‼️ [RecommendationsCard] Failed decode RecommendationResult: \(error). JSON: \(json)");
+            Task { await MainActor.run { decodingError = true; decodedRecommendations = nil } }
         }
     }
 }
 
+// Simplified RecommendationRow for preview (Keep as is)
+struct RecommendationRow: View {
+    let recommendation: RecommendationResult.RecommendationItem
+    let iconName: String
+    @ObservedObject private var styles = UIStyles.shared
+
+    var body: some View {
+        HStack(alignment: .top, spacing: styles.layout.spacingM) {
+            ZStack { // Icon
+                Circle().fill(styles.colors.tertiaryBackground).frame(width: 40, height: 40)
+                Image(systemName: iconName)
+                    .foregroundColor(styles.colors.accent)
+                    .font(.system(size: 18))
+            }
+            VStack(alignment: .leading, spacing: 4) { // Content
+                Text(recommendation.title)
+                    .font(styles.typography.insightCaption)
+                    .foregroundColor(styles.colors.text)
+                Text(recommendation.description)
+                    .font(styles.typography.bodySmall)
+                    .foregroundColor(styles.colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(2)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+
 #Preview {
     // Example RecommendationResult for preview
     let previewRecs = RecommendationResult(recommendations: [
-        .init(title: "5-Minute Mindfulness", description: "Take a short break to focus on your breath.", category: "Mindfulness", rationale: "Helps calm the mind based on recent stress indicators."),
-        .init(title: "Quick Walk Outside", description: "Get some fresh air and light movement.", category: "Activity", rationale: "Can boost mood and energy levels when feeling low.")
+        .init(id: UUID(), title: "5-Minute Mindfulness", description: "Take a short break to focus on your breath.", category: "Mindfulness", rationale: "Helps calm the mind based on recent stress indicators."),
+        .init(id: UUID(), title: "Quick Walk Outside", description: "Get some fresh air and light movement.", category: "Activity", rationale: "Can boost mood and energy levels when feeling low.")
     ])
     let encoder = JSONEncoder()
     let data = try? encoder.encode(previewRecs)
@@ -170,6 +237,7 @@ struct RecommendationsInsightCard: View {
     return ScrollView {
         RecommendationsInsightCard(jsonString: jsonString, generatedDate: Date(), subscriptionTier: .premium)
             .padding()
+            .environmentObject(DatabaseService()) // Provide DatabaseService
             .environmentObject(UIStyles.shared)
             .environmentObject(ThemeManager.shared)
     }

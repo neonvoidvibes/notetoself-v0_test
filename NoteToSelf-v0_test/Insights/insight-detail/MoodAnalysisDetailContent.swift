@@ -4,7 +4,8 @@ import Charts
 // Renamed from MoodTrendsDetailContent
 struct MoodAnalysisDetailContent: View {
     let entries: [JournalEntry] // Needs full entries list for charting & insights
-    @ObservedObject private var styles = UIStyles.shared
+    // Ensure styles are observed if passed down or used globally
+     @ObservedObject private var styles = UIStyles.shared
 
     var body: some View {
         ScrollView { // Wrap in ScrollView

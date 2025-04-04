@@ -3,14 +3,13 @@ import SwiftUI
 // New card for Predictive Mood & General Forecast
 struct ForecastInsightCard: View {
     // Input: Requires a dedicated ForecastResult Codable struct (to be defined)
-    // let forecastResult: ForecastResult? // Placeholder
     let subscriptionTier: SubscriptionTier
 
     // Scroll behavior properties
     var scrollProxy: ScrollViewProxy? = nil
     var cardId: String? = nil
 
-    @State private var isExpanded: Bool = false
+    @State private var showingFullScreen = false // State for full screen presentation
     @ObservedObject private var styles = UIStyles.shared
     @EnvironmentObject var databaseService: DatabaseService // Inject DatabaseService
     @EnvironmentObject var appState: AppState // Add EnvironmentObject
@@ -43,8 +42,7 @@ struct ForecastInsightCard: View {
     }
 
     var body: some View {
-        styles.expandableCard(
-            isExpanded: $isExpanded,
+        styles.expandableCard( // Removed isExpanded
             scrollProxy: scrollProxy,
             cardId: cardId,
             content: {
@@ -70,11 +68,18 @@ struct ForecastInsightCard: View {
                      }
 
                      // Forecast Label (dynamic text)
-                     Text(forecastLabel)
-                         .font(styles.typography.bodyFont)
-                         .foregroundColor(loadError ? styles.colors.error : styles.colors.text)
-                         .lineLimit(2) // Allow two lines for label
-                         .frame(maxWidth: .infinity, alignment: .leading)
+                      HStack { // Wrap in HStack to potentially add ProgressView
+                          Text(forecastLabel)
+                              .font(styles.typography.bodyFont)
+                              .foregroundColor(loadError ? styles.colors.error : styles.colors.text)
+                              .lineLimit(2) // Allow two lines for label
+                              .frame(maxWidth: .infinity, alignment: .leading)
+
+                          if isLoading {
+                              ProgressView().tint(styles.colors.accent)
+                          }
+                      }
+
 
                      // Helping Text (only if premium)
                      if subscriptionTier == .premium {
@@ -90,27 +95,10 @@ struct ForecastInsightCard: View {
                               .frame(maxWidth: .infinity, alignment: .leading)
                      }
                  }
-            },
-            detailContent: {
-                // Expanded View: Use ForecastDetailContent
-                if subscriptionTier == .premium {
-                    // Pass forecastResult correctly
-                    ForecastDetailContent(forecastResult: self.forecastResult) // Explicitly pass state var
-                } else {
-                     // Free tier expanded state
-                     VStack(spacing: styles.layout.spacingL) {
-                         Image(systemName: "lock.fill").font(.system(size: 40)).foregroundColor(styles.colors.accent)
-                         Text("Upgrade for Forecasts").font(styles.typography.title3).foregroundColor(styles.colors.text)
-                         Text("Unlock predictive mood and trend forecasts with Premium.")
-                              .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary).multilineTextAlignment(.center)
-                         Button { /* TODO: Trigger upgrade flow */ } label: {
-                             Text("Upgrade Now").foregroundColor(styles.colors.primaryButtonText)
-                         }.buttonStyle(GlowingButtonStyle())
-                          .padding(.top)
-                     }.padding()
-                 }
-            }
+            } // Removed detailContent closure
         )
+         .contentShape(Rectangle())
+         .onTapGesture { if subscriptionTier == .premium { showingFullScreen = true } } // Only allow open if premium
          // Add loading logic
          .onAppear(perform: loadInsight)
           // Add listener for explicit insight updates
@@ -118,7 +106,14 @@ struct ForecastInsightCard: View {
               print("[ForecastCard] Received insightsDidUpdate notification.")
               loadInsight() // Reload data when insights update
           }
-    }
+         .fullScreenCover(isPresented: $showingFullScreen) {
+              InsightFullScreenView(title: "Future Forecast") {
+                  ForecastDetailContent(forecastResult: forecastResult)
+              }
+              .environmentObject(styles) // Pass styles
+              // Pass other EnvironmentObjects if ForecastDetailContent needs them
+          }
+    } // End body
 
      // Function to load and decode the insight
      private func loadInsight() {
@@ -158,7 +153,7 @@ struct ForecastInsightCard: View {
              }
          }
      }
-}
+} // Add missing closing brace for struct
 
  #Preview {
       ScrollView {

@@ -9,9 +9,11 @@ struct WeeklySummaryDetailContent: View {
     let summaryPeriod: String // Calculated period string passed from parent
     let generatedDate: Date? // Optional generation date passed from parent
 
-    @ObservedObject private var styles = UIStyles.shared
+    // Ensure styles are observed if passed down or used globally
+     @ObservedObject private var styles = UIStyles.shared
 
     var body: some View {
+        // Use the layout previously defined in WeeklySummaryDetailContentExpanded
         ScrollView { // Wrap in ScrollView for potentially long content
             VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Use larger spacing
                 // Header with Period

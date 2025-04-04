@@ -11,13 +11,14 @@ struct WeeklySummaryInsightCard: View {
     @State private var decodedSummary: WeeklySummaryResult? = nil
     @State private var decodingError: Bool = false
     @State private var isHovering: Bool = false // Keep for button hover effects
+    @State private var showingFullScreen = false // State for full screen presentation
 
     // Scroll behavior properties
     var scrollProxy: ScrollViewProxy? = nil
     var cardId: String? = nil
 
-    @State private var isExpanded: Bool = false
     @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+    @EnvironmentObject var databaseService: DatabaseService // Inject DatabaseService
 
     // Computed properties based on the DECODED result
     private var summaryPeriod: String {
@@ -36,19 +37,17 @@ struct WeeklySummaryInsightCard: View {
         if jsonString == nil {
             return "Keep journaling this week to generate your first summary!"
         } else if decodedSummary == nil && !decodingError {
-             return "Loading summary..."
+             return "Loading summary..." // Indicates decoding is happening or pending
         } else if decodingError {
             return "Could not load summary. Please try again later."
         } else {
+            // Should have decodedSummary if no error and jsonString exists
             return "Weekly summary is not available yet."
         }
     }
 
     var body: some View {
-        styles.expandableCard(
-            isExpanded: $isExpanded,
-            // Highlight only if premium AND fresh
-            highlightColor: (isFresh && subscriptionTier == .premium) ? styles.colors.accent : nil,
+        styles.expandableCard( // Removed isExpanded, isPrimary, highlightColor
             scrollProxy: scrollProxy,
             cardId: cardId,
             content: {
@@ -111,143 +110,71 @@ struct WeeklySummaryInsightCard: View {
                             .multilineTextAlignment(.center)
                     }
                 }
-            },
-            detailContent: {
-                // Expanded View: Use WeeklySummaryDetailContent
-                if subscriptionTier == .premium, let result = decodedSummary {
-                    // Pass the result struct directly
-                    WeeklySummaryDetailContentExpanded(summaryResult: result, summaryPeriod: summaryPeriod, generatedDate: generatedDate)
-                } else if subscriptionTier == .free {
-                    // Free tier expanded state (similar to Recommendations)
-                    VStack(spacing: styles.layout.spacingL) {
-                        Image(systemName: "lock.fill").font(.system(size: 40)).foregroundColor(styles.colors.accent)
-                        Text("Upgrade for Details").font(styles.typography.title3).foregroundColor(styles.colors.text)
-                        Text("Unlock detailed weekly summaries and insights with Premium.")
-                             .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary).multilineTextAlignment(.center)
-                        Button { /* TODO: Trigger upgrade flow */ } label: {
-                             Text("Upgrade Now").foregroundColor(styles.colors.primaryButtonText)
-                        }.buttonStyle(GlowingButtonStyle())
-                         .padding(.top)
-                    }.padding()
-                } else {
-                    // Premium, but no data
-                     Text("Weekly summary details are not available yet.")
-                         .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                         .frame(maxWidth: .infinity, alignment: .center).padding()
-                }
-            }
+            } // Removed detailContent closure
         )
+        .contentShape(Rectangle())
+        .onTapGesture { if subscriptionTier == .premium { showingFullScreen = true } } // Only allow open if premium
         .onChange(of: jsonString) { oldValue, newValue in
             decodeJSON(json: newValue)
         }
         .onAppear {
             decodeJSON(json: jsonString)
         }
+         // Add listener for explicit insight updates
+         .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
+             print("[WeeklySummaryCard] Received insightsDidUpdate notification.")
+             // Assuming summary only updates weekly, might not need immediate reload here
+             // unless triggered specifically for summary. For now, rely on onAppear/jsonString change.
+             // loadInsight() // Could add a loadInsight func if needed
+         }
+        .fullScreenCover(isPresented: $showingFullScreen) {
+             // Ensure we only show content if data exists
+             if let result = decodedSummary {
+                 InsightFullScreenView(title: "Weekly Summary") {
+                     WeeklySummaryDetailContent(
+                         summaryResult: result,
+                         summaryPeriod: summaryPeriod, // Pass calculated period
+                         generatedDate: generatedDate
+                     )
+                 }
+                 .environmentObject(styles) // Pass styles
+                 // Pass other EnvironmentObjects if WeeklySummaryDetailContent needs them
+             } else {
+                  // Optional: Show a loading or error view if cover is presented before data is ready
+                  ProgressView() // Simple loading indicator
+             }
+         }
     }
 
     // Decoding function (remains the same)
     private func decodeJSON(json: String?) {
         guard let json = json, !json.isEmpty else {
-            decodedSummary = nil; decodingError = false; return
+            // Reset state if json is nil or empty
+             if decodedSummary != nil { decodedSummary = nil }
+             decodingError = false
+            return
         }
-        decodingError = false
+
+        decodingError = false // Reset error before trying
+
         guard let data = json.data(using: .utf8) else {
-            print("⚠️ [WeeklySummaryCard] Failed convert JSON string to Data."); decodingError = true; decodedSummary = nil; return
+            print("⚠️ [WeeklySummaryCard] Failed to convert JSON string to Data.")
+             if decodedSummary != nil { decodedSummary = nil }
+             decodingError = true
+            return
         }
+
         do {
-            let result = try JSONDecoder().decode(WeeklySummaryResult.self, from: data)
-            if result != decodedSummary { decodedSummary = result; print("[WeeklySummaryCard] Decoded new summary.") }
+            let decoder = JSONDecoder()
+            let result = try decoder.decode(WeeklySummaryResult.self, from: data)
+            if result != decodedSummary {
+                decodedSummary = result
+                print("[WeeklySummaryCard] Decoded new summary.")
+            }
         } catch {
-            print("‼️ [WeeklySummaryCard] Failed decode WeeklySummaryResult: \(error). JSON: \(json)"); decodingError = true; decodedSummary = nil
-        }
-    }
-}
-
-
-// New Subview for Expanded Content to keep main struct cleaner
-struct WeeklySummaryDetailContentExpanded: View {
-    let summaryResult: WeeklySummaryResult
-    let summaryPeriod: String
-    let generatedDate: Date?
-    @ObservedObject private var styles = UIStyles.shared
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: styles.layout.spacingL) {
-            // Header with Period
-            HStack {
-                Text("Weekly Summary")
-                    .font(styles.typography.title1) // Larger title for expanded
-                    .foregroundColor(styles.colors.text)
-                Spacer()
-                Text(summaryPeriod)
-                    .font(styles.typography.caption)
-                    .foregroundColor(styles.colors.accent)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(styles.colors.accent.opacity(0.1).clipShape(Capsule()))
-            }
-
-            // Main Summary Text
-            Text(summaryResult.mainSummary)
-                .font(styles.typography.bodyFont)
-                .foregroundColor(styles.colors.textSecondary)
-                .padding(.bottom)
-
-            // Key Themes Horizontal Scroll
-            if !summaryResult.keyThemes.isEmpty {
-                 VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                     Text("Key Themes")
-                         .font(styles.typography.title3)
-                         .foregroundColor(styles.colors.text)
-                     ScrollView(.horizontal, showsIndicators: false) {
-                         HStack(spacing: 10) {
-                             ForEach(summaryResult.keyThemes, id: \.self) { theme in
-                                 Text(theme)
-                                     .font(styles.typography.bodySmall)
-                                     .padding(.horizontal, 12)
-                                     .padding(.vertical, 8)
-                                     .background(styles.colors.secondaryBackground)
-                                     .cornerRadius(styles.layout.radiusM)
-                                     .foregroundColor(styles.colors.text)
-                             }
-                         }
-                     }
-                 }.padding(.bottom)
-            }
-
-            // Mood Trend
-            VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                Text("Mood Trend")
-                    .font(styles.typography.title3)
-                    .foregroundColor(styles.colors.text)
-                Text(summaryResult.moodTrend)
-                    .font(styles.typography.bodyFont)
-                    .foregroundColor(styles.colors.textSecondary)
-            }.padding(.bottom)
-
-
-            // Notable Quote
-            if !summaryResult.notableQuote.isEmpty {
-                VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                     Text("Notable Quote")
-                         .font(styles.typography.title3)
-                         .foregroundColor(styles.colors.text)
-                     Text("\"\(summaryResult.notableQuote)\"")
-                         .font(styles.typography.bodyFont.italic())
-                         .foregroundColor(styles.colors.accent)
-                         .padding()
-                         .frame(maxWidth: .infinity, alignment: .leading)
-                         .background(styles.colors.secondaryBackground.opacity(0.5))
-                         .cornerRadius(styles.layout.radiusM)
-                 }
-            }
-
-            // Generation Date
-             if let date = generatedDate {
-                 Text("Generated on \(date.formatted(date: .long, time: .shortened))")
-                     .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
-                     .frame(maxWidth: .infinity, alignment: .center).padding(.top)
-             }
+            print("‼️ [WeeklySummaryCard] Failed to decode WeeklySummaryResult: \(error). JSON: \(json)")
+             if decodedSummary != nil { decodedSummary = nil }
+             decodingError = true
         }
     }
 }
@@ -272,6 +199,7 @@ struct WeeklySummaryDetailContentExpanded: View {
             WeeklySummaryInsightCard(jsonString: jsonString, generatedDate: Date(), isFresh: true, subscriptionTier: .free)
         }
         .padding()
+        .environmentObject(DatabaseService()) // Provide DatabaseService
         .environmentObject(UIStyles.shared)
         .environmentObject(ThemeManager.shared)
     }

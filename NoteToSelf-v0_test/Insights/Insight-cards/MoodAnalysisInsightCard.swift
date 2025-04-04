@@ -17,7 +17,7 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
     var scrollProxy: ScrollViewProxy? = nil
     var cardId: String? = nil
 
-    @State private var isExpanded: Bool = false
+    @State private var showingFullScreen = false // State for full screen presentation
     @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
     @EnvironmentObject var appState: AppState // Needed for full entry data in detail view
     @EnvironmentObject var databaseService: DatabaseService // Inject DatabaseService
@@ -54,18 +54,20 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
     private var placeholderMessage: String {
         if jsonString == nil {
             return "Keep journaling regularly (at least 3 entries needed) to analyze your mood trends!"
-        } else if decodedTrend == nil && !decodingError {
+        } else if decodedTrend == nil && !decodingError && isLoading { // Show loading only when actually loading
             return "Loading mood analysis..."
         } else if decodingError {
             return "Could not load mood analysis. Please try again later."
+        } else if decodedTrend == nil && !isLoading { // No data loaded, not loading, no error
+             return "Mood trend analysis is not available yet."
         } else {
-            return "Mood trend analysis is not available yet."
+            return "" // Should have data if no other condition met
         }
     }
 
+
     var body: some View {
-        styles.expandableCard(
-            isExpanded: $isExpanded,
+        styles.expandableCard( // Removed isExpanded
             scrollProxy: scrollProxy,
             cardId: cardId,
             content: {
@@ -112,14 +114,19 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
                                 Spacer() // Push content left
                             }
                         } else {
-                            // Premium user, but no decoded data yet or error
-                            Text(placeholderMessage)
-                                .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                                .frame(maxWidth: .infinity, minHeight: 60, alignment: .center) // Adjusted height
-                                .multilineTextAlignment(.center)
-                            if jsonString != nil && decodedTrend == nil && !decodingError {
-                                ProgressView().tint(styles.colors.accent).padding(.top, 4)
+                            // Premium user, loading, error or no data state
+                            HStack { // Use HStack to center ProgressView if shown
+                                Text(placeholderMessage)
+                                    .font(styles.typography.bodyFont).foregroundColor(decodingError ? styles.colors.error : styles.colors.textSecondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .multilineTextAlignment(.leading)
+
+                                if isLoading {
+                                     ProgressView().tint(styles.colors.accent).padding(.leading, 4)
+                                }
                             }
+                            .frame(minHeight: 60) // Ensure consistent height
+
                         }
                     } else {
                         // Free tier locked state
@@ -129,31 +136,11 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
                             .multilineTextAlignment(.center)
                     }
                 }
-            },
-            detailContent: {
-                // Expanded View: Use MoodAnalysisDetailContent
-                if subscriptionTier == .premium {
-                    // Pass all entries for detailed chart generation
-                    MoodAnalysisDetailContent(entries: appState.journalEntries)
-                } else {
-                    // Free tier expanded state (same as summary/recs)
-                    VStack(spacing: styles.layout.spacingL) {
-                        Image(systemName: "lock.fill").font(.system(size: 40)).foregroundColor(styles.colors.accent)
-                        Text("Upgrade for Details").font(styles.typography.title3).foregroundColor(styles.colors.text)
-                        Text("Unlock detailed mood charts and analysis with Premium.")
-                             .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary).multilineTextAlignment(.center)
-                        Button { /* TODO: Trigger upgrade flow */ } label: {
-                             Text("Upgrade Now").foregroundColor(styles.colors.primaryButtonText)
-                        }.buttonStyle(GlowingButtonStyle())
-                         .padding(.top)
-                    }
-                }
-            }
+            } // Removed detailContent closure
         )
+        .contentShape(Rectangle())
+        .onTapGesture { if subscriptionTier == .premium { showingFullScreen = true } } // Only allow open if premium
         .onAppear(perform: loadInsight) // Added loading logic trigger
-        .onChange(of: jsonString) { oldValue, newValue in
-            decodeJSON(json: newValue)
-        }
         // Reload if entries change (might need debounce later)
          .onChange(of: appState.journalEntries.count) { _, _ in loadInsight() }
          // Add listener for explicit insight updates
@@ -161,7 +148,15 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
              print("[MoodAnalysisCard] Received insightsDidUpdate notification.")
              loadInsight()
          }
-    }
+        .fullScreenCover(isPresented: $showingFullScreen) {
+             InsightFullScreenView(title: "Mood Landscape") {
+                  // Pass entries needed for detail view's charts/analysis
+                  MoodAnalysisDetailContent(entries: appState.journalEntries)
+              }
+              .environmentObject(styles) // Pass styles
+              .environmentObject(appState) // Pass appState
+         }
+    } // End body
 
     // Function to load and decode the insight
     private func loadInsight() {
@@ -197,14 +192,11 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
     // Decoding function (can be private)
     private func decodeJSON(json: String?) {
         guard let json = json, !json.isEmpty else {
-            // Don't reset here if it was already nil, just handle empty input
              if decodedTrend != nil {
                  Task { await MainActor.run { decodedTrend = nil } }
              }
-            // decodingError = false // Resetting error here might hide loading errors
             return
         }
-        // decodingError = false // Reset error before attempting decode
 
         guard let data = json.data(using: .utf8) else {
             print("⚠️ [MoodAnalysisCard] Failed convert JSON string to Data.");
@@ -222,7 +214,7 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
             Task { await MainActor.run { decodingError = true; decodedTrend = nil } }
         }
     }
-}
+} // Add missing closing brace for struct
 
 // Update Preview Provider name
 #Preview {

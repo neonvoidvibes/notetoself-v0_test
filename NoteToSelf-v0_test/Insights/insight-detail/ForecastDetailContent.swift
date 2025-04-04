@@ -4,7 +4,8 @@ import Charts // Import Charts if needed for visualizations
 // Placeholder Detail View
 struct ForecastDetailContent: View {
     let forecastResult: ForecastResult? // Ensure this parameter is present
-    @ObservedObject private var styles = UIStyles.shared
+     // Ensure styles are observed if passed down or used globally
+     @ObservedObject private var styles = UIStyles.shared
 
     // Explicitly define init if needed, though memberwise should work
     init(forecastResult: ForecastResult?) {

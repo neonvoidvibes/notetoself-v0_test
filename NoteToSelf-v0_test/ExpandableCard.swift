@@ -1,205 +1,87 @@
 import SwiftUI
 
-// Create a global state object to track which card is expanded
-class ExpandableCardManager: ObservableObject {
-    static let shared = ExpandableCardManager()
-    @Published var expandedCardId: String? = nil
-
-    func setExpandedCard(id: String?) {
-        expandedCardId = id
-    }
-}
-
-struct ExpandableCard<Content: View, DetailContent: View>: View {
-    // Content builders
+// Simplified Card View - No longer handles internal expansion state
+struct ExpandableCard<Content: View>: View {
+    // Content builder
     let content: () -> Content
-    let detailContent: () -> DetailContent
 
-    // State
-    @Binding var isExpanded: Bool
-
-    // Scroll Proxy for scroll-on-collapse
-    var scrollProxy: ScrollViewProxy? = nil
-    var cardId: String? = nil
-
-    // Styling
+    // Properties passed from UIStyles or parent view
     let colors: ThemeColors
     let typography: ThemeTypography
     let layout: UIStyles.Layout
-    let isPrimary: Bool // Kept for potential future use, though highlightColor is more specific now
-    let highlightColor: Color? // Added for optional highlighting border
+    // scrollProxy and cardId might not be strictly needed now, but keep for potential future use cases
+    var scrollProxy: ScrollViewProxy? = nil
+    var cardId: String? = nil
 
-    // Internal state for animations
-    @State private var contentHeight: CGFloat = 0
-    @State private var detailContentHeight: CGFloat = 0
-    @State private var isAnimating: Bool = false
+    // Internal state for hover effect
     @State private var hovered: Bool = false
 
-    // Access to the shared card manager
-    @StateObject private var cardManager = ExpandableCardManager.shared
-    // Observe UIStyles for theme changes
-    @ObservedObject private var internalStyles = UIStyles.shared
+    // Explicit Initializer
+    init(
+        @ViewBuilder content: @escaping () -> Content,
+        scrollProxy: ScrollViewProxy? = nil,
+        cardId: String? = nil,
+        colors: ThemeColors,
+        typography: ThemeTypography,
+        layout: UIStyles.Layout
+    ) {
+        self.content = content
+        self.scrollProxy = scrollProxy
+        self.cardId = cardId
+        self.colors = colors
+        self.typography = typography
+        self.layout = layout
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Main content area with button overlay
-            ZStack(alignment: .bottomTrailing) {
-                // Main content (always visible)
-                VStack(alignment: .leading, spacing: 0) {
-                    content()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(
-                            GeometryReader { geometry in
-                                Color.clear.preference(
-                                    key: ContentHeightPreferenceKey.self,
-                                    value: geometry.size.height
-                                )
-                            }
-                        )
-                        .onPreferenceChange(ContentHeightPreferenceKey.self) { height in
-                            self.contentHeight = height
-                        }
+            // Main content area
+            content()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                // Removed GeometryReader for height measuring as it's not needed for inline expansion anymore
 
-                    // Add padding at the bottom to make room for the button
-                    if !isExpanded {
-                        Spacer()
-                            .frame(height: 70) // Keep space for button
-                    }
-                }
+            // Keep "Open" Button below content - positioned using padding
+            HStack {
+                Spacer()
+                ExpandCollapseButtonInternal(hovered: hovered) // Pass hover state
+                    .opacity(hovered ? 1.0 : 0.85) // Slightly less fade when not hovered
+                    .animation(.easeInOut(duration: 0.2), value: hovered)
+                    // The actual tap action to open the full screen is now handled
+                    // by the parent view applying .onTapGesture to this ExpandableCard instance.
             }
+            // Use padding to position the button relative to the VStack bottom edge
+             .padding(.trailing, 4)
+             .padding(.bottom, 4) // Adjust as needed
 
-            // Expand button in its own container below content
-            if !isExpanded {
-                HStack {
-                    Spacer()
-                    ExpandCollapseButtonInternal(isExpanded: $isExpanded, hovered: hovered)
-                        // .opacity(hovered ? 1.0 : 0.8) // REMOVED Opacity
-                        .animation(.easeInOut(duration: 0.2), value: hovered)
-                        .onTapGesture {
-                            toggleExpansion()
-                        }
-                }
-                .padding(.top, -44) // Adjust position relative to content
-                .padding(.bottom, 0)
-                .padding(.trailing, 4)
-            }
-
-            // Detail content (expandable)
-            if isExpanded || isAnimating {
-                VStack(alignment: .leading, spacing: 0) {
-                    // Animated divider
-                    Divider()
-                        .background(colors.divider.opacity(0.5))
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 16)
-
-                    detailContent()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 16)
-
-                    // Collapse Button at the bottom of details
-                    HStack {
-                        Spacer()
-                        ExpandCollapseButtonInternal(isExpanded: $isExpanded, hovered: hovered)
-                            .scaleEffect(hovered ? 1.05 : 1.0)
-                            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hovered)
-                            .onTapGesture {
-                                toggleExpansion()
-                            }
-                    }
-                    .padding(.top, layout.paddingM)
-                    .padding(.bottom, 0)
-                    .padding(.trailing, 4)
-                }
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .move(edge: .top)),
-                    removal: .opacity.combined(with: .move(edge: .top))
-                ))
-                .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isExpanded)
-            }
         }
-        .padding(layout.cardInnerPadding)
+        .padding(layout.cardInnerPadding) // Apply inner padding to the content VStack
         .background(
             RoundedRectangle(cornerRadius: layout.radiusM)
                 .fill(colors.cardBackground)
                 .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
         )
-        // Apply border conditionally based on highlightColor
-        .overlay(
-            RoundedRectangle(cornerRadius: layout.radiusM)
-                .strokeBorder(
-                    highlightColor ?? Color.clear, // Use highlight color or clear
-                    lineWidth: highlightColor != nil ? 3 : 0 // Apply thicker border if highlighted
-                )
-        )
-        .scaleEffect(hovered ? 1.01 : 1.0)
+        .scaleEffect(hovered ? 1.01 : 1.0) // Keep hover scale effect
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hovered)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            toggleExpansion()
-        }
-        .onHover { isHovered in
+        .contentShape(Rectangle()) // Ensure the whole area is tappable
+        .onHover { isHovered in // Keep hover state update
             hovered = isHovered
         }
-        .onChange(of: cardManager.expandedCardId) { oldValue, newValue in
-            if let newExpandedId = newValue, 
-               let thisCardId = cardId, 
-               newExpandedId != thisCardId && 
-               isExpanded {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                    isExpanded = false
-                    isAnimating = true
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    isAnimating = false
-                }
-            }
-        }
-    }
-
-    // Function to handle toggling expansion and scrolling
-    private func toggleExpansion() {
-        let wasExpanded = isExpanded
-
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-            isExpanded.toggle()
-
-            if isExpanded, let id = cardId {
-                cardManager.setExpandedCard(id: id)
-            } else if !isExpanded && cardManager.expandedCardId == cardId {
-                cardManager.setExpandedCard(id: nil)
-            }
-
-            if !isExpanded {
-                isAnimating = true
-            }
-        }
-
-        if wasExpanded && !isExpanded, let proxy = scrollProxy, let id = cardId {
-            withAnimation(.easeInOut(duration: 0.4)) {
-                proxy.scrollTo(id, anchor: .top)
-            }
-        }
-
-        if !isExpanded {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                isAnimating = false
-            }
-        }
+        // Removed internal expansion logic, state, and related functions/modifiers
     }
 }
 
-// Internal button view (remains the same)
-struct ExpandCollapseButtonInternal: View {
-    @Binding var isExpanded: Bool
-    var hovered: Bool
+// Internal button view - Simplified for "Open" state only
+fileprivate struct ExpandCollapseButtonInternal: View { // Make fileprivate
+    var hovered: Bool // Needs hover state
+    // Use @EnvironmentObject or pass styles if needed, using styles singleton for simplicity here
     @ObservedObject private var styles = UIStyles.shared
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: isExpanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+            // Use a consistent icon for "Open", e.g., expand arrows or similar
+            Image(systemName: "arrow.up.left.and.arrow.down.right") // Or "arrow.expand" etc.
                 .font(.system(size: styles.layout.iconSizeS))
-            Text(isExpanded ? "Close" : "Details")
+            Text("Open") // Always show "Open"
                 .font(styles.typography.smallLabelFont)
         }
         .foregroundColor(styles.colors.accent)
@@ -207,8 +89,8 @@ struct ExpandCollapseButtonInternal: View {
         .padding(.vertical, 6)
         .background(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                .fill(styles.colors.secondaryBackground) // REMOVED Opacity
-                // .shadow(color: .black.opacity(0.2), radius: 3, y: 1) // REMOVED Shadow
+                .fill(styles.colors.secondaryBackground.opacity(0.8))
+                .shadow(color: .black.opacity(0.2), radius: 3, y: 1)
         )
         .overlay(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
@@ -217,21 +99,27 @@ struct ExpandCollapseButtonInternal: View {
                     lineWidth: 1
                 )
         )
-        .contentShape(Rectangle())
+        .contentShape(Rectangle()) // Ensure button itself is tappable if needed
     }
 }
 
+// Preview Provider
+#Preview {
+    // Need to provide necessary environment objects and parameters for preview
+    ExpandableCard(
+        content: {
+            VStack(alignment: .leading) {
+                Text("Preview Card Title").font(UIStyles.shared.typography.title3)
+                Text("This is the preview content for the card.")
+            }
+        },
+        colors: UIStyles.shared.colors,
+        typography: UIStyles.shared.typography,
+        layout: UIStyles.shared.layout
+    )
+    .padding()
+    .environmentObject(UIStyles.shared) // Pass styles if button uses it directly
+    .environmentObject(ThemeManager.shared)
+    .background(Color.gray.opacity(0.1))
 
-// Height preference keys (Unchanged)
-struct HeightPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-struct DetailHeightPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-struct ContentHeightPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }

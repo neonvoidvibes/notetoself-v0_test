@@ -10,7 +10,7 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
     var scrollProxy: ScrollViewProxy? = nil
     var cardId: String? = nil
 
-    @State private var isExpanded: Bool = false
+    @State private var showingFullScreen = false // State for full screen presentation
     @State private var animateGradient: Bool = false // Keep animation
 
     @ObservedObject private var styles = UIStyles.shared
@@ -34,8 +34,7 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
      }
 
     var body: some View {
-        styles.expandableCard(
-            isExpanded: $isExpanded,
+        styles.expandableCard( // Removed isExpanded
             scrollProxy: scrollProxy,
             cardId: cardId,
             content: {
@@ -72,15 +71,10 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
                           .frame(maxWidth: .infinity, alignment: .leading)
 
                  }
-            },
-            detailContent: {
-                // Expanded View: Use AIReflectionDetailContent, pass result data
-                AIReflectionDetailContent(
-                    insightMessage: insightMessage,
-                    reflectionPrompts: reflectionPrompts // Pass loaded/default prompts
-                )
-            }
+            } // Removed detailContent closure
         )
+        .contentShape(Rectangle())
+        .onTapGesture { showingFullScreen = true } // Trigger fullscreen on tap
         // Add loading logic
         .onAppear(perform: loadInsight)
         .onChange(of: appState.journalEntries.count) { _, _ in loadInsight() } // Reload on entry change
@@ -89,6 +83,16 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
              print("[AIReflectionCard] Received insightsDidUpdate notification.")
              loadInsight()
          }
+        .fullScreenCover(isPresented: $showingFullScreen) {
+            InsightFullScreenView(title: "AI Insights") {
+                AIReflectionDetailContent(
+                    insightMessage: insightMessage,
+                    reflectionPrompts: reflectionPrompts
+                )
+            }
+            .environmentObject(styles) // Pass styles
+            .environmentObject(appState) // Pass appState if detail view needs it
+        }
     }
 
     // Function to load and decode the insight
@@ -129,7 +133,7 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
             }
         }
     }
-}
+} // Add missing closing brace for struct
 
 // Update preview provider name to match struct
 #Preview {

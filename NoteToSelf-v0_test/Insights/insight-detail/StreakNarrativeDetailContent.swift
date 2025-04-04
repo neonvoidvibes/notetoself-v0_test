@@ -5,7 +5,8 @@ struct StreakNarrativeDetailContent: View {
     let entries: [JournalEntry] // Keep entries for timeline
     let narrativeResult: StreakNarrativeResult? // Accept optional result
 
-    @ObservedObject private var styles = UIStyles.shared
+     // Ensure styles are observed if passed down or used globally
+     @ObservedObject private var styles = UIStyles.shared
 
     // Use narrative text from the result, or a placeholder
     private var narrativeDisplayText: String {

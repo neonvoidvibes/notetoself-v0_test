@@ -7,7 +7,7 @@ class UIStyles: ObservableObject {
 
     // Publish the current theme
     // private(set) makes it readable publicly but only settable via updateTheme
-    @Published private(set) var currentTheme: Theme = FocusMainTheme() // Start with Mono theme
+    @Published private(set) var currentTheme: Theme = FocusMainTheme() // Start with theme
 
     // Computed property for colors, derived from the current theme
     var colors: ThemeColors {
@@ -27,7 +27,6 @@ class UIStyles: ObservableObject {
     }
 
     // MARK: - Layout (Remains unchanged for now)
-    // Can remain static or become instance properties if needed later
     let layout = Layout()
     struct Layout {
         let paddingXL: CGFloat = 24
@@ -112,17 +111,15 @@ class UIStyles: ObservableObject {
     }
 
     // MARK: - Button Styles
-    // Button styles now implicitly use the computed 'colors' and 'typography'
     struct PrimaryButtonStyle: ButtonStyle {
-        @ObservedObject var styles = UIStyles.shared // Observe singleton for theme changes
-
+        @ObservedObject var styles = UIStyles.shared
         func makeBody(configuration: Configuration) -> some View {
             configuration.label
                 .font(styles.typography.bodyFont.weight(.semibold))
                 .padding(styles.layout.paddingM)
                 .frame(maxWidth: .infinity)
-                .background(styles.colors.accent) // Uses theme color
-                .foregroundColor(styles.colors.accentContrastText) // Use theme color
+                .background(styles.colors.accent)
+                .foregroundColor(styles.colors.accentContrastText)
                 .cornerRadius(styles.layout.radiusM)
                 .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
         }
@@ -130,14 +127,13 @@ class UIStyles: ObservableObject {
 
     struct SecondaryButtonStyle: ButtonStyle {
         @ObservedObject var styles = UIStyles.shared
-
         func makeBody(configuration: Configuration) -> some View {
             configuration.label
                 .font(styles.typography.bodyFont)
                 .padding(styles.layout.paddingM)
                 .frame(maxWidth: .infinity)
-                .background(styles.colors.secondaryBackground) // Uses theme color
-                .foregroundColor(styles.colors.text) // Uses theme color
+                .background(styles.colors.secondaryBackground)
+                .foregroundColor(styles.colors.text)
                 .cornerRadius(styles.layout.radiusM)
                 .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
         }
@@ -145,12 +141,11 @@ class UIStyles: ObservableObject {
 
     struct GhostButtonStyle: ButtonStyle {
         @ObservedObject var styles = UIStyles.shared
-
         func makeBody(configuration: Configuration) -> some View {
             configuration.label
                 .font(styles.typography.bodyFont)
                 .padding(styles.layout.paddingM)
-                .foregroundColor(styles.colors.accent) // Uses theme color
+                .foregroundColor(styles.colors.accent)
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
         }
@@ -159,24 +154,24 @@ class UIStyles: ObservableObject {
     // MARK: - Card Style Helper
     func card<Content: View>(_ content: Content) -> some View {
         content
-            .background(colors.cardBackground) // Use theme color
+            .background(colors.cardBackground)
             .cornerRadius(layout.radiusL)
     }
 
     // MARK: - Bottom Sheet Style Helper
     func bottomSheet<Content: View>(_ content: Content) -> some View {
         content
-            .background(colors.bottomSheetBackground) // Use theme color
+            .background(colors.bottomSheetBackground)
             .cornerRadius(layout.bottomSheetCornerRadius)
     }
 
     // MARK: - Enhanced Card Style Helper
     func enhancedCard<Content: View>(_ content: Content, isPrimary: Bool = false) -> some View {
         content
-            .background(colors.cardBackground) // Use theme color
+            .background(colors.cardBackground)
             .cornerRadius(layout.radiusL)
             .shadow(
-                color: Color.black.opacity(layout.cardShadowOpacity), // Shadow color could be themeable later
+                color: Color.black.opacity(layout.cardShadowOpacity),
                 radius: layout.cardShadowRadius,
                 x: 0,
                 y: isPrimary ? 6 : 4
@@ -188,14 +183,12 @@ class UIStyles: ObservableObject {
         VStack(spacing: layout.spacingXS) {
             HStack {
                 Text(title)
-                    .font(typography.sectionHeader) // Use theme typography
-                    .foregroundColor(colors.text) // Use theme color
-
+                    .font(typography.sectionHeader)
+                    .foregroundColor(colors.text)
                 Spacer()
             }
-
             Rectangle()
-                .fill(colors.accent.opacity(0.3)) // Use theme color
+                .fill(colors.accent.opacity(0.3))
                 .frame(height: 1)
         }
         .padding(.horizontal, layout.paddingXL)
@@ -203,55 +196,26 @@ class UIStyles: ObservableObject {
         .padding(.bottom, layout.spacingS)
     }
 
-     // MARK: - Expandable Card Helper
-    // Pass self (UIStyles instance) to ExpandableCard initializer
-    func expandableCard<Content: View, DetailContent: View>(
-        isExpanded: Binding<Bool>,
-        isPrimary: Bool = false,
+     // MARK: - Expandable Card Helper (SINGLE Corrected Version)
+     // This helper now creates the simplified ExpandableCard which doesn't handle internal expansion.
+     // Highlighting is handled externally by applying modifiers in the parent view (InsightsView).
+    func expandableCard<Content: View>(
+        // Removed isPrimary: Bool = false,
         scrollProxy: ScrollViewProxy? = nil,
         cardId: String? = nil,
-        @ViewBuilder content: @escaping () -> Content,
-        @ViewBuilder detailContent: @escaping () -> DetailContent
+        @ViewBuilder content: @escaping () -> Content
     ) -> some View {
-        ExpandableCard(
+        ExpandableCard( // Call the simplified ExpandableCard struct's explicit init
             content: content,
-            detailContent: detailContent,
-            isExpanded: isExpanded,
             scrollProxy: scrollProxy,
             cardId: cardId,
             // Pass the current theme's components directly
             colors: self.colors,
             typography: self.typography,
-            layout: self.layout,
-            isPrimary: isPrimary,
-            highlightColor: nil // Default to no highlight
+            layout: self.layout
+            // Removed isPrimary argument
         )
     }
-
-    // Overload to accept highlightColor
-    func expandableCard<Content: View, DetailContent: View>(
-        isExpanded: Binding<Bool>,
-        isPrimary: Bool = false,
-        highlightColor: Color? = nil, // Added highlightColor parameter
-        scrollProxy: ScrollViewProxy? = nil,
-        cardId: String? = nil,
-        @ViewBuilder content: @escaping () -> Content,
-        @ViewBuilder detailContent: @escaping () -> DetailContent
-    ) -> some View {
-        ExpandableCard(
-            content: content,
-            detailContent: detailContent,
-            isExpanded: isExpanded,
-            scrollProxy: scrollProxy,
-            cardId: cardId,
-            colors: self.colors,
-            typography: self.typography,
-            layout: self.layout,
-            isPrimary: isPrimary,
-            highlightColor: highlightColor // Pass highlightColor
-        )
-    }
-
 
     // MARK: - Card Header Helper
     func cardHeader(title: String, icon: String) -> some View {
@@ -333,8 +297,6 @@ extension UIColor {
 
 
 // MARK: - Custom Corner Radius Extension (Keep as is)
-// Note: This was moved into ReflectionsView.swift, but keeping it here too
-// might be safer if other views need it eventually. Let's keep it here for now.
 extension View {
   func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
       clipShape(RoundedCorner(radius: radius, corners: corners))
@@ -351,8 +313,7 @@ extension View {
   }
 }
 
-// MARK: - RoundedCorner Shape (Keep as is, moved from here initially but restored)
-// Let's keep this here for potential wider use, and remove the duplicate from ReflectionsView.swift
+// MARK: - RoundedCorner Shape (Keep as is)
 struct RoundedCorner: Shape {
   var radius: CGFloat = .infinity
   var corners: UIRectCorner = .allCorners

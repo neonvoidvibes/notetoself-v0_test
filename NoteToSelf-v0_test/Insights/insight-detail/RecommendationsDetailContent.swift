@@ -2,7 +2,8 @@ import SwiftUI
 
 struct RecommendationsDetailContent: View {
     let recommendations: [RecommendationResult.RecommendationItem] // Use nested type
-    @ObservedObject private var styles = UIStyles.shared // Use ObservedObject
+    // Ensure styles are observed if passed down or used globally
+    @ObservedObject private var styles = UIStyles.shared
 
     // Helper to get icon based on category string
      private func iconForCategory(_ category: String) -> String {
