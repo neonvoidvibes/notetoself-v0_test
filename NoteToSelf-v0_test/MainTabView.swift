@@ -341,7 +341,7 @@ struct MainTabView: View {
                       }
                       .frame(width: geometry.size.width, height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
                       .opacity(isKeyboardVisible ? 0 : 1)
-                      .animation(.easeInOut(duration: 0.25), value: isKeyboardVisible)
+                      .animation(.default, value: isKeyboardVisible) // USE DEFAULT ANIMATION
                       .background(
                            Group {
                                // Determine background based on expanded state and current tab

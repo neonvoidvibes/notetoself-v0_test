@@ -44,7 +44,6 @@
 				"Insights/insight-Detail/Insight-Detail-Hide/WeeklyPatternsDetailContent.swift",
 				"Insights/insight-Detail/Insight-Detail-Hide/WordCountDetailContent.swift",
 				"Insights/insight-Detail/Insight-Detail-Hide/WritingConsistencyDetailContent.swift",
-				"NoteToSelf-v0-test-Info.plist",
 			);
 			target = 6483FB4B2D8E9E5100E8EA20 /* NoteToSelf-v0_test */;
 		};

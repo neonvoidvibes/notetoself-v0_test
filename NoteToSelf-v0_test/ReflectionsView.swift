@@ -160,8 +160,7 @@ struct ReflectionsView: View {
     // State variable to store the calculated height
     @State private var textEditorHeight: CGFloat = 0
     private let baseEditorHeight: CGFloat = 22 // Approximate height for one line
-    private let maxEditorHeight: CGFloat = 66 // Approximate height for three lines
-
+    private let maxEditorHeight: CGFloat = 66 // Approximate height for three lines (22 * 3)
 
     // CRITICAL: Track scroll position manually
     @State private var scrollAtBottom: Bool = true
@@ -359,7 +358,7 @@ struct ReflectionsView: View {
                                 if messageText.isEmpty && !chatManager.isTyping {
                                     Text("Ask anything")
                                         .font(styles.typography.bodyFont)
-                                        .foregroundColor(styles.colors.placeholderText)
+                                        .foregroundColor(styles.colors.placeholderText) // Use updated placeholder color
                                         .padding(.horizontal, styles.layout.paddingS + 4) // Align with TextEditor text
                                         .padding(.vertical, styles.layout.paddingS)    // Align with TextEditor text
                                         .allowsHitTesting(false)
@@ -405,7 +404,8 @@ struct ReflectionsView: View {
                             .opacity((messageText.isEmpty && !chatManager.isTyping) ? 0.5 : 1.0)
                         }
                         // Adjust padding for the entire HStack
-                        .padding(.vertical, styles.layout.paddingS)
+                        .padding(.top, styles.layout.paddingM) // Keep top padding standard
+                        .padding(.bottom, styles.layout.paddingM) // Increased bottom padding for more default height
                         .padding(.horizontal, styles.layout.paddingL)
 
                     }
