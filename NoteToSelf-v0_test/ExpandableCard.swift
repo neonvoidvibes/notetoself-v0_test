@@ -73,7 +73,7 @@ struct ExpandableCard<Content: View, DetailContent: View>: View {
                 HStack {
                     Spacer()
                     ExpandCollapseButtonInternal(isExpanded: $isExpanded, hovered: hovered)
-                        .opacity(hovered ? 1.0 : 0.8)
+                        // .opacity(hovered ? 1.0 : 0.8) // REMOVED Opacity
                         .animation(.easeInOut(duration: 0.2), value: hovered)
                         .onTapGesture {
                             toggleExpansion()
@@ -207,8 +207,8 @@ struct ExpandCollapseButtonInternal: View {
         .padding(.vertical, 6)
         .background(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
-                .fill(styles.colors.secondaryBackground.opacity(0.8))
-                .shadow(color: .black.opacity(0.2), radius: 3, y: 1)
+                .fill(styles.colors.secondaryBackground) // REMOVED Opacity
+                // .shadow(color: .black.opacity(0.2), radius: 3, y: 1) // REMOVED Shadow
         )
         .overlay(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
