@@ -149,6 +149,15 @@ struct MainTabView: View {
 
   var body: some View {
       ZStack {
+          // Base background layer (visible during transitions or if layers above are transparent)
+          styles.colors.appBackground
+              .ignoresSafeArea()
+
+          // NEW: Background color specifically for the input/tab bar area interaction
+          // This covers the main view's background during keyboard animations in ReflectionsView
+          styles.colors.inputBackground
+               .ignoresSafeArea() // Ensure it extends to screen edges, especially bottom
+
           // Conditional Background: Accent when sheet expanded, otherwise gradient/solid based on tab
           if bottomSheetExpanded {
               // Use accent color when bottom sheet is expanded
@@ -156,17 +165,16 @@ struct MainTabView: View {
                   .ignoresSafeArea()
           } else {
               // Use background logic based on tab when bottom sheet is collapsed
+              // This layer sits ABOVE the inputBackground, so it defines the visible background when keyboard is NOT transitioning
               if selectedTab == 2 {
                   // Specific background for ReflectionsView tab (Tab 2) when closed
-                  styles.colors.inputBackground // Use input background for reflections
-                      .ignoresSafeArea()
+                   // No specific background needed here, as the inputBackground below handles it
               } else {
                   // Standard background for Journal (Tab 0) and Insights (Tab 1) when closed
-                  styles.colors.appBackground
-                      .ignoresSafeArea()
+                   styles.colors.appBackground
+                       .ignoresSafeArea()
               }
           }
-
 
           // Status bar area
           VStack(spacing: 0) {
@@ -349,7 +357,8 @@ struct MainTabView: View {
                                    styles.colors.bottomSheetBackground // Use specific color when open
                                } else {
                                    if selectedTab == 2 { // Reflections View
-                                       styles.colors.inputBackground // Specific color for Reflections closed nav
+                                       // Use inputBackground to match the area above it
+                                       styles.colors.inputBackground
                                    } else { // Journal or Insights View
                                        styles.colors.appBackground // Match main app background
                                    }
@@ -480,17 +489,21 @@ struct MainTabView: View {
           }
 
           // Add keyboard observers
-          NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { _ in
-              withAnimation {
-                  isKeyboardVisible = true
-              }
-          }
+          NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
+               // Extract keyboard frame if needed for more precise adjustments
+               // let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+               withAnimation(.easeInOut(duration: 0.25)) { // Match typical keyboard animation
+                   isKeyboardVisible = true
+               }
+           }
 
-          NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in
-              withAnimation {
-                  isKeyboardVisible = false
-              }
-          }
+           NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { notification in
+               // Extract keyboard frame if needed
+               // let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+               withAnimation(.easeInOut(duration: 0.25)) { // Match typical keyboard animation
+                   isKeyboardVisible = false
+               }
+           }
       }
       .environment(\.keyboardVisible, isKeyboardVisible)
   }
