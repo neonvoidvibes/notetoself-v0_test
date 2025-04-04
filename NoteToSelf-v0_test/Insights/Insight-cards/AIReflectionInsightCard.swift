@@ -39,11 +39,11 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
             cardId: cardId,
             content: {
                  // Collapsed View: Standard Header + AI message snippet
-                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                 VStack(alignment: .leading, spacing: styles.layout.spacingL) { // Increased spacing
                      // Standard Header with AI icon
                      HStack {
                          Text("AI Insights") // Updated Title
-                             .font(styles.typography.title3)
+                             .font(styles.typography.title3) // Revert to title3
                              .foregroundColor(styles.colors.text)
                          Spacer()
                          // AI Avatar Icon in header

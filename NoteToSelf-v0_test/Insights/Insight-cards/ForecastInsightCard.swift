@@ -47,11 +47,11 @@ struct ForecastInsightCard: View {
             cardId: cardId,
             content: {
                  // Collapsed View: Standard Header + Forecast Label + Helping Text
-                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                 VStack(alignment: .leading, spacing: styles.layout.spacingL) { // Increased spacing
                      // Standard Header
                      HStack {
                          Text("Future Forecast")
-                             .font(styles.typography.title3)
+                             .font(styles.typography.title3) // Revert to title3
                              .foregroundColor(styles.colors.text)
                          Spacer()
                           // Icon on the right

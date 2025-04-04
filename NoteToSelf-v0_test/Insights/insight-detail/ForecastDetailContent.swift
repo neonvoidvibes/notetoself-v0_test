@@ -14,7 +14,7 @@ struct ForecastDetailContent: View {
 
     var body: some View {
          ScrollView { // Wrap content in ScrollView if it might exceed screen height
-             VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Increased spacing
+             VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Keep XL spacing
                  Text("Personalized Forecast")
                      .font(styles.typography.title1) // Title style
                      .foregroundColor(styles.colors.text)

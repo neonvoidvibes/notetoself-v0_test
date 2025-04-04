@@ -20,7 +20,7 @@ struct RecommendationsDetailContent: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: styles.layout.spacingXL) {
+            VStack(spacing: styles.layout.spacingXL) { // Keep XL spacing
                 // Introduction
                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                     Text("Personalized Recommendations")
@@ -69,11 +69,12 @@ struct RecommendationsDetailContent: View {
                 */
 
                  Text("These recommendations are AI-generated based on patterns and are not a substitute for professional advice.")
-                     .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
-                     .multilineTextAlignment(.center).padding(.top, 8)
+                         .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
+                         .multilineTextAlignment(.center).padding(.top, styles.layout.spacingL) // Increased spacing before disclaimer
 
-            }
-            .padding(styles.layout.paddingXL) // Add padding to the outer VStack
+          }
+          .padding(.bottom, styles.layout.paddingL) // Add bottom padding for scroll breathing room
+          // .padding(styles.layout.paddingXL) // Padding applied by InsightFullScreenView
         }
     }
 }

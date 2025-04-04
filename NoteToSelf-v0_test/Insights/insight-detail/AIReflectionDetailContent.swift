@@ -7,7 +7,7 @@ struct AIReflectionDetailContent: View {
      @ObservedObject private var styles = UIStyles.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: styles.layout.spacingL) {
+        VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Increased spacing to XL
             // Display the initial insight message clearly
             Text("AI's Thought Starter")
                 .font(styles.typography.title3)

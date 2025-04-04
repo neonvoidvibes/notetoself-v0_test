@@ -15,7 +15,7 @@ struct WeeklySummaryDetailContent: View {
     var body: some View {
         // Use the layout previously defined in WeeklySummaryDetailContentExpanded
         ScrollView { // Wrap in ScrollView for potentially long content
-            VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Use larger spacing
+            VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Increased spacing to XL
                 // Header with Period
                 HStack {
                     Text("Weekly Summary")

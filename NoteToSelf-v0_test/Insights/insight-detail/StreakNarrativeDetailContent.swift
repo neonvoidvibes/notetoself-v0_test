@@ -14,7 +14,7 @@ struct StreakNarrativeDetailContent: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: styles.layout.spacingL) {
+        VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Increased spacing to XL
             Text("Your Journey's Storyline")
                 .font(styles.typography.title3)
                 .foregroundColor(styles.colors.text)

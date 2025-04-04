@@ -9,7 +9,7 @@ struct MoodAnalysisDetailContent: View {
 
     var body: some View {
         ScrollView { // Wrap in ScrollView
-            VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Increased spacing
+            VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Keep XL spacing
                 Text("Mood Analysis")
                     .font(styles.typography.title1) // Title for the detail view
                     .foregroundColor(styles.colors.text)

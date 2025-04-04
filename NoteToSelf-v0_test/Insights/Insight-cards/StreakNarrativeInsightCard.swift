@@ -8,7 +8,6 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
     var scrollProxy: ScrollViewProxy? = nil
     var cardId: String? = nil
 
-    @State private var isExpanded: Bool = false // Remove if unused
     @State private var showingFullScreen = false // State for full screen presentation
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var databaseService: DatabaseService // Inject DatabaseService
@@ -37,11 +36,11 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
             cardId: cardId,
             content: {
                 // Collapsed View: Standard Header + Streak Display + Snippet
-                VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                VStack(alignment: .leading, spacing: styles.layout.spacingL) { // Increased spacing
                     // Standard Header
                     HStack {
                         Text("Your Journey") // Updated Title
-                            .font(styles.typography.title3)
+                            .font(styles.typography.title3) // Revert to title3
                             .foregroundColor(styles.colors.text)
                         Spacer()
                         // Icon on the right
@@ -78,6 +77,7 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
                              .multilineTextAlignment(.center)
                     }
                      .frame(maxWidth: .infinity, alignment: .center) // Center the text block
+                     .padding(.bottom, styles.layout.paddingM) // Add padding below content
 
                 }
             } // Removed detailContent closure

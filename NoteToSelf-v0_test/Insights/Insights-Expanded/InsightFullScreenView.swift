@@ -53,14 +53,14 @@ struct InsightFullScreenView<Content: View>: View {
 
                 // Content Area
                 ScrollView {
-                    VStack { // Wrap content in VStack for alignment if needed
-                         content
-                             .padding(.horizontal, styles.layout.paddingXL) // Ample horizontal padding
-                             .padding(.vertical, styles.layout.paddingL) // Ample vertical padding
-                    }
-                     .frame(maxWidth: .infinity) // Ensure VStack takes full width
+                    // Apply padding directly to the content view passed in
+                    content
+                        .padding(.horizontal, styles.layout.paddingXL) // Ample horizontal padding
+                        .padding(.vertical, styles.layout.paddingL) // Ample vertical padding
+                        .frame(maxWidth: .infinity, alignment: .leading) // Ensure content aligns left
                 }
-                .padding(.bottom, 30) // Padding at the bottom of the scroll view
+                // Remove bottom padding here, let content itself manage its spacing
+                // .padding(.bottom, 30)
             }
         }
         // Note: The "pop" animation is typically handled by the presentation modifier (`.fullScreenCover`)

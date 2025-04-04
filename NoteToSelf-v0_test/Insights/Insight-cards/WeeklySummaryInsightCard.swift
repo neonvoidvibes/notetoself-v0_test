@@ -52,10 +52,10 @@ struct WeeklySummaryInsightCard: View {
             cardId: cardId,
             content: {
                 // Collapsed View: Period, Key Themes Preview, NEW badge
-                VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                VStack(alignment: .leading, spacing: styles.layout.spacingL) { // Increased spacing
                     HStack {
                         Text("Weekly Summary")
-                            .font(styles.typography.title3)
+                            .font(styles.typography.title3) // Revert to title3
                             .foregroundColor(styles.colors.text)
 
                         if isFresh && subscriptionTier == .premium {

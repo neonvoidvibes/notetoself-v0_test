@@ -52,10 +52,10 @@ struct RecommendationsInsightCard: View {
             cardId: cardId,
             content: {
                 // Collapsed View: 1-2 snippets, helping text
-                VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                VStack(alignment: .leading, spacing: styles.layout.spacingL) { // Increased spacing
                      HStack {
                          Text("Suggested Actions") // Updated Title
-                             .font(styles.typography.title3).foregroundColor(styles.colors.text)
+                             .font(styles.typography.title3).foregroundColor(styles.colors.text) // Revert to title3
                          Spacer()
                           if subscriptionTier == .free {
                               Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
