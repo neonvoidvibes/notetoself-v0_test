@@ -159,6 +159,11 @@ enum Mood: String, CaseIterable, Codable, Hashable { // Added Hashable
         return Color("Mood\(self.name)") // e.g., Color("MoodHappy"), Color("MoodNeutral")
     }
 
+    // New adaptive color property for Journal Card context
+    var journalColor: Color {
+        return Color("Mood\(self.name)Journal") // e.g., Color("MoodHappyJournal")
+    }
+
     // Computed property for direct use in SwiftUI Views
     var icon: Image { Image(systemName: systemIconName) }
 

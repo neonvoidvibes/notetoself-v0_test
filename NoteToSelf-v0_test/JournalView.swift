@@ -534,14 +534,14 @@ struct JournalEntryCard: View {
                     // Mood icon and formatted text (if expanded)
                     HStack(spacing: 4) {
                         entry.mood.icon
-                            .foregroundColor(entry.mood.color)
+                            .foregroundColor(entry.mood.journalColor) // USE JOURNAL COLOR
                             .font(.system(size: 20))
                             .scaleEffect(isExpanded ? 1.1 : 1.0) // Keep scale effect
 
                         if isExpanded { // Restored conditional mood text
                             Text(formattedMoodText(entry.mood, intensity: entry.intensity))
                                 .font(styles.typography.caption)
-                                .foregroundColor(entry.mood.color)
+                                .foregroundColor(entry.mood.journalColor) // USE JOURNAL COLOR
                         }
                     }
                     .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
