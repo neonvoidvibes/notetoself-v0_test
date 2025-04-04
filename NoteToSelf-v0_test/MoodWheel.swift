@@ -55,22 +55,7 @@ struct MoodWheel: View {
                     )
                 }
 
-                // Draw segment dividing lines ON TOP
-                ForEach(0..<12) { index in
-                    let angle = Double(index) * 30.0
-                    Line(
-                        from: CGPoint(
-                            x: wheelDiameter/2 + centerDiameter/2 * cos(angle * .pi / 180),
-                            y: wheelDiameter/2 + centerDiameter/2 * sin(angle * .pi / 180)
-                        ),
-                        to: CGPoint(
-                            x: wheelDiameter/2 + wheelDiameter/2 * cos(angle * .pi / 180),
-                            y: wheelDiameter/2 + wheelDiameter/2 * sin(angle * .pi / 180)
-                        )
-                    )
-                    // Stroke only if this segment AND the previous segment are NOT selected
-                    .stroke(shouldDrawDivider(at: index) ? styles.colors.divider : Color.clear, lineWidth: 1)
-                }
+                // REMOVED: ForEach loop drawing segment dividing lines
 
                 // Center neutral zone - use theme text/secondary colors
                 Circle()
@@ -256,6 +241,8 @@ struct MoodWheel: View {
     }
 
     // Helper to determine if a divider line should be drawn at a specific index
+    // REMOVED: This function is no longer used as the divider loop was removed.
+    /*
     private func shouldDrawDivider(at index: Int) -> Bool {
         guard selectedMood != .neutral else { return false } // Don't draw any if neutral selected
 
@@ -266,6 +253,7 @@ struct MoodWheel: View {
         // Draw line only if neither the current nor the previous segment is the selected one
         return currentMood != selectedMood && previousMood != selectedMood
     }
+    */
 }
 
 // Line shape for drawing segment dividers
