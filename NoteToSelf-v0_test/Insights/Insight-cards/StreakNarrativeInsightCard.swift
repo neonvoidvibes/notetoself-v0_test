@@ -41,7 +41,7 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                     // Standard Header
                     HStack {
-                        Text("Streak & Narrative") // Use standard title format
+                        Text("Your Journey") // Updated Title
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
                         Spacer()

@@ -50,7 +50,7 @@ struct RecommendationsInsightCard: View {
                 // Collapsed View: 1-2 snippets, helping text
                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                      HStack {
-                         Text("Recommendations")
+                         Text("Suggested Actions") // Updated Title
                              .font(styles.typography.title3).foregroundColor(styles.colors.text)
                          Spacer()
                           if subscriptionTier == .free {

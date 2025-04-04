@@ -43,7 +43,7 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
                  VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                      // Standard Header with AI icon
                      HStack {
-                         Text("AI Reflection")
+                         Text("AI Insights") // Updated Title
                              .font(styles.typography.title3)
                              .foregroundColor(styles.colors.text)
                          Spacer()

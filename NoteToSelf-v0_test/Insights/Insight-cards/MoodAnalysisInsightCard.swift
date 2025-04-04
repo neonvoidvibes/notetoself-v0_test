@@ -72,7 +72,7 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
                 // Collapsed View: Mood indicator, brief text, helping text
                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                     HStack {
-                        Text("Mood Analysis")
+                        Text("Mood Landscape") // Updated Title
                             .font(styles.typography.title3).foregroundColor(styles.colors.text)
                         Spacer()
                         if subscriptionTier == .free {
