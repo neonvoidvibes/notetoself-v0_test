@@ -152,7 +152,7 @@ struct MainTabView: View {
           // Conditional Background: Accent when sheet expanded, otherwise gradient/solid based on tab
           if bottomSheetExpanded {
               // Use accent color when bottom sheet is expanded
-              styles.colors.bottomSheetBackground // Might want bottomSheetBackground here? Keeping accent for now.
+              styles.colors.bottomSheetBackground // Use bottomSheetBackground when expanded
                   .ignoresSafeArea()
           } else {
               // Use background logic based on tab when bottom sheet is collapsed
@@ -256,8 +256,8 @@ struct MainTabView: View {
                               VStack(spacing: 4) { // Add spacing for the text
                                   Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
                                       .font(.system(size: 18, weight: .bold))
-                                      // Use Accent when closed, White when expanded (will be overridden below)
-                                      .foregroundColor(bottomSheetExpanded ? Color.white : styles.colors.accent) // Color.white for expanded state
+                                      // Use Accent color regardless of state
+                                      .foregroundColor(styles.colors.accent)
 
                                   // Add Navigation text below the chevron, only when not expanded
                                   if !bottomSheetExpanded {
