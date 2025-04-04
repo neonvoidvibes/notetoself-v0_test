@@ -157,10 +157,10 @@ struct ReflectionsView: View {
     @FocusState private var isInputFocused: Bool
     @State private var expandedMessageId: UUID? = nil
 
-    // State variable to store the calculated height
-    @State private var textEditorHeight: CGFloat = 0
-    private let baseEditorHeight: CGFloat = 22 // Approximate height for one line
-    private let maxEditorHeight: CGFloat = 66 // Approximate height for three lines (22 * 3)
+    // REVERTED: Removed state variable for calculated height
+    // @State private var textEditorHeight: CGFloat = 0
+    private let baseEditorHeight: CGFloat = 40 // Fixed height for now (approx 1-2 lines)
+    // private let maxEditorHeight: CGFloat = 66
 
     // CRITICAL: Track scroll position manually
     @State private var scrollAtBottom: Bool = true
@@ -333,26 +333,13 @@ struct ReflectionsView: View {
                     }
                 }
 
-                // Input area - Dynamic Height
+                // Input area - FIXED Height for now
                 if !bottomSheetExpanded {
                     VStack(spacing: 0) {
                         // Use .bottom alignment to keep button aligned with the bottom edge of the expanding TextEditor
                         HStack(alignment: .bottom, spacing: styles.layout.spacingM) {
-                            // Text input field - Container ZStack
-                            ZStack(alignment: .topLeading) {
-
-                                // --- Transparent Measurer Text ---
-                                Text(messageText.isEmpty ? " " : messageText) // Use space if empty for min height
-                                    .font(styles.typography.bodyFont)
-                                    .padding(.horizontal, 4) // Match TextEditor internal padding
-                                    .padding(.vertical, 4)  // Match TextEditor internal padding
-                                    .opacity(0) // Make it invisible
-                                    .frame(maxWidth: .infinity) // Allow it to take full width for wrapping calc
-                                    .background(GeometryReader { proxy in
-                                        Color.clear
-                                            .onAppear { updateHeight(proxy.size.height) }
-                                            .onChange(of: messageText) { _, _ in updateHeight(proxy.size.height) }
-                                    })
+                            // ZStack for TextEditor and Placeholder
+                            ZStack(alignment: .topLeading) { // Alignment remains topLeading for placeholder
 
                                 // Placeholder Text - aligned with padding
                                 if messageText.isEmpty && !chatManager.isTyping {
@@ -361,28 +348,33 @@ struct ReflectionsView: View {
                                         .foregroundColor(styles.colors.placeholderText) // Use updated placeholder color
                                         .padding(.horizontal, styles.layout.paddingS + 4) // Align with TextEditor text
                                         .padding(.vertical, styles.layout.paddingS)    // Align with TextEditor text
-                                        .allowsHitTesting(false)
+                                        .allowsHitTesting(false) // Ensure placeholder doesn't block taps
                                 }
 
-                                // TextEditor uses calculated height
+                                // TextEditor uses FIXED height for now
                                 TextEditor(text: chatManager.isTyping ? .constant("") : $messageText)
                                     .font(styles.typography.bodyFont)
-                                    .padding(.horizontal, 4) // Internal padding
-                                    .padding(.vertical, 4)  // Internal padding
-                                    .frame(height: calculatedEditorHeight()) // Use calculated height
+                                    // Internal padding
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 4)
+                                    // REVERTED: Removed dynamic top padding
+                                    // Frame controls the *overall* height
+                                    .frame(height: baseEditorHeight) // Use fixed height
                                     .background(Color.clear) // Transparent background
                                     .foregroundColor(chatManager.isTyping ? styles.colors.textDisabled : styles.colors.text)
                                     .disabled(chatManager.isTyping)
                                     .scrollContentBackground(.hidden)
                                     .focused($isInputFocused)
+                                    .contentShape(Rectangle()) // Define explicit tap area
                             }
-                             // Apply padding around the ZStack (TextEditor area)
+                            // Apply padding around the ZStack (TextEditor area)
                             .padding(.vertical, styles.layout.paddingS / 2)
                             .padding(.horizontal, styles.layout.paddingS)
                             .background(
                                 Color.clear // Ensure ZStack background is transparent
                                     .clipShape(RoundedRectangle(cornerRadius: 20)) // Clip shape if needed
                             )
+
 
                             // Send button - alignment handled by HStack(.bottom)
                             Button(action: sendMessage) {
@@ -407,6 +399,7 @@ struct ReflectionsView: View {
                         .padding(.top, styles.layout.paddingM) // Keep top padding standard
                         .padding(.bottom, styles.layout.paddingM) // Increased bottom padding for more default height
                         .padding(.horizontal, styles.layout.paddingL)
+                        // REVERTED: Removed background measurement logic
 
                     }
                     // Background for the entire input area container
@@ -415,7 +408,8 @@ struct ReflectionsView: View {
                             .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight]))
                             .ignoresSafeArea(.container, edges: .bottom)
                     )
-                    .animation(.easeInOut(duration: 0.2), value: textEditorHeight) // Animate based on calculated height
+                    // REVERTED: Removed animation on textEditorHeight
+                    // .animation(.easeInOut(duration: 0.2), value: textEditorHeight)
                 }
             }
         }
@@ -442,24 +436,14 @@ struct ReflectionsView: View {
              DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                  headerAppeared = true
              }
-             // Set initial height
-             textEditorHeight = baseEditorHeight
+             // REVERTED: No need to set initial height
+             // textEditorHeight = baseEditorHeight
          }
     }
 
-    // --- Height Calculation Helpers ---
-    private func updateHeight(_ height: CGFloat) {
-        DispatchQueue.main.async {
-            // Add a small buffer if needed, clamp between min/max
-            self.textEditorHeight = max(baseEditorHeight, min(height, maxEditorHeight))
-            // print("Measured Height: \(height), Clamped Height: \(self.textEditorHeight)") // Debugging
-        }
-    }
-
-    private func calculatedEditorHeight() -> CGFloat {
-        // Return the state variable which is clamped between min/max
-        return textEditorHeight
-    }
+    // --- REVERTED: Removed Height Calculation Helpers ---
+    // private func updateHeight(_ height: CGFloat) { ... }
+    // private func calculatedEditorHeight() -> CGFloat { ... }
     // --- End Height Calculation Helpers ---
 
     private func sendMessage() {
@@ -476,8 +460,10 @@ struct ReflectionsView: View {
 
         // Clear input
         messageText = ""
-        // Reset height manually after clearing text
-        textEditorHeight = baseEditorHeight
+        // REVERTED: No need to reset height
+        // DispatchQueue.main.async {
+        //      textEditorHeight = baseEditorHeight
+        // }
 
 
         // CRITICAL: Set scroll to bottom when sending
