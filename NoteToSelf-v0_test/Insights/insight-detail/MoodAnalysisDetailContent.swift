@@ -4,20 +4,21 @@ import Charts
 // Renamed from MoodTrendsDetailContent
 struct MoodAnalysisDetailContent: View {
     let entries: [JournalEntry] // Needs full entries list for charting & insights
+    let generatedDate: Date? // Accept date
     // Ensure styles are observed if passed down or used globally
      @ObservedObject private var styles = UIStyles.shared
 
     var body: some View {
         ScrollView { // Wrap in ScrollView
-            VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Keep XL spacing
-                Text("Mood Analysis")
-                    .font(styles.typography.title1) // Title for the detail view
-                    .foregroundColor(styles.colors.text)
-                    .padding(.bottom, styles.layout.paddingS)
+            VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Ensure XL spacing
+                 // REMOVED: Text("Mood Analysis") header
 
                 if #available(iOS 16.0, *) {
                     // Placeholder for Dual Axis Chart Section
-                    VStack(alignment: .leading) {
+                    VStack(alignment: .leading, spacing: styles.layout.spacingM) { // Use spacingM here
+                         Text("Mood Dimensions Over Time")
+                             .font(styles.typography.title3)
+                             .foregroundColor(styles.colors.text)
                          Text("Mood Dimensions Over Time")
                              .font(styles.typography.title3)
                              .foregroundColor(styles.colors.text)
@@ -61,10 +62,26 @@ struct MoodAnalysisDetailContent: View {
                       MoodInsightsView(entries: entries) // Reuse the insights component
                   }
 
-                 Spacer() // Push content up if ScrollView allows
+                 Spacer(minLength: styles.layout.spacingXL) // Add spacer before timestamp
+
+                 // Generated Date Timestamp
+                  if let date = generatedDate {
+                      HStack {
+                          Spacer() // Center align
+                          Image(systemName: "clock")
+                              .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                              .font(.system(size: 12))
+                          Text("Generated on \(date.formatted(date: .long, time: .shortened))")
+                              .font(styles.typography.caption)
+                              .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                          Spacer()
+                      }
+                      .padding(.top) // Padding above timestamp
+                  }
 
             }
-            .padding(styles.layout.paddingL) // Add padding to the outer VStack
+            // .padding(styles.layout.paddingL) // Padding applied by InsightFullScreenView
+             .padding(.bottom, styles.layout.paddingL) // Bottom padding inside scrollview
         }
     }
 }
@@ -201,7 +218,7 @@ struct MoodInsightsView: View {
         JournalEntry(text: "Entry 5", mood: .neutral, date: Calendar.current.date(byAdding: .day, value: -10, to: Date())!)
     ]
     ScrollView{ // Wrap preview in ScrollView
-        MoodAnalysisDetailContent(entries: mockEntries)
+        MoodAnalysisDetailContent(entries: mockEntries, generatedDate: Date()) // Pass date
             .padding()
             .environmentObject(UIStyles.shared)
             .environmentObject(ThemeManager.shared)

@@ -4,21 +4,20 @@ import Charts // Import Charts if needed for visualizations
 // Placeholder Detail View
 struct ForecastDetailContent: View {
     let forecastResult: ForecastResult? // Ensure this parameter is present
+    let generatedDate: Date? // Accept date
      // Ensure styles are observed if passed down or used globally
      @ObservedObject private var styles = UIStyles.shared
 
     // Explicitly define init if needed, though memberwise should work
-    init(forecastResult: ForecastResult?) {
+    init(forecastResult: ForecastResult?, generatedDate: Date?) {
          self.forecastResult = forecastResult
+         self.generatedDate = generatedDate
     }
 
     var body: some View {
          ScrollView { // Wrap content in ScrollView if it might exceed screen height
-             VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Keep XL spacing
-                 Text("Personalized Forecast")
-                     .font(styles.typography.title1) // Title style
-                     .foregroundColor(styles.colors.text)
-                     .padding(.bottom) // Add padding below title
+             VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Ensure XL spacing
+                  // REMOVED: Text("Personalized Forecast") header
 
                  // --- Mood Prediction Section ---
                  VStack(alignment: .leading, spacing: styles.layout.spacingM) {
@@ -123,10 +122,29 @@ struct ForecastDetailContent: View {
                      .font(styles.typography.caption)
                      .foregroundColor(styles.colors.textSecondary)
                      .multilineTextAlignment(.center)
-                     .padding(.top) // Add padding above disclaimer
+                     .padding(.top, styles.layout.spacingL) // Increased padding
+
+                 Spacer(minLength: styles.layout.spacingXL) // Add spacer before timestamp
+
+                  // Generated Date Timestamp
+                   if let date = generatedDate {
+                       HStack {
+                           Spacer() // Center align
+                           Image(systemName: "clock")
+                               .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                               .font(.system(size: 12))
+                           Text("Generated on \(date.formatted(date: .long, time: .shortened))")
+                               .font(styles.typography.caption)
+                               .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                           Spacer()
+                       }
+                       .padding(.top) // Padding above timestamp
+                   }
+
              } // End VStack
+             .padding(.bottom, styles.layout.paddingL) // Bottom padding inside scrollview
          } // End ScrollView
-        .padding(styles.layout.paddingL) // Add padding to the outer VStack
+        // .padding(styles.layout.paddingL) // Padding applied by InsightFullScreenView
     }
 }
 
@@ -143,8 +161,8 @@ struct ForecastDetailContent: View {
          actionPlanItems: [mockAction]
      )
 
-    return ForecastDetailContent(forecastResult: mockResult)
-         .padding()
+    return ForecastDetailContent(forecastResult: mockResult, generatedDate: Date()) // Pass date
+         .padding() // Add padding for preview container if needed
          .environmentObject(UIStyles.shared)
          .environmentObject(ThemeManager.shared)
 }

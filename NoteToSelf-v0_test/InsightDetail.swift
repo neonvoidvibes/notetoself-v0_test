@@ -92,63 +92,82 @@ struct InsightDetailView: View {
                   case .streakNarrative:
                        // Attempt to cast insight.data to the expected type
                        let narrativeData = insight.data as? StreakNarrativeResult
+                       let genDate = Date() // Placeholder - Need to pass actual date if available
                        // Pass the casted data (or nil) to the detail view
                        StreakNarrativeDetailContent(
                            streak: appState.currentStreak,
                            entries: appState.journalEntries,
-                           narrativeResult: narrativeData
+                           narrativeResult: narrativeData,
+                           generatedDate: genDate // Pass date
                        )
 
                   case .weeklySummary:
                       // Needs decoded WeeklySummaryResult
                       if let result = insight.data as? WeeklySummaryResult {
                            // Use the specific expanded view component
-                           // We need to calculate the period and get the date here or pass it
-                           // For simplicity, let's assume necessary info is available or recalculated
                            let period = calculateSummaryPeriod(from: result) // Placeholder function
                            // TODO: Pass the actual generatedDate if available from insight.data or another source
-                           WeeklySummaryDetailContent(summaryResult: result, summaryPeriod: period, generatedDate: Date()) // Pass optional date
+                           let genDate = Date() // Placeholder
+                           WeeklySummaryDetailContent(
+                               summaryResult: result,
+                               summaryPeriod: period,
+                               generatedDate: genDate // Pass optional date
+                           )
                       } else {
                           Text("Error: Invalid weekly summary data") // Or show empty state
                       }
-                      // Removed cases for obsolete InsightTypes:
-                      // .calendar, .writingConsistency, .moodDistribution, .wordCount,
-                      // .topicAnalysis, .sentimentAnalysis, .journalEntry, .weeklyPatterns
+                      // Removed cases for obsolete InsightTypes
 
                   case .aiReflection:
                        // Needs AIReflectionResult
                        if let result = insight.data as? AIReflectionResult {
+                           let genDate = Date() // Placeholder
                             AIReflectionDetailContent(
                                 insightMessage: result.insightMessage,
-                                reflectionPrompts: result.reflectionPrompts
+                                reflectionPrompts: result.reflectionPrompts,
+                                generatedDate: genDate // Pass date
                             )
                        } else {
                            // Fallback or error view if data isn't the correct type
                            AIReflectionDetailContent(
                                 insightMessage: "Could not load reflection.",
-                                reflectionPrompts: []
+                                reflectionPrompts: [],
+                                generatedDate: nil // Pass nil date
                            )
                        }
 
                   case .moodAnalysis:
                       // Needs journal entries from AppState
-                      MoodAnalysisDetailContent(entries: appState.journalEntries)
+                      let genDate = Date() // Placeholder
+                      MoodAnalysisDetailContent(
+                          entries: appState.journalEntries,
+                          generatedDate: genDate // Pass date
+                      )
 
                   case .recommendations:
                       // Needs decoded RecommendationResult
                       if let result = insight.data as? RecommendationResult {
-                          RecommendationsDetailContent(recommendations: result.recommendations)
+                           let genDate = Date() // Placeholder
+                          RecommendationsDetailContent(
+                              recommendations: result.recommendations,
+                              generatedDate: genDate // Pass date
+                          )
                       } else {
-                           RecommendationsDetailContent(recommendations: []) // Show empty state
+                           RecommendationsDetailContent(recommendations: [], generatedDate: nil) // Show empty state
                       }
 
                   case .forecast:
                        // Needs decoded ForecastResult
                        let forecastData = insight.data as? ForecastResult // Attempt to cast
-                       ForecastDetailContent(forecastResult: forecastData) // Pass casted data or nil
+                       let genDate = Date() // Placeholder
+                       ForecastDetailContent(
+                           forecastResult: forecastData, // Pass casted data or nil
+                           generatedDate: genDate // Pass date
+                       )
                   }
               }
-              .padding(styles.layout.paddingL) // Add padding around the detail content
+              // Padding is now handled by InsightFullScreenView, remove from here
+              // .padding(styles.layout.paddingL)
           }
           .navigationTitle(insight.title) // Set title from insight
           .navigationBarTitleDisplayMode(.inline)

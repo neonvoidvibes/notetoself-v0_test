@@ -12,23 +12,23 @@ struct WeeklySummaryInsightCard: View {
     @State private var decodingError: Bool = false
     @State private var isHovering: Bool = false // Keep for button hover effects
     @State private var showingFullScreen = false // State for full screen presentation
+    @State private var isLoading: Bool = false // Add loading state
 
     // Scroll behavior properties
     var scrollProxy: ScrollViewProxy? = nil
     var cardId: String? = nil
 
     @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
-    @EnvironmentObject var databaseService: DatabaseService // Inject DatabaseService
+    @EnvironmentObject var databaseService: DatabaseService // Inject DatabaseService (needed for reload on notification)
 
     // Computed properties based on the DECODED result
     private var summaryPeriod: String {
         let calendar = Calendar.current
         let endDate = generatedDate ?? Date()
-        // Adjust to calculate the start of the week (Sunday) based on the end date
         let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: endDate)
         let startOfWeek = calendar.date(from: components)!
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM d" // Keep format concise
+        dateFormatter.dateFormat = "MMM d"
         return "\(dateFormatter.string(from: startOfWeek)) - \(dateFormatter.string(from: endDate))"
     }
 
@@ -36,18 +36,20 @@ struct WeeklySummaryInsightCard: View {
     private var placeholderMessage: String {
         if jsonString == nil {
             return "Keep journaling this week to generate your first summary!"
-        } else if decodedSummary == nil && !decodingError {
-             return "Loading summary..." // Indicates decoding is happening or pending
+        } else if decodedSummary == nil && !decodingError && isLoading {
+             return "Loading summary..."
         } else if decodingError {
             return "Could not load summary. Please try again later."
+        } else if decodedSummary == nil && !isLoading {
+             return "Weekly summary is not available yet."
         } else {
-            // Should have decodedSummary if no error and jsonString exists
-            return "Weekly summary is not available yet."
+             return "" // Has data
         }
     }
 
+
     var body: some View {
-        styles.expandableCard( // Removed isExpanded, isPrimary, highlightColor
+        styles.expandableCard(
             scrollProxy: scrollProxy,
             cardId: cardId,
             content: {
@@ -79,28 +81,32 @@ struct WeeklySummaryInsightCard: View {
                             .font(styles.typography.bodyFont.weight(.semibold)) // Slightly bolder
                             .foregroundColor(styles.colors.accent) // Use accent color
 
-                        // Key Themes Preview
-                        if let themes = decodedSummary?.keyThemes, !themes.isEmpty {
-                            HStack(spacing: styles.layout.spacingS) {
-                                Image(systemName: "tag.fill")
-                                    .foregroundColor(styles.colors.textSecondary)
-                                    .font(.caption)
-                                Text(themes.prefix(2).joined(separator: ", ") + (themes.count > 2 ? "..." : ""))
-                                    .font(styles.typography.bodySmall) // Main font for themes preview
-                                    .foregroundColor(styles.colors.textSecondary)
-                                    .lineLimit(1)
-                            }
-                        } else if jsonString != nil && decodedSummary == nil && !decodingError {
-                           ProgressView().tint(styles.colors.accent).padding(.vertical, 4) // Show loading indicator briefly
-                        } else if jsonString == nil || decodingError {
-                             Text(placeholderMessage) // Show placeholder if no data/error
-                                 .font(styles.typography.bodySmall)
-                                 .foregroundColor(styles.colors.textSecondary)
-                        } else {
-                            Text("Key themes will appear here.") // Default text if themes are empty but summary exists
-                                .font(styles.typography.bodySmall)
-                                .foregroundColor(styles.colors.textSecondary)
+                        // Key Themes Preview or Loading/Error state
+                        HStack { // Wrap in HStack for ProgressView alignment
+                             if let themes = decodedSummary?.keyThemes, !themes.isEmpty {
+                                 HStack(spacing: styles.layout.spacingS) {
+                                     Image(systemName: "tag.fill")
+                                         .foregroundColor(styles.colors.textSecondary)
+                                         .font(.caption)
+                                     Text(themes.prefix(2).joined(separator: ", ") + (themes.count > 2 ? "..." : ""))
+                                         .font(styles.typography.bodySmall)
+                                         .foregroundColor(styles.colors.textSecondary)
+                                         .lineLimit(1)
+                                     Spacer() // Push themes left
+                                 }
+                             } else {
+                                 // Loading/Error/Placeholder
+                                 Text(placeholderMessage)
+                                     .font(styles.typography.bodySmall)
+                                     .foregroundColor(decodingError ? styles.colors.error : styles.colors.textSecondary)
+                                     .lineLimit(1)
+                                 Spacer() // Push text left
+                                 if isLoading {
+                                     ProgressView().tint(styles.colors.accent)
+                                 }
+                             }
                         }
+                        .frame(height: 20) // Give consistent height
 
                     } else {
                         // Free tier locked state
@@ -110,22 +116,23 @@ struct WeeklySummaryInsightCard: View {
                             .multilineTextAlignment(.center)
                     }
                 }
+                .padding(.bottom, styles.layout.paddingL) // INCREASED bottom padding
             } // Removed detailContent closure
-        )
+        ) // End expandableCard
         .contentShape(Rectangle())
         .onTapGesture { if subscriptionTier == .premium { showingFullScreen = true } } // Only allow open if premium
+        .onAppear {
+            // Decode initial jsonString passed in
+            decodeJSON(json: jsonString)
+        }
+        // Decode if the jsonString from parent changes
         .onChange(of: jsonString) { oldValue, newValue in
             decodeJSON(json: newValue)
         }
-        .onAppear {
-            decodeJSON(json: jsonString)
-        }
-         // Add listener for explicit insight updates
+         // Add listener for explicit insight updates (to reload from DB)
          .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
              print("[WeeklySummaryCard] Received insightsDidUpdate notification.")
-             // Assuming summary only updates weekly, might not need immediate reload here
-             // unless triggered specifically for summary. For now, rely on onAppear/jsonString change.
-             // loadInsight() // Could add a loadInsight func if needed
+             loadInsightFromDB() // Call new function to reload from DB
          }
         .fullScreenCover(isPresented: $showingFullScreen) {
              // Ensure we only show content if data exists
@@ -138,45 +145,75 @@ struct WeeklySummaryInsightCard: View {
                      )
                  }
                  .environmentObject(styles) // Pass styles
-                 // Pass other EnvironmentObjects if WeeklySummaryDetailContent needs them
              } else {
-                  // Optional: Show a loading or error view if cover is presented before data is ready
-                  ProgressView() // Simple loading indicator
+                  ProgressView()
              }
          }
     }
 
-    // Decoding function (remains the same)
+    // Renamed original decode function to handle passed string
     private func decodeJSON(json: String?) {
-        guard let json = json, !json.isEmpty else {
-            // Reset state if json is nil or empty
+         guard let json = json, !json.isEmpty else {
              if decodedSummary != nil { decodedSummary = nil }
              decodingError = false
-            return
-        }
+             isLoading = false // Ensure loading is false if json is nil/empty
+             return
+         }
+         // Assume loading starts if we have JSON to decode
+         if !isLoading { isLoading = true }
+         decodingError = false
 
-        decodingError = false // Reset error before trying
+         guard let data = json.data(using: .utf8) else {
+             print("⚠️ [WeeklySummaryCard] Failed to convert JSON string to Data.")
+              if decodedSummary != nil { decodedSummary = nil }
+              decodingError = true
+              isLoading = false
+             return
+         }
+         do {
+             let result = try JSONDecoder().decode(WeeklySummaryResult.self, from: data)
+             if result != decodedSummary {
+                 decodedSummary = result
+                 print("[WeeklySummaryCard] Decoded new summary from input.")
+             }
+              isLoading = false // Stop loading on success
+              decodingError = false
+         } catch {
+             print("‼️ [WeeklySummaryCard] Failed to decode WeeklySummaryResult from input: \(error). JSON: \(json)")
+              if decodedSummary != nil { decodedSummary = nil }
+              decodingError = true
+              isLoading = false // Stop loading on error
+         }
+     }
 
-        guard let data = json.data(using: .utf8) else {
-            print("⚠️ [WeeklySummaryCard] Failed to convert JSON string to Data.")
-             if decodedSummary != nil { decodedSummary = nil }
-             decodingError = true
-            return
-        }
-
-        do {
-            let decoder = JSONDecoder()
-            let result = try decoder.decode(WeeklySummaryResult.self, from: data)
-            if result != decodedSummary {
-                decodedSummary = result
-                print("[WeeklySummaryCard] Decoded new summary.")
-            }
-        } catch {
-            print("‼️ [WeeklySummaryCard] Failed to decode WeeklySummaryResult: \(error). JSON: \(json)")
-             if decodedSummary != nil { decodedSummary = nil }
-             decodingError = true
-        }
-    }
+    // New function to explicitly load latest from DB on notification
+    private func loadInsightFromDB() {
+         guard !isLoading else { return }
+         isLoading = true
+         decodingError = false
+         print("[WeeklySummaryCard] Reloading insight from DB...")
+         Task {
+             do {
+                 if let (json, _) = try await databaseService.loadLatestInsight(type: "weeklySummary") {
+                     decodeJSON(json: json) // Decode the newly loaded JSON
+                 } else {
+                     print("[WeeklySummaryCard] No insight found in DB during reload.")
+                      await MainActor.run {
+                          decodedSummary = nil
+                          decodingError = false
+                      }
+                 }
+             } catch {
+                 print("‼️ [WeeklySummaryCard] Error reloading insight from DB: \(error)")
+                  await MainActor.run {
+                      decodedSummary = nil
+                      decodingError = true
+                  }
+             }
+             // Ensure loading is stopped on main thread
+              await MainActor.run { isLoading = false }
+         }
+     }
 }
 
 
@@ -197,6 +234,12 @@ struct WeeklySummaryInsightCard: View {
             WeeklySummaryInsightCard(jsonString: jsonString, generatedDate: Date(), isFresh: true, subscriptionTier: .premium)
             WeeklySummaryInsightCard(jsonString: jsonString, generatedDate: Date(), isFresh: false, subscriptionTier: .premium)
             WeeklySummaryInsightCard(jsonString: jsonString, generatedDate: Date(), isFresh: true, subscriptionTier: .free)
+             // Example for loading state
+             WeeklySummaryInsightCard(jsonString: "{}", generatedDate: Date(), isFresh: false, subscriptionTier: .premium)
+             // Example for error state (pass invalid JSON)
+             WeeklySummaryInsightCard(jsonString: "{invalid json}", generatedDate: Date(), isFresh: false, subscriptionTier: .premium)
+             // Example for no data state
+             WeeklySummaryInsightCard(jsonString: nil, generatedDate: nil, isFresh: false, subscriptionTier: .premium)
         }
         .padding()
         .environmentObject(DatabaseService()) // Provide DatabaseService

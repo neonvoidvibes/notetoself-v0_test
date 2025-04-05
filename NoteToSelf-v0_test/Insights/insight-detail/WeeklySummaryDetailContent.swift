@@ -15,13 +15,13 @@ struct WeeklySummaryDetailContent: View {
     var body: some View {
         // Use the layout previously defined in WeeklySummaryDetailContentExpanded
         ScrollView { // Wrap in ScrollView for potentially long content
-            VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Increased spacing to XL
+            VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Ensure XL spacing
                 // Header with Period
                 HStack {
-                    Text("Weekly Summary")
-                        .font(styles.typography.title1) // Use appropriate typography
-                        .foregroundColor(styles.colors.text)
-                    Spacer()
+                    // Text("Weekly Summary") // Title is handled by InsightFullScreenView now
+                    //     .font(styles.typography.title1) // Use appropriate typography
+                    //     .foregroundColor(styles.colors.text)
+                    Spacer() // Push period to the right if title removed
                     Text(summaryPeriod)
                         .font(styles.typography.caption)
                         .foregroundColor(styles.colors.accent)
@@ -31,20 +31,17 @@ struct WeeklySummaryDetailContent: View {
                 }
 
                 // Main Summary Text (AI Generated)
-                VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                    Text("AI Summary")
-                        .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
-                    Text(summaryResult.mainSummary)
-                        .font(styles.typography.bodyFont)
-                        .foregroundColor(styles.colors.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true) // Allow wrapping
-                }
+                // REMOVED: Text("AI Summary") header
+                 Text(summaryResult.mainSummary)
+                     .font(styles.typography.bodyFont)
+                     .foregroundColor(styles.colors.textSecondary)
+                     .fixedSize(horizontal: false, vertical: true) // Allow wrapping
+                     .padding(.bottom) // Keep padding
 
 
                 // Key Themes (AI Generated)
                 if !summaryResult.keyThemes.isEmpty {
-                     VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                     VStack(alignment: .leading, spacing: styles.layout.spacingM) { // Use spacingM here
                          Text("Key Themes")
                              .font(styles.typography.title3)
                              .foregroundColor(styles.colors.text)
@@ -61,10 +58,11 @@ struct WeeklySummaryDetailContent: View {
                              }
                          }
                      }
+                     .padding(.bottom, styles.layout.spacingL) // Add padding after section
                 }
 
                 // Mood Trend (AI Generated)
-                 VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                 VStack(alignment: .leading, spacing: styles.layout.spacingM) { // Use spacingM here
                      Text("Mood Trend")
                          .font(styles.typography.title3)
                          .foregroundColor(styles.colors.text)
@@ -72,11 +70,11 @@ struct WeeklySummaryDetailContent: View {
                          .font(styles.typography.bodyFont)
                          .foregroundColor(styles.colors.textSecondary)
                  }
-
+                 .padding(.bottom, styles.layout.spacingL) // Add padding after section
 
                 // Notable Quote (AI Generated)
                 if !summaryResult.notableQuote.isEmpty {
-                    VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                    VStack(alignment: .leading, spacing: styles.layout.spacingM) { // Use spacingM here
                          Text("Notable Quote")
                              .font(styles.typography.title3)
                              .foregroundColor(styles.colors.text)
@@ -88,21 +86,32 @@ struct WeeklySummaryDetailContent: View {
                              .background(styles.colors.secondaryBackground.opacity(0.5))
                              .cornerRadius(styles.layout.radiusM)
                      }
+                     .padding(.bottom, styles.layout.spacingL) // Add padding after section
                 }
 
-                 Spacer() // Push content towards top
+                 Spacer(minLength: styles.layout.spacingXL) // Add spacer before timestamp
 
-                // Generation Date
-                 if let date = generatedDate {
-                     Text("Generated on \(date.formatted(date: .long, time: .shortened))")
-                         .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
-                         .frame(maxWidth: .infinity, alignment: .center).padding(.top)
-                 }
+                 // Generation Date Timestamp
+                  if let date = generatedDate {
+                      HStack {
+                          Spacer() // Center align
+                          Image(systemName: "clock")
+                              .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                              .font(.system(size: 12))
+                          Text("Generated on \(date.formatted(date: .long, time: .shortened))")
+                              .font(styles.typography.caption)
+                              .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                          Spacer()
+                      }
+                      .padding(.top) // Padding above timestamp
+                  }
             }
-             .padding(styles.layout.paddingL) // Add padding to the content
-        }
-    }
-}
+             .padding(.bottom, styles.layout.paddingL) // Add bottom padding inside scrollview
+        } // End ScrollView
+        // Padding is now handled by InsightFullScreenView
+        // .padding(styles.layout.paddingL)
+    } // End body
+} // End struct WeeklySummaryDetailContent
 
 #Preview {
      let previewSummary = WeeklySummaryResult(

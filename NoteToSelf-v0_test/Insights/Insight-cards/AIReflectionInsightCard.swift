@@ -17,13 +17,16 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
 
     // State for the decoded result and loading/error status
     @State private var reflectionResult: AIReflectionResult? = nil
+    @State private var generatedDate: Date? = nil // Add state for date
     @State private var isLoading: Bool = false
     @State private var loadError: Bool = false
     private let insightTypeIdentifier = "aiReflection" // Consistent identifier
 
     // Computed properties to access result data safely
      private var insightMessage: String {
-         reflectionResult?.insightMessage ?? "How are you feeling today?" // Default message
+         if isLoading { return "Loading reflection..."}
+         if loadError { return "Could not load reflection."}
+         return reflectionResult?.insightMessage ?? "How are you feeling today?" // Default message
      }
      private var reflectionPrompts: [String] {
          reflectionResult?.reflectionPrompts ?? [ // Default prompts
@@ -58,11 +61,18 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
                      }
 
                      // Insight Snippet (using bodyFont)
-                     Text(insightMessage)
-                         .font(styles.typography.bodyFont)
-                         .foregroundColor(styles.colors.text)
-                         .lineLimit(3) // Allow slightly more text if needed
-                         .frame(maxWidth: .infinity, alignment: .leading)
+                      HStack { // Wrap in HStack for ProgressView
+                          Text(insightMessage)
+                              .font(styles.typography.bodyFont)
+                              .foregroundColor(loadError ? styles.colors.error : styles.colors.text) // Use error color
+                              .lineLimit(3) // Allow slightly more text if needed
+                              .frame(maxWidth: .infinity, alignment: .leading)
+                          if isLoading {
+                              ProgressView().tint(styles.colors.accent)
+                          }
+                      }
+                      .frame(minHeight: 40) // Consistent height
+
 
                       // Helping Text
                       Text("Tap to reflect deeper on today’s thoughts.")
@@ -71,13 +81,13 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
                           .frame(maxWidth: .infinity, alignment: .leading)
 
                  }
+                 .padding(.bottom, styles.layout.paddingL) // INCREASED bottom padding
             } // Removed detailContent closure
         )
         .contentShape(Rectangle())
         .onTapGesture { showingFullScreen = true } // Trigger fullscreen on tap
         // Add loading logic
         .onAppear(perform: loadInsight)
-        .onChange(of: appState.journalEntries.count) { _, _ in loadInsight() } // Reload on entry change
          // Add listener for explicit insight updates
          .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
              print("[AIReflectionCard] Received insightsDidUpdate notification.")
@@ -87,13 +97,14 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
             InsightFullScreenView(title: "AI Insights") {
                 AIReflectionDetailContent(
                     insightMessage: insightMessage,
-                    reflectionPrompts: reflectionPrompts
+                    reflectionPrompts: reflectionPrompts,
+                    generatedDate: generatedDate // Pass date correctly
                 )
             }
             .environmentObject(styles) // Pass styles
             .environmentObject(appState) // Pass appState if detail view needs it
         }
-    }
+    } // End body
 
     // Function to load and decode the insight
     private func loadInsight() {
@@ -105,11 +116,12 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
         Task {
             do {
                 // Use await as loadLatestInsight might become async
-                if let (json, _) = try await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                if let (json, date) = try await databaseService.loadLatestInsight(type: insightTypeIdentifier) { // Capture date
                     if let data = json.data(using: .utf8) {
                         let result = try JSONDecoder().decode(AIReflectionResult.self, from: data)
                         await MainActor.run {
                             reflectionResult = result
+                            generatedDate = date // Store date
                             isLoading = false
                              print("[AIReflectionCard] Insight loaded and decoded.")
                         }
@@ -119,6 +131,7 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
                 } else {
                     await MainActor.run {
                         reflectionResult = nil
+                        generatedDate = nil // Clear date
                         isLoading = false
                         print("[AIReflectionCard] No stored insight found.")
                     }
@@ -127,23 +140,19 @@ struct AIReflectionInsightCard: View { // Ensure struct name matches file name
                  await MainActor.run {
                      print("‼️ [AIReflectionCard] Failed to load/decode insight: \(error)")
                      reflectionResult = nil
+                     generatedDate = nil // Clear date
                      loadError = true
                      isLoading = false
                  }
             }
         }
     }
-} // Add missing closing brace for struct
+} // End struct AIReflectionInsightCard
 
 // Update preview provider name to match struct
 #Preview {
     ScrollView{
         AIReflectionInsightCard() // Use correct struct name
-            // Note: The card itself loads data, but the detail preview needs explicit data.
-            // If we want the detail view in preview to show something, we'd need to
-            // either pass mock data to the detail view directly in its preview,
-            // or set mock data in the card's @State for preview purposes.
-            // For now, the card preview itself will load (or show defaults).
             .padding()
             .environmentObject(AppState()) // Provide mock data if needed
             .environmentObject(ChatManager(databaseService: DatabaseService(), llmService: LLMService.shared, subscriptionManager: SubscriptionManager.shared))

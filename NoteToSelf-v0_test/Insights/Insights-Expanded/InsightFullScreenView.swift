@@ -55,6 +55,7 @@ struct InsightFullScreenView<Content: View>: View {
                 ScrollView {
                     // Apply padding directly to the content view passed in
                     content
+                        .padding(.top, styles.layout.paddingL) // ADDED Top padding for space below header
                         .padding(.horizontal, styles.layout.paddingXL) // Ample horizontal padding
                         .padding(.vertical, styles.layout.paddingL) // Ample vertical padding
                         .frame(maxWidth: .infinity, alignment: .leading) // Ensure content aligns left

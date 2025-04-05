@@ -4,9 +4,10 @@ struct StreakNarrativeDetailContent: View {
     let streak: Int
     let entries: [JournalEntry] // Keep entries for timeline
     let narrativeResult: StreakNarrativeResult? // Accept optional result
+    let generatedDate: Date? // Accept date
+    @ObservedObject private var styles = UIStyles.shared
 
-     // Ensure styles are observed if passed down or used globally
-     @ObservedObject private var styles = UIStyles.shared
+    // Use narrative text from the result, or a placeholder
 
     // Use narrative text from the result, or a placeholder
     private var narrativeDisplayText: String {
@@ -15,9 +16,7 @@ struct StreakNarrativeDetailContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Increased spacing to XL
-            Text("Your Journey's Storyline")
-                .font(styles.typography.title3)
-                .foregroundColor(styles.colors.text)
+            // REMOVED: Text("Your Journey's Storyline")
 
             // Narrative Text (From Result)
             Text(narrativeDisplayText) // Use computed property
@@ -30,16 +29,29 @@ struct StreakNarrativeDetailContent: View {
                 .foregroundColor(styles.colors.text)
 
             // Timeline Visualization (Horizontal Scroll)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .bottom, spacing: styles.layout.spacingS) {
-                    // Generate timeline items from entries
-                    // For simplicity, show last 7-10 entries or key markers
-                    ForEach(entries.sorted(by: { $0.date > $1.date }).prefix(10).reversed(), id: \.id) { entry in
-                        TimelineItemView(entry: entry)
+            ScrollViewReader { proxy in // Add ScrollViewReader
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .bottom, spacing: styles.layout.spacingS) {
+                        // Generate timeline items from entries
+                        // For simplicity, show last 7-10 entries or key markers
+                        let timelineEntries = entries.sorted(by: { $0.date > $1.date }).prefix(10).reversed().map { $0 }
+                        ForEach(timelineEntries, id: \.id) { entry in
+                            TimelineItemView(entry: entry)
+                                .id(entry.id) // Assign ID for scrolling
+                        }
                     }
+                    .padding(.vertical)
+                     // Add horizontal padding so last item isn't at edge
+                     .padding(.horizontal, styles.layout.paddingL)
                 }
-                .padding(.vertical)
-            }
+                .onAppear {
+                     // Scroll to the last item on appear
+                     if let lastId = entries.sorted(by: { $0.date > $1.date }).first?.id { // Get ID of most recent entry
+                         print("[StreakNarrativeDetail] Scrolling timeline to end: \(lastId)")
+                         proxy.scrollTo(lastId, anchor: .trailing)
+                     }
+                 }
+            } // End ScrollViewReader
             .frame(height: 100) // Fixed height for the timeline scroll
 
             // Optional: Add Streak Milestones or Benefits section if needed
@@ -57,7 +69,24 @@ struct StreakNarrativeDetailContent: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
             .padding(.top)
-        }
+
+             Spacer(minLength: styles.layout.spacingXL) // Add spacer before timestamp
+
+             // Generated Date Timestamp
+             if let date = generatedDate {
+                 HStack {
+                     Spacer() // Center align
+                     Image(systemName: "clock")
+                         .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                         .font(.system(size: 12))
+                     Text("Generated on \(date.formatted(date: .long, time: .shortened))")
+                         .font(styles.typography.caption)
+                         .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                     Spacer()
+                 }
+                 .padding(.top) // Padding above timestamp
+             }
+        } // End Main VStack
     }
 }
 
@@ -149,8 +178,13 @@ struct StreakMilestone: View {
     ]
     let mockResult = StreakNarrativeResult(storySnippet: "Snippet preview", narrativeText: "Longer narrative preview text goes here.")
     ScrollView {
-        StreakNarrativeDetailContent(streak: 5, entries: mockEntries, narrativeResult: mockResult)
-            .padding()
+        StreakNarrativeDetailContent(
+            streak: 5,
+            entries: mockEntries,
+            narrativeResult: mockResult,
+            generatedDate: Date() // Pass date
+        )
+        .padding()
     }
     .environmentObject(AppState()) // Provide mock AppState
     .environmentObject(UIStyles.shared)

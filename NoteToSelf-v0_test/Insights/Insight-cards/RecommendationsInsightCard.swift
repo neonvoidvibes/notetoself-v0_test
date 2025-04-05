@@ -9,7 +9,8 @@ struct RecommendationsInsightCard: View {
     // Local state for decoded result
     @State private var decodedRecommendations: RecommendationResult? = nil
     @State private var decodingError: Bool = false
-    @State private var isLoading: Bool = false // Add loading state
+    @State private var isLoading: Bool = false
+    // Note: generatedDate is passed in, no need for @State here
 
     // Scroll behavior properties
     var scrollProxy: ScrollViewProxy? = nil
@@ -105,15 +106,12 @@ struct RecommendationsInsightCard: View {
                              .multilineTextAlignment(.center)
                     }
                 }
+                .padding(.bottom, styles.layout.paddingL) // INCREASED bottom padding
             } // Removed detailContent closure
         ) // End expandableCard
         .contentShape(Rectangle())
         .onTapGesture { if subscriptionTier == .premium { showingFullScreen = true } } // Only allow open if premium
         .onAppear(perform: loadInsight) // Load data on appear
-        // Add the onChange modifier to decode the JSON string
-        .onChange(of: jsonString) { oldValue, newValue in
-             decodeJSON(json: newValue)
-        }
          // Add listener for explicit insight updates
          .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
              print("[RecommendationsCard] Received insightsDidUpdate notification.")
@@ -123,7 +121,10 @@ struct RecommendationsInsightCard: View {
              // Ensure we only show content if data exists
              if let recommendations = decodedRecommendations?.recommendations {
                  InsightFullScreenView(title: "Suggested Actions") {
-                     RecommendationsDetailContent(recommendations: recommendations)
+                     RecommendationsDetailContent(
+                         recommendations: recommendations,
+                         generatedDate: generatedDate // Pass date
+                     )
                  }
                  .environmentObject(styles) // Pass styles
              } else {
@@ -141,9 +142,10 @@ struct RecommendationsInsightCard: View {
          Task {
              do {
                  // Use await as DB call might become async
-                 if let (json, _) = try await databaseService.loadLatestInsight(type: "recommendation") { // Use correct identifier
+                  // Load JSON, date is passed in
+                 if let (json, _) = try await databaseService.loadLatestInsight(type: "recommendation") {
                       decodeJSON(json: json) // Call decode function
-                      await MainActor.run { isLoading = false } // Set loading false after decoding attempt
+                      await MainActor.run { isLoading = false }
                        print("[RecommendationsCard] Insight loaded.")
                  } else {
                      await MainActor.run {
@@ -171,13 +173,15 @@ struct RecommendationsInsightCard: View {
                   Task { await MainActor.run { decodedRecommendations = nil } }
              }
             // decodingError = false // Don't reset error here
+            // isLoading = false // Ensure loading stops if json is nil/empty
             return
         }
+        // isLoading = true // Start loading if we have JSON
         // decodingError = false // Reset error before trying decode
 
         guard let data = json.data(using: .utf8) else {
             print("⚠️ [RecommendationsCard] Failed convert JSON string to Data.");
-            Task { await MainActor.run { decodingError = true; decodedRecommendations = nil } }
+            Task { await MainActor.run { decodingError = true; decodedRecommendations = nil; isLoading = false } } // Stop loading on error
             return
         }
         do {
@@ -185,10 +189,11 @@ struct RecommendationsInsightCard: View {
              Task { await MainActor.run {
                  if result != decodedRecommendations { decodedRecommendations = result; print("[RecommendationsCard] Decoded new recommendations.") }
                  decodingError = false // Clear error on success
+                 // isLoading = false // Stop loading on success - Handled in loadInsight now
              }}
         } catch {
             print("‼️ [RecommendationsCard] Failed decode RecommendationResult: \(error). JSON: \(json)");
-            Task { await MainActor.run { decodingError = true; decodedRecommendations = nil } }
+            Task { await MainActor.run { decodingError = true; decodedRecommendations = nil; isLoading = false } } // Stop loading on error
         }
     }
 }
@@ -209,7 +214,7 @@ struct RecommendationRow: View {
             }
             VStack(alignment: .leading, spacing: 4) { // Content
                 Text(recommendation.title)
-                    .font(styles.typography.insightCaption)
+                    .font(styles.typography.insightCaption) // Use insightCaption
                     .foregroundColor(styles.colors.text)
                 Text(recommendation.description)
                     .font(styles.typography.bodySmall)

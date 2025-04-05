@@ -16,6 +16,7 @@ struct ForecastInsightCard: View {
 
     // State for the decoded result and loading/error status
     @State private var forecastResult: ForecastResult? = nil
+    @State private var generatedDate: Date? = nil // Add state for date
     @State private var isLoading: Bool = false
     @State private var loadError: Bool = false
     private let insightTypeIdentifier = "forecast" // Consistent identifier
@@ -95,6 +96,7 @@ struct ForecastInsightCard: View {
                               .frame(maxWidth: .infinity, alignment: .leading)
                      }
                  }
+                 .padding(.bottom, styles.layout.paddingL) // INCREASED bottom padding
             } // Removed detailContent closure
         )
          .contentShape(Rectangle())
@@ -108,10 +110,14 @@ struct ForecastInsightCard: View {
           }
          .fullScreenCover(isPresented: $showingFullScreen) {
               InsightFullScreenView(title: "Future Forecast") {
-                  ForecastDetailContent(forecastResult: forecastResult)
+                  ForecastDetailContent(
+                      forecastResult: forecastResult,
+                      generatedDate: generatedDate // Pass date
+                  )
               }
               .environmentObject(styles) // Pass styles
               // Pass other EnvironmentObjects if ForecastDetailContent needs them
+              .environmentObject(appState) // Pass appState if needed
           }
     } // End body
 
@@ -125,20 +131,22 @@ struct ForecastInsightCard: View {
          Task {
              do {
                  // Use await as DB call might become async
-                 if let (json, _) = try await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                     if let data = json.data(using: .utf8) {
-                         let result = try JSONDecoder().decode(ForecastResult.self, from: data)
-                         await MainActor.run {
-                             forecastResult = result
-                             isLoading = false
-                              print("[ForecastCard] Insight loaded and decoded.")
-                         }
-                     } else {
-                         throw NSError(domain: "ForecastCard", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert JSON string to Data"])
-                     }
+                if let (json, date) = try await databaseService.loadLatestInsight(type: insightTypeIdentifier) { // Capture date
+                    if let data = json.data(using: .utf8) {
+                        let result = try JSONDecoder().decode(ForecastResult.self, from: data)
+                        await MainActor.run {
+                            forecastResult = result
+                            generatedDate = date // Store date
+                            isLoading = false
+                             print("[ForecastCard] Insight loaded and decoded.")
+                        }
+                    } else {
+                        throw NSError(domain: "ForecastCard", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert JSON string to Data"])
+                    }
                  } else {
                      await MainActor.run {
                          forecastResult = nil
+                         generatedDate = nil // Clear date if no insight found
                          isLoading = false
                          print("[ForecastCard] No stored insight found.")
                      }
@@ -147,13 +155,14 @@ struct ForecastInsightCard: View {
                   await MainActor.run {
                       print("‼️ [ForecastCard] Failed to load/decode insight: \(error)")
                       forecastResult = nil
+                      generatedDate = nil // Clear date on error
                       loadError = true
                       isLoading = false
                   }
              }
          }
      }
-} // Add missing closing brace for struct
+}
 
  #Preview {
       ScrollView {

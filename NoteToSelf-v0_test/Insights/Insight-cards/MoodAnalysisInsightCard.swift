@@ -11,7 +11,7 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
     // Local state for decoded result
     @State private var decodedTrend: MoodTrendResult? = nil
     @State private var decodingError: Bool = false
-    @State private var isLoading: Bool = false // Added missing state variable
+    @State private var isLoading: Bool = false
 
     // Scroll behavior properties
     var scrollProxy: ScrollViewProxy? = nil
@@ -54,11 +54,11 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
     private var placeholderMessage: String {
         if jsonString == nil {
             return "Keep journaling regularly (at least 3 entries needed) to analyze your mood trends!"
-        } else if decodedTrend == nil && !decodingError && isLoading { // Show loading only when actually loading
+        } else if decodedTrend == nil && !decodingError && isLoading {
             return "Loading mood analysis..."
         } else if decodingError {
             return "Could not load mood analysis. Please try again later."
-        } else if decodedTrend == nil && !isLoading { // No data loaded, not loading, no error
+        } else if decodedTrend == nil && !isLoading {
              return "Mood trend analysis is not available yet."
         } else {
             return "" // Should have data if no other condition met
@@ -136,13 +136,12 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
                             .multilineTextAlignment(.center)
                     }
                 }
+                .padding(.bottom, styles.layout.paddingL) // INCREASED bottom padding
             } // Removed detailContent closure
         )
         .contentShape(Rectangle())
         .onTapGesture { if subscriptionTier == .premium { showingFullScreen = true } } // Only allow open if premium
         .onAppear(perform: loadInsight) // Added loading logic trigger
-        // Reload if entries change (might need debounce later)
-         .onChange(of: appState.journalEntries.count) { _, _ in loadInsight() }
          // Add listener for explicit insight updates
          .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
              print("[MoodAnalysisCard] Received insightsDidUpdate notification.")
@@ -151,7 +150,10 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
         .fullScreenCover(isPresented: $showingFullScreen) {
              InsightFullScreenView(title: "Mood Landscape") {
                   // Pass entries needed for detail view's charts/analysis
-                  MoodAnalysisDetailContent(entries: appState.journalEntries)
+                  MoodAnalysisDetailContent(
+                      entries: appState.journalEntries,
+                      generatedDate: generatedDate // Pass date
+                  )
               }
               .environmentObject(styles) // Pass styles
               .environmentObject(appState) // Pass appState
@@ -167,10 +169,11 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
         Task {
             do {
                 // Use await as DB call might become async
-                if let (json, _) = try await databaseService.loadLatestInsight(type: "moodTrend") { // Use correct identifier
+                 // Load the JSON. The date is passed in via the `generatedDate` let constant.
+                if let (json, _) = try await databaseService.loadLatestInsight(type: "moodTrend") {
                      decodeJSON(json: json) // Call decode function
-                     await MainActor.run { isLoading = false } // Set loading false after decoding attempt
-                      print("[MoodAnalysisCard] Insight loaded.")
+                     await MainActor.run { isLoading = false }
+                     print("[MoodAnalysisCard] Insight loaded.")
                 } else {
                     await MainActor.run {
                         decodedTrend = nil // Ensure it's nil if not found
@@ -195,12 +198,15 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
              if decodedTrend != nil {
                  Task { await MainActor.run { decodedTrend = nil } }
              }
+             // isLoading = false // Don't set loading false here yet
             return
         }
+        // isLoading = true // Set loading true when starting decode
+        // decodingError = false // Reset error before trying decode
 
         guard let data = json.data(using: .utf8) else {
             print("⚠️ [MoodAnalysisCard] Failed convert JSON string to Data.");
-            Task { await MainActor.run { decodingError = true; decodedTrend = nil } }
+            Task { await MainActor.run { decodingError = true; decodedTrend = nil; isLoading = false } } // Stop loading on error
             return
         }
         do {
@@ -208,13 +214,14 @@ struct MoodAnalysisInsightCard: View { // Ensure struct name matches file name
             Task { await MainActor.run { // Ensure state update is on main thread
                 if result != decodedTrend { decodedTrend = result; print("[MoodAnalysisCard] Decoded new trend.") }
                 decodingError = false // Clear error on successful decode
+                // isLoading = false // Stop loading on success - Handled in loadInsight now
             }}
         } catch {
             print("‼️ [MoodAnalysisCard] Failed decode MoodTrendResult: \(error). JSON: \(json)");
-            Task { await MainActor.run { decodingError = true; decodedTrend = nil } }
+            Task { await MainActor.run { decodingError = true; decodedTrend = nil; isLoading = false } } // Stop loading on error
         }
     }
-} // Add missing closing brace for struct
+}
 
 // Update Preview Provider name
 #Preview {

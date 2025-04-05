@@ -2,8 +2,15 @@ import SwiftUI
 
 struct RecommendationsDetailContent: View {
     let recommendations: [RecommendationResult.RecommendationItem] // Use nested type
+    let generatedDate: Date? // Accept date
     // Ensure styles are observed if passed down or used globally
     @ObservedObject private var styles = UIStyles.shared
+
+     // Add explicit init if needed to ensure parameters are set, though memberwise should work
+     init(recommendations: [RecommendationResult.RecommendationItem], generatedDate: Date?) {
+         self.recommendations = recommendations
+         self.generatedDate = generatedDate
+     }
 
     // Helper to get icon based on category string
      private func iconForCategory(_ category: String) -> String {
@@ -21,16 +28,12 @@ struct RecommendationsDetailContent: View {
     var body: some View {
         ScrollView {
             VStack(spacing: styles.layout.spacingXL) { // Keep XL spacing
-                // Introduction
-                VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                    Text("Personalized Recommendations")
-                        .font(styles.typography.title3) // Use Title3
-                        .foregroundColor(styles.colors.text)
+                // Introduction - REMOVED redundant header Text("Personalized Recommendations")
+                 Text("Based on your journal entries, here are some suggestions to help support your well-being.") // Simplified text
+                     .font(styles.typography.bodyFont)
+                     .foregroundColor(styles.colors.textSecondary)
+                     .padding(.bottom, styles.layout.spacingS) // Add slight padding below intro
 
-                    Text("Based on your journal entries, here are some suggestions to help support your well-being.") // Simplified text
-                        .font(styles.typography.bodyFont)
-                        .foregroundColor(styles.colors.textSecondary)
-                }
 
                 // Recommendations List
                 if recommendations.isEmpty {
@@ -44,6 +47,7 @@ struct RecommendationsDetailContent: View {
                              RecommendationDetailCard(recommendation: recommendation)
                          }
                      }
+                     .padding(.bottom, styles.layout.spacingL) // Add padding after recommendations list
                 }
 
 
@@ -69,15 +73,32 @@ struct RecommendationsDetailContent: View {
                 */
 
                  Text("These recommendations are AI-generated based on patterns and are not a substitute for professional advice.")
-                         .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
-                         .multilineTextAlignment(.center).padding(.top, styles.layout.spacingL) // Increased spacing before disclaimer
+                     .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
+                     .multilineTextAlignment(.center).padding(.top, styles.layout.spacingL) // Increased spacing before disclaimer
 
-          }
-          .padding(.bottom, styles.layout.paddingL) // Add bottom padding for scroll breathing room
-          // .padding(styles.layout.paddingXL) // Padding applied by InsightFullScreenView
-        }
-    }
-}
+                 Spacer(minLength: styles.layout.spacingXL) // Add spacer before timestamp
+
+                 // Generated Date Timestamp
+                  if let date = generatedDate {
+                      HStack {
+                          Spacer() // Center align
+                          Image(systemName: "clock")
+                              .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                              .font(.system(size: 12))
+                          Text("Generated on \(date.formatted(date: .long, time: .shortened))")
+                              .font(styles.typography.caption)
+                              .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                          Spacer()
+                      }
+                      .padding(.top) // Padding above timestamp
+                  }
+            }
+             .padding(.bottom, styles.layout.paddingL) // Add bottom padding for scroll breathing room
+        } // End ScrollView
+         // Padding applied by InsightFullScreenView
+         // .padding(styles.layout.paddingXL)
+    } // End body
+} // End struct
 
 struct RecommendationDetailCard: View {
     let recommendation: RecommendationResult.RecommendationItem // Use nested type
@@ -173,12 +194,17 @@ struct ResourceLink: View {
 }
 
 #Preview {
+     // Correctly create mock data
      let previewRecs = [
-         RecommendationResult.RecommendationItem(title: "Preview Rec 1", description: "Description for preview 1.", category: "Mindfulness", rationale: "Rationale preview 1."),
-         RecommendationResult.RecommendationItem(title: "Preview Rec 2", description: "Description for preview 2.", category: "Activity", rationale: "Rationale preview 2.")
+         RecommendationResult.RecommendationItem(id: UUID(), title: "Preview Rec 1", description: "Description for preview 1.", category: "Mindfulness", rationale: "Rationale preview 1."),
+         RecommendationResult.RecommendationItem(id: UUID(), title: "Preview Rec 2", description: "Description for preview 2.", category: "Activity", rationale: "Rationale preview 2.")
      ]
-     return RecommendationsDetailContent(recommendations: previewRecs)
-         .padding()
-         .environmentObject(UIStyles.shared)
-         .environmentObject(ThemeManager.shared)
-}
+     // Instantiate the view and apply modifiers correctly
+     RecommendationsDetailContent(
+         recommendations: previewRecs,
+         generatedDate: Date() // Pass date
+     )
+     .padding() // Apply padding HERE to the instance
+     .environmentObject(UIStyles.shared)
+     .environmentObject(ThemeManager.shared)
+ }

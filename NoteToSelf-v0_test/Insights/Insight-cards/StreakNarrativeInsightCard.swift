@@ -17,15 +17,18 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
 
     // State for the decoded result and loading/error status
     @State private var narrativeResult: StreakNarrativeResult? = nil
+    @State private var generatedDate: Date? = nil // Add state for date
     @State private var isLoading: Bool = false
     @State private var loadError: Bool = false
     private let insightTypeIdentifier = "streakNarrative" // Consistent identifier
 
     // Computed properties to access result data safely
     private var storySnippet: String {
-        narrativeResult?.storySnippet ?? (streak > 0 ? "Analyzing your recent journey..." : "Begin your story by journaling today.")
+        if isLoading { return "Loading story..." }
+        if loadError { return "Could not load story."}
+        return narrativeResult?.storySnippet ?? (streak > 0 ? "Analyzing your recent journey..." : "Begin your story by journaling today.")
     }
-    private var narrativeText: String {
+    private var narrativeText: String { // Although not used directly here, keep for passing
         narrativeResult?.narrativeText ?? "Your detailed storyline will appear here with more data."
     }
 
@@ -64,12 +67,19 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
 
                     // Story Snippet & Helping Text (Centered below streak)
                     VStack(spacing: styles.layout.spacingS) {
-                         Text(storySnippet)
-                             .font(styles.typography.bodyFont) // Main text for snippet
-                             .foregroundColor(styles.colors.text)
-                             .multilineTextAlignment(.center)
-                             .lineLimit(2)
-                             .fixedSize(horizontal: false, vertical: true) // Allow wrapping
+                         // Wrap potentially long snippet text with ProgressView/Error indication
+                         HStack {
+                             Text(storySnippet)
+                                 .font(styles.typography.bodyFont) // Main text for snippet
+                                 .foregroundColor(loadError ? styles.colors.error : styles.colors.text) // Use error color if needed
+                                 .multilineTextAlignment(.center)
+                                 .lineLimit(2)
+                                 .fixedSize(horizontal: false, vertical: true) // Allow wrapping
+                             if isLoading {
+                                 ProgressView().tint(styles.colors.accent).padding(.leading, 4)
+                             }
+                         }
+                         .frame(minHeight: 30) // Give space for loading indicator
 
                          Text("Tap to see your journey's turning points!") // Helping text
                              .font(styles.typography.caption)
@@ -77,7 +87,7 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
                              .multilineTextAlignment(.center)
                     }
                      .frame(maxWidth: .infinity, alignment: .center) // Center the text block
-                     .padding(.bottom, styles.layout.paddingM) // Add padding below content
+                     .padding(.bottom, styles.layout.paddingL) // INCREASED bottom padding
 
                 }
             } // Removed detailContent closure
@@ -91,7 +101,8 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
                  StreakNarrativeDetailContent(
                      streak: streak,
                      entries: appState.journalEntries,
-                     narrativeResult: narrativeResult
+                     narrativeResult: narrativeResult,
+                     generatedDate: generatedDate // Pass date
                  )
              }
              .environmentObject(styles) // Pass styles if needed by subview
@@ -100,9 +111,6 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
         }
         // Add loading logic
         .onAppear(perform: loadInsight)
-        .onChange(of: appState.journalEntries.count) { _, _ in // Reload if entries change
-             loadInsight()
-         }
          // Add listener for explicit insight updates
          .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
              print("[StreakNarrativeCard] Received insightsDidUpdate notification.")
@@ -121,12 +129,13 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
         Task {
             do {
                  // Use await as loadLatestInsight might become async
-                if let (json, _) = try await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                if let (json, date) = try await databaseService.loadLatestInsight(type: insightTypeIdentifier) { // Capture date
                     if let data = json.data(using: .utf8) {
                         let decoder = JSONDecoder()
                         let result = try decoder.decode(StreakNarrativeResult.self, from: data)
                         await MainActor.run {
                             narrativeResult = result
+                            generatedDate = date // Store date
                             isLoading = false
                              print("[StreakNarrativeCard] Insight loaded and decoded.")
                         }
@@ -137,6 +146,7 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
                     // No insight found in DB
                      await MainActor.run {
                          narrativeResult = nil // Ensure it's nil if not found
+                         generatedDate = nil // Clear date
                          isLoading = false
                          print("[StreakNarrativeCard] No stored insight found.")
                      }
@@ -145,6 +155,7 @@ struct StreakNarrativeInsightCard: View { // Ensure struct name matches file nam
                  await MainActor.run {
                      print("‼️ [StreakNarrativeCard] Failed to load/decode insight: \(error)")
                      narrativeResult = nil // Clear result on error
+                     generatedDate = nil // Clear date
                      loadError = true
                      isLoading = false
                  }
