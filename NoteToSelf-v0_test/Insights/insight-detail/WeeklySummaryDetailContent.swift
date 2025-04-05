@@ -16,7 +16,6 @@ struct WeeklySummaryDetailContent: View {
         // Use the layout previously defined in WeeklySummaryDetailContentExpanded
         ScrollView { // Wrap in ScrollView for potentially long content
             VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Ensure XL spacing
-                // Header with Period is handled by InsightFullScreenView
 
                 // --- AI Summary Section ---
                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
@@ -36,6 +35,7 @@ struct WeeklySummaryDetailContent: View {
 
                 // --- Key Themes Section ---
                 if !summaryResult.keyThemes.isEmpty {
+                     // Wrap Key Themes section in a VStack and apply styling
                      VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                          Text("Key Themes")
                              .font(styles.typography.title3)
@@ -53,7 +53,9 @@ struct WeeklySummaryDetailContent: View {
                              }
                          }
                      }
-                      // No background needed for FlowLayout section container
+                      .padding() // Apply styling to the section VStack
+                      .background(styles.colors.secondaryBackground.opacity(0.5))
+                      .cornerRadius(styles.layout.radiusM)
                 }
 
                 // --- Mood Trend Section ---
@@ -112,7 +114,7 @@ struct WeeklySummaryDetailContent: View {
 #Preview {
      let previewSummary = WeeklySummaryResult(
          mainSummary: "This week involved focusing on work projects and finding time for relaxation during the weekend. Mood was generally positive.",
-         keyThemes: ["Work Stress", "Weekend Relaxation", "Project Deadline"],
+         keyThemes: ["Work Stress", "Weekend Relaxation", "Project Deadline", "Mindfulness Practice", "Family Visit"], // Added more themes for wrapping
          moodTrend: "Generally positive with a dip mid-week",
          notableQuote: "Felt a real sense of accomplishment today."
      )
