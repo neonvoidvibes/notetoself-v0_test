@@ -24,20 +24,25 @@ struct ForecastDetailContent: View {
                      Text("Mood Prediction")
                          .font(styles.typography.title3)
                          .foregroundColor(styles.colors.text)
+                          // No bottom padding needed here, handled by VStack spacing
 
-                     // Display Mood Prediction
+                     // Display Mood Prediction text
                      Text(forecastResult?.moodPredictionText ?? "Mood prediction currently unavailable.")
                          .font(styles.typography.bodyLarge) // Larger font for prediction
                          .foregroundColor(forecastResult?.moodPredictionText != nil ? styles.colors.text : styles.colors.textSecondary)
-                         .frame(minHeight: 50, alignment: .leading) // Adjust height
-                         .frame(maxWidth: .infinity, alignment: .leading)
-                          .padding() // Add padding
-                          .background(styles.colors.secondaryBackground.opacity(0.5))
-                          .cornerRadius(styles.layout.radiusM)
+                         .frame(maxWidth: .infinity, alignment: .leading) // Ensure text takes width
 
-                     // Optional: Placeholder for Mood Chart
-                     // if let chartData = forecastResult?.moodChartData { ... }
+                     // Optional: Add chart placeholder back if needed inside this VStack
+                     // Text("Chart Placeholder")
+                     //     .frame(minHeight: 100)
+
+
                  }
+                  // Apply padding, background, cornerRadius to the VStack itself
+                  .padding()
+                  .background(styles.colors.secondaryBackground.opacity(0.5))
+                  .cornerRadius(styles.layout.radiusM)
+
 
                  // --- General Trends Section ---
                   VStack(alignment: .leading, spacing: styles.layout.spacingM) {
@@ -144,9 +149,9 @@ struct ForecastDetailContent: View {
              } // End VStack
              .padding(.bottom, styles.layout.paddingL) // Bottom padding inside scrollview
          } // End ScrollView
-        // .padding(styles.layout.paddingL) // Padding applied by InsightFullScreenView
-    }
-}
+        // Padding applied by InsightFullScreenView
+    } // End body
+} // End struct
 
 #Preview {
      let mockAction = ForecastResult.ActionPlanItem(
