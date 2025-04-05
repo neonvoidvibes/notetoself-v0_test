@@ -11,56 +11,57 @@ struct MoodAnalysisDetailContent: View {
     var body: some View {
         ScrollView { // Wrap in ScrollView
             VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Ensure XL spacing
-                 // REMOVED: Text("Mood Analysis") header
 
-                if #available(iOS 16.0, *) {
-                    // Placeholder for Dual Axis Chart Section
-                    VStack(alignment: .leading, spacing: styles.layout.spacingM) { // Use spacingM here
-                         Text("Mood Dimensions Over Time")
-                             .font(styles.typography.title3)
-                             .foregroundColor(styles.colors.text)
-                         Text("Mood Dimensions Over Time")
-                             .font(styles.typography.title3)
-                             .foregroundColor(styles.colors.text)
-                             .padding(.bottom, styles.layout.spacingS)
+                // --- Mood Chart Section ---
+                VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                     Text("Mood Dimensions Over Time")
+                         .font(styles.typography.title3)
+                         .foregroundColor(styles.colors.text)
+                         .padding(.bottom, styles.layout.spacingS)
 
+                    if #available(iOS 16.0, *) {
                         Text("Chart Placeholder:\nPositive/Negative Axis & Awake/Quiet Axis")
                             .font(styles.typography.bodyLarge)
                             .foregroundColor(styles.colors.textSecondary)
                             .frame(height: 250) // Keep placeholder height
-                            .frame(maxWidth: .infinity)
+                            .frame(maxWidth: .infinity, alignment: .center) // Center align placeholder
+                            .padding() // Add padding inside background
                             .background(styles.colors.secondaryBackground.opacity(0.5))
                             .cornerRadius(styles.layout.radiusM)
-                            .padding(.vertical, styles.layout.paddingS)
 
                         Text("Use horizontal scrolling and pinch-to-zoom to explore different time scales (Day, Week, Month, Year).")
                             .font(styles.typography.caption)
                             .foregroundColor(styles.colors.textSecondary)
+                            .padding(.top, styles.layout.spacingS)
 
                          // Actual Chart Implementation would go here
                          // DetailedMoodAnalysisChart(entries: entries)
                          //    .frame(height: 250) // Example height
+                    } else {
+                        Text("Detailed mood chart requires iOS 16 or later.")
+                            .font(styles.typography.bodyFont)
+                            .foregroundColor(styles.colors.textSecondary)
+                            .frame(height: 250) // Keep placeholder height
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(styles.colors.secondaryBackground.opacity(0.5))
+                            .cornerRadius(styles.layout.radiusM)
                     }
-                    .padding(.bottom, styles.layout.paddingL)
-
-
-                } else {
-                    Text("Detailed mood chart requires iOS 16 or later.")
-                        .font(styles.typography.bodyFont)
-                        .foregroundColor(styles.colors.textSecondary)
-                        .frame(height: 250) // Keep placeholder height
-                        .frame(maxWidth: .infinity)
                 }
+                // No background needed for the outer chart section container
 
-                // Mood insights section (using the existing MoodInsightsView)
-                 VStack(alignment: .leading) {
+                // --- Mood Insights Section ---
+                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                       Text("Analysis & Insights")
                           .font(styles.typography.title3)
                           .foregroundColor(styles.colors.text)
-                          .padding(.bottom, styles.layout.spacingM)
+                          .padding(.bottom, styles.layout.spacingS)
 
                       MoodInsightsView(entries: entries) // Reuse the insights component
                   }
+                 .padding() // Apply styling to the section VStack
+                 .background(styles.colors.secondaryBackground.opacity(0.5))
+                 .cornerRadius(styles.layout.radiusM)
 
                  Spacer(minLength: styles.layout.spacingXL) // Add spacer before timestamp
 
@@ -80,11 +81,10 @@ struct MoodAnalysisDetailContent: View {
                   }
 
             }
-            // .padding(styles.layout.paddingL) // Padding applied by InsightFullScreenView
              .padding(.bottom, styles.layout.paddingL) // Bottom padding inside scrollview
-        }
-    }
-}
+        } // End ScrollView
+    } // End body
+} // End struct
 
 // Placeholder for the Dual Axis Chart component (Keep for future implementation)
 @available(iOS 16.0, *)
@@ -140,6 +140,7 @@ struct MoodInsightsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: styles.layout.spacingL) { // Increased spacing
+
             // Top moods section
             VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                 Text("Your Top Moods")
@@ -169,10 +170,7 @@ struct MoodInsightsView: View {
                          }.frame(maxWidth: .infinity)
                      }
                 }
-                .padding(.vertical, styles.layout.paddingS)
-                 .padding(.horizontal)
-                 .background(styles.colors.secondaryBackground.opacity(0.5))
-                 .cornerRadius(styles.layout.radiusM)
+                // Removed background/padding from HStack, handled by outer VStack now
             }
 
 
@@ -199,17 +197,14 @@ struct MoodInsightsView: View {
                             .foregroundColor(styles.colors.textSecondary)
                     }
                 }
-                 .padding() // Add padding
-                 .background(styles.colors.secondaryBackground.opacity(0.5)) // Subtle background
-                 .cornerRadius(styles.layout.radiusM)
+                // Removed background/padding from HStack
             }
-        }
+        } // End MoodInsightsView VStack
     }
 }
 
 
 #Preview {
-    // Create mock entries for preview
     let mockEntries = [
         JournalEntry(text: "Entry 1", mood: .happy, date: Calendar.current.date(byAdding: .day, value: -1, to: Date())!),
         JournalEntry(text: "Entry 2", mood: .stressed, date: Calendar.current.date(byAdding: .day, value: -3, to: Date())!),
@@ -217,10 +212,11 @@ struct MoodInsightsView: View {
         JournalEntry(text: "Entry 4", mood: .sad, date: Calendar.current.date(byAdding: .day, value: -8, to: Date())!),
         JournalEntry(text: "Entry 5", mood: .neutral, date: Calendar.current.date(byAdding: .day, value: -10, to: Date())!)
     ]
-    ScrollView{ // Wrap preview in ScrollView
-        MoodAnalysisDetailContent(entries: mockEntries, generatedDate: Date()) // Pass date
-            .padding()
-            .environmentObject(UIStyles.shared)
-            .environmentObject(ThemeManager.shared)
-    }
+     // Wrap in InsightFullScreenView for accurate preview of padding/layout
+     return InsightFullScreenView(title: "Mood Landscape") {
+         MoodAnalysisDetailContent(entries: mockEntries, generatedDate: Date()) // Pass date
+     }
+     .environmentObject(AppState()) // Pass AppState
+     .environmentObject(UIStyles.shared)
+     .environmentObject(ThemeManager.shared)
 }

@@ -17,7 +17,6 @@ struct ForecastDetailContent: View {
     var body: some View {
          ScrollView { // Wrap content in ScrollView if it might exceed screen height
              VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Ensure XL spacing
-                  // REMOVED: Text("Personalized Forecast") header
 
                  // --- Mood Prediction Section ---
                  VStack(alignment: .leading, spacing: styles.layout.spacingM) {
@@ -31,11 +30,6 @@ struct ForecastDetailContent: View {
                          .font(styles.typography.bodyLarge) // Larger font for prediction
                          .foregroundColor(forecastResult?.moodPredictionText != nil ? styles.colors.text : styles.colors.textSecondary)
                          .frame(maxWidth: .infinity, alignment: .leading) // Ensure text takes width
-
-                     // Optional: Add chart placeholder back if needed inside this VStack
-                     // Text("Chart Placeholder")
-                     //     .frame(minHeight: 100)
-
 
                  }
                   // Apply padding, background, cornerRadius to the VStack itself
@@ -149,7 +143,6 @@ struct ForecastDetailContent: View {
              } // End VStack
              .padding(.bottom, styles.layout.paddingL) // Bottom padding inside scrollview
          } // End ScrollView
-        // Padding applied by InsightFullScreenView
     } // End body
 } // End struct
 
@@ -166,8 +159,10 @@ struct ForecastDetailContent: View {
          actionPlanItems: [mockAction]
      )
 
-    return ForecastDetailContent(forecastResult: mockResult, generatedDate: Date()) // Pass date
-         .padding() // Add padding for preview container if needed
-         .environmentObject(UIStyles.shared)
-         .environmentObject(ThemeManager.shared)
+      // Wrap in InsightFullScreenView for accurate preview of padding/layout
+      return InsightFullScreenView(title: "Future Forecast") {
+          ForecastDetailContent(forecastResult: mockResult, generatedDate: Date()) // Pass date
+      }
+     .environmentObject(UIStyles.shared)
+     .environmentObject(ThemeManager.shared)
 }

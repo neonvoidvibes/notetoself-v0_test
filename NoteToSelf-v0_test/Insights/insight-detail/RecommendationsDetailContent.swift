@@ -27,50 +27,38 @@ struct RecommendationsDetailContent: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: styles.layout.spacingXL) { // Keep XL spacing
-                // Introduction - REMOVED redundant header Text("Personalized Recommendations")
+            VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Keep XL spacing
+
                  Text("Based on your journal entries, here are some suggestions to help support your well-being.") // Simplified text
                      .font(styles.typography.bodyFont)
                      .foregroundColor(styles.colors.textSecondary)
                      .padding(.bottom, styles.layout.spacingS) // Add slight padding below intro
 
 
-                // Recommendations List
+                // Recommendations List - Each recommendation is now a styled section
                 if recommendations.isEmpty {
-                     Text("No recommendations available at this time. Keep journaling!")
-                         .font(styles.typography.bodyFont)
-                         .foregroundColor(styles.colors.textSecondary)
-                         .padding(.vertical, 40)
-                } else {
-                     VStack(spacing: styles.layout.spacingL) {
-                         ForEach(recommendations) { recommendation in
-                             RecommendationDetailCard(recommendation: recommendation)
-                         }
+                     VStack { // Wrap placeholder in styled section
+                          Text("No recommendations available at this time. Keep journaling!")
+                              .font(styles.typography.bodyFont)
+                              .foregroundColor(styles.colors.textSecondary)
                      }
-                     .padding(.bottom, styles.layout.spacingL) // Add padding after recommendations list
+                      .padding()
+                      .frame(maxWidth: .infinity) // Ensure it takes width
+                      .background(styles.colors.secondaryBackground.opacity(0.5))
+                      .cornerRadius(styles.layout.radiusM)
+
+                } else {
+                      ForEach(recommendations) { recommendation in
+                          // Apply section styling to each RecommendationDetailCard directly
+                          RecommendationDetailCard(recommendation: recommendation)
+                               // These modifiers are now inside RecommendationDetailCard
+                               // .padding()
+                               // .background(styles.colors.secondaryBackground.opacity(0.5))
+                               // .cornerRadius(styles.layout.radiusM)
+                      }
                 }
 
-
-                // Additional resources (Consider making this conditional or removing if too cluttered)
-                /*
-                VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                    Text("Additional Resources")
-                        .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
-
-                    ResourceLink(
-                        title: "Mindfulness Practices",
-                        description: "Simple mindfulness exercises to reduce stress.",
-                        icon: "brain.head.profile"
-                    )
-                     ResourceLink(
-                         title: "Sleep Hygiene Guide",
-                         description: "Evidence-based tips for improving sleep quality.",
-                         icon: "bed.double.fill"
-                     )
-                }
-                .padding(.top) // Add padding if resources are shown
-                */
+                // Removed Additional Resources section for now
 
                  Text("These recommendations are AI-generated based on patterns and are not a substitute for professional advice.")
                      .font(styles.typography.caption).foregroundColor(styles.colors.textSecondary)
@@ -78,7 +66,7 @@ struct RecommendationsDetailContent: View {
 
                  Spacer(minLength: styles.layout.spacingXL) // Add spacer before timestamp
 
-                 // Generated Date Timestamp
+                 // Generated Date Timestamp (Outside styled sections)
                   if let date = generatedDate {
                       HStack {
                           Spacer() // Center align
@@ -95,11 +83,10 @@ struct RecommendationsDetailContent: View {
             }
              .padding(.bottom, styles.layout.paddingL) // Add bottom padding for scroll breathing room
         } // End ScrollView
-         // Padding applied by InsightFullScreenView
-         // .padding(styles.layout.paddingXL)
     } // End body
 } // End struct
 
+// RecommendationDetailCard now incorporates the section styling
 struct RecommendationDetailCard: View {
     let recommendation: RecommendationResult.RecommendationItem // Use nested type
     @ObservedObject private var styles = UIStyles.shared // Use ObservedObject
@@ -158,40 +145,17 @@ struct RecommendationDetailCard: View {
                  .padding(.top, styles.layout.spacingS)
             }
         }
-        .padding(styles.layout.paddingL)
-        .background(styles.colors.secondaryBackground) // Use secondary background
-        .cornerRadius(styles.layout.radiusL)
-         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2) // Softer shadow
+        .padding() // Apply styling to the VStack (section container)
+        .background(styles.colors.secondaryBackground.opacity(0.5))
+        .cornerRadius(styles.layout.radiusM)
+        // Removed shadow from here, card container has shadow
     }
 }
 
-// ResourceLink remains the same if used
-struct ResourceLink: View {
-    let title: String
-    let description: String
-    let icon: String
-    @ObservedObject private var styles = UIStyles.shared
-
-    var body: some View {
-        Button(action: { /* Open resource */ }) {
-            HStack(alignment: .top, spacing: styles.layout.spacingM) {
-                Image(systemName: icon)
-                    .foregroundColor(styles.colors.accent)
-                    .font(.system(size: 20)).frame(width: 24)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title).font(styles.typography.bodyLarge).foregroundColor(styles.colors.text)
-                    Text(description).font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .foregroundColor(styles.colors.accent).font(.system(size: 14))
-            }
-            .padding(styles.layout.paddingM)
-            .background(styles.colors.tertiaryBackground)
-            .cornerRadius(styles.layout.radiusM)
-        }.buttonStyle(PlainButtonStyle())
-    }
-}
+// ResourceLink remains the same if used (Keep commented out for now)
+/*
+struct ResourceLink: View { ... }
+*/
 
 #Preview {
      // Correctly create mock data
@@ -199,12 +163,13 @@ struct ResourceLink: View {
          RecommendationResult.RecommendationItem(id: UUID(), title: "Preview Rec 1", description: "Description for preview 1.", category: "Mindfulness", rationale: "Rationale preview 1."),
          RecommendationResult.RecommendationItem(id: UUID(), title: "Preview Rec 2", description: "Description for preview 2.", category: "Activity", rationale: "Rationale preview 2.")
      ]
-     // Instantiate the view and apply modifiers correctly
-     RecommendationsDetailContent(
-         recommendations: previewRecs,
-         generatedDate: Date() // Pass date
-     )
-     .padding() // Apply padding HERE to the instance
+      // Wrap in InsightFullScreenView for accurate preview of padding/layout
+      return InsightFullScreenView(title: "Suggested Actions") {
+          RecommendationsDetailContent(
+              recommendations: previewRecs,
+              generatedDate: Date() // Pass date
+          )
+      }
      .environmentObject(UIStyles.shared)
      .environmentObject(ThemeManager.shared)
  }

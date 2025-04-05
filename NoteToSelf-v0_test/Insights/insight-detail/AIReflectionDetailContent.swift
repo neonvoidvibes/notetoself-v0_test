@@ -10,15 +10,24 @@ struct AIReflectionDetailContent: View {
     var body: some View {
          ScrollView { // Wrap in ScrollView
              VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Keep XL spacing
-                 // Display the initial insight message clearly
-                 // REMOVED: Text("AI's Thought Starter") header
-                 Text(insightMessage)
-                     .font(styles.typography.bodyFont)
-                     .foregroundColor(styles.colors.textSecondary)
-                     .padding(.bottom) // Keep padding
 
-                 // List reflection prompts
-                 VStack(alignment: .leading, spacing: styles.layout.spacingM) { // Wrap prompts in VStack
+                 // --- AI Thought Starter Section ---
+                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                     Text("AI Thought Starter")
+                         .font(styles.typography.title3)
+                         .foregroundColor(styles.colors.text)
+                     Text(insightMessage)
+                         .font(styles.typography.bodyFont)
+                         .foregroundColor(styles.colors.textSecondary)
+                         .frame(maxWidth: .infinity, alignment: .leading)
+                 }
+                 .padding() // Apply styling to the section VStack
+                 .background(styles.colors.secondaryBackground.opacity(0.5))
+                 .cornerRadius(styles.layout.radiusM)
+
+
+                 // --- Reflection Prompts Section ---
+                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                       Text("Deeper Reflection Prompts")
                           .font(styles.typography.title3)
                           .foregroundColor(styles.colors.text)
@@ -35,13 +44,20 @@ struct AIReflectionDetailContent: View {
                                   .font(styles.typography.bodyFont)
                                   .foregroundColor(styles.colors.textSecondary)
                                   .fixedSize(horizontal: false, vertical: true) // Allow text wrapping
+                                  .frame(maxWidth: .infinity, alignment: .leading)
                           }
-                          .padding(.vertical, 4)
+                           // Add subtle divider between prompts if desired
+                           if prompt != reflectionPrompts.last {
+                               Divider().background(styles.colors.divider.opacity(0.3)).padding(.vertical, styles.layout.spacingS)
+                           }
                       }
-                  } // End Prompts VStack
-                 .padding(.bottom, styles.layout.spacingL) // Padding after prompts
+                 } // End Prompts VStack
+                 .padding() // Apply styling to the section VStack
+                 .background(styles.colors.secondaryBackground.opacity(0.5))
+                 .cornerRadius(styles.layout.radiusM)
 
-                 // Call-to-action button to open chat
+
+                 // --- Continue Chat Button ---
                  Button(action: {
                      // Switch to the Reflections tab
                      NotificationCenter.default.post(
@@ -65,7 +81,7 @@ struct AIReflectionDetailContent: View {
                      .clipShape(RoundedRectangle(cornerRadius: styles.layout.radiusM))
                      .shadow(color: styles.colors.accent.opacity(0.3), radius: 4, x: 0, y: 2)
                  }
-                 .padding(.top)
+                 // No background needed for the button itself
 
                  Spacer(minLength: styles.layout.spacingXL) // Add spacer before timestamp
 
@@ -83,7 +99,7 @@ struct AIReflectionDetailContent: View {
                       }
                       .padding(.top) // Padding above timestamp
                   }
-             } // End Main VStack
+            } // End Main VStack
              .padding(.bottom, styles.layout.paddingL) // Bottom padding inside scrollview
          } // End ScrollView
     } // End body
@@ -97,13 +113,15 @@ struct AIReflectionDetailContent: View {
           "Preview Prompt 3: What did you learn?"
       ]
 
-    return AIReflectionDetailContent(
-        insightMessage: "Sample insight message for preview.",
-        reflectionPrompts: mockPrompts, // Pass mock prompts
-        generatedDate: Date() // Pass date
-        )
-        .padding()
-        .environmentObject(AppState()) // Provide mock data if needed
-        .environmentObject(UIStyles.shared)
-        .environmentObject(ThemeManager.shared)
+     // Wrap in InsightFullScreenView for accurate preview of padding/layout
+     return InsightFullScreenView(title: "AI Insights") {
+         AIReflectionDetailContent(
+             insightMessage: "Sample insight message for preview, touching on recent events and asking an opening question.",
+             reflectionPrompts: mockPrompts, // Pass mock prompts
+             generatedDate: Date() // Pass date
+         )
+     }
+     .environmentObject(AppState()) // Provide mock data if needed
+     .environmentObject(UIStyles.shared)
+     .environmentObject(ThemeManager.shared)
 }

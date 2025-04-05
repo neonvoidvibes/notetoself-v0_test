@@ -16,32 +16,27 @@ struct WeeklySummaryDetailContent: View {
         // Use the layout previously defined in WeeklySummaryDetailContentExpanded
         ScrollView { // Wrap in ScrollView for potentially long content
             VStack(alignment: .leading, spacing: styles.layout.spacingXL) { // Ensure XL spacing
-                // Header with Period
-                HStack {
-                    // Text("Weekly Summary") // Title is handled by InsightFullScreenView now
-                    //     .font(styles.typography.title1) // Use appropriate typography
-                    //     .foregroundColor(styles.colors.text)
-                    Spacer() // Push period to the right if title removed
-                    Text(summaryPeriod)
-                        .font(styles.typography.caption)
-                        .foregroundColor(styles.colors.accent)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(styles.colors.accent.opacity(0.1).clipShape(Capsule()))
+                // Header with Period is handled by InsightFullScreenView
+
+                // --- AI Summary Section ---
+                VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                    Text("AI Summary")
+                        .font(styles.typography.title3)
+                        .foregroundColor(styles.colors.text)
+                    Text(summaryResult.mainSummary)
+                        .font(styles.typography.bodyFont)
+                        .foregroundColor(styles.colors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true) // Allow wrapping
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-
-                // Main Summary Text (AI Generated)
-                // REMOVED: Text("AI Summary") header
-                 Text(summaryResult.mainSummary)
-                     .font(styles.typography.bodyFont)
-                     .foregroundColor(styles.colors.textSecondary)
-                     .fixedSize(horizontal: false, vertical: true) // Allow wrapping
-                     .padding(.bottom) // Keep padding
+                .padding() // Apply styling to the section VStack
+                .background(styles.colors.secondaryBackground.opacity(0.5))
+                .cornerRadius(styles.layout.radiusM)
 
 
-                // Key Themes (AI Generated)
+                // --- Key Themes Section ---
                 if !summaryResult.keyThemes.isEmpty {
-                     VStack(alignment: .leading, spacing: styles.layout.spacingM) { // Use spacingM here
+                     VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                          Text("Key Themes")
                              .font(styles.typography.title3)
                              .foregroundColor(styles.colors.text)
@@ -52,46 +47,49 @@ struct WeeklySummaryDetailContent: View {
                                      .font(styles.typography.bodySmall)
                                      .padding(.horizontal, 12)
                                      .padding(.vertical, 8)
-                                     .background(styles.colors.secondaryBackground)
+                                     .background(styles.colors.secondaryBackground) // Use secondary directly for tags
                                      .cornerRadius(styles.layout.radiusM)
                                      .foregroundColor(styles.colors.text)
                              }
                          }
                      }
-                     .padding(.bottom, styles.layout.spacingL) // Add padding after section
+                      // No background needed for FlowLayout section container
                 }
 
-                // Mood Trend (AI Generated)
-                 VStack(alignment: .leading, spacing: styles.layout.spacingM) { // Use spacingM here
+                // --- Mood Trend Section ---
+                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                      Text("Mood Trend")
                          .font(styles.typography.title3)
                          .foregroundColor(styles.colors.text)
                      Text(summaryResult.moodTrend)
                          .font(styles.typography.bodyFont)
                          .foregroundColor(styles.colors.textSecondary)
+                         .frame(maxWidth: .infinity, alignment: .leading)
                  }
-                 .padding(.bottom, styles.layout.spacingL) // Add padding after section
+                 .padding() // Apply styling to the section VStack
+                 .background(styles.colors.secondaryBackground.opacity(0.5))
+                 .cornerRadius(styles.layout.radiusM)
 
-                // Notable Quote (AI Generated)
+
+                // --- Notable Quote Section ---
                 if !summaryResult.notableQuote.isEmpty {
-                    VStack(alignment: .leading, spacing: styles.layout.spacingM) { // Use spacingM here
+                    VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                          Text("Notable Quote")
                              .font(styles.typography.title3)
                              .foregroundColor(styles.colors.text)
                          Text("\"\(summaryResult.notableQuote)\"")
                              .font(styles.typography.bodyFont.italic())
                              .foregroundColor(styles.colors.accent)
-                             .padding()
-                             .frame(maxWidth: .infinity, alignment: .leading)
-                             .background(styles.colors.secondaryBackground.opacity(0.5))
-                             .cornerRadius(styles.layout.radiusM)
+                             .frame(maxWidth: .infinity, alignment: .leading) // Ensure text takes width
                      }
-                     .padding(.bottom, styles.layout.spacingL) // Add padding after section
+                     .padding() // Apply styling to the section VStack
+                     .background(styles.colors.secondaryBackground.opacity(0.5))
+                     .cornerRadius(styles.layout.radiusM)
                 }
 
                  Spacer(minLength: styles.layout.spacingXL) // Add spacer before timestamp
 
-                 // Generation Date Timestamp
+                 // Generation Date Timestamp (Outside styled sections)
                   if let date = generatedDate {
                       HStack {
                           Spacer() // Center align
@@ -108,8 +106,6 @@ struct WeeklySummaryDetailContent: View {
             }
              .padding(.bottom, styles.layout.paddingL) // Add bottom padding inside scrollview
         } // End ScrollView
-        // Padding is now handled by InsightFullScreenView
-        // .padding(styles.layout.paddingL)
     } // End body
 } // End struct WeeklySummaryDetailContent
 
@@ -120,12 +116,14 @@ struct WeeklySummaryDetailContent: View {
          moodTrend: "Generally positive with a dip mid-week",
          notableQuote: "Felt a real sense of accomplishment today."
      )
-     return WeeklySummaryDetailContent(
-         summaryResult: previewSummary,
-         summaryPeriod: "Oct 20 - Oct 26", // Example period
-         generatedDate: Date()
-     )
-         .padding() // Add padding for preview container if needed
-         .environmentObject(UIStyles.shared)
-         .environmentObject(ThemeManager.shared)
+      // Wrap in InsightFullScreenView for accurate preview of padding/layout
+     return InsightFullScreenView(title: "Weekly Summary") {
+         WeeklySummaryDetailContent(
+             summaryResult: previewSummary,
+             summaryPeriod: "Oct 20 - Oct 26", // Example period
+             generatedDate: Date()
+         )
+     }
+     .environmentObject(UIStyles.shared)
+     .environmentObject(ThemeManager.shared)
 }
