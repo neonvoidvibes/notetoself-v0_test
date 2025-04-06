@@ -48,10 +48,18 @@ struct JourneyInsightCard: View {
         return narrativeResult?.narrativeText ?? (appState.currentStreak > 0 ? "Analyzing your recent journey..." : "Your journey's story will appear here.")
     }
 
+    // Narrative Snippet for collapsed view
+    private var narrativeSnippetDisplay: String {
+        if isLoading { return "Loading..." }
+        if loadError { return "Unavailable" }
+        return narrativeResult?.storySnippet ?? "Your journey unfolds..."
+    }
+
+
     // UX-focused streak sub-headline
     private var streakSubHeadline: String {
-        let streak = appState.currentStreak // Access via environment object
-        let hasTodayEntry = appState.hasEntryToday // Access via environment object
+        let streak = appState.currentStreak
+        let hasTodayEntry = appState.hasEntryToday
 
         if streak > 0 {
             if hasTodayEntry {
@@ -68,10 +76,18 @@ struct JourneyInsightCard: View {
         VStack(spacing: 0) {
             // --- Collapsed/Header View ---
             HStack {
-                VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
+                 // VStack now includes Snippet, Title, Streak
+                VStack(alignment: .leading, spacing: styles.layout.spacingS) { // Increased spacing slightly
+                    // Narrative Snippet (NEW)
+                    Text(narrativeSnippetDisplay)
+                        .font(styles.typography.bodySmall) // Smaller font for snippet
+                        .foregroundColor(styles.colors.textSecondary) // Secondary text color
+                        .lineLimit(1) // Keep it brief
+
                     Text("Journey")
                         .font(styles.typography.title3)
                         .foregroundColor(styles.colors.text) // Standard text color
+
                     Text(streakSubHeadline) // Use the dynamic sub-headline
                         .font(styles.typography.bodyFont.weight(.bold)) // Make streak bold
                          // Conditional color: Accent in light, SecondaryAccent (yellow) in dark
@@ -84,7 +100,7 @@ struct JourneyInsightCard: View {
                     .rotationEffect(Angle(degrees: isExpanded ? 180 : 0))
             }
             .padding(.horizontal, styles.layout.paddingL)
-            .padding(.vertical, styles.layout.paddingM)
+            .padding(.vertical, styles.layout.paddingM) // Keep vertical padding standard for now
             .contentShape(Rectangle())
             .onTapGesture {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -132,7 +148,7 @@ struct JourneyInsightCard: View {
 
                     // Narrative Text
                      VStack(alignment: .leading) {
-                         Text("Narrative")
+                         Text("Highlights")
                              .font(styles.typography.bodyLarge.weight(.semibold))
                              .foregroundColor(styles.colors.text) // Standard text
                              .padding(.bottom, styles.layout.spacingXS)
