@@ -14,6 +14,32 @@ struct JourneyInsightCard: View {
     @State private var loadError: Bool = false
     private let insightTypeIdentifier = "streakNarrative" // Matches generator
 
+    // Data for the 7-day habit chart (used in expanded view)
+     private var habitData: [Bool] {
+         let calendar = Calendar.current
+         let today = calendar.startOfDay(for: Date())
+         let sevenDaysAgo = calendar.date(byAdding: .day, value: -6, to: today)!
+         let recentEntries = appState.journalEntries.filter { $0.date >= sevenDaysAgo }
+         let entryDates = Set(recentEntries.map { calendar.startOfDay(for: $0.date) })
+
+         return (0..<7).map { index -> Bool in
+             let dateToCheck = calendar.date(byAdding: .day, value: -index, to: today)!
+             return entryDates.contains(dateToCheck)
+         }.reversed() // Reverse so today is last
+     }
+
+     // Short weekday labels for the chart (used in expanded view)
+     private var weekdayLabels: [String] {
+         let calendar = Calendar.current
+         let today = Date()
+         return (0..<7).map { index -> String in
+             let date = calendar.date(byAdding: .day, value: -index, to: today)!
+             let formatter = DateFormatter()
+             formatter.dateFormat = "EE"
+             return formatter.string(from: date)
+         }.reversed()
+     }
+
     // Use narrative text from the result, or a placeholder
     private var narrativeDisplayText: String {
         if isLoading { return "Loading narrative..."}
@@ -28,15 +54,15 @@ struct JourneyInsightCard: View {
                 VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
                     Text("Journey")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.journeyCardTextPrimary) // Use inverted primary text
+                        .foregroundColor(styles.colors.text) // Standard text color
                     Text("\(appState.currentStreak) Day Streak")
                         .font(styles.typography.bodyFont.weight(.bold)) // Make streak bold
-                        .foregroundColor(styles.colors.journeyCardTextSecondary) // Use inverted secondary text
+                        .foregroundColor(styles.colors.secondaryAccent) // Use YELLOW secondary accent
                 }
                 Spacer()
                 Image(systemName: "chevron.down")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(styles.colors.accentContrastText.opacity(0.7)) // Use contrast text (slightly dimmed for chevron)
+                    .foregroundColor(styles.colors.tertiaryAccent) // Use gray tertiary accent
                     .rotationEffect(Angle(degrees: isExpanded ? 180 : 0))
             }
             .padding(.horizontal, styles.layout.paddingL)
@@ -50,21 +76,58 @@ struct JourneyInsightCard: View {
 
             // --- Expanded Content ---
             if isExpanded {
-                VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                     // Use contrast divider on accent background
-                    Divider().background(styles.colors.accentContrastText.opacity(0.3))
+                VStack(alignment: .leading, spacing: styles.layout.spacingL) { // Increased spacing
+                    Divider().background(styles.colors.divider.opacity(0.5))
+
+                    // Habit Chart (Restored)
+                    VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                        Text("Recent Activity")
+                            .font(styles.typography.bodyLarge.weight(.semibold))
+                            .foregroundColor(styles.colors.text) // Standard text
+                            .padding(.bottom, styles.layout.spacingXS)
+
+                        HStack(spacing: styles.layout.spacingS) {
+                            ForEach(0..<7) { index in
+                                VStack(spacing: 4) {
+                                    Circle()
+                                         // Accent for active, secondary bg for inactive
+                                        .fill(habitData[index] ? styles.colors.accent : styles.colors.secondaryBackground)
+                                        .frame(width: 25, height: 25)
+                                        .overlay(
+                                            Circle().stroke(styles.colors.divider.opacity(0.5), lineWidth: 1)
+                                        )
+                                    Text(weekdayLabels[index])
+                                        .font(styles.typography.caption)
+                                        .foregroundColor(styles.colors.textSecondary) // Standard secondary text
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                        }
+                    }
+                    .padding(.top, styles.layout.paddingS)
+
+                    // Explainer Text (Restored)
+                    Text("Consistency is key to building lasting habits. Celebrate your progress, one day at a time!")
+                        .font(styles.typography.bodySmall)
+                        .foregroundColor(styles.colors.textSecondary) // Standard secondary text
+                        .padding(.vertical, styles.layout.spacingS) // Padding around explainer
 
                     // Narrative Text
                      VStack(alignment: .leading) {
+                         Text("Narrative")
+                             .font(styles.typography.bodyLarge.weight(.semibold))
+                             .foregroundColor(styles.colors.text) // Standard text
+                             .padding(.bottom, styles.layout.spacingXS)
+
                          if isLoading {
                              ProgressView()
-                                 .tint(styles.colors.accentContrastText.opacity(0.8)) // Contrast progress view
+                                 .tint(styles.colors.accent) // Standard accent tint
                                  .frame(maxWidth: .infinity, alignment: .center)
                          } else {
                              Text(narrativeDisplayText)
                                  .font(styles.typography.bodyFont)
-                                  // Use inverted secondary text for narrative
-                                 .foregroundColor(loadError ? styles.colors.error : styles.colors.journeyCardTextSecondary)
+                                  // Standard secondary text
+                                 .foregroundColor(loadError ? styles.colors.error : styles.colors.textSecondary)
                                  .frame(maxWidth: .infinity, alignment: .leading)
                                  .fixedSize(horizontal: false, vertical: true) // Allow wrapping
                          }
@@ -75,30 +138,30 @@ struct JourneyInsightCard: View {
                     VStack(alignment: .leading, spacing: styles.layout.spacingM) {
                         Text("Milestones")
                             .font(styles.typography.bodyLarge.weight(.semibold))
-                            .foregroundColor(styles.colors.journeyCardTextPrimary) // Use inverted primary text
+                            .foregroundColor(styles.colors.text) // Standard text
 
                         HStack(spacing: styles.layout.spacingL) {
-                            // Use the new MilestoneView
+                            // Use the new MilestoneView, pass standard theme colors
                             MilestoneView(
                                 label: "7 Days",
                                 icon: "star.fill",
                                 isAchieved: appState.currentStreak >= 7,
-                                achievedColor: styles.colors.journeyCardTextPrimary, // Use inverted primary
-                                defaultColor: styles.colors.journeyCardTextSecondary // Use inverted secondary
+                                accentColor: styles.colors.accent, // Achieved uses accent
+                                defaultStrokeColor: styles.colors.tertiaryAccent // Default uses gray
                             )
                              MilestoneView(
                                  label: "30 Days",
                                  icon: "star.fill",
                                  isAchieved: appState.currentStreak >= 30,
-                                 achievedColor: styles.colors.journeyCardTextPrimary,
-                                 defaultColor: styles.colors.journeyCardTextSecondary
+                                 accentColor: styles.colors.accent,
+                                 defaultStrokeColor: styles.colors.tertiaryAccent
                              )
                              MilestoneView(
                                  label: "100 Days",
                                  icon: "star.fill",
                                  isAchieved: appState.currentStreak >= 100,
-                                 achievedColor: styles.colors.journeyCardTextPrimary,
-                                 defaultColor: styles.colors.journeyCardTextSecondary
+                                 accentColor: styles.colors.accent,
+                                 defaultStrokeColor: styles.colors.tertiaryAccent
                              )
                         }
                         .frame(maxWidth: .infinity, alignment: .center) // Center milestones
@@ -111,9 +174,9 @@ struct JourneyInsightCard: View {
                 .transition(.opacity.combined(with: .move(edge: .top))) // Smooth transition
             }
         }
-        .background(styles.colors.accent) // Use ACCENT color for background
+        .background(styles.colors.cardBackground) // Use STANDARD card background
         .cornerRadius(styles.layout.radiusL)
-        // Apply thick border using ACCENT color (same as background)
+        // Apply thick border using ACCENT color
         .overlay(
             RoundedRectangle(cornerRadius: styles.layout.radiusL)
                 .stroke(styles.colors.accent, lineWidth: 2) // Use accent color for border
@@ -186,11 +249,7 @@ struct JourneyInsightCard: View {
         JournalEntry(text: "5 days ago entry", mood: .content, date: calendar.date(byAdding: .day, value: -5, to: today)!)
     ]
 
-    // Define mock colors for preview if JourneyCardTextPrimary/Secondary are not in Assets yet
     let mockUIStyles = UIStyles.shared
-    // If you haven't added the colors to Assets, uncomment and modify these lines for preview:
-    // mockUIStyles.currentTheme.colors.journeyCardTextPrimary = Color.black // Example for light mode preview
-    // mockUIStyles.currentTheme.colors.journeyCardTextSecondary = Color.gray // Example for light mode preview
 
     return ScrollView {
         JourneyInsightCard()
@@ -201,7 +260,5 @@ struct JourneyInsightCard: View {
             .environmentObject(ThemeManager.shared)
     }
     .background(Color.gray.opacity(0.1))
-    // Preview in both light and dark modes
-    // .preferredColorScheme(.light) // Uncomment to test light mode specifically
-     .preferredColorScheme(.dark) // Uncomment to test dark mode specifically
+    .preferredColorScheme(.dark) // Uncomment to test dark mode specifically
 }

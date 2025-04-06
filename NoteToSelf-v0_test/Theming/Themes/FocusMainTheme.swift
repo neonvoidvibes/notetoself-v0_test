@@ -17,7 +17,7 @@ struct FocusMainTheme: Theme {
         textDisabled: Color("FocusMainTextDisabled"),
         placeholderText: Color("FocusMainPlaceholderText"),
 
-        accent: Color("FocusMainAccent"),
+        accent: Color("FocusMainAccent"), // Light: #6D77CD (Purple), Dark: #979FD9 (Light Purple)
         accentContrastText: Color("FocusMainAccentContrastText"),
         secondaryAccent: Color(hex: "F8D84A"), // NEW - Yellowish highlight
         tertiaryAccent: Color("FocusMainSecondaryAccent"), // RENAMED - Use the asset previously used by secondaryAccent (gray)
@@ -42,14 +42,11 @@ struct FocusMainTheme: Theme {
 
         // Button/icon colors
         primaryButtonText: Color("FocusMainPrimaryButtonText"),
-        accentIconForeground: Color("FocusMainAccentIconForeground"),
+        accentIconForeground: Color("FocusMainAccentIconForeground")
 
-        // Journey Card Specific Inverted Text Colors
-        // ASSUMES Asset Catalog entries exist:
-        // "JourneyCardTextPrimary" (Light: Black, Dark: White)
-        // "JourneyCardTextSecondary" (Light: Dark Gray, Dark: Light Gray)
-        journeyCardTextPrimary: Color("JourneyCardTextPrimary"), // Hypothetical Asset Color
-        journeyCardTextSecondary: Color("JourneyCardTextSecondary") // Hypothetical Asset Color
+        // REMOVED Journey Card Specific Inverted Text Colors
+        // journeyCardTextPrimary: Color(lightHex: "#1A1A1A", darkHex: "#F0F0F0"),
+        // journeyCardTextSecondary: Color(lightHex: "#4A4A4A", darkHex: "#C0C0C0")
     )
 
     // Use Futura font (copied from BrightTheme)
