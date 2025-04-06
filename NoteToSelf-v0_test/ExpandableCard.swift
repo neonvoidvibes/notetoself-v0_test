@@ -78,11 +78,13 @@ fileprivate struct ExpandCollapseButtonInternal: View { // Make fileprivate
 
     var body: some View {
         HStack(spacing: 4) {
-            // Use a consistent icon for "Open", e.g., expand arrows or similar
-            Image(systemName: "arrow.up.left.and.arrow.down.right") // Or "arrow.expand" etc.
-                .font(.system(size: styles.layout.iconSizeS))
-            Text("Open") // Always show "Open"
+            Text("Open") // Text first
                 .font(styles.typography.smallLabelFont)
+
+            // Changed icon and moved to the right
+            Image(systemName: "arrow.up.right")
+                .font(.system(size: styles.layout.iconSizeS))
+
         }
         .foregroundColor(styles.colors.accent)
         .padding(.horizontal, 12)

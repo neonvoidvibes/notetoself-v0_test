@@ -77,11 +77,11 @@ actor FeelInsightGenerator {
         do {
             let result: FeelInsightResult = try await llmService.generateStructuredOutput(
                 systemPrompt: systemPrompt,
-                userMessage: "Generate the Feel insight (Mood Trend and Snapshot) based on the context.",
+                userMessage: "Generate the Feel insight (Mood Trend, Snapshot, Dominant Mood) based on the context.", // Updated user message
                 responseModel: FeelInsightResult.self
             )
 
-            print("✅ [FeelInsightGenerator] LLM Success.")
+             print("✅ [FeelInsightGenerator] LLM Success. Dominant Mood: \(result.dominantMood ?? "N/A")") // Log dominant mood
 
             // 6. Encode result
             let encoder = JSONEncoder()

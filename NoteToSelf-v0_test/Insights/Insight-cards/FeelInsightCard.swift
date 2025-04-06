@@ -17,15 +17,11 @@ struct FeelInsightCard: View {
     @State private var loadError: Bool = false
     private let insightTypeIdentifier = "feelInsights"
 
-    // Helper to get a simple trend direction indicator
-    private var trendIndicator: String {
-        guard let data = insightResult?.moodTrendChartData, data.count >= 2 else { return "" }
-        let lastValue = data.last?.moodValue ?? 0
-        let firstValue = data.first?.moodValue ?? 0
-        if lastValue > firstValue + 0.5 { return "arrow.up.right" }
-        if lastValue < firstValue - 0.5 { return "arrow.down.right" }
-        return "arrow.forward" // Changed from "" to "arrow.forward" for neutral trend
-    }
+    // Helper to get Mood enum from name string
+     private func moodFromName(_ name: String?) -> Mood? {
+         guard let name = name else { return nil }
+         return Mood.allCases.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }
+     }
 
     var body: some View {
         styles.expandableCard(
@@ -47,7 +43,7 @@ struct FeelInsightCard: View {
                         }
                     }
 
-                    // Content Snippets (More dynamic layout)
+                    // Content Snippets (VStack like reference cards)
                     if appState.subscriptionTier == .premium {
                         if isLoading {
                             ProgressView().tint(styles.colors.accent)
@@ -55,50 +51,53 @@ struct FeelInsightCard: View {
                                 .frame(minHeight: 60)
                         } else if loadError {
                             Text("Could not load Feel insights.")
-                                .font(styles.typography.bodySmall)
+                                .font(styles.typography.bodySmall) // Error text can be smaller
                                 .foregroundColor(styles.colors.error)
                                 .frame(minHeight: 60)
                         } else if let result = insightResult {
-                            HStack(alignment: .top, spacing: styles.layout.spacingM) {
-                                // Left side: Trend Indicator
-                                VStack {
-                                    Image(systemName: trendIndicator)
-                                        .font(.system(size: 24, weight: .light))
-                                        .foregroundColor(styles.colors.accent)
-                                    Text("Trend")
-                                        .font(styles.typography.caption)
-                                        .foregroundColor(styles.colors.textSecondary)
+                            // Display Dominant Mood + Snapshot Text
+                            VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                                if let dominantMoodName = result.dominantMood, let moodEnum = moodFromName(dominantMoodName) {
+                                     HStack(spacing: styles.layout.spacingS) {
+                                         moodEnum.icon // Use Mood icon
+                                             .foregroundColor(moodEnum.color) // Use Mood color
+                                             .font(.system(size: 16)) // Consistent icon size
+                                         Text("Dominant Mood: \(dominantMoodName)")
+                                             .font(styles.typography.bodyFont.weight(.medium)) // Keep slightly bolder
+                                             .foregroundColor(styles.colors.text) // Keep primary color
+                                     }
                                 }
-                                .frame(width: 50) // Give indicator some space
 
-                                // Right side: Snapshot text
-                                VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                                    Text("Mood Snapshot")
-                                        .font(styles.typography.bodyLarge.weight(.semibold)) // Use BodyLarge
-                                        .foregroundColor(styles.colors.text) // Use standard text color
-
-                                    if let snapshot = result.moodSnapshotText, !snapshot.isEmpty {
-                                        Text(snapshot)
-                                            .font(styles.typography.bodySmall)
-                                            .foregroundColor(styles.colors.textSecondary)
-                                            .lineLimit(3) // Allow more lines for snapshot
-                                    } else {
-                                        Text("Snapshot analysis pending more data.")
-                                            .font(styles.typography.bodySmall)
-                                            .foregroundColor(styles.colors.textSecondary)
-                                    }
+                                if let snapshot = result.moodSnapshotText, !snapshot.isEmpty {
+                                    Text(snapshot)
+                                        .font(styles.typography.bodyFont)
+                                        .foregroundColor(styles.colors.text) // CHANGED to primary text color
+                                        .lineLimit(2)
+                                        .padding(.top, result.dominantMood != nil ? styles.layout.spacingXS : 0)
+                                } else if result.dominantMood == nil {
+                                     Text("Emotional insights available with regular journaling.")
+                                         .font(styles.typography.bodyFont)
+                                         .foregroundColor(styles.colors.text) // CHANGED to primary text color
                                 }
-                                Spacer() // Push text left
                             }
+                             .padding(.bottom, styles.layout.spacingS) // Padding below snippets
+
+                             // Helping Text
+                             Text("Tap for mood chart & details.")
+                                 .font(styles.typography.caption)
+                                 .foregroundColor(styles.colors.accent)
+                                 .frame(maxWidth: .infinity, alignment: .leading)
+
                         } else {
+                            // This case handles when result is nil (but not loading/error)
                             Text("Emotional insights available with regular journaling.")
-                                .font(styles.typography.bodySmall)
-                                .foregroundColor(styles.colors.textSecondary)
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(styles.colors.text) // CHANGED to primary text color
                                 .frame(minHeight: 60, alignment: .center)
                         }
                     } else {
                          Text("Unlock emotional pattern insights with Premium.")
-                             .font(styles.typography.bodySmall)
+                             .font(styles.typography.bodySmall) // Keep small for locked state
                              .foregroundColor(styles.colors.textSecondary)
                              .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
                              .multilineTextAlignment(.center)
@@ -133,9 +132,8 @@ struct FeelInsightCard: View {
         print("[FeelInsightCard] Loading insight...")
         Task {
             do {
-                // Changed to use try? to handle nil case gracefully without throwing
                 if let (json, date) = try? await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                    await decodeJSON(json: json, date: date) // Pass both json and date
+                    await decodeJSON(json: json, date: date)
                 } else {
                     await MainActor.run {
                         insightResult = nil; generatedDate = nil; isLoading = false
@@ -143,7 +141,6 @@ struct FeelInsightCard: View {
                     }
                 }
             }
-            // Removed catch block as try? handles errors by returning nil
         }
     }
 
@@ -154,7 +151,7 @@ struct FeelInsightCard: View {
         if let data = json.data(using: .utf8) {
             do {
                 let decoder = JSONDecoder()
-                decoder.dateDecodingStrategy = .iso8601 // Match encoding strategy
+                decoder.dateDecodingStrategy = .iso8601
                 let result = try decoder.decode(FeelInsightResult.self, from: data)
                 self.insightResult = result
                 self.generatedDate = date
@@ -163,8 +160,7 @@ struct FeelInsightCard: View {
             } catch {
                 print("‼️ [FeelInsightCard] Failed to decode FeelInsightResult: \(error). JSON: \(json)")
                 self.insightResult = nil
-                self.generatedDate = date // Keep date even if decode fails? Or nil? Let's keep it for now.
-                // self.generatedDate = nil // Set date to nil on error
+                self.generatedDate = nil // Nil date on error
                 self.loadError = true
             }
         } else {

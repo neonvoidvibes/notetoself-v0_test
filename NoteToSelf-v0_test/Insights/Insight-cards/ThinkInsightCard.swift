@@ -36,7 +36,7 @@ struct ThinkInsightCard: View {
                        }
                     }
 
-                    // Content Snippets
+                    // Content Snippets (Using VStack)
                     if appState.subscriptionTier == .premium {
                          if isLoading {
                              ProgressView().tint(styles.colors.accent)
@@ -44,42 +44,34 @@ struct ThinkInsightCard: View {
                                  .frame(minHeight: 60)
                          } else if loadError {
                              Text("Could not load Think insights.")
-                                 .font(styles.typography.bodySmall)
+                                 .font(styles.typography.bodySmall) // Error text can be smaller
                                  .foregroundColor(styles.colors.error)
                                  .frame(minHeight: 60)
                          } else if let result = insightResult {
-                            // Theme Overview Snippet with Label
+                            // Show Theme Overview Snippet Primarily
                              VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
-                                 Text("THEMES")
-                                     .font(styles.typography.caption.weight(.bold))
-                                     .foregroundColor(styles.colors.textSecondary)
-                                 Text(result.themeOverviewText ?? "Analysis pending...")
-                                     .font(styles.typography.bodySmall)
-                                     .foregroundColor(styles.colors.textSecondary)
+                                 Text(result.themeOverviewText ?? "Recurring themes analysis pending...")
+                                     .font(styles.typography.bodyFont)
+                                     .foregroundColor(styles.colors.text) // CHANGED to primary text color
                                      .lineLimit(2)
                              }
+                              .padding(.bottom, styles.layout.spacingS)
 
-                             // Value Reflection Snippet with Label
-                             VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
-                                 Text("VALUES")
-                                      .font(styles.typography.caption.weight(.bold))
-                                      .foregroundColor(styles.colors.textSecondary)
-                                 Text(result.valueReflectionText ?? "Analysis pending...")
-                                     .font(styles.typography.bodySmall)
-                                     .foregroundColor(styles.colors.textSecondary)
-                                     .lineLimit(2)
-                             }
-                             .padding(.top, styles.layout.spacingS) // Add space between snippets
+                             // Helping Text
+                             Text("Tap for theme details & value reflection.")
+                                 .font(styles.typography.caption)
+                                 .foregroundColor(styles.colors.accent)
+                                 .frame(maxWidth: .infinity, alignment: .leading)
 
                          } else {
                               Text("Strategic insights available with regular journaling.")
-                                  .font(styles.typography.bodySmall)
-                                  .foregroundColor(styles.colors.textSecondary)
+                                  .font(styles.typography.bodyFont)
+                                  .foregroundColor(styles.colors.text) // CHANGED to primary text color
                                   .frame(minHeight: 60, alignment: .center)
                          }
                     } else {
                          Text("Unlock strategic thinking insights with Premium.")
-                             .font(styles.typography.bodySmall)
+                             .font(styles.typography.bodySmall) // Keep small for locked state
                              .foregroundColor(styles.colors.textSecondary)
                              .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
                              .multilineTextAlignment(.center)
@@ -114,9 +106,8 @@ struct ThinkInsightCard: View {
         print("[ThinkInsightCard] Loading insight...")
         Task {
             do {
-                // Changed to use try? to handle nil case gracefully without throwing
                 if let (json, date) = try? await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                     await decodeJSON(json: json, date: date) // Pass both json and date
+                     await decodeJSON(json: json, date: date)
                 } else {
                     await MainActor.run {
                         insightResult = nil; generatedDate = nil; isLoading = false
@@ -124,7 +115,6 @@ struct ThinkInsightCard: View {
                     }
                 }
             }
-             // Removed catch block as try? handles errors by returning nil
         }
     }
 
@@ -141,8 +131,7 @@ struct ThinkInsightCard: View {
             } catch {
                 print("‼️ [ThinkInsightCard] Failed to decode ThinkInsightResult: \(error). JSON: \(json)")
                 self.insightResult = nil
-                self.generatedDate = date // Keep date?
-                // self.generatedDate = nil // Set date to nil on error
+                self.generatedDate = nil // Nil date on error
                 self.loadError = true
             }
         } else {

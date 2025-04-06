@@ -49,7 +49,7 @@ struct ActInsightCard: View {
                        }
                     }
 
-                    // Content Snippets
+                    // Content Snippets (Using VStack)
                     if appState.subscriptionTier == .premium {
                          if isLoading {
                              ProgressView().tint(styles.colors.accent)
@@ -57,53 +57,34 @@ struct ActInsightCard: View {
                                  .frame(minHeight: 60)
                          } else if loadError {
                              Text("Could not load Act insights.")
-                                 .font(styles.typography.bodySmall)
+                                 .font(styles.typography.bodySmall) // Error text can be smaller
                                  .foregroundColor(styles.colors.error)
                                  .frame(minHeight: 60)
                          } else if let result = insightResult {
-                            // Action Forecast Snippet with Label
+                            // Show Action Forecast Snippet Primarily
                              VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
-                                 Text("FORECAST")
-                                      .font(styles.typography.caption.weight(.bold))
-                                      .foregroundColor(styles.colors.textSecondary)
-                                 Text(result.actionForecastText ?? "Analysis pending...")
-                                     .font(styles.typography.bodySmall)
-                                     .foregroundColor(styles.colors.textSecondary)
+                                 Text(result.actionForecastText ?? "Action forecast pending...")
+                                     .font(styles.typography.bodyFont)
+                                     .foregroundColor(styles.colors.text) // CHANGED to primary text color
                                      .lineLimit(2)
                              }
+                              .padding(.bottom, styles.layout.spacingS)
 
-                             // Recommendation Snippet with Label and Icon
-                             VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
-                                 Text("SUGGESTION")
-                                     .font(styles.typography.caption.weight(.bold))
-                                     .foregroundColor(styles.colors.textSecondary)
-                                 if let firstRec = result.personalizedRecommendations?.first {
-                                     HStack(spacing: styles.layout.spacingS) {
-                                         Image(systemName: iconForCategory(firstRec.category))
-                                             .foregroundColor(styles.colors.accent)
-                                             .font(.caption)
-                                         Text(firstRec.title)
-                                             .font(styles.typography.bodySmall)
-                                             .foregroundColor(styles.colors.textSecondary)
-                                             .lineLimit(1)
-                                     }
-                                 } else {
-                                     Text("Check back later for suggestions.")
-                                         .font(styles.typography.bodySmall)
-                                         .foregroundColor(styles.colors.textSecondary)
-                                 }
-                             }
-                             .padding(.top, styles.layout.spacingS) // Add space between snippets
+                             // Helping Text
+                             Text("Tap for forecast details & suggestions.")
+                                 .font(styles.typography.caption)
+                                 .foregroundColor(styles.colors.accent)
+                                 .frame(maxWidth: .infinity, alignment: .leading)
 
                          } else {
                               Text("Actionable insights available with regular journaling.")
-                                  .font(styles.typography.bodySmall)
-                                  .foregroundColor(styles.colors.textSecondary)
+                                  .font(styles.typography.bodyFont)
+                                  .foregroundColor(styles.colors.text) // CHANGED to primary text color
                                   .frame(minHeight: 60, alignment: .center)
                          }
                     } else {
                          Text("Unlock actionable suggestions with Premium.")
-                             .font(styles.typography.bodySmall)
+                             .font(styles.typography.bodySmall) // Keep small for locked state
                              .foregroundColor(styles.colors.textSecondary)
                              .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
                              .multilineTextAlignment(.center)
@@ -138,9 +119,8 @@ struct ActInsightCard: View {
         print("[ActInsightCard] Loading insight...")
         Task {
             do {
-                // Changed to use try? to handle nil case gracefully without throwing
                 if let (json, date) = try? await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                     await decodeJSON(json: json, date: date) // Pass both json and date
+                     await decodeJSON(json: json, date: date)
                 } else {
                     await MainActor.run {
                         insightResult = nil; generatedDate = nil; isLoading = false
@@ -148,7 +128,6 @@ struct ActInsightCard: View {
                     }
                 }
             }
-            // Removed catch block as try? handles errors by returning nil
         }
     }
 
@@ -165,8 +144,7 @@ struct ActInsightCard: View {
             } catch {
                 print("‼️ [ActInsightCard] Failed to decode ActInsightResult: \(error). JSON: \(json)")
                 self.insightResult = nil
-                self.generatedDate = date // Keep date?
-                // self.generatedDate = nil // Set date to nil on error
+                self.generatedDate = nil // Nil date on error
                 self.loadError = true
             }
         } else {

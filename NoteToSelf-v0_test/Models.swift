@@ -316,7 +316,8 @@ struct MoodTrendPoint: Codable, Equatable, Identifiable { // Data for the 7-day 
 struct FeelInsightResult: Codable, Equatable {
     var moodTrendChartData: [MoodTrendPoint]? // Data points for the chart
     var moodSnapshotText: String? // Metaphor-rich summary text
-    static func empty() -> FeelInsightResult { FeelInsightResult(moodTrendChartData: nil, moodSnapshotText: nil) }
+    var dominantMood: String? // ADDED: Dominant mood for collapsed view
+    static func empty() -> FeelInsightResult { FeelInsightResult(moodTrendChartData: nil, moodSnapshotText: nil, dominantMood: nil) }
 }
 
 // MARK: - Think Insight (Card #4)
