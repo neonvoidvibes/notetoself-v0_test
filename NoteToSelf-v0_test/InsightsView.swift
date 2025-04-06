@@ -31,19 +31,12 @@ struct InsightsView: View {
 
     @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
-    // Calculate if Weekly Summary is fresh (e.g., generated < 45 hours ago)
-    // Updated logic based on brief step 5
+    // Calculate if Weekly Summary is fresh
     private var isWeeklySummaryFresh: Bool {
         guard let generatedDate = summaryDate else { return false }
-        // Check if it's Sunday or Monday AND within 45 hours of Sunday 3 AM
         let calendar = Calendar.current
         let now = Date()
         let generatedWeekday = calendar.component(.weekday, from: generatedDate) // 1 = Sunday
-        let currentWeekday = calendar.component(.weekday, from: now)
-
-        // Ensure it was generated on a Sunday
-        guard generatedWeekday == 1 else { return false }
-
         // Calculate Sunday 3 AM of the week the summary was generated
         var components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: generatedDate)
         components.weekday = 1 // Sunday
@@ -51,24 +44,13 @@ struct InsightsView: View {
         components.minute = 0
         components.second = 0
         guard let sunday3AM = calendar.date(from: components) else { return false }
-
-        // Calculate Monday 12 AM (midnight end of Monday)
-        guard let mondayEnd = calendar.date(byAdding: .day, value: 2, to: sunday3AM) else { return false } // Sunday 3AM + 2 days = Tuesday 3 AM, need Monday Midnight
-
-        // Refined check: Must be generated ON Sunday 3AM or later, and NOW must be before Monday Midnight (end of day)
-        let startOfWindow = sunday3AM
-        let endOfWindow = calendar.date(byAdding: .hour, value: 45, to: startOfWindow)! // Sunday 3 AM + 45 hours = Monday 12 AM (midnight)
-
-
+        // Calculate the end of the 45-hour window (Monday midnight)
+        let endOfWindow = calendar.date(byAdding: .hour, value: 45, to: sunday3AM)!
         // Check 1: Was it generated on/after the window started?
-        let generatedAfterStart = generatedDate >= startOfWindow
+        let generatedAfterStart = generatedDate >= sunday3AM
         // Check 2: Is the current time still within the 45-hour window?
         let isWithinWindow = now < endOfWindow
-
         return generatedAfterStart && isWithinWindow
-
-        // Simpler check (Original): within 24 hours
-        // return Calendar.current.dateComponents([.hour], from: generatedDate, to: Date()).hour ?? 49 < 45
     }
 
     private var hasAnyEntries: Bool {
@@ -81,7 +63,7 @@ struct InsightsView: View {
             styles.colors.appBackground.ignoresSafeArea() // Simpler background
 
             VStack(spacing: 0) {
-                // Header (Keep existing header)
+                // Header
                  ZStack(alignment: .center) {
                      VStack(spacing: 8) {
                          Text("Insights")
@@ -177,18 +159,9 @@ struct InsightsView: View {
 
             // --- Fixed Card Order ---
 
-            // 1. Streak & Narrative Life Story Card
-            StreakNarrativeInsightCard(
-                streak: appState.currentStreak,
-                scrollProxy: scrollProxy,
-                cardId: "streakNarrativeCard" // Use new name
-            )
-            .id("streakNarrativeCard")
-            .padding(.horizontal, styles.layout.paddingXL)
-            .opacity(cardsAppeared ? 1 : 0)
-            .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
+            // REMOVED: StreakNarrativeInsightCard (Now integrated into JournalView)
 
-            // 2. Weekly Summary Card (Highlighted if fresh & premium)
+            // 1. Weekly Summary Card (Highlighted if fresh & premium)
             WeeklySummaryInsightCard(
                 jsonString: summaryJson,
                 generatedDate: summaryDate,
@@ -200,35 +173,35 @@ struct InsightsView: View {
             .id("summaryCard")
             .padding(.horizontal, styles.layout.paddingXL)
             .opacity(cardsAppeared ? 1 : 0)
-            .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
+            .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared) // Adjust delay
 
 
-            // 3. AI Reflection Card
-             AIReflectionInsightCard( // Use new name
+            // 2. AI Reflection Card
+             AIReflectionInsightCard(
                  scrollProxy: scrollProxy,
-                 cardId: "aiReflectionCard" // Use new name
+                 cardId: "aiReflectionCard"
              )
              .id("aiReflectionCard")
              .padding(.horizontal, styles.layout.paddingXL)
              .opacity(cardsAppeared ? 1 : 0)
-             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
+             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared) // Adjust delay
 
 
-            // 4. Mood Analysis Card (Mood Trends & Patterns)
-             MoodAnalysisInsightCard( // Use new name
+            // 3. Mood Analysis Card (Mood Trends & Patterns)
+             MoodAnalysisInsightCard(
                  jsonString: trendJson,
                  generatedDate: trendDate,
                  subscriptionTier: appState.subscriptionTier,
                  scrollProxy: scrollProxy,
-                 cardId: "moodAnalysisCard" // Use new name
+                 cardId: "moodAnalysisCard"
              )
              .id("moodAnalysisCard")
              .padding(.horizontal, styles.layout.paddingXL)
              .opacity(cardsAppeared ? 1 : 0)
-             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
+             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared) // Adjust delay
 
 
-            // 5. Recommendations Card
+            // 4. Recommendations Card
              RecommendationsInsightCard(
                  jsonString: recommendationsJson,
                  generatedDate: recommendationsDate,
@@ -239,12 +212,11 @@ struct InsightsView: View {
              .id("recsCard")
              .padding(.horizontal, styles.layout.paddingXL)
              .opacity(cardsAppeared ? 1 : 0)
-             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared)
+             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared) // Adjust delay
 
 
-            // 6. Predictive Mood & General Forecast Card
-             ForecastInsightCard( // Use new card
-                 // Pass forecastResult when available
+            // 5. Predictive Mood & General Forecast Card
+             ForecastInsightCard(
                  subscriptionTier: appState.subscriptionTier,
                  scrollProxy: scrollProxy,
                  cardId: "forecastCard"
@@ -252,7 +224,7 @@ struct InsightsView: View {
              .id("forecastCard")
              .padding(.horizontal, styles.layout.paddingXL)
              .opacity(cardsAppeared ? 1 : 0)
-             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.6), value: cardsAppeared)
+             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared) // Adjust delay
 
              // --- End Fixed Card Order ---
 
@@ -333,9 +305,8 @@ struct InsightsView: View {
      }
 }
 
-// Preview Provider (Update card names if necessary)
+// Preview Provider
 struct InsightsView_Previews: PreviewProvider {
-    // Keep existing preview setup
      @StateObject static var databaseService = DatabaseService()
      static var llmService = LLMService.shared
      @StateObject static var subscriptionManager = SubscriptionManager.shared
@@ -350,10 +321,11 @@ struct InsightsView_Previews: PreviewProvider {
                  .environmentObject(databaseService)
                  .environmentObject(subscriptionManager)
                  .environmentObject(ThemeManager.shared)
+                 .environmentObject(UIStyles.shared) // Add UIStyles to environment
          }
      }
 
-     struct PreviewDataLoadingContainer<Content: View>: View { // Keep preview loader
+     struct PreviewDataLoadingContainer<Content: View>: View {
          @ViewBuilder let content: Content
          @State private var isLoading = true
          var body: some View {

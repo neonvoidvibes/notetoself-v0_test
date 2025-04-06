@@ -4,7 +4,7 @@ import SwiftUI
 
 // Define the NEW set of Insight Types based on the updated card list
 enum InsightType: String, Codable, Equatable, Hashable { // Added Equatable & Hashable for potential use
-    case streakNarrative // Replaces streak
+    case journeyNarrative // Renamed from streakNarrative
     case weeklySummary
     case aiReflection // Replaces chat
     case moodAnalysis // Replaces moodTrends
@@ -89,12 +89,11 @@ struct InsightDetailView: View {
               // Content based on NEW insight type
               Group {
                   switch insight.type {
-                  case .streakNarrative:
-                       // Attempt to cast insight.data to the expected type
-                       let narrativeData = insight.data as? StreakNarrativeResult
+                  case .journeyNarrative: // Renamed case
+                       let narrativeData = insight.data as? StreakNarrativeResult // Still uses StreakNarrativeResult struct
                        let genDate = Date() // Placeholder - Need to pass actual date if available
-                       // Pass the casted data (or nil) to the detail view
-                       StreakNarrativeDetailContent(
+                       // Use renamed detail view component
+                       JourneyNarrativeDetailContent(
                            streak: appState.currentStreak,
                            entries: appState.journalEntries,
                            narrativeResult: narrativeData,
@@ -102,93 +101,79 @@ struct InsightDetailView: View {
                        )
 
                   case .weeklySummary:
-                      // Needs decoded WeeklySummaryResult
                       if let result = insight.data as? WeeklySummaryResult {
-                           // Use the specific expanded view component
-                           let period = calculateSummaryPeriod(from: result) // Placeholder function
-                           // TODO: Pass the actual generatedDate if available from insight.data or another source
+                           let period = calculateSummaryPeriod(from: result)
                            let genDate = Date() // Placeholder
                            WeeklySummaryDetailContent(
                                summaryResult: result,
                                summaryPeriod: period,
-                               generatedDate: genDate // Pass optional date
+                               generatedDate: genDate
                            )
                       } else {
-                          Text("Error: Invalid weekly summary data") // Or show empty state
+                          Text("Error: Invalid weekly summary data")
                       }
-                      // Removed cases for obsolete InsightTypes
 
                   case .aiReflection:
-                       // Needs AIReflectionResult
                        if let result = insight.data as? AIReflectionResult {
                            let genDate = Date() // Placeholder
                             AIReflectionDetailContent(
                                 insightMessage: result.insightMessage,
                                 reflectionPrompts: result.reflectionPrompts,
-                                generatedDate: genDate // Pass date
+                                generatedDate: genDate
                             )
                        } else {
-                           // Fallback or error view if data isn't the correct type
                            AIReflectionDetailContent(
                                 insightMessage: "Could not load reflection.",
                                 reflectionPrompts: [],
-                                generatedDate: nil // Pass nil date
+                                generatedDate: nil
                            )
                        }
 
                   case .moodAnalysis:
-                      // Needs journal entries from AppState
                       let genDate = Date() // Placeholder
                       MoodAnalysisDetailContent(
                           entries: appState.journalEntries,
-                          generatedDate: genDate // Pass date
+                          generatedDate: genDate
                       )
 
                   case .recommendations:
-                      // Needs decoded RecommendationResult
                       if let result = insight.data as? RecommendationResult {
                            let genDate = Date() // Placeholder
                           RecommendationsDetailContent(
                               recommendations: result.recommendations,
-                              generatedDate: genDate // Pass date
+                              generatedDate: genDate
                           )
                       } else {
-                           RecommendationsDetailContent(recommendations: [], generatedDate: nil) // Show empty state
+                           RecommendationsDetailContent(recommendations: [], generatedDate: nil)
                       }
 
                   case .forecast:
-                       // Needs decoded ForecastResult
-                       let forecastData = insight.data as? ForecastResult // Attempt to cast
+                       let forecastData = insight.data as? ForecastResult
                        let genDate = Date() // Placeholder
                        ForecastDetailContent(
-                           forecastResult: forecastData, // Pass casted data or nil
-                           generatedDate: genDate // Pass date
+                           forecastResult: forecastData,
+                           generatedDate: genDate
                        )
                   }
               }
-              // Padding is now handled by InsightFullScreenView, remove from here
-              // .padding(styles.layout.paddingL)
           }
           .navigationTitle(insight.title) // Set title from insight
           .navigationBarTitleDisplayMode(.inline)
-          .toolbar { // Use .toolbar for navigation items
-               ToolbarItem(placement: .navigationBarTrailing) { // Place on the right
+          .toolbar {
+               ToolbarItem(placement: .navigationBarTrailing) {
                    Button {
-                       dismiss() // Use dismiss action
+                       dismiss()
                    } label: {
-                       Image(systemName: "xmark") // Standard close icon
-                           .font(.system(size: 16, weight: .bold)) // Style as needed
-                           .foregroundColor(styles.colors.accent) // Use accent color
+                       Image(systemName: "xmark")
+                           .font(.system(size: 16, weight: .bold))
+                           .foregroundColor(styles.colors.accent)
                    }
                }
            }
       }
   }
 
-    // Placeholder helper function - actual calculation might need more context
      private func calculateSummaryPeriod(from result: WeeklySummaryResult) -> String {
-         // In a real scenario, the period start/end might be stored alongside the result
-         // For now, return a placeholder based on current date
          let calendar = Calendar.current
          let endDate = Date()
          let startDate = calendar.date(byAdding: .day, value: -6, to: endDate)!
@@ -198,17 +183,13 @@ struct InsightDetailView: View {
      }
 }
 
-// MARK: - Preview Provider
-
 #Preview {
-     // Example: Create insight detail for forecast preview
-     // ForecastDetailContent currently shows placeholders and doesn't require complex data
-     let mockForecastData: ForecastResult? = nil // Explicitly nil or provide mock ForecastResult
-     let mockInsight = InsightDetail(type: .forecast, title: "Forecast Preview", data: mockForecastData)
+     let mockForecastData: ForecastResult? = nil
+     // Use the renamed enum case for preview
+     let mockInsight = InsightDetail(type: .journeyNarrative, title: "Journey Preview", data: StreakNarrativeResult.empty())
 
-     // Pass necessary environment objects for previews
      return InsightDetailView(insight: mockInsight)
-         .environmentObject(AppState()) // Provide mock AppState if needed by detail views
+         .environmentObject(AppState())
          .environmentObject(UIStyles.shared)
          .environmentObject(ThemeManager.shared)
 }

@@ -1,6 +1,7 @@
 import SwiftUI
 
-struct StreakNarrativeDetailContent: View {
+// Renamed from StreakNarrativeDetailContent
+struct JourneyNarrativeDetailContent: View {
     let streak: Int
     let entries: [JournalEntry] // Keep entries for timeline
     let narrativeResult: StreakNarrativeResult? // Accept optional result
@@ -56,7 +57,7 @@ struct StreakNarrativeDetailContent: View {
                          .onAppear {
                               // Scroll to the last item on appear
                               if let lastId = entries.sorted(by: { $0.date > $1.date }).first?.id { // Get ID of most recent entry
-                                  print("[StreakNarrativeDetail] Scrolling timeline to end: \(lastId)")
+                                  print("[JourneyNarrativeDetail] Scrolling timeline to end: \(lastId)")
                                   proxy.scrollTo(lastId, anchor: .trailing)
                               }
                           }
@@ -161,7 +162,8 @@ struct StreakMilestone: View {
     let mockResult = StreakNarrativeResult(storySnippet: "Snippet preview", narrativeText: "Longer narrative preview text goes here about feeling happy and stressed but also content.")
     // Wrap in InsightFullScreenView for accurate preview of padding/layout
     return InsightFullScreenView(title: "Your Journey") {
-        StreakNarrativeDetailContent(
+        // Use the renamed struct here
+        JourneyNarrativeDetailContent(
             streak: 5,
             entries: mockEntries,
             narrativeResult: mockResult,

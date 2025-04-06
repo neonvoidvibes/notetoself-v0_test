@@ -34,7 +34,8 @@ func triggerAllInsightGenerations(
     let summaryGenerator = WeeklySummaryGenerator(llmService: llmService, databaseService: databaseService)
     let moodTrendGenerator = MoodTrendGenerator(llmService: llmService, databaseService: databaseService)
     let recommendationGenerator = RecommendationGenerator(llmService: llmService, databaseService: databaseService)
-    let streakNarrativeGenerator = StreakNarrativeGenerator(llmService: llmService, databaseService: databaseService, appState: appState)
+    // UPDATED: Instantiate JourneyNarrativeGenerator
+    let journeyNarrativeGenerator = JourneyNarrativeGenerator(llmService: llmService, databaseService: databaseService, appState: appState)
     let aiReflectionGenerator = AIReflectionGenerator(llmService: llmService, databaseService: databaseService, appState: appState)
     let forecastGenerator = ForecastGenerator(llmService: llmService, databaseService: databaseService, appState: appState)
 
@@ -43,15 +44,10 @@ func triggerAllInsightGenerations(
     // Pass the forceGeneration flag down to each generator
     print("[InsightUtils] Launching generation tasks (Forced: \(forceGeneration))...")
 
-    // Create a TaskGroup to manage concurrent generation
-    // Although detached tasks work, TaskGroup might offer better cancellation handling if needed later.
-    // For now, stick to detached tasks for simplicity but ensure flag is passed.
-
     let force = forceGeneration // Capture the flag locally for the tasks
 
     print("[InsightUtils] Launching WeeklySummaryGenerator...")
     Task.detached(priority: .background) {
-        // TODO: Add forceGeneration param to other generators later if needed
         await summaryGenerator.generateAndStoreIfNeeded()
         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] WeeklySummary generation task finished.") }
     }
@@ -66,12 +62,12 @@ func triggerAllInsightGenerations(
          await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Recommendations generation task finished.") }
     }
 
-    // --- New Generators ---
-    print("[InsightUtils] Launching StreakNarrativeGenerator...")
+    // --- Updated Generator ---
+    print("[InsightUtils] Launching JourneyNarrativeGenerator...")
     Task.detached(priority: .background) {
          // Pass the captured force flag here
-         await streakNarrativeGenerator.generateAndStoreIfNeeded(forceGeneration: force)
-         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Streak Narrative generation task finished.") }
+         await journeyNarrativeGenerator.generateAndStoreIfNeeded(forceGeneration: force)
+         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Journey Narrative generation task finished.") }
     }
     print("[InsightUtils] Launching AIReflectionGenerator...")
     Task.detached(priority: .background) {

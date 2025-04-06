@@ -44,6 +44,8 @@
 				"Insights/insight-Detail/Insight-Detail-Hide/WeeklyPatternsDetailContent.swift",
 				"Insights/insight-Detail/Insight-Detail-Hide/WordCountDetailContent.swift",
 				"Insights/insight-Detail/Insight-Detail-Hide/WritingConsistencyDetailContent.swift",
+				// REMOVED reference to StreakNarrativeInsightCard.swift if it was ever explicitly excluded
+				// If it was implicitly included by the folder, no change needed here.
 			);
 			target = 6483FB4B2D8E9E5100E8EA20 /* NoteToSelf-v0_test */;
 		};
@@ -172,6 +174,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				// Ensure no entry for StreakNarrativeInsightCard.swift exists here.
+				// Since the project uses folder synchronization, individual files are not listed by default.
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
