@@ -51,6 +51,10 @@ struct ThemeColors {
     // New colors for button text/icons
     let primaryButtonText: Color
     let accentIconForeground: Color
+
+    // Journey Card Specific Inverted Text Colors
+    let journeyCardTextPrimary: Color
+    let journeyCardTextSecondary: Color
 }
 
 // MARK: - Theme Typography Struct

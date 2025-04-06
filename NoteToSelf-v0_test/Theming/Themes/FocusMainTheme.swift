@@ -42,7 +42,14 @@ struct FocusMainTheme: Theme {
 
         // Button/icon colors
         primaryButtonText: Color("FocusMainPrimaryButtonText"),
-        accentIconForeground: Color("FocusMainAccentIconForeground")
+        accentIconForeground: Color("FocusMainAccentIconForeground"),
+
+        // Journey Card Specific Inverted Text Colors
+        // ASSUMES Asset Catalog entries exist:
+        // "JourneyCardTextPrimary" (Light: Black, Dark: White)
+        // "JourneyCardTextSecondary" (Light: Dark Gray, Dark: Light Gray)
+        journeyCardTextPrimary: Color("JourneyCardTextPrimary"), // Hypothetical Asset Color
+        journeyCardTextSecondary: Color("JourneyCardTextSecondary") // Hypothetical Asset Color
     )
 
     // Use Futura font (copied from BrightTheme)

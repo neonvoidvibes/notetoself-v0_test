@@ -279,15 +279,18 @@ struct JournalView: View {
             .disabled(mainScrollingDisabled)
             // Add onAppear here to restore scroll position when tab becomes active
             .onAppear {
-                // Check if there's a previously expanded entry
-                if let entryId = appState.journalExpandedEntryId {
-                    // Scroll to that entry without animation
-                    // Use a slight delay to ensure the view hierarchy is ready
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                         scrollProxy.scrollTo(entryId, anchor: .top)
-                         print("[JournalView.onAppear] Restored scroll to expanded entry: \(entryId)")
-                    }
-                }
+                 // Use a slight delay to ensure the view hierarchy is ready
+                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Increased delay slightly
+                      // Check if there's a previously expanded entry AND it exists in the currently filtered list
+                      guard let entryId = appState.journalExpandedEntryId,
+                            filteredEntries.contains(where: { $0.id == entryId }) else {
+                          print("[JournalView.onAppear] No valid expanded entry ID (\(appState.journalExpandedEntryId?.uuidString ?? "nil")) or entry not in filtered list. Cannot scroll.")
+                          return // Don't scroll if ID is nil or not visible
+                      }
+                      // Scroll to that entry without animation
+                      scrollProxy.scrollTo(entryId, anchor: .top)
+                      print("[JournalView.onAppear] Restored scroll to expanded entry: \(entryId)")
+                 }
             }
             .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                 let scrollingDown = value < lastScrollPosition
@@ -330,6 +333,7 @@ struct JournalView: View {
                          )
                          .padding(.horizontal, styles.layout.paddingL) // Apply padding here
                          .transition(.opacity.combined(with: .move(edge: .top)))
+                         .id(entry.id) // IMPORTANT: Add ID to individual card for ScrollViewReader
                      }
                  }
              }
