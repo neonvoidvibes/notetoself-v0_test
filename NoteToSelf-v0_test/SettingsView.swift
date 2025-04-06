@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var themeManager: ThemeManager // Inject ThemeManager
+    @EnvironmentObject var databaseService: DatabaseService // Inject DatabaseService
     @Environment(\.settingsScrollingDisabled) private var settingsScrollingDisabled
     @State private var notificationTime: Date = Date() // Should load saved time
     @State private var notificationsEnabled: Bool = false // Should load saved state
@@ -90,6 +91,12 @@ struct SettingsView: View {
                         // About section
                         AboutSection()
                             .transition(.scale.combined(with: .opacity))
+
+                        // Developer Section (DEBUG ONLY)
+                        #if DEBUG
+                        DeveloperSection()
+                            .transition(.scale.combined(with: .opacity))
+                        #endif
 
                     }
                     .padding(.horizontal, styles.layout.paddingL)
@@ -252,10 +259,11 @@ struct NotificationsSection: View {
                     // Use closure-based Toggle initializer to apply color directly to Text
                     Toggle(isOn: $notificationsEnabled) {
                         Text("Daily Reminder")
-                            .foregroundColor(styles.colors.accent) // Apply accent color here
+                            .foregroundColor(styles.colors.text) // Standard text color for label
                     }
+                    .tint(styles.colors.accent) // Tint the toggle control itself
                     .font(styles.typography.bodyFont) // Apply font to the whole Toggle container
-                    .toggleStyle(ModernToggleStyle()) // Apply custom style to the switch
+                    .toggleStyle(SwitchToggleStyle(tint: styles.colors.accent)) // Use standard switch, but tinted
 
                     // Conditionally show time picker with transition
                     if notificationsEnabled {
@@ -282,33 +290,7 @@ struct NotificationsSection: View {
     }
 }
 
-// Ensure Toggle Style observes UIStyles internally
-struct ModernToggleStyle: ToggleStyle {
-    @ObservedObject var styles = UIStyles.shared // Observe singleton
-
-    func makeBody(configuration: Configuration) -> some View {
-        HStack {
-            configuration.label // The label (Text view) is passed in here
-            Spacer()
-            ZStack {
-                Capsule()
-                    .fill(configuration.isOn ? styles.colors.accent : Color.gray.opacity(0.3)) // Use styles instance
-                    .frame(width: 50, height: 30)
-
-                Circle()
-                    .fill(Color.white) // Knob color can be themed later if needed
-                    .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
-                    .frame(width: 26, height: 26)
-                    .offset(x: configuration.isOn ? 10 : -10)
-            }
-            .onTapGesture {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    configuration.isOn.toggle()
-                }
-            }
-        }
-    }
-}
+// REMOVED ModernToggleStyle - using standard SwitchToggleStyle with tint
 
 // MARK: - Privacy Section
 struct PrivacySection: View {
@@ -433,11 +415,86 @@ struct AboutSection: View {
     }
 }
 
+// MARK: - Developer Section (DEBUG ONLY)
+struct DeveloperSection: View {
+    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var databaseService: DatabaseService
+    // Access shared styles - Use @ObservedObject
+    @ObservedObject private var styles = UIStyles.shared
+    @State private var isGenerating: Bool = false // State for button feedback
+    @State private var generationMessage: String = "" // State for feedback message
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+            Text("Developer Options")
+                .font(styles.typography.title3)
+                .foregroundColor(styles.colors.text)
+
+            styles.card(
+                VStack(spacing: styles.layout.spacingM) {
+                    Button {
+                        guard !isGenerating else { return } // Prevent multiple clicks
+                        isGenerating = true
+                        generationMessage = "Generating..."
+                        Task {
+                            print("DEV: Force updating all insights...")
+                            // Ensure LLMService.shared is accessible here
+                            await triggerAllInsightGenerations(
+                                llmService: LLMService.shared,
+                                databaseService: databaseService,
+                                appState: appState
+                            )
+                            print("DEV: Insight generation triggered.")
+                             // Provide feedback after a short delay
+                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                 generationMessage = "Insights update triggered."
+                                 // Reset after another delay
+                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                      isGenerating = false
+                                      generationMessage = ""
+                                 }
+                             }
+                        }
+                    } label: {
+                        HStack {
+                             if isGenerating {
+                                 ProgressView()
+                                     .tint(styles.colors.accent) // Use accent for spinner
+                             }
+                             Text(isGenerating ? generationMessage : "Force Update All Insights")
+                                 .foregroundColor(styles.colors.accent)
+                        }
+                    }
+                    .buttonStyle(UIStyles.GhostButtonStyle()) // Use Ghost style
+                    .disabled(isGenerating)
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+
+                    // Optional: Add generation status/message if needed
+                    // if !generationMessage.isEmpty {
+                    //      Text(generationMessage)
+                    //          .font(styles.typography.caption)
+                    //          .foregroundColor(styles.colors.textSecondary)
+                    //          .padding(.top, 4)
+                    //          .frame(maxWidth: .infinity, alignment: .center)
+                    // }
+
+                }
+                .padding(styles.layout.paddingL)
+                .frame(maxWidth: .infinity)
+            )
+            .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
+        }
+    }
+}
+
 struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
+        // Wrap preview in NavigationView if needed for title consistency, but ZStack is fine
         SettingsView()
             .environmentObject(AppState())
             .environmentObject(ThemeManager.shared) // Provide ThemeManager for preview
+            .environmentObject(DatabaseService()) // Provide DatabaseService for preview
             .environmentObject(UIStyles.shared) // Provide UIStyles for preview
             // Removed preferredColorScheme, let preview system decide
     }

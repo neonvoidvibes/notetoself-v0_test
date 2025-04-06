@@ -4,6 +4,7 @@ import Combine
 struct MainTabView: View {
   @EnvironmentObject private var appState: AppState // Use EnvironmentObject
   @EnvironmentObject private var chatManager: ChatManager // Use EnvironmentObject
+  @EnvironmentObject private var databaseService: DatabaseService // Inject DatabaseService
   @State private var selectedTab = 0
 
   // Settings-related states
@@ -399,6 +400,7 @@ struct MainTabView: View {
 
                   // Actual Settings content
                   SettingsView()
+                      .environmentObject(databaseService) // Inject DatabaseService here
                       .background(styles.colors.menuBackground)
               }
               .background(styles.colors.menuBackground)

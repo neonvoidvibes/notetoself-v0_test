@@ -16,7 +16,7 @@ struct ChatFilterPanel: View {
   enum FilterTab {
       case keywords, starred, date
   }
-  
+
   var body: some View {
       VStack(spacing: styles.layout.spacingM) {
           // Tab selector
@@ -24,17 +24,17 @@ struct ChatFilterPanel: View {
               FilterTabButton(title: "Keywords", isSelected: activeTab == .keywords) {
                   withAnimation { activeTab = .keywords }
               }
-              
+
               FilterTabButton(title: "Starred", isSelected: activeTab == .starred) {
                   withAnimation { activeTab = .starred }
               }
-              
+
               FilterTabButton(title: "Date", isSelected: activeTab == .date) {
                   withAnimation { activeTab = .date }
               }
           }
           .padding(.horizontal, styles.layout.paddingM)
-          
+
           // Tab content
           VStack(spacing: styles.layout.spacingM) {
               switch activeTab {
@@ -46,7 +46,7 @@ struct ChatFilterPanel: View {
                   dateTab
               }
           }
-          
+
           // Filter actions
           HStack {
               Button(action: onClearFilters) {
@@ -54,9 +54,9 @@ struct ChatFilterPanel: View {
                       .font(styles.typography.bodySmall)
                       .foregroundColor(styles.colors.accent)
               }
-              
+
               Spacer(minLength: 20) // Reduced spacer with minimum length to bring elements closer
-              
+
               Text("\(searchTags.count + (showStarredOnly ? 1 : 0) + (dateFilterType != .all ? 1 : 0)) active filters")
                   .font(styles.typography.bodySmall)
                   .foregroundColor(styles.colors.textSecondary)
@@ -74,7 +74,7 @@ struct ChatFilterPanel: View {
           UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
       }
   }
-  
+
   private var keywordsTab: some View {
       VStack(spacing: styles.layout.spacingM) {
           // Search input
@@ -89,7 +89,7 @@ struct ChatFilterPanel: View {
                   .onSubmit {
                       addSearchTag()
                   }
-              
+
               Button(action: addSearchTag) {
                   Image(systemName: "plus.circle.fill")
                       .foregroundColor(styles.colors.accent)
@@ -99,7 +99,7 @@ struct ChatFilterPanel: View {
               .opacity(searchText.isEmpty ? 0.5 : 1.0)
           }
           .contentShape(Rectangle()) // Ensure the HStack can receive tap gestures
-      
+
           // Tags display
           if !searchTags.isEmpty {
               ScrollView(.horizontal, showsIndicators: false) {
@@ -109,7 +109,7 @@ struct ChatFilterPanel: View {
                               Text(tag)
                                   .font(styles.typography.bodySmall)
                                   .foregroundColor(styles.colors.text)
-                              
+
                               Button(action: {
                                   removeSearchTag(tag)
                               }) {
@@ -129,15 +129,18 @@ struct ChatFilterPanel: View {
           }
       }
   }
-  
+
   private var starredTab: some View {
       VStack(spacing: styles.layout.spacingS) {
-          Toggle("Show Starred Chats Only", isOn: $showStarredOnly)
-              .font(styles.typography.bodySmall)
-              .foregroundColor(styles.colors.text)
-              .toggleStyle(ModernToggleStyle()) // Remove the argument
-              .padding(.vertical, 8)
-  
+          Toggle(isOn: $showStarredOnly) { // Use label closure
+              Text("Show Starred Chats Only")
+                  .font(styles.typography.bodySmall)
+                  .foregroundColor(styles.colors.text) // Use standard text color for label
+          }
+          .toggleStyle(ModernToggleStyle()) // Use the locally defined style
+          .tint(styles.colors.accent) // Tint the toggle control
+          .padding(.vertical, 8)
+
           if showStarredOnly {
               Text("Only showing chats you've starred by long-pressing on them.")
                   .font(styles.typography.bodySmall)
@@ -146,7 +149,7 @@ struct ChatFilterPanel: View {
           }
       }
   }
-  
+
   private var dateTab: some View {
       VStack(spacing: styles.layout.spacingS) {
           // Regular date filter options
@@ -158,9 +161,9 @@ struct ChatFilterPanel: View {
                       Text(filterType.rawValue)
                           .font(styles.typography.bodySmall)
                           .foregroundColor(styles.colors.text)
-                  
+
                       Spacer()
-                  
+
                       if dateFilterType == filterType {
                           Image(systemName: "checkmark.circle.fill")
                               .foregroundColor(styles.colors.accent)
@@ -175,7 +178,7 @@ struct ChatFilterPanel: View {
                   )
               }
           }
-          
+
           // Custom date range as a special expandable option
           Button(action: {
               dateFilterType = .custom
@@ -186,9 +189,9 @@ struct ChatFilterPanel: View {
                       Text(DateFilterType.custom.rawValue)
                           .font(styles.typography.bodySmall)
                           .foregroundColor(styles.colors.text)
-                      
+
                       Spacer()
-                      
+
                       if dateFilterType == .custom {
                           Image(systemName: "checkmark.circle.fill")
                               .foregroundColor(styles.colors.accent)
@@ -197,13 +200,13 @@ struct ChatFilterPanel: View {
                   }
                   .padding(.vertical, 8)
                   .padding(.horizontal, 12)
-                  
+
                   // Expanded content when selected
                   if dateFilterType == .custom {
                       Divider()
                           .background(styles.colors.divider)
                           .padding(.horizontal, 8)
-                      
+
                       VStack(alignment: .leading, spacing: styles.layout.spacingS) { // Use standard spacing
                           // Start date row
                           HStack(alignment: .center) {
@@ -211,21 +214,21 @@ struct ChatFilterPanel: View {
                                   .font(styles.typography.caption)
                                   .foregroundColor(styles.colors.textSecondary)
                                   .frame(width: 50, alignment: .leading)
-                              
+
                               StyledDatePicker(selection: $customStartDate, displayedComponents: .date)
-                              
+
                               Spacer()
                           }
-                          
+
                           // End date row
                           HStack(alignment: .center) {
                               Text("End:")
                                   .font(styles.typography.caption)
                                   .foregroundColor(styles.colors.textSecondary)
                                   .frame(width: 50, alignment: .leading)
-                              
+
                               StyledDatePicker(selection: $customEndDate, displayedComponents: .date)
-                              
+
                               Spacer()
                           }
                       }
@@ -240,7 +243,7 @@ struct ChatFilterPanel: View {
           }
       }
   }
-  
+
   private func addSearchTag() {
       let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
       if !trimmed.isEmpty && !searchTags.contains(trimmed) {
@@ -250,10 +253,39 @@ struct ChatFilterPanel: View {
           }
       }
   }
-  
+
   private func removeSearchTag(_ tag: String) {
       withAnimation {
           searchTags.removeAll { $0 == tag }
       }
   }
 }
+
+// --- Local copy of ModernToggleStyle ---
+fileprivate struct ModernToggleStyle: ToggleStyle {
+    @ObservedObject var styles = UIStyles.shared // Observe singleton
+
+    func makeBody(configuration: Configuration) -> some View {
+        HStack {
+            configuration.label // The label (Text view) is passed in here
+            Spacer()
+            ZStack {
+                Capsule()
+                    .fill(configuration.isOn ? styles.colors.accent : Color.gray.opacity(0.3)) // Use styles instance
+                    .frame(width: 50, height: 30)
+
+                Circle()
+                    .fill(Color.white) // Knob color can be themed later if needed
+                    .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
+                    .frame(width: 26, height: 26)
+                    .offset(x: configuration.isOn ? 10 : -10)
+            }
+            .onTapGesture {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    configuration.isOn.toggle()
+                }
+            }
+        }
+    }
+}
+// --- End Local Toggle Style ---
