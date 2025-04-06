@@ -23,7 +23,7 @@ struct SystemPrompts {
 
     // --- Insight Generation Prompts (Demand JSON Output) ---
 
-    // Streak Narrative Prompt (NEW)
+    // Streak Narrative Prompt (NEW) - Shorter Snippet Requested
     static func streakNarrativePrompt(entriesContext: String, streakCount: Int) -> String {
         """
         Analyze the following filtered journal entry snippets and the user's current streak count (\(streakCount) days):
@@ -33,7 +33,7 @@ struct SystemPrompts {
         Based ONLY on these snippets and the streak count, generate a short narrative snippet for the collapsed card view and a slightly more detailed narrative for the expanded view, highlighting potential themes, turning points, or growth observed.
         You MUST respond ONLY with a single, valid JSON object matching this exact structure:
         {
-          "storySnippet": "A very brief (1-line, max 15 words) 'teaser' hinting at the user's journey, reflecting the streak length and recent themes. Example: 'Building momentum on your path of self-discovery...'",
+          "storySnippet": "A very brief (1 sentence, max 100 characters) 'teaser' hinting at the user's journey, reflecting the streak length and recent themes. Example: 'Building momentum on your path of self-discovery...'",
           "narrativeText": "A concise (2-4 sentences) narrative summarizing the user's recent journaling journey based on the snippets. Mention key themes or shifts observed. Example: 'Your consistent journaling shows growing self-awareness around [Theme]. Recent entries suggest a period of [Resilience/Growth], especially around [Event/Date].'"
         }
         Do not include any introductory text, apologies, explanations, code block markers (like ```json), or markdown formatting outside the JSON structure itself. Ensure all string values within the JSON are properly escaped. If the provided context is insufficient, provide thoughtful default values within the JSON structure.

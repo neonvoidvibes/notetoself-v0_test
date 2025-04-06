@@ -48,12 +48,17 @@ struct JourneyInsightCard: View {
         return narrativeResult?.narrativeText ?? (appState.currentStreak > 0 ? "Analyzing your recent journey..." : "Your journey's story will appear here.")
     }
 
-    // Narrative Snippet for collapsed view
+    // Narrative Snippet for collapsed view - WITH TRUNCATION
     private var narrativeSnippetDisplay: String {
         if isLoading { return "Loading..." }
         if loadError { return "Unavailable" }
-        // Ensure the default is also brief
-        return narrativeResult?.storySnippet ?? "Your journey unfolds..."
+        let snippet = narrativeResult?.storySnippet ?? "Your journey unfolds..."
+        let maxLength = 120 // Define max characters for snippet
+        if snippet.count > maxLength {
+            return String(snippet.prefix(maxLength)) + "..."
+        } else {
+            return snippet
+        }
     }
 
 
@@ -64,6 +69,7 @@ struct JourneyInsightCard: View {
 
         if streak > 0 {
             if hasTodayEntry {
+                // Removed emoji
                 return "\(streak) Day Streak!" // Or "Day \(streak) of your streak!"
             } else {
                 return "Keep your \(streak)-day streak going!" // Encourage today's entry
@@ -76,7 +82,7 @@ struct JourneyInsightCard: View {
     var body: some View {
         VStack(spacing: 0) {
             // --- Collapsed/Header View ---
-            HStack {
+            HStack(alignment: .top) { // Align to top for better layout with multi-line snippet
                  // VStack now includes Title, Streak, Snippet
                 VStack(alignment: .leading, spacing: styles.layout.spacingS) { // Consistent spacing
                     Text("Journey")
@@ -88,21 +94,23 @@ struct JourneyInsightCard: View {
                          // Conditional color: Accent in light, SecondaryAccent (yellow) in dark
                         .foregroundColor(colorScheme == .light ? styles.colors.accent : styles.colors.secondaryAccent)
 
-                    // Narrative Snippet (Moved below streak, accent color)
-                    Text(narrativeSnippetDisplay)
+                    // Narrative Snippet (Moved below streak, textSecondary color, up to 3 lines)
+                    Text(narrativeSnippetDisplay) // Now uses computed property with truncation
                         .font(styles.typography.bodySmall) // Smaller font for snippet
-                        .foregroundColor(styles.colors.accent) // Use ACCENT color
-                        .lineLimit(1) // Ensure it's one line
+                        .foregroundColor(styles.colors.textSecondary) // Use textSecondary color
+                        .lineLimit(3) // Allow up to 3 lines
+                        .fixedSize(horizontal: false, vertical: true) // Allow vertical expansion
                 }
-                Spacer()
+                Spacer() // Push text block left
                 Image(systemName: "chevron.down")
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(styles.colors.tertiaryAccent) // Use gray tertiary accent
                     .rotationEffect(Angle(degrees: isExpanded ? 180 : 0))
+                    .padding(.top, styles.layout.paddingS) // Add padding to align with top text
             }
             .padding(.horizontal, styles.layout.paddingL)
-             // Adjusted vertical padding slightly for balance
-            .padding(.vertical, styles.layout.paddingM + 2)
+             // Increased vertical padding slightly to ensure space for snippet
+            .padding(.vertical, styles.layout.paddingM + 4)
             .contentShape(Rectangle())
             .onTapGesture {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -148,9 +156,9 @@ struct JourneyInsightCard: View {
                         .foregroundColor(styles.colors.textSecondary) // Standard secondary text
                         .padding(.vertical, styles.layout.spacingS) // Padding around explainer
 
-                    // Narrative Text
+                    // Narrative Text (Headline changed)
                      VStack(alignment: .leading) {
-                         Text("Highlights")
+                         Text("Highlights") // Renamed headline
                              .font(styles.typography.bodyLarge.weight(.semibold))
                              .foregroundColor(styles.colors.text) // Standard text
                              .padding(.bottom, styles.layout.spacingXS)
