@@ -30,17 +30,20 @@ func triggerAllInsightGenerations(
     }
 
 
-    // --- Instantiate ALL Generators ---
-    let summaryGenerator = WeeklySummaryGenerator(llmService: llmService, databaseService: databaseService)
-    let journeyNarrativeGenerator = JourneyNarrativeGenerator(llmService: llmService, databaseService: databaseService, appState: appState)
-    // let aiReflectionGenerator = AIReflectionGenerator(llmService: llmService, databaseService: databaseService, appState: appState) // Keep old one commented if replaced
+    // --- Instantiate Generators ---
+    // NEW Top Cards
+    let dailyReflectionGenerator = DailyReflectionGenerator(llmService: llmService, databaseService: databaseService, appState: appState)
+    let weekInReviewGenerator = WeekInReviewGenerator(llmService: llmService, databaseService: databaseService)
+    // Grouped Cards
     let feelGenerator = FeelInsightGenerator(llmService: llmService, databaseService: databaseService)
     let thinkGenerator = ThinkInsightGenerator(llmService: llmService, databaseService: databaseService)
     let actGenerator = ActInsightGenerator(llmService: llmService, databaseService: databaseService)
     let learnGenerator = LearnInsightGenerator(llmService: llmService, databaseService: databaseService)
-    // NEW Generators
-    let dailyReflectionGenerator = DailyReflectionGenerator(llmService: llmService, databaseService: databaseService, appState: appState)
-    let weekInReviewGenerator = WeekInReviewGenerator(llmService: llmService, databaseService: databaseService)
+    // Remaining Old Cards
+    let summaryGenerator = WeeklySummaryGenerator(llmService: llmService, databaseService: databaseService) // Keep original weekly?
+    let journeyNarrativeGenerator = JourneyNarrativeGenerator(llmService: llmService, databaseService: databaseService, appState: appState)
+    // REMOVED: aiReflectionGenerator, moodTrendGenerator, recommendationGenerator, forecastGenerator
+
 
     // Run generators concurrently in detached tasks
     print("[InsightUtils] Launching generation tasks (Forced: \(forceGeneration))...")
@@ -92,23 +95,13 @@ func triggerAllInsightGenerations(
          await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Journey Narrative generation task finished.") }
     }
 
-    // Keep original Weekly Summary for now? Or remove if WeekInReview fully replaces it.
-    /*
+    // Keep original Weekly Summary for now?
     print("[InsightUtils] Launching WeeklySummaryGenerator...")
     Task.detached(priority: .background) {
         await summaryGenerator.generateAndStoreIfNeeded()
         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] WeeklySummary generation task finished.") }
     }
-    */
 
-    // Keep original AI Reflection commented out if replaced by Daily
-    /*
-    print("[InsightUtils] Launching AIReflectionGenerator...")
-    Task.detached(priority: .background) {
-         await aiReflectionGenerator.generateAndStoreIfNeeded()
-         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] AI Reflection generation task finished.") }
-    }
-    */
 
     print("✅ [InsightUtils] All background insight generation tasks launched.")
 }

@@ -12,19 +12,13 @@ struct InsightsView: View {
     @Binding var lastScrollPosition: CGFloat
     @Binding var tabBarVisible: Bool
 
-    // State for stored raw insight data (Existing + New Top Cards)
-    @State private var dailyReflectionJson: String? = nil // NEW #1
-    @State private var dailyReflectionDate: Date? = nil // NEW #1
-    @State private var weekInReviewJson: String? = nil // NEW #2
-    @State private var weekInReviewDate: Date? = nil // NEW #2
+    // State for stored raw insight data
+    @State private var dailyReflectionJson: String? = nil // #1
+    @State private var dailyReflectionDate: Date? = nil
+    @State private var weekInReviewJson: String? = nil // #2
+    @State private var weekInReviewDate: Date? = nil
 
-    @State private var summaryJson: String? = nil // Original Weekly Summary
-    @State private var summaryDate: Date? = nil
-    @State private var reflectionJson: String? = nil // Original AI Reflection
-    @State private var reflectionDate: Date? = nil
-    @State private var journeyJson: String? = nil // For Journey Narrative
-    @State private var journeyDate: Date? = nil
-    // State for new grouped insights
+    // Grouped Insights
     @State private var feelInsightsJson: String? = nil // #3
     @State private var feelInsightsDate: Date? = nil
     @State private var thinkInsightsJson: String? = nil // #4
@@ -33,6 +27,14 @@ struct InsightsView: View {
     @State private var actInsightsDate: Date? = nil
     @State private var learnInsightsJson: String? = nil // #6
     @State private var learnInsightsDate: Date? = nil
+
+    // Remaining Old Cards (Keep for now)
+    @State private var summaryJson: String? = nil // Original Weekly Summary
+    @State private var summaryDate: Date? = nil
+    @State private var journeyJson: String? = nil // For Journey Narrative
+    @State private var journeyDate: Date? = nil
+    // Removed: reflectionJson, reflectionDate
+
 
     @State private var isLoadingInsights: Bool = false
 
@@ -240,7 +242,7 @@ struct InsightsView: View {
                  .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.6), value: cardsAppeared)
 
 
-            // --- OLD CARDS (If kept) ---
+            // --- REMAINING OLD CARDS ---
             // Weekly Summary Card (Original) - Uses passed data
             WeeklySummaryInsightCard(
                 jsonString: summaryJson,
@@ -255,15 +257,7 @@ struct InsightsView: View {
             .opacity(cardsAppeared ? 1 : 0)
             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.7), value: cardsAppeared)
 
-            // AI Reflection Card (Original) - Uses internal loading
-             AIReflectionInsightCard(
-                 scrollProxy: scrollProxy,
-                 cardId: "aiReflectionCard"
-             )
-             .id("aiReflectionCard")
-             .padding(.horizontal, styles.layout.paddingXL)
-             .opacity(cardsAppeared ? 1 : 0)
-             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.8), value: cardsAppeared)
+            // REMOVED Old AI Reflection Card
 
             // Bottom padding
             Spacer().frame(height: styles.layout.paddingXL + 80) // Keep bottom padding
@@ -320,7 +314,7 @@ struct InsightsView: View {
         return dailyReflectionJson == nil && // Check NEW
                weekInReviewJson == nil && // Check NEW
                summaryJson == nil &&
-               reflectionJson == nil &&
+               // reflectionJson == nil && // Removed old reflection check
                feelInsightsJson == nil &&
                thinkInsightsJson == nil &&
                actInsightsJson == nil &&
@@ -346,9 +340,9 @@ struct InsightsView: View {
              async let actFetch = try? self.databaseService.loadLatestInsight(type: "actInsights")
              async let learnFetch = try? self.databaseService.loadLatestInsight(type: "learnInsights")
 
-             // Load Existing/Old insights
+             // Load Remaining Old insights
              async let summaryFetch = try? self.databaseService.loadLatestInsight(type: "weeklySummary")
-             async let reflectionFetch = try? self.databaseService.loadLatestInsight(type: "aiReflection")
+             // async let reflectionFetch = try? self.databaseService.loadLatestInsight(type: "aiReflection") // Removed old reflection
              async let journeyFetch = try? self.databaseService.loadLatestInsight(type: "journeyNarrative")
 
              // Await results
@@ -359,7 +353,7 @@ struct InsightsView: View {
              let actResult = await actFetch
              let learnResult = await learnFetch
              let summaryResult = await summaryFetch
-             let reflectionResult = await reflectionFetch
+             // let reflectionResult = await reflectionFetch // Removed old reflection
              let journeyResult = await journeyFetch
 
 
@@ -374,9 +368,9 @@ struct InsightsView: View {
                  if let (json, date) = actResult { self.actInsightsJson = json; self.actInsightsDate = date } else { self.actInsightsJson = nil; self.actInsightsDate = nil }
                  if let (json, date) = learnResult { self.learnInsightsJson = json; self.learnInsightsDate = date } else { self.learnInsightsJson = nil; self.learnInsightsDate = nil }
 
-                 // Update state for Existing/Old Cards
+                 // Update state for Remaining Old Cards
                  if let (json, date) = summaryResult { self.summaryJson = json; self.summaryDate = date } else { self.summaryJson = nil; self.summaryDate = nil }
-                 if let (json, date) = reflectionResult { self.reflectionJson = json; self.reflectionDate = date } else { self.reflectionJson = nil; self.reflectionDate = nil }
+                 // self.reflectionJson = nil; self.reflectionDate = nil // Explicitly nil removed reflection state
                  if let (json, date) = journeyResult { self.journeyJson = json; self.journeyDate = date } else { self.journeyJson = nil; self.journeyDate = nil }
 
 

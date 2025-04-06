@@ -8,13 +8,9 @@ enum InsightType: String, Codable, Equatable, Hashable { // Added Equatable & Ha
     case dailyReflection // #1
     case weekInReview    // #2
 
-    // --- Existing Cards ---
+    // --- Remaining Old/Base Cards ---
     case journeyNarrative // Renamed from streakNarrative
-    case weeklySummary    // Original weekly summary (may be deprecated by weekInReview)
-    case aiReflection     // Original AI Reflection (may be deprecated by dailyReflection)
-    case moodAnalysis     // Original Mood Analysis (may be deprecated by Feel)
-    case recommendations  // Original Recommendations (may be deprecated by Act)
-    case forecast         // Original Forecast (may be deprecated by Act)
+    case weeklySummary    // Original weekly summary (keep for now)
 
     // --- NEW Grouped Cards ---
     case feelInsights     // #3
@@ -22,6 +18,7 @@ enum InsightType: String, Codable, Equatable, Hashable { // Added Equatable & Ha
     case actInsights      // #5
     case learnInsights    // #6
 
+    // REMOVED: aiReflection, moodAnalysis, recommendations, forecast
 }
 
 struct InsightDetail: Identifiable {
@@ -109,7 +106,7 @@ struct InsightDetailView: View {
                            WeekInReviewDetailContent(result: result, generatedDate: Date()) // Placeholder date
                       } else { Text("Error: Invalid Week in Review data") }
 
-                  // --- EXISTING CARDS ---
+                  // --- REMAINING OLD/BASE CARDS ---
                   case .journeyNarrative:
                        let narrativeData = insight.data as? StreakNarrativeResult
                        let genDate = Date()
@@ -129,44 +126,6 @@ struct InsightDetailView: View {
                                generatedDate: genDate
                            )
                       } else { Text("Error: Invalid weekly summary data") }
-                  case .aiReflection: // Keep original for now
-                       if let result = insight.data as? AIReflectionResult {
-                           let genDate = Date()
-                            AIReflectionDetailContent(
-                                insightMessage: result.insightMessage,
-                                reflectionPrompts: result.reflectionPrompts,
-                                generatedDate: genDate
-                            )
-                       } else {
-                           AIReflectionDetailContent(
-                                insightMessage: "Could not load reflection.",
-                                reflectionPrompts: [],
-                                generatedDate: nil
-                           )
-                       }
-                  case .moodAnalysis: // Keep original for now
-                      let genDate = Date()
-                      MoodAnalysisDetailContent(
-                          entries: appState.journalEntries,
-                          generatedDate: genDate
-                      )
-                  case .recommendations: // Keep original for now
-                      if let result = insight.data as? RecommendationResult {
-                           let genDate = Date()
-                          RecommendationsDetailContent(
-                              recommendations: result.recommendations,
-                              generatedDate: genDate
-                          )
-                      } else {
-                           RecommendationsDetailContent(recommendations: [], generatedDate: nil)
-                      }
-                  case .forecast: // Keep original for now
-                       let forecastData = insight.data as? ForecastResult
-                       let genDate = Date()
-                       ForecastDetailContent(
-                           forecastResult: forecastData,
-                           generatedDate: genDate
-                       )
 
                    // --- NEW GROUPED CARDS ---
                    case .feelInsights:
@@ -185,6 +144,8 @@ struct InsightDetailView: View {
                        if let result = insight.data as? LearnInsightResult {
                            LearnDetailContent(result: result, generatedDate: Date()) // Placeholder date
                        } else { Text("Error: Invalid Learn Insight data") }
+
+                    // REMOVED cases for: aiReflection, moodAnalysis, recommendations, forecast
                    }
               }
           }

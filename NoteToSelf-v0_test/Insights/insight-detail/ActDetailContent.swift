@@ -14,8 +14,8 @@ struct ActDetailContent: View {
                      // Use accent color for sub-header
                     Text("Action Forecast")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.accent) // VERIFIED Accent color
-                        
+                        .foregroundColor(styles.colors.accent) // Accent color for sub-header
+
                     Text(result.actionForecastText ?? "Forecast based on recent actions will appear here.")
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.textSecondary)
@@ -31,13 +31,14 @@ struct ActDetailContent: View {
                      // Use accent color for sub-header
                     Text("Personalized Recommendations")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.accent) // VERIFIED Accent color
+                        .foregroundColor(styles.colors.accent) // Accent color for sub-header
 
                     if let recommendations = result.personalizedRecommendations, !recommendations.isEmpty {
                         // Use VStack instead of ForEach directly to apply background/padding to the section
                          VStack(spacing: styles.layout.spacingL) { // Spacing between recommendation cards
                              ForEach(recommendations) { recommendation in
-                                 RecommendationDetailCard(recommendation: recommendation) // VERIFIED usage
+                                 // Use the locally defined private struct
+                                 RecommendationDetailCard(recommendation: recommendation)
                                      // No additional background/padding needed here, handled by the card itself
                              }
                          }
@@ -75,7 +76,73 @@ struct ActDetailContent: View {
             .padding(.bottom, styles.layout.paddingL)
         }
     }
-}
+
+    // --- Private Recommendation Detail Card View ---
+    // Recreated from the deleted RecommendationsDetailContent.swift
+    private struct RecommendationDetailCard: View {
+        let recommendation: RecommendationResult.RecommendationItem // Use nested type
+        @ObservedObject private var styles = UIStyles.shared // Use ObservedObject
+
+         // Helper to get icon based on category string (duplicated for local use)
+          private func iconForCategory(_ category: String) -> String {
+              switch category.lowercased() {
+              case "mindfulness": return "brain.head.profile"
+              case "activity": return "figure.walk"
+              case "social": return "person.2.fill"
+              case "self-care": return "heart.fill"
+              case "reflection": return "text.book.closed.fill"
+              default: return "star.fill"
+              }
+          }
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                // Header
+                HStack(spacing: styles.layout.spacingM) {
+                    // Icon
+                    ZStack {
+                        Circle()
+                            .fill(styles.colors.accent.opacity(0.1)) // Lighter accent background
+                            .frame(width: 48, height: 48)
+
+                        Image(systemName: iconForCategory(recommendation.category)) // Use helper
+                            .foregroundColor(styles.colors.accent) // Use accent color
+                            .font(.system(size: 24))
+                    }
+
+                    Text(recommendation.title)
+                        .font(styles.typography.title3) // Use Title3
+                        .foregroundColor(styles.colors.text)
+                }
+
+                // Description
+                Text(recommendation.description)
+                    .font(styles.typography.bodyFont)
+                    .foregroundColor(styles.colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                // Rationale
+                if let rationale = recommendation.rationale, !rationale.isEmpty {
+                     VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                         Text("Why this might help:") // Friendlier label
+                             .font(styles.typography.bodyLarge.weight(.semibold)) // Use BodyLarge
+                             .foregroundColor(styles.colors.text)
+
+                         Text(rationale)
+                             .font(styles.typography.bodyFont)
+                             .foregroundColor(styles.colors.textSecondary)
+                             .fixedSize(horizontal: false, vertical: true) // Allow wrapping
+                     }
+                     .padding(.top, styles.layout.spacingS)
+                }
+            }
+            // Apply styling that used to be applied externally
+            .padding()
+            .background(styles.colors.secondaryBackground.opacity(0.5)) // Apply sub-section bg
+            .cornerRadius(styles.layout.radiusM)
+        }
+    }
+} // End ActDetailContent
 
 #Preview {
     let mockRecs = [

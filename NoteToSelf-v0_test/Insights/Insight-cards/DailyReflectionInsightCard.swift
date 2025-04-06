@@ -30,7 +30,7 @@ struct DailyReflectionInsightCard: View {
             cardId: cardId,
             content: {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
-                    // Header - VERIFIED AI avatar icon is present
+                    // Header
                     HStack {
                         Text("AI Insights") // Card Title
                             .font(styles.typography.title3)
@@ -62,19 +62,38 @@ struct DailyReflectionInsightCard: View {
                                 .foregroundColor(styles.colors.error)
                                 .frame(minHeight: 60)
                         } else if let snapshot = snapshotText, !snapshot.isEmpty {
-                             VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
+                             VStack(alignment: .leading, spacing: styles.layout.spacingS) { // Use spacing S for less gap
                                  Text(snapshot)
                                      .font(styles.typography.bodyFont) // Ensure bodyFont
                                      .foregroundColor(styles.colors.text) // Ensure primary text color
                                      .lineLimit(3) // Allow more lines for snapshot
-                             }
-                             .padding(.bottom, styles.layout.spacingS)
 
-                             // Helping Text
-                             Text("Tap for reflection prompts & chat.")
-                                 .font(styles.typography.caption)
-                                 .foregroundColor(styles.colors.accent)
-                                 .frame(maxWidth: .infinity, alignment: .leading)
+                                // --- REPLACED Button ---
+                                // Use HStack with Spacer for right alignment
+                                HStack {
+                                    Spacer() // Push button to the right
+                                    Button(action: {
+                                        NotificationCenter.default.post(
+                                            name: NSNotification.Name("SwitchToTab"),
+                                            object: nil,
+                                            userInfo: ["tabIndex": 2] // Index 2 should be Reflections tab
+                                        )
+                                    }) {
+                                        HStack(spacing: 4) { // Consistent spacing
+                                            Text("Continue in Chat")
+                                                 .font(styles.typography.smallLabelFont) // Match font of "Open" button
+                                            Image(systemName: "arrow.right") // Keep arrow right
+                                                .font(.system(size: styles.layout.iconSizeS)) // Match size of "Open" button icon
+                                        }
+                                        .foregroundColor(styles.colors.accent) // Accent color for text/icon
+                                        .padding(.horizontal, 12) // Standard padding
+                                        .padding(.vertical, 6)   // Standard padding
+                                        .background(styles.colors.secondaryBackground) // Secondary background
+                                        .cornerRadius(styles.layout.radiusM) // Standard corner radius
+                                    }
+                                }
+                                .padding(.top, styles.layout.spacingM) // Add space above button
+                             }
 
                         } else {
                              // Handles case where jsonString was nil or decoding resulted in empty data
@@ -91,10 +110,11 @@ struct DailyReflectionInsightCard: View {
                              .multilineTextAlignment(.center)
                     }
                 }
-                .padding(.bottom, styles.layout.paddingL)
+                .padding(.bottom, styles.layout.paddingL) // Keep standard bottom padding
             }
         )
         .contentShape(Rectangle())
+        // Keep tap gesture for opening detail view, button handles chat switching
         .onTapGesture { if appState.subscriptionTier == .premium { showingFullScreen = true } }
         .onAppear { decodeJSON() } // Decode initial JSON on appear
         .onChange(of: jsonString) { // Re-decode if JSON string changes
@@ -124,7 +144,6 @@ struct DailyReflectionInsightCard: View {
         }
 
         // Only set loading if we actually have JSON to decode
-        // isLoading = true // Removed setting loading true here, handled by parent implicitly now? No, keep it for decode step.
         if !isLoading { isLoading = true }
         decodeError = false
         print("[DailyReflectionCard] Decoding JSON...")

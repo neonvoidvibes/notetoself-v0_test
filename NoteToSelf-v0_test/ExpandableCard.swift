@@ -38,7 +38,6 @@ struct ExpandableCard<Content: View>: View {
             // Main content area
             content()
                 .frame(maxWidth: .infinity, alignment: .leading)
-                // Removed GeometryReader for height measuring as it's not needed for inline expansion anymore
 
             // Keep "Open" Button below content - positioned using padding
             HStack {
@@ -46,34 +45,33 @@ struct ExpandableCard<Content: View>: View {
                 ExpandCollapseButtonInternal(hovered: hovered) // Pass hover state
                     .opacity(hovered ? 1.0 : 0.85) // Slightly less fade when not hovered
                     .animation(.easeInOut(duration: 0.2), value: hovered)
-                    // The actual tap action to open the full screen is now handled
-                    // by the parent view applying .onTapGesture to this ExpandableCard instance.
             }
-            // Use padding to position the button relative to the VStack bottom edge
              .padding(.trailing, 4)
-             .padding(.bottom, 4) // Adjust as needed
+             .padding(.bottom, 4)
 
         }
         .padding(layout.cardInnerPadding) // Apply inner padding to the content VStack
         .background(
             RoundedRectangle(cornerRadius: layout.radiusM)
                 .fill(colors.cardBackground)
-                .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
         )
+        // BORDER OVERLAY using ACCENT color
+        .overlay(
+             RoundedRectangle(cornerRadius: layout.radiusM)
+                 .stroke(colors.accent, lineWidth: 1) // CHANGED to accent color
+         )
         .scaleEffect(hovered ? 1.01 : 1.0) // Keep hover scale effect
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: hovered)
         .contentShape(Rectangle()) // Ensure the whole area is tappable
         .onHover { isHovered in // Keep hover state update
             hovered = isHovered
         }
-        // Removed internal expansion logic, state, and related functions/modifiers
     }
 }
 
 // Internal button view - Simplified for "Open" state only
 fileprivate struct ExpandCollapseButtonInternal: View { // Make fileprivate
     var hovered: Bool // Needs hover state
-    // Use @EnvironmentObject or pass styles if needed, using styles singleton for simplicity here
     @ObservedObject private var styles = UIStyles.shared
 
     var body: some View {
@@ -81,8 +79,7 @@ fileprivate struct ExpandCollapseButtonInternal: View { // Make fileprivate
             Text("Open") // Text first
                 .font(styles.typography.smallLabelFont)
 
-            // Changed icon and moved to the right
-            Image(systemName: "arrow.up.right")
+            Image(systemName: "arrow.up.right") // Changed icon
                 .font(.system(size: styles.layout.iconSizeS))
 
         }
@@ -92,7 +89,7 @@ fileprivate struct ExpandCollapseButtonInternal: View { // Make fileprivate
         .background(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
                 .fill(styles.colors.secondaryBackground.opacity(0.8))
-                .shadow(color: .black.opacity(0.2), radius: 3, y: 1)
+                .shadow(color: .black.opacity(0.2), radius: 3, y: 1) // Keep subtle shadow on button only
         )
         .overlay(
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
@@ -107,7 +104,6 @@ fileprivate struct ExpandCollapseButtonInternal: View { // Make fileprivate
 
 // Preview Provider
 #Preview {
-    // Need to provide necessary environment objects and parameters for preview
     ExpandableCard(
         content: {
             VStack(alignment: .leading) {
@@ -120,7 +116,7 @@ fileprivate struct ExpandCollapseButtonInternal: View { // Make fileprivate
         layout: UIStyles.shared.layout
     )
     .padding()
-    .environmentObject(UIStyles.shared) // Pass styles if button uses it directly
+    .environmentObject(UIStyles.shared)
     .environmentObject(ThemeManager.shared)
     .background(Color.gray.opacity(0.1))
 
