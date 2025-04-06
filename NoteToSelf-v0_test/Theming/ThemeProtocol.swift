@@ -27,7 +27,8 @@ struct ThemeColors {
 
     let accent: Color
     let accentContrastText: Color // Color for text on accent background
-    let secondaryAccent: Color // Often gray
+    let secondaryAccent: Color // NEW - e.g., yellow highlight
+    let tertiaryAccent: Color // RENAMED - Often gray, subtle icons/text
 
     let userBubbleColor: Color
     let userBubbleText: Color

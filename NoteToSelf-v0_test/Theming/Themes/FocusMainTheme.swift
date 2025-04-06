@@ -19,7 +19,8 @@ struct FocusMainTheme: Theme {
 
         accent: Color("FocusMainAccent"),
         accentContrastText: Color("FocusMainAccentContrastText"),
-        secondaryAccent: Color("FocusMainSecondaryAccent"),
+        secondaryAccent: Color(hex: "F8D84A"), // NEW - Yellowish highlight
+        tertiaryAccent: Color("FocusMainSecondaryAccent"), // RENAMED - Use the asset previously used by secondaryAccent (gray)
 
         userBubbleColor: Color("FocusMainUserBubbleColor"), // Use main gray bg
         userBubbleText: Color("FocusMainUserBubbleText"), // Use main text color

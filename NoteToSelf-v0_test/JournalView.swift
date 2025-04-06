@@ -489,7 +489,7 @@ struct JournalEntryCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(formatDate(entry.date)) // Restored date format logic
                         .font(styles.typography.smallLabelFont)
-                        .foregroundColor(styles.colors.secondaryAccent)
+                        .foregroundColor(styles.colors.tertiaryAccent) // USE RENAMED tertiaryAccent
 
                     if !isExpanded {
                         Text(entry.text)
@@ -530,13 +530,13 @@ struct JournalEntryCard: View {
                     if isExpanded && entry.isLocked { // Restored lock icon logic
                         Image(systemName: "lock.fill")
                             .font(.system(size: 14))
-                            .foregroundColor(styles.colors.secondaryAccent)
+                            .foregroundColor(styles.colors.tertiaryAccent) // USE RENAMED tertiaryAccent
                     }
 
                     // Expand/collapse chevron with rotation
                     Image(systemName: "chevron.down") // Restored chevron
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(styles.colors.secondaryAccent)
+                        .foregroundColor(styles.colors.tertiaryAccent) // USE RENAMED tertiaryAccent
                         .rotationEffect(Angle(degrees: isExpanded ? 180 : 0))
                         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
                 }

@@ -11,7 +11,9 @@ struct JourneyInsightCard: View {
     private var habitData: [Bool] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let recentEntries = appState.journalEntries.filter { $0.date >= calendar.date(byAdding: .day, value: -6, to: today)! }
+        // Ensure comparison includes today
+        let sevenDaysAgo = calendar.date(byAdding: .day, value: -6, to: today)!
+        let recentEntries = appState.journalEntries.filter { $0.date >= sevenDaysAgo }
         let entryDates = Set(recentEntries.map { calendar.startOfDay(for: $0.date) })
 
         return (0..<7).map { index -> Bool in
@@ -19,6 +21,7 @@ struct JourneyInsightCard: View {
             return entryDates.contains(dateToCheck)
         }.reversed() // Reverse so today is last
     }
+
 
     // Short weekday labels for the chart
     private var weekdayLabels: [String] {
@@ -39,15 +42,15 @@ struct JourneyInsightCard: View {
                 VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
                     Text("Journey")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
+                        .foregroundColor(styles.colors.accentContrastText) // Use contrast text
                     Text("\(appState.currentStreak) Day Streak")
-                        .font(styles.typography.bodyFont)
-                        .foregroundColor(styles.colors.accent)
+                        .font(styles.typography.bodyFont.weight(.bold)) // Make streak bold
+                        .foregroundColor(styles.colors.secondaryAccent) // Use NEW secondary accent (yellow)
                 }
                 Spacer()
                 Image(systemName: "chevron.down")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(styles.colors.secondaryAccent)
+                    .foregroundColor(styles.colors.accentContrastText.opacity(0.7)) // Use contrast text (slightly dimmed)
                     .rotationEffect(Angle(degrees: isExpanded ? 180 : 0))
             }
             .padding(.horizontal, styles.layout.paddingL)
@@ -62,13 +65,14 @@ struct JourneyInsightCard: View {
             // --- Expanded Content ---
             if isExpanded {
                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                    Divider().background(styles.colors.divider.opacity(0.5))
+                     // Use contrast divider on accent background
+                    Divider().background(styles.colors.accentContrastText.opacity(0.3))
 
                     // Habit Chart
                     VStack(alignment: .leading, spacing: styles.layout.spacingS) {
                         Text("Recent Activity")
                             .font(styles.typography.bodyLarge.weight(.semibold))
-                            .foregroundColor(styles.colors.text)
+                            .foregroundColor(styles.colors.accentContrastText) // Use contrast text
                             .padding(.bottom, styles.layout.spacingXS)
 
                         HStack(spacing: styles.layout.spacingS) {
@@ -76,16 +80,18 @@ struct JourneyInsightCard: View {
                                 VStack(spacing: 4) {
                                     // Day Indicator (Circle)
                                     Circle()
-                                        .fill(habitData[index] ? styles.colors.accent : styles.colors.secondaryBackground)
+                                         // Active: secondary accent (yellow), Inactive: dim contrast text
+                                        .fill(habitData[index] ? styles.colors.secondaryAccent : styles.colors.accentContrastText.opacity(0.3))
                                         .frame(width: 25, height: 25)
                                         .overlay(
-                                            Circle().stroke(styles.colors.divider, lineWidth: 1)
+                                            // Border using contrast text (dim)
+                                            Circle().stroke(styles.colors.accentContrastText.opacity(0.5), lineWidth: 1)
                                         )
 
                                     // Weekday Label
                                     Text(weekdayLabels[index])
                                         .font(styles.typography.caption)
-                                        .foregroundColor(styles.colors.textSecondary)
+                                        .foregroundColor(styles.colors.accentContrastText.opacity(0.7)) // Use contrast text (dim)
                                 }
                                 .frame(maxWidth: .infinity) // Distribute space
                             }
@@ -96,7 +102,7 @@ struct JourneyInsightCard: View {
                     // Explainer Text
                     Text("Consistency is key to building lasting habits. Celebrate your progress, one day at a time!")
                         .font(styles.typography.bodySmall)
-                        .foregroundColor(styles.colors.textSecondary)
+                        .foregroundColor(styles.colors.accentContrastText.opacity(0.8)) // Use contrast text (slightly dimmed)
                         .padding(.top, styles.layout.spacingS)
 
                 }
@@ -105,15 +111,14 @@ struct JourneyInsightCard: View {
                 .transition(.opacity.combined(with: .move(edge: .top))) // Smooth transition
             }
         }
-        .background(styles.colors.cardBackground)
+        .background(styles.colors.accent) // Use ACCENT color for background
         .cornerRadius(styles.layout.radiusL)
-        // Apply thick border instead of shadow
+        // Apply thick border using SECONDARY accent
         .overlay(
             RoundedRectangle(cornerRadius: styles.layout.radiusL)
-                .stroke(styles.colors.accent, lineWidth: 2) // Thick accent border
+                .stroke(styles.colors.secondaryAccent, lineWidth: 2) // Use NEW secondary accent (yellow) for border
         )
         // No shadow
-        // .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
     }
 }
 

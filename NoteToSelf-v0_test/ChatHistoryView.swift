@@ -5,7 +5,7 @@ struct ChatHistoryView: View {
   @ObservedObject var chatManager: ChatManager
   var onSelectChat: (Chat) -> Void
   var onDismiss: () -> Void
-  
+
   // Filter state variables
   @State private var showingFilterPanel = false
   @State private var searchText = ""
@@ -14,10 +14,10 @@ struct ChatHistoryView: View {
   @State private var dateFilterType: DateFilterType = .all
   @State private var customStartDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
   @State private var customEndDate: Date = Date()
-  
+
   // Expanded chat state - moved from AppState to local state
   @State private var expandedChatId: UUID? = nil
-  
+
   // Confirmation modal state
   @State private var showingDeleteConfirmation = false
   @State private var chatToDelete: Chat? = nil
@@ -32,11 +32,11 @@ struct ChatHistoryView: View {
       ZStack {
         styles.colors.menuBackground
             .ignoresSafeArea()
-        
+
         VStack(spacing: 0) {
             // Header
             headerView()
-            
+
             // Filter panel
             if showingFilterPanel {
                 ChatFilterPanel(
@@ -52,11 +52,11 @@ struct ChatHistoryView: View {
                 )
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
-            
+
             // Content - Use ScrollView with LazyVStack like JournalView
             chatListView()
         }
-        
+
         // Confirmation modal
         if showingDeleteConfirmation, let chat = chatToDelete {
             ConfirmationModal(
@@ -126,15 +126,15 @@ struct ChatHistoryView: View {
                       .foregroundColor(styles.colors.accent)
                       .frame(width: 36, height: 36)
               }
-              
+
               Spacer()
           }
           .padding(.horizontal, styles.layout.paddingXL)
-          
+
           // Right-aligned action buttons in a menu
           HStack {
               Spacer()
-              
+
               // Filter button
               Button(action: {
                   withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -151,7 +151,7 @@ struct ChatHistoryView: View {
       .padding(.top, 8)
       .padding(.bottom, 8)
   }
-  
+
   // Chat list view with ScrollView and LazyVStack
   private func chatListView() -> some View {
       ScrollView {
@@ -171,7 +171,7 @@ struct ChatHistoryView: View {
               }
       )
   }
-  
+
   // Extracted chat sections list to simplify the view hierarchy
   private func chatSectionsList() -> some View {
       LazyVStack(spacing: styles.layout.radiusM, pinnedViews: [.sectionHeaders]) {
@@ -189,7 +189,7 @@ struct ChatHistoryView: View {
       }
       .padding(.bottom, 50)
   }
-  
+
   // Extracted chat card creation to simplify the view hierarchy
   private func chatCard(for chat: Chat) -> some View {
       ChatHistoryCard(
@@ -215,7 +215,7 @@ struct ChatHistoryView: View {
       .padding(.horizontal, styles.layout.paddingL)
       .transition(.opacity.combined(with: .move(edge: .top)))
   }
-  
+
   // Empty state view when no chats match filters
   private func emptyStateView() -> some View {
       VStack(alignment: .center, spacing: 16) {
@@ -245,61 +245,61 @@ struct ChatHistoryView: View {
       .frame(maxWidth: .infinity)
       .padding()
   }
-  
+
   // Clear filters function
   private func clearFilters(closePanel: Bool = false) {
       searchText = ""
       searchTags = []
       showStarredOnly = false
       dateFilterType = .all
-      
+
       if closePanel {
           withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
               showingFilterPanel = false
           }
       }
   }
-  
+
   // Computed property to filter chats - simplified
   private var filteredChats: [Chat] {
       return chatManager.chats.filter { chat in
           passesAllFilters(chat)
       }
   }
-  
+
   // Helper function to check if a chat passes all filters
   private func passesAllFilters(_ chat: Chat) -> Bool {
       // Check if starred filter passes
       if showStarredOnly && !chat.isStarred {
           return false
       }
-      
+
       // Check if tag filter passes
       if !searchTagFilterPasses(chat) {
           return false
       }
-      
+
       // Check if date filter passes
       if !dateFilterPasses(chat.lastUpdatedAt) {
           return false
       }
-      
+
       return true
   }
-  
+
   // Helper function to check if a chat passes the search tag filter
   private func searchTagFilterPasses(_ chat: Chat) -> Bool {
     if searchTags.isEmpty {
         return true
     }
-    
+
     return chat.messages.contains { message in
         searchTags.contains { tag in
             (message as? MessageDisplayable)?.text.lowercased().contains(tag.lowercased()) ?? false
         }
     }
   }
-  
+
   // Helper function to check if a date passes the date filter
   private func dateFilterPasses(_ date: Date) -> Bool {
       switch dateFilterType {
@@ -323,28 +323,28 @@ struct ChatHistoryView: View {
           return true
       }
   }
-  
+
   // Filtered and grouped chats - simplified
   private var filteredGroupedChats: [(String, [Chat])] {
       // Get the grouped chats
       let groupedChats = chatManager.groupChatsByTimePeriod()
-      
+
       // Process each group
       var result: [(String, [Chat])] = []
-      
+
       for (section, chats) in groupedChats {
           // Filter the chats in this section
           let filteredSectionChats = filterChatsInSection(chats)
-          
+
           // Only add sections that have chats after filtering
           if !filteredSectionChats.isEmpty {
               result.append((section, filteredSectionChats))
           }
       }
-      
+
       return result
   }
-  
+
   // Helper function to filter chats in a section
   private func filterChatsInSection(_ chats: [Chat]) -> [Chat] {
       return chats.filter { chat in
@@ -368,7 +368,7 @@ struct ChatHistoryCard: View {
         VStack(alignment: .leading, spacing: 0) {
             // Header always visible
             cardHeader()
-            
+
             // Expanded content
             if isExpanded {
                 Divider()
@@ -403,7 +403,7 @@ struct ChatHistoryCard: View {
             }
         }
     }
-    
+
     // Card header view
     private func cardHeader() -> some View {
         HStack(alignment: .center) {
@@ -411,8 +411,8 @@ struct ChatHistoryCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(formatDate(chat.lastUpdatedAt))
                     .font(styles.typography.smallLabelFont)
-                    .foregroundColor(styles.colors.secondaryAccent)
-                
+                    .foregroundColor(styles.colors.tertiaryAccent) // USE RENAMED tertiaryAccent
+
                 if !isExpanded {
                     // Use the first user message for the preview text when collapsed
                     if let firstUserMessage = findFirstUserMessage() {
@@ -423,9 +423,9 @@ struct ChatHistoryCard: View {
                     }
                 }
             }
-            
+
             Spacer()
-            
+
             // Icons on the right
             HStack(spacing: 12) {
                 // Star icon if starred
@@ -435,13 +435,13 @@ struct ChatHistoryCard: View {
                         .foregroundColor(styles.colors.accent)
                         .padding(.trailing, -4)
                 }
-                
+
                 // Message count
                 HStack(spacing: 4) {
                     Image(systemName: "bubble.left.fill")
                         .foregroundColor(styles.colors.accent)
                         .font(.system(size: 16))
-                    
+
                     if isExpanded {
                         Text("\(chat.messages.count)")
                             .font(styles.typography.caption)
@@ -449,11 +449,11 @@ struct ChatHistoryCard: View {
                     }
                 }
                 .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
-                
+
                 // Expand/collapse chevron with rotation
                 Image(systemName: "chevron.down")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(styles.colors.secondaryAccent)
+                    .foregroundColor(styles.colors.tertiaryAccent) // USE RENAMED tertiaryAccent
                     .rotationEffect(Angle(degrees: isExpanded ? 180 : 0))
                     .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
             }
@@ -461,26 +461,26 @@ struct ChatHistoryCard: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
     }
-    
+
     // Expanded content view
     private func expandedContent() -> some View {
         VStack(spacing: 0) {
             // Show the FIRST user message and AI response
             if let firstUserMessage = findFirstUserMessage(), // Use first user message
                let firstAIMessage = findFirstAIMessage() { // Use first AI message (if available)
-                
+
                 // User message
                 userMessageView(text: firstUserMessage.text)
-                
+
                 // AI message - Use the correct variable name
                 aiMessageView(text: firstAIMessage.text)
             }
-            
+
             // Action button - Open chat
             actionButtonView()
         }
     }
-    
+
     // User message view
     private func userMessageView(text: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -490,7 +490,7 @@ struct ChatHistoryCard: View {
                     .foregroundColor(styles.colors.accent)
                 Spacer()
             }
-            
+
             Text(text)
                 .font(styles.typography.bodyFont)
                 .foregroundColor(styles.colors.text)
@@ -500,7 +500,7 @@ struct ChatHistoryCard: View {
         .padding(.top, 16)
         .padding(.bottom, 8)
     }
-    
+
     // AI message view
     private func aiMessageView(text: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -510,7 +510,7 @@ struct ChatHistoryCard: View {
                     .foregroundColor(styles.colors.textSecondary)
                 Spacer()
             }
-            
+
             Text(text)
                 .font(styles.typography.bodyFont)
                 .foregroundColor(styles.colors.textSecondary)
@@ -520,7 +520,7 @@ struct ChatHistoryCard: View {
         .padding(.top, 8)
         .padding(.bottom, 16)
     }
-    
+
     // Action button view
     private func actionButtonView() -> some View {
         HStack {
@@ -532,9 +532,9 @@ struct ChatHistoryCard: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            
+
             Spacer()
-            
+
             // Continue button (existing)
             Button(action: onOpen) {
                 HStack(spacing: 4) {
@@ -553,21 +553,21 @@ struct ChatHistoryCard: View {
         .padding(.horizontal, 20)
         .padding(.bottom, 16)
     }
-    
+
     // Helper function to find the FIRST user message
     private func findFirstUserMessage() -> ChatMessage? { // Return concrete type
         return chat.messages.first { $0.isUser } // Directly filter and find first
     }
-    
+
     // Helper function to find the FIRST AI message
     private func findFirstAIMessage() -> ChatMessage? { // Return concrete type
         return chat.messages.first { !$0.isUser } // Directly filter and find first
     }
-    
+
     // Format date similar to JournalEntryCard
     private func formatDate(_ date: Date) -> String {
         let calendar = Calendar.current
-        
+
         if calendar.isDateInToday(date) {
             return "Today, \(formatTime(date))"
         } else if calendar.isDateInYesterday(date) {
@@ -578,7 +578,7 @@ struct ChatHistoryCard: View {
             return formatter.string(from: date)
         }
     }
-    
+
     // Helper for formatting time
     private func formatTime(_ date: Date) -> String {
         let formatter = DateFormatter()
