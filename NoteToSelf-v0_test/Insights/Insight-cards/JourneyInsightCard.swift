@@ -101,6 +101,7 @@ struct JourneyInsightCard: View {
                         .lineLimit(3) // Allow up to 3 lines
                         .fixedSize(horizontal: false, vertical: true) // Allow vertical expansion
                 }
+                .frame(minHeight: 70) // Explicitly request minimum height for the text content
                 Spacer() // Push text block left
                 Image(systemName: "chevron.down")
                     .font(.system(size: 14, weight: .bold))
