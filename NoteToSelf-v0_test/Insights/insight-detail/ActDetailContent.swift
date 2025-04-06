@@ -14,8 +14,8 @@ struct ActDetailContent: View {
                      // Use accent color for sub-header
                     Text("Action Forecast")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.accent) // Accent color for sub-header
-
+                        .foregroundColor(styles.colors.accent) // VERIFIED Accent color
+                        
                     Text(result.actionForecastText ?? "Forecast based on recent actions will appear here.")
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.textSecondary)
@@ -31,13 +31,13 @@ struct ActDetailContent: View {
                      // Use accent color for sub-header
                     Text("Personalized Recommendations")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.accent) // Accent color for sub-header
+                        .foregroundColor(styles.colors.accent) // VERIFIED Accent color
 
                     if let recommendations = result.personalizedRecommendations, !recommendations.isEmpty {
                         // Use VStack instead of ForEach directly to apply background/padding to the section
                          VStack(spacing: styles.layout.spacingL) { // Spacing between recommendation cards
                              ForEach(recommendations) { recommendation in
-                                 RecommendationDetailCard(recommendation: recommendation)
+                                 RecommendationDetailCard(recommendation: recommendation) // VERIFIED usage
                                      // No additional background/padding needed here, handled by the card itself
                              }
                          }

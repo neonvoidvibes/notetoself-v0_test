@@ -22,13 +22,13 @@ struct ThinkInsightCard: View {
             cardId: cardId,
             content: {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
-                    // Header - Headline uses standard text color now
+                    // Header
                     HStack {
-                        Text("Think") // Card Title - Standard Color
+                        Text("Think") // Card Title
                             .font(styles.typography.title3)
-                            .foregroundColor(styles.colors.text) // Use standard text color
+                            .foregroundColor(styles.colors.text)
                         Spacer()
-                        Image(systemName: "brain.head.profile") // Example icon
+                        Image(systemName: "brain.head.profile") // Icon
                             .foregroundColor(styles.colors.accent)
                             .font(.system(size: 20))
                         if appState.subscriptionTier == .free { // Gating
@@ -36,7 +36,7 @@ struct ThinkInsightCard: View {
                        }
                     }
 
-                    // Content Snippets (Using VStack)
+                    // Content Snippets
                     if appState.subscriptionTier == .premium {
                          if isLoading {
                              ProgressView().tint(styles.colors.accent)
@@ -44,16 +44,25 @@ struct ThinkInsightCard: View {
                                  .frame(minHeight: 60)
                          } else if loadError {
                              Text("Could not load Think insights.")
-                                 .font(styles.typography.bodySmall) // Error text can be smaller
+                                 .font(styles.typography.bodySmall)
                                  .foregroundColor(styles.colors.error)
                                  .frame(minHeight: 60)
                          } else if let result = insightResult {
-                            // Show Theme Overview Snippet Primarily
-                             VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
-                                 Text(result.themeOverviewText ?? "Recurring themes analysis pending...")
-                                     .font(styles.typography.bodyFont)
-                                     .foregroundColor(styles.colors.text) // CHANGED to primary text color
-                                     .lineLimit(2)
+                            // Show Theme Overview Snippet Primarily with Icon
+                             HStack(alignment: .top, spacing: styles.layout.spacingM) {
+                                 // Icon for Themes
+                                 Image(systemName: "tag.fill")
+                                     .foregroundColor(styles.colors.accent)
+                                     .font(.system(size: 18)) // Slightly smaller icon
+                                     .frame(width: 24, height: 24) // Fixed size
+                                     .padding(.top, 2)
+
+                                 VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
+                                     Text(result.themeOverviewText ?? "Recurring themes analysis pending...")
+                                         .font(styles.typography.bodyFont)
+                                         .foregroundColor(styles.colors.text)
+                                         .lineLimit(3) // Allow more lines
+                                 }
                              }
                               .padding(.bottom, styles.layout.spacingS)
 
@@ -66,12 +75,12 @@ struct ThinkInsightCard: View {
                          } else {
                               Text("Strategic insights available with regular journaling.")
                                   .font(styles.typography.bodyFont)
-                                  .foregroundColor(styles.colors.text) // CHANGED to primary text color
+                                  .foregroundColor(styles.colors.text)
                                   .frame(minHeight: 60, alignment: .center)
                          }
                     } else {
                          Text("Unlock strategic thinking insights with Premium.")
-                             .font(styles.typography.bodySmall) // Keep small for locked state
+                             .font(styles.typography.bodySmall)
                              .foregroundColor(styles.colors.textSecondary)
                              .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
                              .multilineTextAlignment(.center)

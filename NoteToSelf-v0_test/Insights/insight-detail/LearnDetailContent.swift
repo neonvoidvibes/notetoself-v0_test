@@ -14,7 +14,7 @@ struct LearnDetailContent: View {
                      // Use accent color for sub-header
                     Text("Key Takeaway")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.accent) // Accent color for sub-header
+                        .foregroundColor(styles.colors.accent) // VERIFIED Accent color
 
                     Text(result.takeawayText ?? "Significant insights from the week will be highlighted here.")
                         .font(styles.typography.bodyFont)
@@ -31,7 +31,7 @@ struct LearnDetailContent: View {
                      // Use accent color for sub-header
                     Text("Before / After")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.accent) // Accent color for sub-header
+                        .foregroundColor(styles.colors.accent) // VERIFIED Accent color
 
                     Text(result.beforeAfterText ?? "Comparisons highlighting growth or shifts will appear here.")
                         .font(styles.typography.bodyFont)
@@ -48,7 +48,7 @@ struct LearnDetailContent: View {
                      // Use accent color for sub-header
                     Text("Suggested Next Step")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.accent) // Accent color for sub-header
+                        .foregroundColor(styles.colors.accent) // VERIFIED Accent color
 
                     Text(result.nextStepText ?? "Suggestions for applying learnings will be offered here.")
                         .font(styles.typography.bodyFont)

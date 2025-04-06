@@ -9,7 +9,7 @@ struct WeekInReviewDetailContent: View {
     // Format the date range string from the result
     private var summaryPeriod: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
+        formatter.dateFormat = "MMM d" // e.g., "Oct 20"
         guard let start = result.startDate, let end = result.endDate else {
             return "Week Period N/A"
         }
@@ -28,7 +28,7 @@ struct WeekInReviewDetailContent: View {
                     .padding(.bottom, styles.layout.spacingS) // Space below date
 
                 // --- Weekly Summary Section ---
-                styledSection(title: "Weekly Summary") {
+                styledSection(title: "Weekly Summary") { // Title uses accent via helper
                     Text(result.summaryText ?? "Weekly summary not available.")
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.textSecondary)
@@ -38,8 +38,8 @@ struct WeekInReviewDetailContent: View {
 
                 // --- Key Themes Section ---
                 if let themes = result.keyThemes, !themes.isEmpty {
-                    styledSection(title: "Key Themes") {
-                         FlowLayout(spacing: 10) {
+                    styledSection(title: "Key Themes") { // Title uses accent via helper
+                         FlowLayout(spacing: 10) { // VERIFIED FlowLayout usage
                              ForEach(themes, id: \.self) { theme in
                                  Text(theme)
                                      .font(styles.typography.bodySmall)
@@ -54,10 +54,10 @@ struct WeekInReviewDetailContent: View {
                 }
 
                 // --- Mood Trend Section ---
-                styledSection(title: "Mood Trend") {
+                styledSection(title: "Mood Trend") { // Title uses accent via helper
                      if let trendData = result.moodTrendChartData, !trendData.isEmpty {
                          if #available(iOS 16.0, *) {
-                             moodTrendChart(data: trendData) // Use helper function
+                             moodTrendChart(data: trendData) // VERIFIED Chart usage
                          } else {
                              Text("Chart requires iOS 16+").font(styles.typography.bodySmall).foregroundColor(styles.colors.textSecondary)
                                  .frame(height: 200, alignment: .center)
@@ -72,7 +72,7 @@ struct WeekInReviewDetailContent: View {
                 }
 
                 // --- Recurring Themes (Think) Section ---
-                 styledSection(title: "Recurring Themes & Values") {
+                 styledSection(title: "Recurring Themes & Values") { // Title uses accent via helper
                       Text(result.recurringThemesText ?? "Recurring themes analysis not available.")
                           .font(styles.typography.bodyFont)
                           .foregroundColor(styles.colors.textSecondary)
@@ -81,7 +81,7 @@ struct WeekInReviewDetailContent: View {
                  }
 
                 // --- Action Highlights (Act) Section ---
-                 styledSection(title: "Action Highlights") {
+                 styledSection(title: "Action Highlights") { // Title uses accent via helper
                       Text(result.actionHighlightsText ?? "Action highlights not available.")
                           .font(styles.typography.bodyFont)
                           .foregroundColor(styles.colors.textSecondary)
@@ -90,7 +90,7 @@ struct WeekInReviewDetailContent: View {
                  }
 
                 // --- Takeaway (Learn) Section ---
-                 styledSection(title: "Key Takeaway") {
+                 styledSection(title: "Key Takeaway") { // Title uses accent via helper
                       Text(result.takeawayText ?? "Weekly takeaway not available.")
                           .font(styles.typography.bodyFont)
                           .foregroundColor(styles.colors.textSecondary)
@@ -126,7 +126,7 @@ struct WeekInReviewDetailContent: View {
         VStack(alignment: .leading, spacing: styles.layout.spacingM) {
             Text(title)
                 .font(styles.typography.title3)
-                .foregroundColor(styles.colors.accent) // Accent color for sub-headers
+                .foregroundColor(styles.colors.accent) // VERIFIED Accent color for sub-headers
             content() // The actual content for the section
         }
         .padding()

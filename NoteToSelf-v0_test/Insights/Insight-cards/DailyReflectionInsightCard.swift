@@ -30,7 +30,7 @@ struct DailyReflectionInsightCard: View {
             cardId: cardId,
             content: {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
-                    // Header
+                    // Header - VERIFIED AI avatar icon is present
                     HStack {
                         Text("AI Insights") // Card Title
                             .font(styles.typography.title3)
@@ -58,14 +58,14 @@ struct DailyReflectionInsightCard: View {
                                 .frame(minHeight: 60)
                         } else if decodeError { // Use decodeError state
                             Text("Could not load daily reflection.")
-                                .font(styles.typography.bodySmall)
+                                .font(styles.typography.bodySmall) // Error text can be smaller
                                 .foregroundColor(styles.colors.error)
                                 .frame(minHeight: 60)
                         } else if let snapshot = snapshotText, !snapshot.isEmpty {
                              VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
                                  Text(snapshot)
-                                     .font(styles.typography.bodyFont)
-                                     .foregroundColor(styles.colors.text)
+                                     .font(styles.typography.bodyFont) // Ensure bodyFont
+                                     .foregroundColor(styles.colors.text) // Ensure primary text color
                                      .lineLimit(3) // Allow more lines for snapshot
                              }
                              .padding(.bottom, styles.layout.spacingS)
@@ -79,13 +79,13 @@ struct DailyReflectionInsightCard: View {
                         } else {
                              // Handles case where jsonString was nil or decoding resulted in empty data
                             Text("Today's reflection available after journaling.")
-                                .font(styles.typography.bodyFont)
-                                .foregroundColor(styles.colors.text)
+                                .font(styles.typography.bodyFont) // Ensure bodyFont
+                                .foregroundColor(styles.colors.text) // Ensure primary text color
                                 .frame(minHeight: 60, alignment: .center)
                         }
                     } else {
                          Text("Unlock daily AI reflections with Premium.")
-                             .font(styles.typography.bodySmall)
+                             .font(styles.typography.bodySmall) // Keep small for locked state
                              .foregroundColor(styles.colors.textSecondary)
                              .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
                              .multilineTextAlignment(.center)
@@ -123,7 +123,9 @@ struct DailyReflectionInsightCard: View {
             return
         }
 
-        isLoading = true
+        // Only set loading if we actually have JSON to decode
+        // isLoading = true // Removed setting loading true here, handled by parent implicitly now? No, keep it for decode step.
+        if !isLoading { isLoading = true }
         decodeError = false
         print("[DailyReflectionCard] Decoding JSON...")
 

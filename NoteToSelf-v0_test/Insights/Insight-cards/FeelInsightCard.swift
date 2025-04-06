@@ -29,13 +29,13 @@ struct FeelInsightCard: View {
             cardId: cardId,
             content: {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
-                    // Header - Headline uses standard text color now
+                    // Header
                     HStack {
-                        Text("Feel") // Card Title - Standard Color
+                        Text("Feel") // Card Title
                             .font(styles.typography.title3)
-                            .foregroundColor(styles.colors.text) // Use standard text color
+                            .foregroundColor(styles.colors.text)
                         Spacer()
-                        Image(systemName: "heart.circle.fill") // Example icon
+                        Image(systemName: "heart.circle.fill") // Icon
                             .foregroundColor(styles.colors.accent)
                             .font(.system(size: 20))
                          if appState.subscriptionTier == .free { // Gating
@@ -43,7 +43,7 @@ struct FeelInsightCard: View {
                         }
                     }
 
-                    // Content Snippets (VStack like reference cards)
+                    // Content Snippets
                     if appState.subscriptionTier == .premium {
                         if isLoading {
                             ProgressView().tint(styles.colors.accent)
@@ -51,36 +51,43 @@ struct FeelInsightCard: View {
                                 .frame(minHeight: 60)
                         } else if loadError {
                             Text("Could not load Feel insights.")
-                                .font(styles.typography.bodySmall) // Error text can be smaller
+                                .font(styles.typography.bodySmall)
                                 .foregroundColor(styles.colors.error)
                                 .frame(minHeight: 60)
                         } else if let result = insightResult {
-                            // Display Dominant Mood + Snapshot Text
-                            VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                            // Display Dominant Mood Icon + Snapshot Text in HStack
+                            HStack(alignment: .top, spacing: styles.layout.spacingM) {
+                                // Dominant Mood Icon (Visual Element)
                                 if let dominantMoodName = result.dominantMood, let moodEnum = moodFromName(dominantMoodName) {
-                                     HStack(spacing: styles.layout.spacingS) {
-                                         moodEnum.icon // Use Mood icon
-                                             .foregroundColor(moodEnum.color) // Use Mood color
-                                             .font(.system(size: 16)) // Consistent icon size
-                                         Text("Dominant Mood: \(dominantMoodName)")
-                                             .font(styles.typography.bodyFont.weight(.medium)) // Keep slightly bolder
-                                             .foregroundColor(styles.colors.text) // Keep primary color
-                                     }
+                                     moodEnum.icon
+                                         .foregroundColor(moodEnum.color)
+                                         .font(.system(size: 24)) // Slightly larger icon for emphasis
+                                         .frame(width: 24, height: 24) // Fixed size
+                                         .padding(.top, 2) // Align icon slightly better with text
+                                } else {
+                                     // Placeholder if no dominant mood
+                                     Image(systemName: "circle.dashed")
+                                          .foregroundColor(styles.colors.textSecondary)
+                                          .font(.system(size: 24))
+                                          .frame(width: 24, height: 24)
+                                          .padding(.top, 2)
                                 }
 
-                                if let snapshot = result.moodSnapshotText, !snapshot.isEmpty {
-                                    Text(snapshot)
-                                        .font(styles.typography.bodyFont)
-                                        .foregroundColor(styles.colors.text) // CHANGED to primary text color
-                                        .lineLimit(2)
-                                        .padding(.top, result.dominantMood != nil ? styles.layout.spacingXS : 0)
-                                } else if result.dominantMood == nil {
-                                     Text("Emotional insights available with regular journaling.")
-                                         .font(styles.typography.bodyFont)
-                                         .foregroundColor(styles.colors.text) // CHANGED to primary text color
+                                // Snapshot Text
+                                VStack(alignment: .leading, spacing: styles.layout.spacingXS){ // Wrap text in VStack if needed
+                                    if let snapshot = result.moodSnapshotText, !snapshot.isEmpty {
+                                        Text(snapshot)
+                                            .font(styles.typography.bodyFont)
+                                            .foregroundColor(styles.colors.text)
+                                            .lineLimit(3) // Allow enough lines for snapshot
+                                    } else {
+                                        Text("Emotional snapshot analysis pending.")
+                                             .font(styles.typography.bodyFont)
+                                             .foregroundColor(styles.colors.text)
+                                    }
                                 }
                             }
-                             .padding(.bottom, styles.layout.spacingS) // Padding below snippets
+                             .padding(.bottom, styles.layout.spacingS)
 
                              // Helping Text
                              Text("Tap for mood chart & details.")
@@ -89,15 +96,14 @@ struct FeelInsightCard: View {
                                  .frame(maxWidth: .infinity, alignment: .leading)
 
                         } else {
-                            // This case handles when result is nil (but not loading/error)
                             Text("Emotional insights available with regular journaling.")
                                 .font(styles.typography.bodyFont)
-                                .foregroundColor(styles.colors.text) // CHANGED to primary text color
+                                .foregroundColor(styles.colors.text)
                                 .frame(minHeight: 60, alignment: .center)
                         }
                     } else {
                          Text("Unlock emotional pattern insights with Premium.")
-                             .font(styles.typography.bodySmall) // Keep small for locked state
+                             .font(styles.typography.bodySmall)
                              .foregroundColor(styles.colors.textSecondary)
                              .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
                              .multilineTextAlignment(.center)
@@ -116,12 +122,12 @@ struct FeelInsightCard: View {
         .fullScreenCover(isPresented: $showingFullScreen) {
              InsightFullScreenView(title: "Feel Insights") {
                   FeelDetailContent(
-                      result: insightResult ?? .empty(), // Pass result or empty state
+                      result: insightResult ?? .empty(),
                       generatedDate: generatedDate
                   )
               }
               .environmentObject(styles)
-              .environmentObject(appState) // Pass necessary environment objects
+              .environmentObject(appState)
         }
     }
 

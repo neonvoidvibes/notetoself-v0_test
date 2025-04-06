@@ -59,7 +59,7 @@ struct WeekInReviewCard: View {
             cardId: cardId,
             content: {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
-                    // Header with Date Range and NEW badge
+                    // Header with Date Range and NEW badge - VERIFIED
                     HStack {
                         Text("Week in Review") // Card Title
                             .font(styles.typography.title3)
@@ -71,7 +71,7 @@ struct WeekInReviewCard: View {
                              .font(styles.typography.caption.weight(.medium))
                              .foregroundColor(styles.colors.textSecondary)
 
-                        if isFresh && appState.subscriptionTier == .premium {
+                        if isFresh && appState.subscriptionTier == .premium { // Check isFresh logic is correct
                             Text("NEW")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(styles.colors.accentContrastText)
@@ -95,14 +95,14 @@ struct WeekInReviewCard: View {
                                 .frame(minHeight: 60)
                         } else if decodeError {
                             Text("Could not load weekly review.")
-                                .font(styles.typography.bodySmall)
+                                .font(styles.typography.bodySmall) // Error text can be smaller
                                 .foregroundColor(styles.colors.error)
                                 .frame(minHeight: 60)
                         } else if let summary = summaryText, !summary.isEmpty {
                              VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
                                  Text(summary)
-                                     .font(styles.typography.bodyFont)
-                                     .foregroundColor(styles.colors.text)
+                                     .font(styles.typography.bodyFont) // Ensure bodyFont
+                                     .foregroundColor(styles.colors.text) // Ensure primary text color
                                      .lineLimit(3) // Allow more lines for summary
                              }
                               .padding(.bottom, styles.layout.spacingS)
@@ -116,13 +116,13 @@ struct WeekInReviewCard: View {
                         } else {
                              // Handles nil jsonString or empty decoded data
                             Text("Weekly review available after a week of journaling.")
-                                .font(styles.typography.bodyFont)
-                                .foregroundColor(styles.colors.text)
+                                .font(styles.typography.bodyFont) // Ensure bodyFont
+                                .foregroundColor(styles.colors.text) // Ensure primary text color
                                 .frame(minHeight: 60, alignment: .center)
                         }
                     } else {
                          Text("Unlock weekly reviews and pattern analysis with Premium.")
-                             .font(styles.typography.bodySmall)
+                             .font(styles.typography.bodySmall) // Keep small for locked state
                              .foregroundColor(styles.colors.textSecondary)
                              .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
                              .multilineTextAlignment(.center)
@@ -160,7 +160,7 @@ struct WeekInReviewCard: View {
              return
          }
 
-         isLoading = true
+         if !isLoading { isLoading = true } // Set loading only if not already loading
          decodeError = false
          print("[WeekInReviewCard] Decoding JSON...")
 
