@@ -52,6 +52,7 @@ struct JourneyInsightCard: View {
     private var narrativeSnippetDisplay: String {
         if isLoading { return "Loading..." }
         if loadError { return "Unavailable" }
+        // Ensure the default is also brief
         return narrativeResult?.storySnippet ?? "Your journey unfolds..."
     }
 
@@ -76,14 +77,8 @@ struct JourneyInsightCard: View {
         VStack(spacing: 0) {
             // --- Collapsed/Header View ---
             HStack {
-                 // VStack now includes Snippet, Title, Streak
-                VStack(alignment: .leading, spacing: styles.layout.spacingS) { // Increased spacing slightly
-                    // Narrative Snippet (NEW)
-                    Text(narrativeSnippetDisplay)
-                        .font(styles.typography.bodySmall) // Smaller font for snippet
-                        .foregroundColor(styles.colors.textSecondary) // Secondary text color
-                        .lineLimit(1) // Keep it brief
-
+                 // VStack now includes Title, Streak, Snippet
+                VStack(alignment: .leading, spacing: styles.layout.spacingS) { // Consistent spacing
                     Text("Journey")
                         .font(styles.typography.title3)
                         .foregroundColor(styles.colors.text) // Standard text color
@@ -92,6 +87,12 @@ struct JourneyInsightCard: View {
                         .font(styles.typography.bodyFont.weight(.bold)) // Make streak bold
                          // Conditional color: Accent in light, SecondaryAccent (yellow) in dark
                         .foregroundColor(colorScheme == .light ? styles.colors.accent : styles.colors.secondaryAccent)
+
+                    // Narrative Snippet (Moved below streak, accent color)
+                    Text(narrativeSnippetDisplay)
+                        .font(styles.typography.bodySmall) // Smaller font for snippet
+                        .foregroundColor(styles.colors.accent) // Use ACCENT color
+                        .lineLimit(1) // Ensure it's one line
                 }
                 Spacer()
                 Image(systemName: "chevron.down")
@@ -100,7 +101,8 @@ struct JourneyInsightCard: View {
                     .rotationEffect(Angle(degrees: isExpanded ? 180 : 0))
             }
             .padding(.horizontal, styles.layout.paddingL)
-            .padding(.vertical, styles.layout.paddingM) // Keep vertical padding standard for now
+             // Adjusted vertical padding slightly for balance
+            .padding(.vertical, styles.layout.paddingM + 2)
             .contentShape(Rectangle())
             .onTapGesture {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
