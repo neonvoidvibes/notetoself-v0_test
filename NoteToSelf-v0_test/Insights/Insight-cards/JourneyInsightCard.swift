@@ -48,13 +48,15 @@ struct JourneyInsightCard: View {
         return narrativeResult?.narrativeText ?? (appState.currentStreak > 0 ? "Analyzing your recent journey..." : "Your journey's story will appear here.")
     }
 
-    // Narrative Snippet for collapsed view - WITH TRUNCATION
+    // Narrative Snippet for collapsed view - WITH TRUNCATION (Reinstated)
     private var narrativeSnippetDisplay: String {
         if isLoading { return "Loading..." }
         if loadError { return "Unavailable" }
         let snippet = narrativeResult?.storySnippet ?? "Your journey unfolds..."
         let maxLength = 120 // Define max characters for snippet
         if snippet.count > maxLength {
+            // Log truncation if it happens
+            // print("[JourneyCard] Truncating snippet: '\(snippet)'")
             return String(snippet.prefix(maxLength)) + "..."
         } else {
             return snippet
@@ -246,14 +248,20 @@ struct JourneyInsightCard: View {
             do {
                  // Fetch latest insight synchronously (as DatabaseService method is currently sync)
                 if let (json, date) = try databaseService.loadLatestInsight(type: insightTypeIdentifier) { // Capture date
+                    // --- Log Raw JSON ---
+                    print("[JourneyCard] Raw JSON loaded: >>>\(json.prefix(200))<<<")
+                    // --- End Log ---
                     if let data = json.data(using: .utf8) {
                         let decoder = JSONDecoder()
                         let result = try decoder.decode(StreakNarrativeResult.self, from: data)
+                        // --- Log Decoded Snippet ---
+                        print("[JourneyCard] Decoded Snippet: >>>\(result.storySnippet ?? "NIL")<<<")
+                        // --- End Log ---
                         await MainActor.run {
                             narrativeResult = result
                             generatedDate = date // Store date
                             isLoading = false
-                             print("[JourneyCard] Narrative insight loaded and decoded.")
+                             // print("[JourneyCard] Narrative insight loaded and decoded.") // Redundant with log above
                         }
                     } else {
                         throw NSError(domain: "JourneyCard", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert JSON string to Data"])

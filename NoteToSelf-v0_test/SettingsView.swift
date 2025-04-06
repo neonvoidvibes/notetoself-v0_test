@@ -290,8 +290,6 @@ struct NotificationsSection: View {
     }
 }
 
-// REMOVED ModernToggleStyle - using standard SwitchToggleStyle with tint
-
 // MARK: - Privacy Section
 struct PrivacySection: View {
     // Access shared styles - Use @ObservedObject
@@ -436,24 +434,27 @@ struct DeveloperSection: View {
                         guard !isGenerating else { return } // Prevent multiple clicks
                         isGenerating = true
                         generationMessage = "Generating..."
+                        // Ensure the call is within a Task
                         Task {
-                            print("DEV: Force updating all insights...")
+                            print("DEV BUTTON: Force updating all insights...")
                             // Ensure LLMService.shared is accessible here
+                            // Call with forceGeneration: true
                             await triggerAllInsightGenerations(
                                 llmService: LLMService.shared,
                                 databaseService: databaseService,
-                                appState: appState
+                                appState: appState,
+                                forceGeneration: true // Pass true here
                             )
-                            print("DEV: Insight generation triggered.")
-                             // Provide feedback after a short delay
-                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                 generationMessage = "Insights update triggered."
-                                 // Reset after another delay
-                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                      isGenerating = false
-                                      generationMessage = ""
-                                 }
-                             }
+                            print("DEV BUTTON: Insight generation triggered.")
+                            // Update UI on main thread after awaiting generation
+                            await MainActor.run {
+                                generationMessage = "Insights update triggered."
+                                // Reset after another delay
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                     isGenerating = false
+                                     generationMessage = ""
+                                }
+                            }
                         }
                     } label: {
                         HStack {

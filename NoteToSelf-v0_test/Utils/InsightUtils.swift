@@ -9,15 +9,26 @@ extension Notification.Name {
 // Global function to trigger insight generation
 // Should be called from a background task after a JournalEntry is saved.
 // Needs AppState to pass to generators that require it (Streak, Reflection, Forecast)
-func triggerAllInsightGenerations(llmService: LLMService, databaseService: DatabaseService, appState: AppState) async {
-    print("➡️ [InsightUtils] triggerAllInsightGenerations called.") // Confirmation trigger called
+func triggerAllInsightGenerations(
+    llmService: LLMService,
+    databaseService: DatabaseService,
+    appState: AppState,
+    forceGeneration: Bool = false // Add force parameter
+) async {
+    // Use forceGeneration flag in log message
+    print("➡️ [InsightUtils] triggerAllInsightGenerations called. Forced: \(forceGeneration)")
 
-    // Check subscription status - only generate if premium
-    // Read from AppState directly
-    guard await appState.subscriptionTier == .premium else {
-        print("[InsightUtils] Skipping insight generation (Free tier).")
-        return
+    // Check subscription status - only bypass if forced
+    if !forceGeneration {
+        // Await here as appState is MainActor isolated
+        guard await appState.subscriptionTier == .premium else {
+            print("[InsightUtils] Skipping insight generation (Free tier and not forced).")
+            return
+        }
+    } else {
+        print("[InsightUtils] Bypassing subscription check due to forceGeneration flag.")
     }
+
 
     // Create generators, passing dependencies including AppState where needed
     let summaryGenerator = WeeklySummaryGenerator(llmService: llmService, databaseService: databaseService)
@@ -29,12 +40,18 @@ func triggerAllInsightGenerations(llmService: LLMService, databaseService: Datab
 
 
     // Run generators concurrently in detached tasks
-    // Use a TaskGroup for slightly better management if desired, but detached tasks are fine here.
-    print("[InsightUtils] Launching generation tasks...")
+    // Pass the forceGeneration flag down to each generator
+    print("[InsightUtils] Launching generation tasks (Forced: \(forceGeneration))...")
 
-    // --- Existing Generators ---
+    // Create a TaskGroup to manage concurrent generation
+    // Although detached tasks work, TaskGroup might offer better cancellation handling if needed later.
+    // For now, stick to detached tasks for simplicity but ensure flag is passed.
+
+    let force = forceGeneration // Capture the flag locally for the tasks
+
     print("[InsightUtils] Launching WeeklySummaryGenerator...")
     Task.detached(priority: .background) {
+        // TODO: Add forceGeneration param to other generators later if needed
         await summaryGenerator.generateAndStoreIfNeeded()
         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] WeeklySummary generation task finished.") }
     }
@@ -52,7 +69,8 @@ func triggerAllInsightGenerations(llmService: LLMService, databaseService: Datab
     // --- New Generators ---
     print("[InsightUtils] Launching StreakNarrativeGenerator...")
     Task.detached(priority: .background) {
-         await streakNarrativeGenerator.generateAndStoreIfNeeded()
+         // Pass the captured force flag here
+         await streakNarrativeGenerator.generateAndStoreIfNeeded(forceGeneration: force)
          await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Streak Narrative generation task finished.") }
     }
     print("[InsightUtils] Launching AIReflectionGenerator...")
@@ -67,5 +85,4 @@ func triggerAllInsightGenerations(llmService: LLMService, databaseService: Datab
      }
 
     print("✅ [InsightUtils] All background insight generation tasks launched.")
-    // Posting notification is handled within each task upon completion now.
 }
