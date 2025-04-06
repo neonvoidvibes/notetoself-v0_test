@@ -183,22 +183,21 @@ enum SubscriptionTier: String, Codable, Hashable { // Added Hashable
     var hasAdvancedInsights: Bool { self == .premium }
 }
 
-// MARK: - AI Insight Models (Phase 5 & Beyond)
+// MARK: - AI Insight Models
 
-// Structure for Weekly Summary Insight
+// Existing - Weekly Summary Insight
 struct WeeklySummaryResult: Codable, Equatable {
     var mainSummary: String = ""
     var keyThemes: [String] = []
     var moodTrend: String = ""
     var notableQuote: String = ""
 
-    // Example initializer for preview or default state
     static func empty() -> WeeklySummaryResult {
         WeeklySummaryResult(mainSummary: "No summary available yet.", keyThemes: [], moodTrend: "N/A", notableQuote: "")
     }
 }
 
-// Structure for Mood Trend Insight (Original Version)
+// Existing - Mood Trend Insight (Original Version)
 struct MoodTrendResult: Codable, Equatable {
     var overallTrend: String = "Stable" // e.g., "Improving", "Declining", "Stable", "Fluctuating"
     var dominantMood: String = "Neutral" // Name of the most frequent mood
@@ -210,22 +209,21 @@ struct MoodTrendResult: Codable, Equatable {
     }
 }
 
-// Structure for Recommendation Insight
+// Existing - Recommendation Insight
 struct RecommendationResult: Codable, Equatable {
     struct RecommendationItem: Codable, Equatable, Identifiable {
-        let id: UUID // Keep Identifiable, ensure it's decodable/encodable correctly
+        let id: UUID
         var title: String
         var description: String
-        var category: String // e.g., "Mindfulness", "Activity", "Social"
-        var rationale: String? // Why this recommendation is suggested (Changed to Optional)
+        var category: String
+        var rationale: String?
 
-        // Provide default init for Identifiable conformance if needed, or ensure JSON includes ID
-         init(id: UUID = UUID(), title: String, description: String, category: String, rationale: String?) { // Updated init
+         init(id: UUID = UUID(), title: String, description: String, category: String, rationale: String?) {
              self.id = id
              self.title = title
              self.description = description
              self.category = category
-             self.rationale = rationale // Assign optional value
+             self.rationale = rationale
          }
     }
 
@@ -236,22 +234,20 @@ struct RecommendationResult: Codable, Equatable {
     }
 }
 
-// Structure for Streak Narrative Insight
+// Existing - Streak Narrative Insight
 struct StreakNarrativeResult: Codable, Equatable {
-    var storySnippet: String = "Begin your story by journaling today." // For collapsed view
-    var narrativeText: String = "Your journaling journey is unfolding." // For expanded view detail
-    // Timeline markers (e.g., "Breakthrough", "Resilience") could be added here if AI generates them.
-    // var timelineMarkers: [TimelineMarker]? = [] // Example future addition
+    var storySnippet: String = "Begin your story by journaling today."
+    var narrativeText: String = "Your journaling journey is unfolding."
 
     static func empty() -> StreakNarrativeResult {
         StreakNarrativeResult(storySnippet: "Journal consistently to build your narrative.", narrativeText: "Your detailed storyline will appear here with more data.")
     }
 }
 
-// Structure for AI Reflection Insight
+// Existing - AI Reflection Insight
 struct AIReflectionResult: Codable, Equatable {
-    var insightMessage: String = "How are you feeling today?" // Main insight for collapsed/expanded
-    var reflectionPrompts: [String] = [ // Prompts for expanded view
+    var insightMessage: String = "How are you feeling today?"
+    var reflectionPrompts: [String] = [
         "What's been on your mind lately?",
         "What are you grateful for today?",
         "What challenge are you currently facing?"
@@ -263,28 +259,19 @@ struct AIReflectionResult: Codable, Equatable {
 }
 
 
-// Structure for Forecast Insight (Refined Structure)
-struct ForecastResult: Codable, Equatable { // Conformance should now be automatic
-    // Mood Prediction
-    var moodPredictionText: String? = "Stable mood expected." // Textual summary (e.g., "Upbeat", "Potential dip mid-week")
-    // Optional: Add structured data for charts if needed later
-    // var moodPredictionChartData: [ForecastDataPoint]?
+// Existing - Forecast Insight
+struct ForecastResult: Codable, Equatable {
+    var moodPredictionText: String? = "Stable mood expected."
+    var emergingTopics: [String]? = []
+    var consistencyForecast: String? = "Journaling consistency likely stable."
+    var actionPlanItems: [ActionPlanItem]? = []
 
-    // General Trends
-    var emergingTopics: [String]? = [] // e.g., ["Wellness", "Work/Life Balance"]
-    var consistencyForecast: String? = "Journaling consistency likely stable." // e.g., "Likely stable", "Potential decrease"
+    struct ActionPlanItem: Codable, Equatable, Identifiable {
+        let id: UUID
+        var title: String
+        var description: String
+        var rationale: String?
 
-    // Preemptive Action Plan
-    var actionPlanItems: [ActionPlanItem]? = [] // Renamed from preemptiveActionPlan for clarity
-
-    // Nested struct for action plan items
-    struct ActionPlanItem: Codable, Equatable, Identifiable { // Added Identifiable
-        let id: UUID // Added for Identifiable
-        var title: String // e.g., "Schedule Short Break"
-        var description: String // e.g., "Plan a 10-min break tomorrow afternoon to maintain energy."
-        var rationale: String? // Optional: Why this is suggested based on forecast
-
-        // Init for Identifiable conformance
         init(id: UUID = UUID(), title: String, description: String, rationale: String? = nil) {
             self.id = id
             self.title = title
@@ -293,72 +280,89 @@ struct ForecastResult: Codable, Equatable { // Conformance should now be automat
         }
     }
 
-    // Nested struct for potential future chart data
-    // struct ForecastDataPoint: Codable, Equatable { ... }
-
-    // Corrected empty() function - ensure it's inside the struct
     static func empty() -> ForecastResult {
-        // Directly initialize with nil values matching the optional properties
         ForecastResult(moodPredictionText: nil, emergingTopics: nil, consistencyForecast: nil, actionPlanItems: nil)
     }
 }
 
-// --- NEW Insight Structures (Feel, Think, Act, Learn) ---
+// MARK: - Feel, Think, Act, Learn Insights (Grouped Cards)
 
-// MARK: - Feel Insight (Card #3)
-struct MoodTrendPoint: Codable, Equatable, Identifiable { // Data for the 7-day chart
-    let id = UUID() // Conformance to Identifiable
+// Feel Insight (Card #3)
+struct MoodTrendPoint: Codable, Equatable, Identifiable {
+    let id = UUID()
     let date: Date
-    let moodValue: Double // Represent mood numerically (e.g., 1-5 scale)
-    let label: String // Peak/dip label
+    let moodValue: Double
+    let label: String
 }
 
 struct FeelInsightResult: Codable, Equatable {
-    var moodTrendChartData: [MoodTrendPoint]? // Data points for the chart
-    var moodSnapshotText: String? // Metaphor-rich summary text
-    var dominantMood: String? // ADDED: Dominant mood for collapsed view
+    var moodTrendChartData: [MoodTrendPoint]?
+    var moodSnapshotText: String?
+    var dominantMood: String?
+
     static func empty() -> FeelInsightResult { FeelInsightResult(moodTrendChartData: nil, moodSnapshotText: nil, dominantMood: nil) }
 }
 
-// MARK: - Think Insight (Card #4)
+// Think Insight (Card #4)
 struct ThinkInsightResult: Codable, Equatable {
-    var themeOverviewText: String? // Text extracting recurring topics/challenges
-    var valueReflectionText: String? // Text comparing stated values vs. choices
+    var themeOverviewText: String?
+    var valueReflectionText: String?
     static func empty() -> ThinkInsightResult { ThinkInsightResult(themeOverviewText: nil, valueReflectionText: nil) }
 }
 
-// MARK: - Act Insight (Card #5)
-// Reusing RecommendationItem from RecommendationResult
+// Act Insight (Card #5)
 struct ActInsightResult: Codable, Equatable {
-    var actionForecastText: String? // Text projecting opportunities/risks
-    var personalizedRecommendations: [RecommendationResult.RecommendationItem]? // Focus on high-leverage actions
+    var actionForecastText: String?
+    var personalizedRecommendations: [RecommendationResult.RecommendationItem]? // Reuse Item struct
     static func empty() -> ActInsightResult { ActInsightResult(actionForecastText: nil, personalizedRecommendations: nil) }
 }
 
-// MARK: - Learn Insight (Card #6)
+// Learn Insight (Card #6)
 struct LearnInsightResult: Codable, Equatable {
-    var takeawayText: String? // Most significant insight/shift
-    var beforeAfterText: String? // Comparison highlighting shift/outcome
-    var nextStepText: String? // Gentle suggestion for applying takeaway
+    var takeawayText: String?
+    var beforeAfterText: String?
+    var nextStepText: String?
     static func empty() -> LearnInsightResult { LearnInsightResult(takeawayText: nil, beforeAfterText: nil, nextStepText: nil) }
+}
+
+// --- NEW Daily & Weekly Insight Structures ---
+
+// MARK: - Daily Reflection Insight (Card #1)
+struct DailyReflectionResult: Codable, Equatable {
+    var snapshotText: String? // Brief commentary summarizing signals from latest entry
+    var reflectionPrompts: [String]? // 2 specific prompts based on the entry
+    static func empty() -> DailyReflectionResult { DailyReflectionResult(snapshotText: nil, reflectionPrompts: nil) }
+}
+
+// MARK: - Week in Review Insight (Card #2)
+struct WeekInReviewResult: Codable, Equatable {
+    var startDate: Date? // Start of the reviewed week (Sunday)
+    var endDate: Date? // End of the reviewed week (Saturday)
+    var summaryText: String? // One-paragraph overview of the week
+    var keyThemes: [String]? // Common ideas/topics for the week
+    var moodTrendChartData: [MoodTrendPoint]? // 7-day chart data (same structure as Feel)
+    var recurringThemesText: String? // Summary of Think themes/values for the week
+    var actionHighlightsText: String? // Summary of Act highlights for the week
+    var takeawayText: String? // Most meaningful Learn takeaway for the week
+
+    static func empty() -> WeekInReviewResult {
+        WeekInReviewResult(startDate: nil, endDate: nil, summaryText: nil, keyThemes: nil, moodTrendChartData: nil, recurringThemesText: nil, actionHighlightsText: nil, takeawayText: nil)
+    }
 }
 
 
 // MARK: - Insight Card Helper Structs
 
-// Defined here for global access
 struct CalendarDay: Hashable {
     let day: Int
     let date: Date
 }
 
-// Defined here for global access - ENSURE THIS IS THE ONLY DEFINITION
-struct MoodDataPoint: Identifiable, Codable, Equatable { // Added Codable, Equatable
-    var id: UUID // Changed to var to allow decoding
+struct MoodDataPoint: Identifiable, Codable, Equatable {
+    var id: UUID
     let date: Date
     let value: Double
 
-    // Explicit init to handle default UUID generation if needed when decoding/creating
      init(id: UUID = UUID(), date: Date, value: Double) {
          self.id = id
          self.date = date
@@ -367,19 +371,16 @@ struct MoodDataPoint: Identifiable, Codable, Equatable { // Added Codable, Equat
 }
 
 
-// MARK: - App State (Keep if used globally)
-@MainActor // Ensure @Published vars are updated on main thread
+// MARK: - App State
+@MainActor
 class AppState: ObservableObject {
-    @Published var journalEntries: [JournalEntry] = [] // Now uses the struct defined above
-    @Published var journalExpandedEntryId: UUID? = nil // State for expanded journal entry ID
-    @Published var subscriptionTier: SubscriptionTier = .free // Uses enum defined above
-    @Published var hasSeenOnboarding: Bool = false // Keep for onboarding logic
+    @Published var journalEntries: [JournalEntry] = []
+    @Published var journalExpandedEntryId: UUID? = nil
+    @Published var subscriptionTier: SubscriptionTier = .free
+    @Published var hasSeenOnboarding: Bool = false
 
-    // Keep canUseReflections logic if needed elsewhere, but ChatManager enforces limit
     let freeReflectionsLimit = 3
-    var dailyReflectionsUsed: Int { // Computed from ChatManager's persisted count
-        // This assumes ChatManager's @AppStorage is the source of truth
-        // We might need a more direct way if ChatManager isn't always loaded
+    var dailyReflectionsUsed: Int {
         @AppStorage("chatDailyFreeMessageCount") var count: Int = 0
         return count
     }
@@ -387,49 +388,29 @@ class AppState: ObservableObject {
         return subscriptionTier == .premium || dailyReflectionsUsed < freeReflectionsLimit
     }
 
-    // --- Current Streak Calculation (Updated Logic) ---
     var currentStreak: Int {
         guard !journalEntries.isEmpty else { return 0 }
-
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
-
-        // Find the date of the most recent entry (ensure it's non-optional)
         guard let mostRecentEntryDate = journalEntries.map({ $0.date }).max() else { return 0 }
         let startOfMostRecentEntryDay = calendar.startOfDay(for: mostRecentEntryDate)
-
-        // Check if the most recent entry is from today or yesterday
-        guard calendar.isDate(startOfMostRecentEntryDay, inSameDayAs: today) || calendar.isDate(startOfMostRecentEntryDay, inSameDayAs: yesterday) else {
-            // If the latest entry is older than yesterday, streak is broken
-            return 0
-        }
-
-        // If the latest entry is valid (today or yesterday), start counting from that day
+        guard calendar.isDate(startOfMostRecentEntryDay, inSameDayAs: today) || calendar.isDate(startOfMostRecentEntryDay, inSameDayAs: yesterday) else { return 0 }
         var streak = 0
         var checkDate = startOfMostRecentEntryDay
-
-        // Efficient check using a Set of entry dates (start of day)
         let entryDatesSet = Set(journalEntries.map { calendar.startOfDay(for: $0.date) })
-
         while entryDatesSet.contains(checkDate) {
             streak += 1
-            // Check for potential infinite loop - stop if checkDate goes too far back (e.g., > 1000 days)
             guard streak < 1000 else { break }
-            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break } // Safely unwrap optional
-            checkDate = previousDay // Move to previous day
+            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
+            checkDate = previousDay
         }
-
         return streak
     }
-    // --- End Current Streak Calculation ---
 
-    // Helper to check if an entry exists for today
     var hasEntryToday: Bool {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         return journalEntries.contains { calendar.isDate($0.date, inSameDayAs: today) }
     }
-
-    // REMOVED triggerAllInsightGenerations function - moved to InsightUtils.swift
 }

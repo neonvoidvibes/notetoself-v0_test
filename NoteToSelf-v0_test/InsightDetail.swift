@@ -4,20 +4,24 @@ import SwiftUI
 
 // Define the NEW set of Insight Types based on the updated card list
 enum InsightType: String, Codable, Equatable, Hashable { // Added Equatable & Hashable for potential use
+    // --- NEW Top Cards ---
+    case dailyReflection // #1
+    case weekInReview    // #2
+
+    // --- Existing Cards ---
     case journeyNarrative // Renamed from streakNarrative
-    case weeklySummary
-    case aiReflection // Replaces chat
-    case moodAnalysis // Replaces moodTrends
-    case recommendations
-    case forecast // Existing new card
+    case weeklySummary    // Original weekly summary (may be deprecated by weekInReview)
+    case aiReflection     // Original AI Reflection (may be deprecated by dailyReflection)
+    case moodAnalysis     // Original Mood Analysis (may be deprecated by Feel)
+    case recommendations  // Original Recommendations (may be deprecated by Act)
+    case forecast         // Original Forecast (may be deprecated by Act)
 
-    // NEW CASES for Card Groups
-    case feelInsights // #3
-    case thinkInsights // #4
-    case actInsights // #5
-    case learnInsights // #6
+    // --- NEW Grouped Cards ---
+    case feelInsights     // #3
+    case thinkInsights    // #4
+    case actInsights      // #5
+    case learnInsights    // #6
 
-    // Obsolete types removed as they are no longer displayed insight cards
 }
 
 struct InsightDetail: Identifiable {
@@ -95,33 +99,39 @@ struct InsightDetailView: View {
               // Content based on NEW insight type
               Group {
                   switch insight.type {
-                  case .journeyNarrative: // Renamed case
-                       let narrativeData = insight.data as? StreakNarrativeResult // Still uses StreakNarrativeResult struct
-                       let genDate = Date() // Placeholder - Need to pass actual date if available
-                       // Use renamed detail view component
+                  // --- NEW TOP CARDS ---
+                  case .dailyReflection:
+                      if let result = insight.data as? DailyReflectionResult {
+                           DailyReflectionDetailContent(result: result, generatedDate: Date()) // Placeholder date
+                      } else { Text("Error: Invalid Daily Reflection data") }
+                  case .weekInReview:
+                      if let result = insight.data as? WeekInReviewResult {
+                           WeekInReviewDetailContent(result: result, generatedDate: Date()) // Placeholder date
+                      } else { Text("Error: Invalid Week in Review data") }
+
+                  // --- EXISTING CARDS ---
+                  case .journeyNarrative:
+                       let narrativeData = insight.data as? StreakNarrativeResult
+                       let genDate = Date()
                        JourneyNarrativeDetailContent(
                            streak: appState.currentStreak,
                            entries: appState.journalEntries,
                            narrativeResult: narrativeData,
-                           generatedDate: genDate // Pass date
+                           generatedDate: genDate
                        )
-
-                  case .weeklySummary:
+                  case .weeklySummary: // Keep original for now
                       if let result = insight.data as? WeeklySummaryResult {
                            let period = calculateSummaryPeriod(from: result)
-                           let genDate = Date() // Placeholder
+                           let genDate = Date()
                            WeeklySummaryDetailContent(
                                summaryResult: result,
                                summaryPeriod: period,
                                generatedDate: genDate
                            )
-                      } else {
-                          Text("Error: Invalid weekly summary data")
-                      }
-
-                  case .aiReflection:
+                      } else { Text("Error: Invalid weekly summary data") }
+                  case .aiReflection: // Keep original for now
                        if let result = insight.data as? AIReflectionResult {
-                           let genDate = Date() // Placeholder
+                           let genDate = Date()
                             AIReflectionDetailContent(
                                 insightMessage: result.insightMessage,
                                 reflectionPrompts: result.reflectionPrompts,
@@ -134,17 +144,15 @@ struct InsightDetailView: View {
                                 generatedDate: nil
                            )
                        }
-
-                  case .moodAnalysis:
-                      let genDate = Date() // Placeholder
+                  case .moodAnalysis: // Keep original for now
+                      let genDate = Date()
                       MoodAnalysisDetailContent(
                           entries: appState.journalEntries,
                           generatedDate: genDate
                       )
-
-                  case .recommendations:
+                  case .recommendations: // Keep original for now
                       if let result = insight.data as? RecommendationResult {
-                           let genDate = Date() // Placeholder
+                           let genDate = Date()
                           RecommendationsDetailContent(
                               recommendations: result.recommendations,
                               generatedDate: genDate
@@ -152,31 +160,27 @@ struct InsightDetailView: View {
                       } else {
                            RecommendationsDetailContent(recommendations: [], generatedDate: nil)
                       }
-
-                  case .forecast:
+                  case .forecast: // Keep original for now
                        let forecastData = insight.data as? ForecastResult
-                       let genDate = Date() // Placeholder
+                       let genDate = Date()
                        ForecastDetailContent(
                            forecastResult: forecastData,
                            generatedDate: genDate
                        )
 
-                   // --- NEW CASES ---
+                   // --- NEW GROUPED CARDS ---
                    case .feelInsights:
                         if let result = insight.data as? FeelInsightResult {
                              FeelDetailContent(result: result, generatedDate: Date()) // Placeholder date
                         } else { Text("Error: Invalid Feel Insight data") }
-
                    case .thinkInsights:
                         if let result = insight.data as? ThinkInsightResult {
                             ThinkDetailContent(result: result, generatedDate: Date()) // Placeholder date
                         } else { Text("Error: Invalid Think Insight data") }
-
                    case .actInsights:
                         if let result = insight.data as? ActInsightResult {
                             ActDetailContent(result: result, generatedDate: Date()) // Placeholder date
                         } else { Text("Error: Invalid Act Insight data") }
-
                    case .learnInsights:
                        if let result = insight.data as? LearnInsightResult {
                            LearnDetailContent(result: result, generatedDate: Date()) // Placeholder date
@@ -200,6 +204,7 @@ struct InsightDetailView: View {
       }
   }
 
+     // Keep this helper if original WeeklySummary card remains
      private func calculateSummaryPeriod(from result: WeeklySummaryResult) -> String {
          let calendar = Calendar.current
          let endDate = Date()
@@ -211,9 +216,8 @@ struct InsightDetailView: View {
 }
 
 #Preview {
-     let mockForecastData: ForecastResult? = nil
-     // Use the renamed enum case for preview
-     let mockInsight = InsightDetail(type: .journeyNarrative, title: "Journey Preview", data: StreakNarrativeResult.empty())
+     // Use a valid preview type, e.g., feelInsights
+     let mockInsight = InsightDetail(type: .feelInsights, title: "Feel Preview", data: FeelInsightResult.empty())
 
      return InsightDetailView(insight: mockInsight)
          .environmentObject(AppState())
