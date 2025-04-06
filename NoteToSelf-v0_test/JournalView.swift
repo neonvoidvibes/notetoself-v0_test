@@ -262,33 +262,13 @@ struct JournalView: View {
                  }
                  .frame(height: 0)
 
-                 // Inspiring prompt
-                 if !appState.journalEntries.isEmpty && !filteredEntries.isEmpty && !showingFilterPanel {
-                     VStack(alignment: .center, spacing: styles.layout.spacingL) {
-                         Text("My Journal")
-                             .font(styles.typography.headingFont)
-                             .foregroundColor(styles.colors.text)
-                             .padding(.bottom, 4)
-                         Text("Capture your thoughts, reflect on your journey.")
-                             .font(styles.typography.bodyLarge)
-                             .foregroundColor(styles.colors.accent)
-                             .multilineTextAlignment(.center)
-                     }
-                     .padding(.horizontal, styles.layout.paddingXL)
-                     .padding(.vertical, styles.layout.spacingXL * 1.5)
-                     .padding(.top, 80)
-                     .padding(.bottom, 40)
-                     .frame(maxWidth: .infinity)
-                     .background(
-                         LinearGradient(
-                             gradient: Gradient(colors: [styles.colors.appBackground, styles.colors.appBackground.opacity(0.9)]),
-                             startPoint: .top,
-                             endPoint: .bottom
-                         )
-                     )
-                 }
+                 // --- Journey Card ---
+                 JourneyInsightCard()
+                     .padding(.horizontal, styles.layout.paddingL) // Standard horizontal padding
+                     .padding(.top, styles.layout.spacingXL)       // Ample top padding
+                     .padding(.bottom, styles.layout.spacingL)     // Ample bottom padding
 
-                 // Entry List / Empty State
+                 // --- Entry List / Empty State ---
                  if filteredEntries.isEmpty {
                     emptyState
                  } else {
