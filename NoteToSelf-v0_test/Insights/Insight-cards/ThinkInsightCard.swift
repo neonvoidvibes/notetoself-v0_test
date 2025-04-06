@@ -22,11 +22,11 @@ struct ThinkInsightCard: View {
             cardId: cardId,
             content: {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
-                    // Header
+                    // Header - Headline uses standard text color now
                     HStack {
-                        Text("Think") // Card Title
+                        Text("Think") // Card Title - Standard Color
                             .font(styles.typography.title3)
-                            .foregroundColor(styles.colors.accent) // Use accent color for headline
+                            .foregroundColor(styles.colors.text) // Use standard text color
                         Spacer()
                         Image(systemName: "brain.head.profile") // Example icon
                             .foregroundColor(styles.colors.accent)
@@ -48,41 +48,42 @@ struct ThinkInsightCard: View {
                                  .foregroundColor(styles.colors.error)
                                  .frame(minHeight: 60)
                          } else if let result = insightResult {
-                             if let overview = result.themeOverviewText, !overview.isEmpty {
-                                 Text(overview)
+                            // Theme Overview Snippet with Label
+                             VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
+                                 Text("THEMES")
+                                     .font(styles.typography.caption.weight(.bold))
+                                     .foregroundColor(styles.colors.textSecondary)
+                                 Text(result.themeOverviewText ?? "Analysis pending...")
                                      .font(styles.typography.bodySmall)
                                      .foregroundColor(styles.colors.textSecondary)
                                      .lineLimit(2)
-                             } else {
-                                 Text("Theme Overview: Analysis pending.")
-                                      .font(styles.typography.bodySmall)
+                             }
+
+                             // Value Reflection Snippet with Label
+                             VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
+                                 Text("VALUES")
+                                      .font(styles.typography.caption.weight(.bold))
                                       .foregroundColor(styles.colors.textSecondary)
-                             }
-                             if let reflection = result.valueReflectionText, !reflection.isEmpty {
-                                 Text(reflection)
+                                 Text(result.valueReflectionText ?? "Analysis pending...")
                                      .font(styles.typography.bodySmall)
                                      .foregroundColor(styles.colors.textSecondary)
                                      .lineLimit(2)
-                                     .padding(.top, styles.layout.spacingS) // Add spacing between snippets
-                             } else {
-                                  Text("Value Reflection: Analysis pending.")
-                                       .font(styles.typography.bodySmall)
-                                       .foregroundColor(styles.colors.textSecondary)
-                                       .padding(.top, styles.layout.spacingS)
                              }
+                             .padding(.top, styles.layout.spacingS) // Add space between snippets
+
                          } else {
                               Text("Strategic insights available with regular journaling.")
                                   .font(styles.typography.bodySmall)
                                   .foregroundColor(styles.colors.textSecondary)
-                                  .frame(minHeight: 60)
+                                  .frame(minHeight: 60, alignment: .center)
                          }
-                     } else {
-                          Text("Unlock strategic thinking insights with Premium.")
-                              .font(styles.typography.bodySmall)
-                              .foregroundColor(styles.colors.textSecondary)
-                              .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
-                              .multilineTextAlignment(.center)
-                     }
+                    } else {
+                         Text("Unlock strategic thinking insights with Premium.")
+                             .font(styles.typography.bodySmall)
+                             .foregroundColor(styles.colors.textSecondary)
+                             .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
+                             .multilineTextAlignment(.center)
+                    }
                 }
                 .padding(.bottom, styles.layout.paddingL)
             }
@@ -113,20 +114,17 @@ struct ThinkInsightCard: View {
         print("[ThinkInsightCard] Loading insight...")
         Task {
             do {
-                if let (json, date) = try await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                     decodeJSON(json: json, date: date)
+                // Changed to use try? to handle nil case gracefully without throwing
+                if let (json, date) = try? await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                     await decodeJSON(json: json, date: date) // Pass both json and date
                 } else {
                     await MainActor.run {
                         insightResult = nil; generatedDate = nil; isLoading = false
                         print("[ThinkInsightCard] No stored insight found.")
                     }
                 }
-            } catch {
-                 await MainActor.run {
-                     print("‼️ [ThinkInsightCard] Failed to load insight: \(error)")
-                     insightResult = nil; generatedDate = nil; loadError = true; isLoading = false
-                 }
             }
+             // Removed catch block as try? handles errors by returning nil
         }
     }
 
@@ -143,7 +141,8 @@ struct ThinkInsightCard: View {
             } catch {
                 print("‼️ [ThinkInsightCard] Failed to decode ThinkInsightResult: \(error). JSON: \(json)")
                 self.insightResult = nil
-                self.generatedDate = nil
+                self.generatedDate = date // Keep date?
+                // self.generatedDate = nil // Set date to nil on error
                 self.loadError = true
             }
         } else {

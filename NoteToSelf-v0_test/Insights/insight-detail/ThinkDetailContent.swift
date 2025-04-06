@@ -11,14 +11,16 @@ struct ThinkDetailContent: View {
 
                 // --- Theme Overview Section ---
                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                    // Use accent color for sub-header
                     Text("Theme Overview")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
+                        .foregroundColor(styles.colors.accent) // Accent color for sub-header
 
                     Text(result.themeOverviewText ?? "Recurring themes will be identified here with more entries.")
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineSpacing(styles.layout.spacingXS) // Add line spacing
                 }
                 .padding()
                 .background(styles.colors.secondaryBackground.opacity(0.5))
@@ -26,14 +28,16 @@ struct ThinkDetailContent: View {
 
                 // --- Value Reflection Section ---
                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                     // Use accent color for sub-header
                     Text("Value Reflection")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
+                        .foregroundColor(styles.colors.accent) // Accent color for sub-header
 
                     Text(result.valueReflectionText ?? "Alignment between values and actions will be analyzed here.")
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineSpacing(styles.layout.spacingXS) // Add line spacing
                 }
                 .padding()
                 .background(styles.colors.secondaryBackground.opacity(0.5))

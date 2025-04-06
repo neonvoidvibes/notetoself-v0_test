@@ -22,11 +22,11 @@ struct LearnInsightCard: View {
             cardId: cardId,
             content: {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
-                    // Header
+                    // Header - Headline uses standard text color now
                     HStack {
-                        Text("Learn") // Card Title
+                        Text("Learn") // Card Title - Standard Color
                             .font(styles.typography.title3)
-                            .foregroundColor(styles.colors.accent) // Use accent color for headline
+                            .foregroundColor(styles.colors.text) // Use standard text color
                         Spacer()
                         Image(systemName: "graduationcap.circle.fill") // Example icon
                             .foregroundColor(styles.colors.accent)
@@ -48,36 +48,22 @@ struct LearnInsightCard: View {
                                  .foregroundColor(styles.colors.error)
                                  .frame(minHeight: 60)
                          } else if let result = insightResult {
-                            // Show takeaway snippet
-                             if let takeaway = result.takeawayText, !takeaway.isEmpty {
-                                 Text(takeaway)
-                                     .font(styles.typography.bodySmall)
+                            // Show takeaway snippet prominently
+                             VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
+                                 Text("KEY TAKEAWAY")
+                                     .font(styles.typography.caption.weight(.bold))
                                      .foregroundColor(styles.colors.textSecondary)
-                                     .lineLimit(2)
-                             } else {
-                                 Text("Key Takeaway: Analysis pending.")
-                                     .font(styles.typography.bodySmall)
+                                 Text(result.takeawayText ?? "Analysis pending...")
+                                     .font(styles.typography.bodySmall.weight(.medium)) // Slightly bolder
                                      .foregroundColor(styles.colors.textSecondary)
+                                     .lineLimit(3) // Allow more lines for takeaway
                              }
-                             // Show next step snippet
-                              if let nextStep = result.nextStepText, !nextStep.isEmpty {
-                                  Text("Next Step: \(nextStep)")
-                                      .font(styles.typography.bodySmall)
-                                      .foregroundColor(styles.colors.textSecondary)
-                                      .lineLimit(1)
-                                      .padding(.top, styles.layout.spacingS)
-                              } else {
-                                   Text("Next Step: Analysis pending.")
-                                       .font(styles.typography.bodySmall)
-                                       .foregroundColor(styles.colors.textSecondary)
-                                       .padding(.top, styles.layout.spacingS)
-                              }
 
                          } else {
                               Text("Learning insights available with regular journaling.")
                                   .font(styles.typography.bodySmall)
                                   .foregroundColor(styles.colors.textSecondary)
-                                  .frame(minHeight: 60)
+                                  .frame(minHeight: 60, alignment: .center)
                          }
                     } else {
                          Text("Unlock learning summaries and growth insights with Premium.")
@@ -116,20 +102,17 @@ struct LearnInsightCard: View {
         print("[LearnInsightCard] Loading insight...")
         Task {
             do {
-                if let (json, date) = try await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                     decodeJSON(json: json, date: date)
+                // Changed to use try? to handle nil case gracefully without throwing
+                if let (json, date) = try? await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                     await decodeJSON(json: json, date: date) // Pass both json and date
                 } else {
                     await MainActor.run {
                         insightResult = nil; generatedDate = nil; isLoading = false
                         print("[LearnInsightCard] No stored insight found.")
                     }
                 }
-            } catch {
-                 await MainActor.run {
-                     print("‼️ [LearnInsightCard] Failed to load insight: \(error)")
-                     insightResult = nil; generatedDate = nil; loadError = true; isLoading = false
-                 }
             }
+            // Removed catch block as try? handles errors by returning nil
         }
     }
 
@@ -146,7 +129,8 @@ struct LearnInsightCard: View {
             } catch {
                 print("‼️ [LearnInsightCard] Failed to decode LearnInsightResult: \(error). JSON: \(json)")
                 self.insightResult = nil
-                self.generatedDate = nil
+                self.generatedDate = date // Keep date?
+                // self.generatedDate = nil // Set date to nil on error
                 self.loadError = true
             }
         } else {

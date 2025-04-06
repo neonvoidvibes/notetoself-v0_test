@@ -11,14 +11,16 @@ struct LearnDetailContent: View {
 
                 // --- Takeaway Section ---
                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                     // Use accent color for sub-header
                     Text("Key Takeaway")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
+                        .foregroundColor(styles.colors.accent) // Accent color for sub-header
 
                     Text(result.takeawayText ?? "Significant insights from the week will be highlighted here.")
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineSpacing(styles.layout.spacingXS) // Add line spacing
                 }
                 .padding()
                 .background(styles.colors.secondaryBackground.opacity(0.5))
@@ -26,14 +28,16 @@ struct LearnDetailContent: View {
 
                 // --- Before/After Section ---
                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                     // Use accent color for sub-header
                     Text("Before / After")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
+                        .foregroundColor(styles.colors.accent) // Accent color for sub-header
 
                     Text(result.beforeAfterText ?? "Comparisons highlighting growth or shifts will appear here.")
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineSpacing(styles.layout.spacingXS) // Add line spacing
                 }
                 .padding()
                 .background(styles.colors.secondaryBackground.opacity(0.5))
@@ -41,14 +45,16 @@ struct LearnDetailContent: View {
 
                 // --- Next Step Section ---
                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                     // Use accent color for sub-header
                     Text("Suggested Next Step")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
+                        .foregroundColor(styles.colors.accent) // Accent color for sub-header
 
                     Text(result.nextStepText ?? "Suggestions for applying learnings will be offered here.")
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineSpacing(styles.layout.spacingXS) // Add line spacing
                 }
                 .padding()
                 .background(styles.colors.secondaryBackground.opacity(0.5))

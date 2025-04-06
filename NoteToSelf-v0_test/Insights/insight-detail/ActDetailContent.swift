@@ -11,14 +11,16 @@ struct ActDetailContent: View {
 
                 // --- Action Forecast Section ---
                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                     // Use accent color for sub-header
                     Text("Action Forecast")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
+                        .foregroundColor(styles.colors.accent) // Accent color for sub-header
 
                     Text(result.actionForecastText ?? "Forecast based on recent actions will appear here.")
                         .font(styles.typography.bodyFont)
                         .foregroundColor(styles.colors.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .lineSpacing(styles.layout.spacingXS) // Add line spacing
                 }
                 .padding()
                 .background(styles.colors.secondaryBackground.opacity(0.5))
@@ -26,26 +28,29 @@ struct ActDetailContent: View {
 
                 // --- Personalized Recommendations Section ---
                 VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                     // Use accent color for sub-header
                     Text("Personalized Recommendations")
                         .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
+                        .foregroundColor(styles.colors.accent) // Accent color for sub-header
 
                     if let recommendations = result.personalizedRecommendations, !recommendations.isEmpty {
-                        ForEach(recommendations) { recommendation in
-                            // Use the existing card component for display consistency
-                            RecommendationDetailCard(recommendation: recommendation)
-                                // Override background to fit within this detail view's style
-                                .background(Color.clear)
-                                .padding(.bottom, styles.layout.spacingS) // Space between rec cards
-                        }
+                        // Use VStack instead of ForEach directly to apply background/padding to the section
+                         VStack(spacing: styles.layout.spacingL) { // Spacing between recommendation cards
+                             ForEach(recommendations) { recommendation in
+                                 RecommendationDetailCard(recommendation: recommendation)
+                                     // No additional background/padding needed here, handled by the card itself
+                             }
+                         }
                     } else {
                         Text("No specific recommendations available currently. Keep journaling!")
                             .font(styles.typography.bodyFont)
                             .foregroundColor(styles.colors.textSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                             .padding(.vertical) // Add padding if no recommendations
                     }
                 }
-                 .padding() // Add padding around the whole section
+                 // Apply styling to the entire recommendations section
+                 .padding()
                  .background(styles.colors.secondaryBackground.opacity(0.5))
                  .cornerRadius(styles.layout.radiusM)
 
