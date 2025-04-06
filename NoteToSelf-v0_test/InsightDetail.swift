@@ -10,7 +10,7 @@ enum InsightType: String, Codable, Equatable, Hashable { // Added Equatable & Ha
 
     // --- Remaining Old/Base Cards ---
     case journeyNarrative // Renamed from streakNarrative
-    case weeklySummary    // Original weekly summary (keep for now)
+    // REMOVED: weeklySummary
 
     // --- NEW Grouped Cards ---
     case feelInsights     // #3
@@ -18,7 +18,6 @@ enum InsightType: String, Codable, Equatable, Hashable { // Added Equatable & Ha
     case actInsights      // #5
     case learnInsights    // #6
 
-    // REMOVED: aiReflection, moodAnalysis, recommendations, forecast
 }
 
 struct InsightDetail: Identifiable {
@@ -116,16 +115,7 @@ struct InsightDetailView: View {
                            narrativeResult: narrativeData,
                            generatedDate: genDate
                        )
-                  case .weeklySummary: // Keep original for now
-                      if let result = insight.data as? WeeklySummaryResult {
-                           let period = calculateSummaryPeriod(from: result)
-                           let genDate = Date()
-                           WeeklySummaryDetailContent(
-                               summaryResult: result,
-                               summaryPeriod: period,
-                               generatedDate: genDate
-                           )
-                      } else { Text("Error: Invalid weekly summary data") }
+                   // REMOVED: weeklySummary case
 
                    // --- NEW GROUPED CARDS ---
                    case .feelInsights:
@@ -145,7 +135,6 @@ struct InsightDetailView: View {
                            LearnDetailContent(result: result, generatedDate: Date()) // Placeholder date
                        } else { Text("Error: Invalid Learn Insight data") }
 
-                    // REMOVED cases for: aiReflection, moodAnalysis, recommendations, forecast
                    }
               }
           }
@@ -165,15 +154,7 @@ struct InsightDetailView: View {
       }
   }
 
-     // Keep this helper if original WeeklySummary card remains
-     private func calculateSummaryPeriod(from result: WeeklySummaryResult) -> String {
-         let calendar = Calendar.current
-         let endDate = Date()
-         let startDate = calendar.date(byAdding: .day, value: -6, to: endDate)!
-         let dateFormatter = DateFormatter()
-         dateFormatter.dateFormat = "MMM d"
-         return "\(dateFormatter.string(from: startDate)) - \(dateFormatter.string(from: endDate))"
-     }
+     // Removed: calculateSummaryPeriod (no longer needed)
 }
 
 #Preview {

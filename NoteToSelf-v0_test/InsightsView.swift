@@ -29,11 +29,9 @@ struct InsightsView: View {
     @State private var learnInsightsDate: Date? = nil
 
     // Remaining Old Cards (Keep for now)
-    @State private var summaryJson: String? = nil // Original Weekly Summary
-    @State private var summaryDate: Date? = nil
+    // Removed: summaryJson, summaryDate
     @State private var journeyJson: String? = nil // For Journey Narrative
     @State private var journeyDate: Date? = nil
-    // Removed: reflectionJson, reflectionDate
 
 
     @State private var isLoadingInsights: Bool = false
@@ -50,20 +48,7 @@ struct InsightsView: View {
          return Calendar.current.dateComponents([.hour], from: generatedDate, to: Date()).hour ?? 25 < 24
      }
 
-    // Calculate if original Weekly Summary is fresh (Sun 3AM logic) - Keep if original card stays
-    private var isWeeklySummaryFresh: Bool {
-        guard let generatedDate = summaryDate else { return false }
-        let calendar = Calendar.current
-        let now = Date()
-        let generatedWeekday = calendar.component(.weekday, from: generatedDate) // 1 = Sunday
-        var components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: generatedDate)
-        components.weekday = 1; components.hour = 3; components.minute = 0; components.second = 0
-        guard let sunday3AM = calendar.date(from: components) else { return false }
-        let endOfWindow = calendar.date(byAdding: .hour, value: 45, to: sunday3AM)!
-        let generatedAfterStart = generatedDate >= sunday3AM
-        let isWithinWindow = now < endOfWindow
-        return generatedAfterStart && isWithinWindow
-    }
+    // Removed: isWeeklySummaryFresh (related to deleted card)
 
     private var hasAnyEntries: Bool {
         !appState.journalEntries.isEmpty
@@ -242,22 +227,7 @@ struct InsightsView: View {
                  .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.6), value: cardsAppeared)
 
 
-            // --- REMAINING OLD CARDS ---
-            // Weekly Summary Card (Original) - Uses passed data
-            WeeklySummaryInsightCard(
-                jsonString: summaryJson,
-                generatedDate: summaryDate,
-                isFresh: isWeeklySummaryFresh,
-                subscriptionTier: appState.subscriptionTier,
-                scrollProxy: scrollProxy,
-                cardId: "summaryCard"
-            )
-            .id("summaryCard")
-            .padding(.horizontal, styles.layout.paddingXL)
-            .opacity(cardsAppeared ? 1 : 0)
-            .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.7), value: cardsAppeared)
-
-            // REMOVED Old AI Reflection Card
+            // --- REMOVED OLD WeeklySummaryInsightCard ---
 
             // Bottom padding
             Spacer().frame(height: styles.layout.paddingXL + 80) // Keep bottom padding
@@ -311,10 +281,10 @@ struct InsightsView: View {
 
     // Helper to check if all insight states are nil
     private func areAllInsightsNil() -> Bool {
-        return dailyReflectionJson == nil && // Check NEW
-               weekInReviewJson == nil && // Check NEW
-               summaryJson == nil &&
-               // reflectionJson == nil && // Removed old reflection check
+        return dailyReflectionJson == nil &&
+               weekInReviewJson == nil &&
+               // summaryJson == nil && // Removed old weekly summary check
+               // reflectionJson == nil && // Already removed
                feelInsightsJson == nil &&
                thinkInsightsJson == nil &&
                actInsightsJson == nil &&
@@ -341,8 +311,7 @@ struct InsightsView: View {
              async let learnFetch = try? self.databaseService.loadLatestInsight(type: "learnInsights")
 
              // Load Remaining Old insights
-             async let summaryFetch = try? self.databaseService.loadLatestInsight(type: "weeklySummary")
-             // async let reflectionFetch = try? self.databaseService.loadLatestInsight(type: "aiReflection") // Removed old reflection
+             // async let summaryFetch = try? self.databaseService.loadLatestInsight(type: "weeklySummary") // Removed old weekly summary
              async let journeyFetch = try? self.databaseService.loadLatestInsight(type: "journeyNarrative")
 
              // Await results
@@ -352,8 +321,7 @@ struct InsightsView: View {
              let thinkResult = await thinkFetch
              let actResult = await actFetch
              let learnResult = await learnFetch
-             let summaryResult = await summaryFetch
-             // let reflectionResult = await reflectionFetch // Removed old reflection
+             // let summaryResult = await summaryFetch // Removed old weekly summary
              let journeyResult = await journeyFetch
 
 
@@ -369,8 +337,7 @@ struct InsightsView: View {
                  if let (json, date) = learnResult { self.learnInsightsJson = json; self.learnInsightsDate = date } else { self.learnInsightsJson = nil; self.learnInsightsDate = nil }
 
                  // Update state for Remaining Old Cards
-                 if let (json, date) = summaryResult { self.summaryJson = json; self.summaryDate = date } else { self.summaryJson = nil; self.summaryDate = nil }
-                 // self.reflectionJson = nil; self.reflectionDate = nil // Explicitly nil removed reflection state
+                 // self.summaryJson = nil; self.summaryDate = nil // Explicitly nil removed summary state
                  if let (json, date) = journeyResult { self.journeyJson = json; self.journeyDate = date } else { self.journeyJson = nil; self.journeyDate = nil }
 
 

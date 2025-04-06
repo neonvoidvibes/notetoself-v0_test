@@ -40,9 +40,8 @@ func triggerAllInsightGenerations(
     let actGenerator = ActInsightGenerator(llmService: llmService, databaseService: databaseService)
     let learnGenerator = LearnInsightGenerator(llmService: llmService, databaseService: databaseService)
     // Remaining Old Cards
-    let summaryGenerator = WeeklySummaryGenerator(llmService: llmService, databaseService: databaseService) // Keep original weekly?
+    // REMOVED: summaryGenerator
     let journeyNarrativeGenerator = JourneyNarrativeGenerator(llmService: llmService, databaseService: databaseService, appState: appState)
-    // REMOVED: aiReflectionGenerator, moodTrendGenerator, recommendationGenerator, forecastGenerator
 
 
     // Run generators concurrently in detached tasks
@@ -95,12 +94,7 @@ func triggerAllInsightGenerations(
          await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Journey Narrative generation task finished.") }
     }
 
-    // Keep original Weekly Summary for now?
-    print("[InsightUtils] Launching WeeklySummaryGenerator...")
-    Task.detached(priority: .background) {
-        await summaryGenerator.generateAndStoreIfNeeded()
-        await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] WeeklySummary generation task finished.") }
-    }
+    // REMOVED: Old WeeklySummaryGenerator launch
 
 
     print("✅ [InsightUtils] All background insight generation tasks launched.")
