@@ -2,7 +2,12 @@ import SwiftUI
 
 struct DailyReflectionInsightCard: View {
     @EnvironmentObject var appState: AppState
-    @EnvironmentObject var databaseService: DatabaseService
+    // Remove databaseService dependency if loading is handled by parent
+    // @EnvironmentObject var databaseService: DatabaseService
+
+    // Accept data from parent
+    let jsonString: String?
+    let generatedDate: Date? // Keep generatedDate if needed for display
 
     var scrollProxy: ScrollViewProxy? = nil
     var cardId: String? = nil
@@ -10,11 +15,14 @@ struct DailyReflectionInsightCard: View {
     @State private var showingFullScreen = false
     @ObservedObject private var styles = UIStyles.shared
 
+    // State for DECODED result, loading/error status during decode
     @State private var insightResult: DailyReflectionResult? = nil
-    @State private var generatedDate: Date? = nil
-    @State private var isLoading: Bool = false
-    @State private var loadError: Bool = false
-    private let insightTypeIdentifier = "dailyReflection"
+    @State private var isLoading: Bool = false // Used briefly during decode
+    @State private var decodeError: Bool = false
+
+    // Computed properties remain the same, relying on insightResult state
+    private var snapshotText: String? { insightResult?.snapshotText }
+    private var reflectionPrompts: [String]? { insightResult?.reflectionPrompts }
 
     var body: some View {
         styles.expandableCard(
@@ -44,16 +52,16 @@ struct DailyReflectionInsightCard: View {
 
                     // Content Snippet (Daily Snapshot)
                     if appState.subscriptionTier == .premium {
-                        if isLoading {
+                        if isLoading { // Loading means decoding in progress
                             ProgressView().tint(styles.colors.accent)
                                 .frame(maxWidth: .infinity, alignment: .center)
                                 .frame(minHeight: 60)
-                        } else if loadError {
+                        } else if decodeError { // Use decodeError state
                             Text("Could not load daily reflection.")
                                 .font(styles.typography.bodySmall)
                                 .foregroundColor(styles.colors.error)
                                 .frame(minHeight: 60)
-                        } else if let result = insightResult, let snapshot = result.snapshotText, !snapshot.isEmpty {
+                        } else if let snapshot = snapshotText, !snapshot.isEmpty {
                              VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
                                  Text(snapshot)
                                      .font(styles.typography.bodyFont)
@@ -69,6 +77,7 @@ struct DailyReflectionInsightCard: View {
                                  .frame(maxWidth: .infinity, alignment: .leading)
 
                         } else {
+                             // Handles case where jsonString was nil or decoding resulted in empty data
                             Text("Today's reflection available after journaling.")
                                 .font(styles.typography.bodyFont)
                                 .foregroundColor(styles.colors.text)
@@ -87,16 +96,16 @@ struct DailyReflectionInsightCard: View {
         )
         .contentShape(Rectangle())
         .onTapGesture { if appState.subscriptionTier == .premium { showingFullScreen = true } }
-        .onAppear(perform: loadInsight)
-        .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
-            print("[DailyReflectionCard] Received insightsDidUpdate notification.")
-            loadInsight()
-        }
+        .onAppear { decodeJSON() } // Decode initial JSON on appear
+        .onChange(of: jsonString) { // Re-decode if JSON string changes
+             oldValue, newValue in
+             decodeJSON()
+         }
         .fullScreenCover(isPresented: $showingFullScreen) {
              InsightFullScreenView(title: "Daily Reflection") {
                   DailyReflectionDetailContent(
-                      result: insightResult ?? .empty(),
-                      generatedDate: generatedDate
+                      result: insightResult ?? .empty(), // Use decoded result
+                      generatedDate: generatedDate // Pass date if needed
                   )
               }
               .environmentObject(styles)
@@ -104,57 +113,47 @@ struct DailyReflectionInsightCard: View {
         }
     }
 
-     private func loadInsight() {
-        guard !isLoading else { return }
-        isLoading = true
-        loadError = false
-        print("[DailyReflectionCard] Loading insight...")
-        Task {
-            do {
-                if let (json, date) = try? await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                     await decodeJSON(json: json, date: date)
-                } else {
-                    await MainActor.run {
-                        insightResult = nil; generatedDate = nil; isLoading = false
-                        print("[DailyReflectionCard] No stored insight found.")
-                    }
-                }
-            }
-        }
-    }
-
+    // Decode function now uses the passed-in jsonString
     @MainActor
-    private func decodeJSON(json: String, date: Date) {
+    private func decodeJSON() {
+        guard let json = jsonString, !json.isEmpty else {
+            insightResult = nil
+            decodeError = false // Not an error if no JSON provided
+            isLoading = false
+            return
+        }
+
+        isLoading = true
+        decodeError = false
         print("[DailyReflectionCard] Decoding JSON...")
+
         if let data = json.data(using: .utf8) {
             do {
                 let result = try JSONDecoder().decode(DailyReflectionResult.self, from: data)
                 self.insightResult = result
-                self.generatedDate = date
-                self.loadError = false
+                self.decodeError = false
                 print("[DailyReflectionCard] Decode success.")
             } catch {
                 print("‼️ [DailyReflectionCard] Failed to decode DailyReflectionResult: \(error). JSON: \(json)")
                 self.insightResult = nil
-                self.generatedDate = nil
-                self.loadError = true
+                self.decodeError = true
             }
         } else {
             print("‼️ [DailyReflectionCard] Failed to convert JSON string to Data.")
             self.insightResult = nil
-            self.generatedDate = nil
-            self.loadError = true
+            self.decodeError = true
         }
         self.isLoading = false
     }
 }
 
 #Preview {
+    // Pass nil for preview as InsightsView now handles loading
     ScrollView {
-        DailyReflectionInsightCard()
+        DailyReflectionInsightCard(jsonString: nil, generatedDate: nil)
             .padding()
             .environmentObject(AppState())
-            .environmentObject(DatabaseService())
+            .environmentObject(DatabaseService()) // Keep DB if detail view needs it
             .environmentObject(UIStyles.shared)
             .environmentObject(ThemeManager.shared)
     }

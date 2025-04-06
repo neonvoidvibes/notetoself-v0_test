@@ -2,7 +2,12 @@ import SwiftUI
 
 struct WeekInReviewCard: View {
     @EnvironmentObject var appState: AppState
-    @EnvironmentObject var databaseService: DatabaseService
+    // Remove databaseService dependency if loading is handled by parent
+    // @EnvironmentObject var databaseService: DatabaseService
+
+    // Accept data from parent
+    let jsonString: String?
+    let generatedDate: Date?
 
     var scrollProxy: ScrollViewProxy? = nil
     var cardId: String? = nil
@@ -10,11 +15,10 @@ struct WeekInReviewCard: View {
     @State private var showingFullScreen = false
     @ObservedObject private var styles = UIStyles.shared
 
+    // State for DECODED result, loading/error status during decode
     @State private var insightResult: WeekInReviewResult? = nil
-    @State private var generatedDate: Date? = nil
-    @State private var isLoading: Bool = false
-    @State private var loadError: Bool = false
-    private let insightTypeIdentifier = "weekInReview"
+    @State private var isLoading: Bool = false // Used briefly during decode
+    @State private var decodeError: Bool = false
 
     // Calculate if the insight is fresh (generated within last 24 hours)
     private var isFresh: Bool {
@@ -27,19 +31,27 @@ struct WeekInReviewCard: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d" // e.g., "Oct 20"
 
-        guard let start = insightResult?.startDate, let end = insightResult?.endDate else {
-            // Attempt to calculate based on today if no data loaded
-            let calendar = Calendar.current
-            guard let today = calendar.date(bySettingHour: 0, minute: 0, second: 0, of: Date()),
-                  let sunday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)),
-                  let startOfWeek = calendar.date(byAdding: .day, value: -7, to: sunday), // Previous Sunday
-                  let endOfWeek = calendar.date(byAdding: .day, value: 6, to: startOfWeek) else { // Previous Saturday
-                return "Previous Week"
-            }
-            return "\(formatter.string(from: startOfWeek)) - \(formatter.string(from: endOfWeek))"
+        // Use decoded result's dates if available
+        if let start = insightResult?.startDate, let end = insightResult?.endDate {
+             return "\(formatter.string(from: start)) - \(formatter.string(from: end))"
+        } else if let genDate = generatedDate {
+            // Fallback: Calculate based on generation date if result dates are nil
+             let calendar = Calendar.current
+             guard let sunday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: genDate)),
+                   let startOfWeek = calendar.date(byAdding: .day, value: -7, to: sunday), // Previous Sunday relative to generation date
+                   let endOfWeek = calendar.date(byAdding: .day, value: 6, to: startOfWeek) else {
+                 return "Previous Week"
+             }
+             return "\(formatter.string(from: startOfWeek)) - \(formatter.string(from: endOfWeek))"
+        } else {
+            // Ultimate fallback
+            return "Previous Week"
         }
-        return "\(formatter.string(from: start)) - \(formatter.string(from: end))"
     }
+
+    // Computed property for snapshot text remains the same
+    private var summaryText: String? { insightResult?.summaryText }
+
 
     var body: some View {
         styles.expandableCard(
@@ -77,16 +89,16 @@ struct WeekInReviewCard: View {
 
                     // Content Snippet (Summary Text)
                     if appState.subscriptionTier == .premium {
-                        if isLoading {
+                        if isLoading { // Decoding in progress
                             ProgressView().tint(styles.colors.accent)
                                 .frame(maxWidth: .infinity, alignment: .center)
                                 .frame(minHeight: 60)
-                        } else if loadError {
+                        } else if decodeError {
                             Text("Could not load weekly review.")
                                 .font(styles.typography.bodySmall)
                                 .foregroundColor(styles.colors.error)
                                 .frame(minHeight: 60)
-                        } else if let result = insightResult, let summary = result.summaryText, !summary.isEmpty {
+                        } else if let summary = summaryText, !summary.isEmpty {
                              VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
                                  Text(summary)
                                      .font(styles.typography.bodyFont)
@@ -102,6 +114,7 @@ struct WeekInReviewCard: View {
                                  .frame(maxWidth: .infinity, alignment: .leading)
 
                         } else {
+                             // Handles nil jsonString or empty decoded data
                             Text("Weekly review available after a week of journaling.")
                                 .font(styles.typography.bodyFont)
                                 .foregroundColor(styles.colors.text)
@@ -120,16 +133,16 @@ struct WeekInReviewCard: View {
         )
         .contentShape(Rectangle())
         .onTapGesture { if appState.subscriptionTier == .premium { showingFullScreen = true } }
-        .onAppear(perform: loadInsight)
-        .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
-            print("[WeekInReviewCard] Received insightsDidUpdate notification.")
-            loadInsight()
+        .onAppear { decodeJSON() } // Decode initial JSON
+        .onChange(of: jsonString) { // Re-decode if JSON string changes
+            oldValue, newValue in
+            decodeJSON()
         }
         .fullScreenCover(isPresented: $showingFullScreen) {
              InsightFullScreenView(title: "Week in Review") {
                   WeekInReviewDetailContent(
-                      result: insightResult ?? .empty(),
-                      generatedDate: generatedDate
+                      result: insightResult ?? .empty(), // Use decoded result
+                      generatedDate: generatedDate // Pass date
                   )
               }
               .environmentObject(styles)
@@ -137,59 +150,49 @@ struct WeekInReviewCard: View {
         }
     }
 
-     private func loadInsight() {
-        guard !isLoading else { return }
-        isLoading = true
-        loadError = false
-        print("[WeekInReviewCard] Loading insight...")
-        Task {
-            do {
-                if let (json, date) = try? await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                     await decodeJSON(json: json, date: date)
-                } else {
-                    await MainActor.run {
-                        insightResult = nil; generatedDate = nil; isLoading = false
-                        print("[WeekInReviewCard] No stored insight found.")
-                    }
-                }
-            }
-        }
-    }
+    // Decode function using the passed-in jsonString
+     @MainActor
+     private func decodeJSON() {
+         guard let json = jsonString, !json.isEmpty else {
+             insightResult = nil
+             decodeError = false // Not an error if no JSON provided
+             isLoading = false
+             return
+         }
 
-    @MainActor
-    private func decodeJSON(json: String, date: Date) {
-        print("[WeekInReviewCard] Decoding JSON...")
-        if let data = json.data(using: .utf8) {
-            do {
-                 let decoder = JSONDecoder()
-                 decoder.dateDecodingStrategy = .iso8601 // Match encoding strategy
-                let result = try decoder.decode(WeekInReviewResult.self, from: data)
-                self.insightResult = result
-                self.generatedDate = date
-                self.loadError = false
-                print("[WeekInReviewCard] Decode success.")
-            } catch {
-                print("‼️ [WeekInReviewCard] Failed to decode WeekInReviewResult: \(error). JSON: \(json)")
-                self.insightResult = nil
-                self.generatedDate = nil
-                self.loadError = true
-            }
-        } else {
-            print("‼️ [WeekInReviewCard] Failed to convert JSON string to Data.")
-            self.insightResult = nil
-            self.generatedDate = nil
-            self.loadError = true
-        }
-        self.isLoading = false
-    }
+         isLoading = true
+         decodeError = false
+         print("[WeekInReviewCard] Decoding JSON...")
+
+         if let data = json.data(using: .utf8) {
+             do {
+                  let decoder = JSONDecoder()
+                  decoder.dateDecodingStrategy = .iso8601 // Match encoding strategy
+                 let result = try decoder.decode(WeekInReviewResult.self, from: data)
+                 self.insightResult = result
+                 self.decodeError = false
+                 print("[WeekInReviewCard] Decode success.")
+             } catch {
+                 print("‼️ [WeekInReviewCard] Failed to decode WeekInReviewResult: \(error). JSON: \(json)")
+                 self.insightResult = nil
+                 self.decodeError = true
+             }
+         } else {
+             print("‼️ [WeekInReviewCard] Failed to convert JSON string to Data.")
+             self.insightResult = nil
+             self.decodeError = true
+         }
+         self.isLoading = false
+     }
 }
 
 #Preview {
+     // Pass nil for preview as InsightsView now handles loading
     ScrollView {
-        WeekInReviewCard()
+        WeekInReviewCard(jsonString: nil, generatedDate: nil)
             .padding()
             .environmentObject(AppState())
-            .environmentObject(DatabaseService())
+            .environmentObject(DatabaseService()) // Keep DB if detail view needs it
             .environmentObject(UIStyles.shared)
             .environmentObject(ThemeManager.shared)
     }

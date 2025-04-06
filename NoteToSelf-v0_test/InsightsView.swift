@@ -12,30 +12,27 @@ struct InsightsView: View {
     @Binding var lastScrollPosition: CGFloat
     @Binding var tabBarVisible: Bool
 
-    // State for stored raw insight data (Existing)
-    @State private var summaryJson: String? = nil
+    // State for stored raw insight data (Existing + New Top Cards)
+    @State private var dailyReflectionJson: String? = nil // NEW #1
+    @State private var dailyReflectionDate: Date? = nil // NEW #1
+    @State private var weekInReviewJson: String? = nil // NEW #2
+    @State private var weekInReviewDate: Date? = nil // NEW #2
+
+    @State private var summaryJson: String? = nil // Original Weekly Summary
     @State private var summaryDate: Date? = nil
-    @State private var trendJson: String? = nil // Original Mood Trend (keep?)
-    @State private var trendDate: Date? = nil
-    @State private var recommendationsJson: String? = nil
-    @State private var recommendationsDate: Date? = nil
-    @State private var forecastJson: String? = nil
-    @State private var forecastDate: Date? = nil
-    @State private var reflectionJson: String? = nil // For AI Reflection
+    @State private var reflectionJson: String? = nil // Original AI Reflection
     @State private var reflectionDate: Date? = nil
     @State private var journeyJson: String? = nil // For Journey Narrative
     @State private var journeyDate: Date? = nil
-
     // State for new grouped insights
-    @State private var feelInsightsJson: String? = nil
+    @State private var feelInsightsJson: String? = nil // #3
     @State private var feelInsightsDate: Date? = nil
-    @State private var thinkInsightsJson: String? = nil
+    @State private var thinkInsightsJson: String? = nil // #4
     @State private var thinkInsightsDate: Date? = nil
-    @State private var actInsightsJson: String? = nil
+    @State private var actInsightsJson: String? = nil // #5
     @State private var actInsightsDate: Date? = nil
-    @State private var learnInsightsJson: String? = nil
+    @State private var learnInsightsJson: String? = nil // #6
     @State private var learnInsightsDate: Date? = nil
-
 
     @State private var isLoadingInsights: Bool = false
 
@@ -45,24 +42,23 @@ struct InsightsView: View {
 
     @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
-    // Calculate if Weekly Summary is fresh
+    // Calculate if Week in Review is fresh (< 24 hours)
+     private var isWeekInReviewFresh: Bool {
+         guard let generatedDate = weekInReviewDate else { return false }
+         return Calendar.current.dateComponents([.hour], from: generatedDate, to: Date()).hour ?? 25 < 24
+     }
+
+    // Calculate if original Weekly Summary is fresh (Sun 3AM logic) - Keep if original card stays
     private var isWeeklySummaryFresh: Bool {
         guard let generatedDate = summaryDate else { return false }
         let calendar = Calendar.current
         let now = Date()
         let generatedWeekday = calendar.component(.weekday, from: generatedDate) // 1 = Sunday
-        // Calculate Sunday 3 AM of the week the summary was generated
         var components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: generatedDate)
-        components.weekday = 1 // Sunday
-        components.hour = 3
-        components.minute = 0
-        components.second = 0
+        components.weekday = 1; components.hour = 3; components.minute = 0; components.second = 0
         guard let sunday3AM = calendar.date(from: components) else { return false }
-        // Calculate the end of the 45-hour window (Monday midnight)
         let endOfWindow = calendar.date(byAdding: .hour, value: 45, to: sunday3AM)!
-        // Check 1: Was it generated on/after the window started?
         let generatedAfterStart = generatedDate >= sunday3AM
-        // Check 2: Is the current time still within the 45-hour window?
         let isWithinWindow = now < endOfWindow
         return generatedAfterStart && isWithinWindow
     }
@@ -171,11 +167,81 @@ struct InsightsView: View {
              }.padding(.horizontal, styles.layout.paddingXL).padding(.top, 8)
              #endif
 
-            // --- Fixed Card Order ---
+            // --- NEW TOP CARDS ---
 
-            // REMOVED: StreakNarrativeInsightCard (Now integrated into JournalView)
+             // 1. AI Insights (Daily Reflection) Card (#1)
+              DailyReflectionInsightCard(
+                   jsonString: dailyReflectionJson, // Pass loaded data
+                   generatedDate: dailyReflectionDate, // Pass loaded date
+                   scrollProxy: scrollProxy,
+                   cardId: "dailyReflectionCard"
+               )
+               .id("dailyReflectionCard")
+               .padding(.horizontal, styles.layout.paddingXL)
+               .opacity(cardsAppeared ? 1 : 0)
+               .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
 
-            // 1. Weekly Summary Card (Highlighted if fresh & premium)
+             // 2. Week in Review Card (#2)
+              WeekInReviewCard(
+                   jsonString: weekInReviewJson, // Pass loaded data
+                   generatedDate: weekInReviewDate, // Pass loaded date
+                   scrollProxy: scrollProxy,
+                   cardId: "weekInReviewCard"
+               )
+               .id("weekInReviewCard")
+               .padding(.horizontal, styles.layout.paddingXL)
+               .opacity(cardsAppeared ? 1 : 0)
+               .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
+
+
+            // --- NEW GROUPED CARDS ---
+
+             // 3. Feel Card (#3)
+              FeelInsightCard( // Keep internal loading for grouped cards for now
+                  scrollProxy: scrollProxy,
+                  cardId: "feelCard"
+              )
+              .id("feelCard")
+              .padding(.horizontal, styles.layout.paddingXL)
+              .opacity(cardsAppeared ? 1 : 0)
+              .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
+
+
+              // 4. Think Card (#4)
+               ThinkInsightCard( // Keep internal loading
+                   scrollProxy: scrollProxy,
+                   cardId: "thinkCard"
+               )
+               .id("thinkCard")
+               .padding(.horizontal, styles.layout.paddingXL)
+               .opacity(cardsAppeared ? 1 : 0)
+               .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
+
+
+               // 5. Act Card (#5)
+                ActInsightCard( // Keep internal loading
+                    scrollProxy: scrollProxy,
+                    cardId: "actCard"
+                )
+                .id("actCard")
+                .padding(.horizontal, styles.layout.paddingXL)
+                .opacity(cardsAppeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared)
+
+
+                // 6. Learn Card (#6)
+                 LearnInsightCard( // Keep internal loading
+                     scrollProxy: scrollProxy,
+                     cardId: "learnCard"
+                 )
+                 .id("learnCard")
+                 .padding(.horizontal, styles.layout.paddingXL)
+                 .opacity(cardsAppeared ? 1 : 0)
+                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.6), value: cardsAppeared)
+
+
+            // --- OLD CARDS (If kept) ---
+            // Weekly Summary Card (Original) - Uses passed data
             WeeklySummaryInsightCard(
                 jsonString: summaryJson,
                 generatedDate: summaryDate,
@@ -187,112 +253,17 @@ struct InsightsView: View {
             .id("summaryCard")
             .padding(.horizontal, styles.layout.paddingXL)
             .opacity(cardsAppeared ? 1 : 0)
-            .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared) // Adjust delay
+            .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.7), value: cardsAppeared)
 
-
-            // 2. AI Reflection Card
-             AIReflectionInsightCard( // Keep existing AI Reflection
+            // AI Reflection Card (Original) - Uses internal loading
+             AIReflectionInsightCard(
                  scrollProxy: scrollProxy,
                  cardId: "aiReflectionCard"
              )
              .id("aiReflectionCard")
              .padding(.horizontal, styles.layout.paddingXL)
              .opacity(cardsAppeared ? 1 : 0)
-             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared) // Adjust delay
-
-             // --- NEW CARDS START HERE ---
-
-             // 3. Feel Card (#3)
-              FeelInsightCard(
-                  scrollProxy: scrollProxy,
-                  cardId: "feelCard"
-              )
-              .id("feelCard")
-              .padding(.horizontal, styles.layout.paddingXL)
-              .opacity(cardsAppeared ? 1 : 0)
-              .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
-
-
-              // 4. Think Card (#4)
-               ThinkInsightCard(
-                   scrollProxy: scrollProxy,
-                   cardId: "thinkCard"
-               )
-               .id("thinkCard")
-               .padding(.horizontal, styles.layout.paddingXL)
-               .opacity(cardsAppeared ? 1 : 0)
-               .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
-
-
-               // 5. Act Card (#5)
-                ActInsightCard(
-                    scrollProxy: scrollProxy,
-                    cardId: "actCard"
-                )
-                .id("actCard")
-                .padding(.horizontal, styles.layout.paddingXL)
-                .opacity(cardsAppeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared)
-
-
-                // 6. Learn Card (#6)
-                 LearnInsightCard(
-                     scrollProxy: scrollProxy,
-                     cardId: "learnCard"
-                 )
-                 .id("learnCard")
-                 .padding(.horizontal, styles.layout.paddingXL)
-                 .opacity(cardsAppeared ? 1 : 0)
-                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.6), value: cardsAppeared)
-
-
-            // --- END NEW CARDS ---
-
-            // --- OLD CARDS (Keep or Remove based on final decision) ---
-            // Note: MoodAnalysisInsightCard is redundant if Feel card covers mood.
-            // RecommendationsInsightCard is redundant if Act card covers recommendations.
-            // ForecastInsightCard is redundant if Act card covers forecast.
-            // Keeping them commented out for now.
-
-            /*
-            // Mood Analysis Card (Mood Trends & Patterns)
-             MoodAnalysisInsightCard(
-                 jsonString: trendJson, // Still uses the old trendJson
-                 generatedDate: trendDate,
-                 subscriptionTier: appState.subscriptionTier,
-                 scrollProxy: scrollProxy,
-                 cardId: "moodAnalysisCard"
-             )
-             .id("moodAnalysisCard")
-             .padding(.horizontal, styles.layout.paddingXL)
-             .opacity(cardsAppeared ? 1 : 0)
-             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
-
-            // Recommendations Card
-             RecommendationsInsightCard(
-                 jsonString: recommendationsJson,
-                 generatedDate: recommendationsDate,
-                 subscriptionTier: appState.subscriptionTier,
-                 scrollProxy: scrollProxy,
-                 cardId: "recsCard"
-             )
-             .id("recsCard")
-             .padding(.horizontal, styles.layout.paddingXL)
-             .opacity(cardsAppeared ? 1 : 0)
-             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
-
-            // Predictive Mood & General Forecast Card
-             ForecastInsightCard(
-                 subscriptionTier: appState.subscriptionTier,
-                 scrollProxy: scrollProxy,
-                 cardId: "forecastCard"
-             )
-             .id("forecastCard")
-             .padding(.horizontal, styles.layout.paddingXL)
-             .opacity(cardsAppeared ? 1 : 0)
-             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared)
-            */
-             // --- End Old Cards ---
+             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.8), value: cardsAppeared)
 
             // Bottom padding
             Spacer().frame(height: styles.layout.paddingXL + 80) // Keep bottom padding
@@ -346,67 +317,67 @@ struct InsightsView: View {
 
     // Helper to check if all insight states are nil
     private func areAllInsightsNil() -> Bool {
-        return summaryJson == nil &&
-               reflectionJson == nil && // Check reflection
-               feelInsightsJson == nil && // Check new insights
+        return dailyReflectionJson == nil && // Check NEW
+               weekInReviewJson == nil && // Check NEW
+               summaryJson == nil &&
+               reflectionJson == nil &&
+               feelInsightsJson == nil &&
                thinkInsightsJson == nil &&
                actInsightsJson == nil &&
-               learnInsightsJson == nil
-               // Comment out checks for old/redundant insights if they are removed
-               // trendJson == nil &&
-               // recommendationsJson == nil &&
-               // forecastJson == nil &&
-               // journeyJson == nil
+               learnInsightsJson == nil &&
+               journeyJson == nil
     }
 
 
     // --- Data Loading ---
     private func loadStoredInsights() {
-         if areAllInsightsNil() { // Use helper function
+         if areAllInsightsNil() {
              isLoadingInsights = true
          }
          print("[InsightsView] Loading stored insights from DB...")
          Task {
-             // Load existing insights
-             async let summaryFetch = try? self.databaseService.loadLatestInsight(type: "weeklySummary")
-             async let reflectionFetch = try? self.databaseService.loadLatestInsight(type: "aiReflection") // Load AI Reflection
-             // async let trendFetch = try? self.databaseService.loadLatestInsight(type: "moodTrend") // Keep commented if redundant
-             // async let recommendationsFetch = try? self.databaseService.loadLatestInsight(type: "recommendation") // Keep commented if redundant
-             // async let forecastFetch = try? self.databaseService.loadLatestInsight(type: "forecast") // Keep commented if redundant
-             // async let journeyFetch = try? self.databaseService.loadLatestInsight(type: "journeyNarrative") // Load Journey Narrative
+             // Load NEW Top Cards insights
+             async let dailyReflectionFetch = try? self.databaseService.loadLatestInsight(type: "dailyReflection")
+             async let weekInReviewFetch = try? self.databaseService.loadLatestInsight(type: "weekInReview")
 
-             // Load NEW insights
+             // Load Grouped Cards insights
              async let feelFetch = try? self.databaseService.loadLatestInsight(type: "feelInsights")
              async let thinkFetch = try? self.databaseService.loadLatestInsight(type: "thinkInsights")
              async let actFetch = try? self.databaseService.loadLatestInsight(type: "actInsights")
              async let learnFetch = try? self.databaseService.loadLatestInsight(type: "learnInsights")
 
-             // Await results and update state
-             let summaryResult = await summaryFetch
-             let reflectionResult = await reflectionFetch
-             // let trendResult = await trendFetch
-             // let recommendationsResult = await recommendationsFetch
-             // let forecastResult = await forecastFetch
-             // let journeyResult = await journeyFetch
+             // Load Existing/Old insights
+             async let summaryFetch = try? self.databaseService.loadLatestInsight(type: "weeklySummary")
+             async let reflectionFetch = try? self.databaseService.loadLatestInsight(type: "aiReflection")
+             async let journeyFetch = try? self.databaseService.loadLatestInsight(type: "journeyNarrative")
+
+             // Await results
+             let dailyReflectionResult = await dailyReflectionFetch
+             let weekInReviewResult = await weekInReviewFetch
              let feelResult = await feelFetch
              let thinkResult = await thinkFetch
              let actResult = await actFetch
              let learnResult = await learnFetch
+             let summaryResult = await summaryFetch
+             let reflectionResult = await reflectionFetch
+             let journeyResult = await journeyFetch
 
 
              await MainActor.run {
-                 if let (json, date) = summaryResult { self.summaryJson = json; self.summaryDate = date } else { self.summaryJson = nil; self.summaryDate = nil }
-                 if let (json, date) = reflectionResult { self.reflectionJson = json; self.reflectionDate = date } else { self.reflectionJson = nil; self.reflectionDate = nil }
-                 // if let (json, date) = trendResult { self.trendJson = json; self.trendDate = date } else { self.trendJson = nil; self.trendDate = nil }
-                 // if let (json, date) = recommendationsResult { self.recommendationsJson = json; self.recommendationsDate = date } else { self.recommendationsJson = nil; self.recommendationsDate = nil }
-                 // if let (json, date) = forecastResult { self.forecastJson = json; self.forecastDate = date } else { self.forecastJson = nil; self.forecastDate = nil }
-                 // if let (json, date) = journeyResult { self.journeyJson = json; self.journeyDate = date } else { self.journeyJson = nil; self.journeyDate = nil }
+                 // Update state for NEW Top Cards
+                 if let (json, date) = dailyReflectionResult { self.dailyReflectionJson = json; self.dailyReflectionDate = date } else { self.dailyReflectionJson = nil; self.dailyReflectionDate = nil }
+                 if let (json, date) = weekInReviewResult { self.weekInReviewJson = json; self.weekInReviewDate = date } else { self.weekInReviewJson = nil; self.weekInReviewDate = nil }
 
-                 // Update state for NEW insights
+                 // Update state for NEW Grouped Cards
                  if let (json, date) = feelResult { self.feelInsightsJson = json; self.feelInsightsDate = date } else { self.feelInsightsJson = nil; self.feelInsightsDate = nil }
                  if let (json, date) = thinkResult { self.thinkInsightsJson = json; self.thinkInsightsDate = date } else { self.thinkInsightsJson = nil; self.thinkInsightsDate = nil }
                  if let (json, date) = actResult { self.actInsightsJson = json; self.actInsightsDate = date } else { self.actInsightsJson = nil; self.actInsightsDate = nil }
                  if let (json, date) = learnResult { self.learnInsightsJson = json; self.learnInsightsDate = date } else { self.learnInsightsJson = nil; self.learnInsightsDate = nil }
+
+                 // Update state for Existing/Old Cards
+                 if let (json, date) = summaryResult { self.summaryJson = json; self.summaryDate = date } else { self.summaryJson = nil; self.summaryDate = nil }
+                 if let (json, date) = reflectionResult { self.reflectionJson = json; self.reflectionDate = date } else { self.reflectionJson = nil; self.reflectionDate = nil }
+                 if let (json, date) = journeyResult { self.journeyJson = json; self.journeyDate = date } else { self.journeyJson = nil; self.journeyDate = nil }
 
 
                  isLoadingInsights = false
