@@ -55,7 +55,7 @@ struct JourneyInsightCard: View {
 
         if streak > 0 {
             if hasTodayEntry {
-                return "\(streak) Day Streak! 🔥" // Or "Day \(streak) of your streak!"
+                return "\(streak) Day Streak!" // Or "Day \(streak) of your streak!"
             } else {
                 return "Keep your \(streak)-day streak going!" // Encourage today's entry
             }
