@@ -25,7 +25,7 @@ actor StreakNarrativeGenerator {
         // Only run checks if not forcing generation
         if !forceGeneration {
             do {
-                 // Remove await - loadLatestInsight is currently sync
+                 // Fetch latest insight synchronously
                 if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
                     lastGenerationDate = latest.generatedDate
                     let daysSinceLast = calendar.dateComponents([.day], from: latest.generatedDate, to: Date()).day ?? regenerationThresholdDays + 1
@@ -44,7 +44,7 @@ actor StreakNarrativeGenerator {
 
             // Only guard if not forcing
             guard shouldGenerate else {
-                print("[StreakNarrativeGenerator] Condition checks failed (Normal). Exiting.")
+                print("[StreakNarrativeGenerator] Condition checks failed (Normal - Time Threshold). Exiting.")
                 return
             }
 
@@ -81,30 +81,10 @@ actor StreakNarrativeGenerator {
         // Add await here for safety when accessing MainActor property from background actor
         entries = await Array(appState.journalEntries.prefix(7))
 
-
-        // Only check for new entries if not forcing and last generation date exists
-        if !forceGeneration, let lastGenDate = lastGenerationDate {
-             let hasNewEntries = entries.contains { $0.date > lastGenDate }
-             if !hasNewEntries && !entries.isEmpty { // Don't skip if entries list itself is empty
-                  print("[StreakNarrativeGenerator] Skipping generation (Normal): No new entries since last narrative.")
-                  // Update timestamp even if skipping generation due to no new entries
-                   do {
-                       try databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
-                       print("[StreakNarrativeGenerator] Updated timestamp for existing insight.")
-                   } catch {
-                        print("‼️ [StreakNarrativeGenerator] Error updating timestamp: \(error)")
-                   }
-                  return
-             }
-              print("[StreakNarrativeGenerator] New entries found or first time generation (Normal). Proceeding.")
-         } else if !entries.isEmpty {
-             // Log differently based on whether it was forced or first time
-              if forceGeneration {
-                  print("[StreakNarrativeGenerator] Proceeding with forced generation.")
-              } else {
-                  print("[StreakNarrativeGenerator] First generation run or new entries found (Normal). Proceeding.")
-              }
-         }
+        // --- REMOVED REDUNDANT CHECK ---
+        // // Only check for new entries if not forcing and last generation date exists
+        // if !forceGeneration, let lastGenDate = lastGenerationDate { ... }
+        // --- END REMOVED REDUNDANT CHECK ---
 
 
         // Need at least one entry usually to generate meaningful narrative
