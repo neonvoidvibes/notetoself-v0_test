@@ -4,6 +4,7 @@ import Charts // For potential future chart library use, basic shapes for now
 struct JourneyInsightCard: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var databaseService: DatabaseService // Inject DatabaseService
+    @Environment(\.colorScheme) var colorScheme // Detect light/dark mode
     @ObservedObject private var styles = UIStyles.shared
 
     @State private var isExpanded: Bool = false
@@ -57,7 +58,8 @@ struct JourneyInsightCard: View {
                         .foregroundColor(styles.colors.text) // Standard text color
                     Text("\(appState.currentStreak) Day Streak")
                         .font(styles.typography.bodyFont.weight(.bold)) // Make streak bold
-                        .foregroundColor(styles.colors.secondaryAccent) // Use YELLOW secondary accent
+                         // Conditional color: Accent in light, SecondaryAccent (yellow) in dark
+                        .foregroundColor(colorScheme == .light ? styles.colors.accent : styles.colors.secondaryAccent)
                 }
                 Spacer()
                 Image(systemName: "chevron.down")
@@ -114,7 +116,7 @@ struct JourneyInsightCard: View {
 
                     // Narrative Text
                      VStack(alignment: .leading) {
-                         Text("Narrative")
+                         Text("Highlights")
                              .font(styles.typography.bodyLarge.weight(.semibold))
                              .foregroundColor(styles.colors.text) // Standard text
                              .padding(.bottom, styles.layout.spacingXS)
@@ -260,5 +262,7 @@ struct JourneyInsightCard: View {
             .environmentObject(ThemeManager.shared)
     }
     .background(Color.gray.opacity(0.1))
-    .preferredColorScheme(.dark) // Uncomment to test dark mode specifically
+    // Preview in both light and dark modes
+    .preferredColorScheme(.light) // Test light mode specifically
+    // .preferredColorScheme(.dark) // Test dark mode specifically
 }
