@@ -347,27 +347,48 @@ class AppState: ObservableObject {
         return subscriptionTier == .premium || dailyReflectionsUsed < freeReflectionsLimit
     }
 
-    // Keep currentStreak logic
+    // --- Current Streak Calculation (Updated Logic) ---
     var currentStreak: Int {
-        var streak = 0
+        guard !journalEntries.isEmpty else { return 0 }
+
         let calendar = Calendar.current
-        var checkDate = calendar.startOfDay(for: Date())
+        let today = calendar.startOfDay(for: Date())
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
 
-        let hasTodayEntry = journalEntries.contains { calendar.isDate($0.date, inSameDayAs: checkDate) }
-        // Streak requires *today's* entry to count
-        guard hasTodayEntry else { return 0 }
+        // Find the date of the most recent entry (ensure it's non-optional)
+        guard let mostRecentEntryDate = journalEntries.map({ $0.date }).max() else { return 0 }
+        let startOfMostRecentEntryDay = calendar.startOfDay(for: mostRecentEntryDate)
 
-        streak = 1
-        checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate)! // Start checking yesterday
+        // Check if the most recent entry is from today or yesterday
+        guard calendar.isDate(startOfMostRecentEntryDay, inSameDayAs: today) || calendar.isDate(startOfMostRecentEntryDay, inSameDayAs: yesterday) else {
+            // If the latest entry is older than yesterday, streak is broken
+            return 0
+        }
 
-        // Efficient check using a Set of entry dates
+        // If the latest entry is valid (today or yesterday), start counting from that day
+        var streak = 0
+        var checkDate = startOfMostRecentEntryDay
+
+        // Efficient check using a Set of entry dates (start of day)
         let entryDatesSet = Set(journalEntries.map { calendar.startOfDay(for: $0.date) })
 
         while entryDatesSet.contains(checkDate) {
             streak += 1
-            checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate)!
+            // Check for potential infinite loop - stop if checkDate goes too far back (e.g., > 1000 days)
+            guard streak < 1000 else { break }
+            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break } // Safely unwrap optional
+            checkDate = previousDay // Move to previous day
         }
+
         return streak
+    }
+    // --- End Current Streak Calculation ---
+
+    // Helper to check if an entry exists for today
+    var hasEntryToday: Bool {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        return journalEntries.contains { calendar.isDate($0.date, inSameDayAs: today) }
     }
 
     // REMOVED triggerAllInsightGenerations function - moved to InsightUtils.swift

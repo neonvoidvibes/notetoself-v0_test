@@ -48,6 +48,22 @@ struct JourneyInsightCard: View {
         return narrativeResult?.narrativeText ?? (appState.currentStreak > 0 ? "Analyzing your recent journey..." : "Your journey's story will appear here.")
     }
 
+    // UX-focused streak sub-headline
+    private var streakSubHeadline: String {
+        let streak = appState.currentStreak // Access via environment object
+        let hasTodayEntry = appState.hasEntryToday // Access via environment object
+
+        if streak > 0 {
+            if hasTodayEntry {
+                return "\(streak) Day Streak! 🔥" // Or "Day \(streak) of your streak!"
+            } else {
+                return "Keep your \(streak)-day streak going!" // Encourage today's entry
+            }
+        } else {
+            return "Start a new streak today!" // No current streak
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // --- Collapsed/Header View ---
@@ -56,7 +72,7 @@ struct JourneyInsightCard: View {
                     Text("Journey")
                         .font(styles.typography.title3)
                         .foregroundColor(styles.colors.text) // Standard text color
-                    Text("\(appState.currentStreak) Day Streak")
+                    Text(streakSubHeadline) // Use the dynamic sub-headline
                         .font(styles.typography.bodyFont.weight(.bold)) // Make streak bold
                          // Conditional color: Accent in light, SecondaryAccent (yellow) in dark
                         .foregroundColor(colorScheme == .light ? styles.colors.accent : styles.colors.secondaryAccent)
@@ -116,7 +132,7 @@ struct JourneyInsightCard: View {
 
                     // Narrative Text
                      VStack(alignment: .leading) {
-                         Text("Highlights")
+                         Text("Narrative")
                              .font(styles.typography.bodyLarge.weight(.semibold))
                              .foregroundColor(styles.colors.text) // Standard text
                              .padding(.bottom, styles.layout.spacingXS)
@@ -237,32 +253,78 @@ struct JourneyInsightCard: View {
     }
 }
 
-// Removed fileprivate StreakMilestone struct
+// --- Preview Struct ---
+// Needs to be defined separately to use @StateObject for AppState mocks
+private struct JourneyCardPreviewWrapper: View {
+    // Use @StateObject for mocks within the preview
+    @StateObject private var mockAppState: AppState
+    @StateObject private var mockAppStateNoToday: AppState
+    @StateObject private var mockAppStateNoStreak: AppState
 
-#Preview {
-    // Create mock AppState with some entries for preview
-    let mockAppState = AppState()
-    let calendar = Calendar.current
-    let today = Date()
-    mockAppState.journalEntries = [
-        JournalEntry(text: "Today entry", mood: .happy, date: today),
-        JournalEntry(text: "Yesterday entry", mood: .neutral, date: calendar.date(byAdding: .day, value: -1, to: today)!),
-        JournalEntry(text: "3 days ago entry", mood: .sad, date: calendar.date(byAdding: .day, value: -3, to: today)!),
-        JournalEntry(text: "5 days ago entry", mood: .content, date: calendar.date(byAdding: .day, value: -5, to: today)!)
-    ]
+    // Static instances for other environment objects
+    private static let mockUIStyles = UIStyles.shared
+    private static let mockDatabaseService = DatabaseService()
+    private static let mockThemeManager = ThemeManager.shared
 
-    let mockUIStyles = UIStyles.shared
+    init() {
+        // Initialize AppState instances
+        let state1 = AppState()
+        let calendar = Calendar.current
+        let today = Date()
+        state1.journalEntries = [
+            JournalEntry(text: "Today entry", mood: .happy, date: today),
+            JournalEntry(text: "Yesterday entry", mood: .neutral, date: calendar.date(byAdding: .day, value: -1, to: today)!),
+            JournalEntry(text: "3 days ago entry", mood: .sad, date: calendar.date(byAdding: .day, value: -3, to: today)!),
+            JournalEntry(text: "5 days ago entry", mood: .content, date: calendar.date(byAdding: .day, value: -5, to: today)!)
+        ]
+        _mockAppState = StateObject(wrappedValue: state1)
 
-    return ScrollView {
-        JourneyInsightCard()
-            .padding()
-            .environmentObject(mockAppState)
-            .environmentObject(DatabaseService()) // Add DB Service
-            .environmentObject(mockUIStyles) // Use potentially modified styles
-            .environmentObject(ThemeManager.shared)
+        let state2 = AppState()
+        state2.journalEntries = [
+            JournalEntry(text: "Yesterday entry", mood: .neutral, date: calendar.date(byAdding: .day, value: -1, to: today)!),
+            JournalEntry(text: "2 days ago", mood: .sad, date: calendar.date(byAdding: .day, value: -2, to: today)!)
+        ]
+        _mockAppStateNoToday = StateObject(wrappedValue: state2)
+
+        let state3 = AppState()
+        state3.journalEntries = [
+            JournalEntry(text: "3 days ago", mood: .sad, date: calendar.date(byAdding: .day, value: -3, to: today)!)
+        ]
+        _mockAppStateNoStreak = StateObject(wrappedValue: state3)
     }
-    .background(Color.gray.opacity(0.1))
-    // Preview in both light and dark modes
-    .preferredColorScheme(.light) // Test light mode specifically
-    // .preferredColorScheme(.dark) // Test dark mode specifically
+
+    var body: some View {
+        ScrollView {
+            VStack {
+                 JourneyInsightCard()
+                     .padding()
+                     .environmentObject(mockAppState) // Use the @StateObject instance
+                     .environmentObject(Self.mockDatabaseService)
+                     .environmentObject(Self.mockUIStyles)
+                     .environmentObject(Self.mockThemeManager)
+
+                 JourneyInsightCard()
+                      .padding()
+                      .environmentObject(mockAppStateNoToday) // Use the @StateObject instance
+                      .environmentObject(Self.mockDatabaseService)
+                      .environmentObject(Self.mockUIStyles)
+                      .environmentObject(Self.mockThemeManager)
+
+                  JourneyInsightCard()
+                       .padding()
+                       .environmentObject(mockAppStateNoStreak) // Use the @StateObject instance
+                       .environmentObject(Self.mockDatabaseService)
+                       .environmentObject(Self.mockUIStyles)
+                       .environmentObject(Self.mockThemeManager)
+             } // End VStack
+        } // End ScrollView
+        .background(Color.gray.opacity(0.1))
+        .preferredColorScheme(.light) // Test light mode specifically
+        // .preferredColorScheme(.dark) // Test dark mode specifically
+    }
+}
+
+// Use the wrapper struct for the preview
+#Preview {
+    JourneyCardPreviewWrapper()
 }
