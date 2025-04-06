@@ -12,16 +12,30 @@ struct InsightsView: View {
     @Binding var lastScrollPosition: CGFloat
     @Binding var tabBarVisible: Bool
 
-    // State for stored raw insight data
+    // State for stored raw insight data (Existing)
     @State private var summaryJson: String? = nil
     @State private var summaryDate: Date? = nil
-    @State private var trendJson: String? = nil
+    @State private var trendJson: String? = nil // Original Mood Trend (keep?)
     @State private var trendDate: Date? = nil
     @State private var recommendationsJson: String? = nil
     @State private var recommendationsDate: Date? = nil
-    // Add state for Forecast data when implemented
-    // @State private var forecastJson: String? = nil
-    // @State private var forecastDate: Date? = nil
+    @State private var forecastJson: String? = nil
+    @State private var forecastDate: Date? = nil
+    @State private var reflectionJson: String? = nil // For AI Reflection
+    @State private var reflectionDate: Date? = nil
+    @State private var journeyJson: String? = nil // For Journey Narrative
+    @State private var journeyDate: Date? = nil
+
+    // State for new grouped insights
+    @State private var feelInsightsJson: String? = nil
+    @State private var feelInsightsDate: Date? = nil
+    @State private var thinkInsightsJson: String? = nil
+    @State private var thinkInsightsDate: Date? = nil
+    @State private var actInsightsJson: String? = nil
+    @State private var actInsightsDate: Date? = nil
+    @State private var learnInsightsJson: String? = nil
+    @State private var learnInsightsDate: Date? = nil
+
 
     @State private var isLoadingInsights: Bool = false
 
@@ -99,7 +113,7 @@ struct InsightsView: View {
                             emptyStateView // Keep existing empty state
                         } else {
                             // Loading Indicator or Cards
-                            if isLoadingInsights && summaryJson == nil && trendJson == nil && recommendationsJson == nil {
+                            if isLoadingInsights && areAllInsightsNil() { // Check if ALL insights are nil before showing global loader
                                 loadingView // Keep existing loading view
                             } else {
                                 // Display Cards in Fixed Order
@@ -177,7 +191,7 @@ struct InsightsView: View {
 
 
             // 2. AI Reflection Card
-             AIReflectionInsightCard(
+             AIReflectionInsightCard( // Keep existing AI Reflection
                  scrollProxy: scrollProxy,
                  cardId: "aiReflectionCard"
              )
@@ -186,10 +200,64 @@ struct InsightsView: View {
              .opacity(cardsAppeared ? 1 : 0)
              .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared) // Adjust delay
 
+             // --- NEW CARDS START HERE ---
 
-            // 3. Mood Analysis Card (Mood Trends & Patterns)
+             // 3. Feel Card (#3)
+              FeelInsightCard(
+                  scrollProxy: scrollProxy,
+                  cardId: "feelCard"
+              )
+              .id("feelCard")
+              .padding(.horizontal, styles.layout.paddingXL)
+              .opacity(cardsAppeared ? 1 : 0)
+              .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
+
+
+              // 4. Think Card (#4)
+               ThinkInsightCard(
+                   scrollProxy: scrollProxy,
+                   cardId: "thinkCard"
+               )
+               .id("thinkCard")
+               .padding(.horizontal, styles.layout.paddingXL)
+               .opacity(cardsAppeared ? 1 : 0)
+               .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
+
+
+               // 5. Act Card (#5)
+                ActInsightCard(
+                    scrollProxy: scrollProxy,
+                    cardId: "actCard"
+                )
+                .id("actCard")
+                .padding(.horizontal, styles.layout.paddingXL)
+                .opacity(cardsAppeared ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared)
+
+
+                // 6. Learn Card (#6)
+                 LearnInsightCard(
+                     scrollProxy: scrollProxy,
+                     cardId: "learnCard"
+                 )
+                 .id("learnCard")
+                 .padding(.horizontal, styles.layout.paddingXL)
+                 .opacity(cardsAppeared ? 1 : 0)
+                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.6), value: cardsAppeared)
+
+
+            // --- END NEW CARDS ---
+
+            // --- OLD CARDS (Keep or Remove based on final decision) ---
+            // Note: MoodAnalysisInsightCard is redundant if Feel card covers mood.
+            // RecommendationsInsightCard is redundant if Act card covers recommendations.
+            // ForecastInsightCard is redundant if Act card covers forecast.
+            // Keeping them commented out for now.
+
+            /*
+            // Mood Analysis Card (Mood Trends & Patterns)
              MoodAnalysisInsightCard(
-                 jsonString: trendJson,
+                 jsonString: trendJson, // Still uses the old trendJson
                  generatedDate: trendDate,
                  subscriptionTier: appState.subscriptionTier,
                  scrollProxy: scrollProxy,
@@ -198,10 +266,9 @@ struct InsightsView: View {
              .id("moodAnalysisCard")
              .padding(.horizontal, styles.layout.paddingXL)
              .opacity(cardsAppeared ? 1 : 0)
-             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared) // Adjust delay
+             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
 
-
-            // 4. Recommendations Card
+            // Recommendations Card
              RecommendationsInsightCard(
                  jsonString: recommendationsJson,
                  generatedDate: recommendationsDate,
@@ -212,10 +279,9 @@ struct InsightsView: View {
              .id("recsCard")
              .padding(.horizontal, styles.layout.paddingXL)
              .opacity(cardsAppeared ? 1 : 0)
-             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared) // Adjust delay
+             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
 
-
-            // 5. Predictive Mood & General Forecast Card
+            // Predictive Mood & General Forecast Card
              ForecastInsightCard(
                  subscriptionTier: appState.subscriptionTier,
                  scrollProxy: scrollProxy,
@@ -224,9 +290,9 @@ struct InsightsView: View {
              .id("forecastCard")
              .padding(.horizontal, styles.layout.paddingXL)
              .opacity(cardsAppeared ? 1 : 0)
-             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared) // Adjust delay
-
-             // --- End Fixed Card Order ---
+             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared)
+            */
+             // --- End Old Cards ---
 
             // Bottom padding
             Spacer().frame(height: styles.layout.paddingXL + 80) // Keep bottom padding
@@ -278,26 +344,71 @@ struct InsightsView: View {
          }.padding(.vertical, 50)
      }
 
-    // --- Data Loading (Keep existing logic) ---
+    // Helper to check if all insight states are nil
+    private func areAllInsightsNil() -> Bool {
+        return summaryJson == nil &&
+               reflectionJson == nil && // Check reflection
+               feelInsightsJson == nil && // Check new insights
+               thinkInsightsJson == nil &&
+               actInsightsJson == nil &&
+               learnInsightsJson == nil
+               // Comment out checks for old/redundant insights if they are removed
+               // trendJson == nil &&
+               // recommendationsJson == nil &&
+               // forecastJson == nil &&
+               // journeyJson == nil
+    }
+
+
+    // --- Data Loading ---
     private func loadStoredInsights() {
-         if summaryJson == nil && trendJson == nil && recommendationsJson == nil {
+         if areAllInsightsNil() { // Use helper function
              isLoadingInsights = true
          }
          print("[InsightsView] Loading stored insights from DB...")
          Task {
-             let summaryResult = await Task.detached { try? self.databaseService.loadLatestInsight(type: "weeklySummary") }.value
-             let moodTrendResult = await Task.detached { try? self.databaseService.loadLatestInsight(type: "moodTrend") }.value
-             let recommendationsResult = await Task.detached { try? self.databaseService.loadLatestInsight(type: "recommendation") }.value
-             // TODO: Load Forecast data when implemented
+             // Load existing insights
+             async let summaryFetch = try? self.databaseService.loadLatestInsight(type: "weeklySummary")
+             async let reflectionFetch = try? self.databaseService.loadLatestInsight(type: "aiReflection") // Load AI Reflection
+             // async let trendFetch = try? self.databaseService.loadLatestInsight(type: "moodTrend") // Keep commented if redundant
+             // async let recommendationsFetch = try? self.databaseService.loadLatestInsight(type: "recommendation") // Keep commented if redundant
+             // async let forecastFetch = try? self.databaseService.loadLatestInsight(type: "forecast") // Keep commented if redundant
+             // async let journeyFetch = try? self.databaseService.loadLatestInsight(type: "journeyNarrative") // Load Journey Narrative
+
+             // Load NEW insights
+             async let feelFetch = try? self.databaseService.loadLatestInsight(type: "feelInsights")
+             async let thinkFetch = try? self.databaseService.loadLatestInsight(type: "thinkInsights")
+             async let actFetch = try? self.databaseService.loadLatestInsight(type: "actInsights")
+             async let learnFetch = try? self.databaseService.loadLatestInsight(type: "learnInsights")
+
+             // Await results and update state
+             let summaryResult = await summaryFetch
+             let reflectionResult = await reflectionFetch
+             // let trendResult = await trendFetch
+             // let recommendationsResult = await recommendationsFetch
+             // let forecastResult = await forecastFetch
+             // let journeyResult = await journeyFetch
+             let feelResult = await feelFetch
+             let thinkResult = await thinkFetch
+             let actResult = await actFetch
+             let learnResult = await learnFetch
+
 
              await MainActor.run {
-                 if let (json, date) = summaryResult { self.summaryJson = json; self.summaryDate = date }
-                 else { self.summaryJson = nil; self.summaryDate = nil }
-                 if let (json, date) = moodTrendResult { self.trendJson = json; self.trendDate = date }
-                 else { self.trendJson = nil; self.trendDate = nil }
-                 if let (json, date) = recommendationsResult { self.recommendationsJson = json; self.recommendationsDate = date }
-                 else { self.recommendationsJson = nil; self.recommendationsDate = nil }
-                 // TODO: Update Forecast state
+                 if let (json, date) = summaryResult { self.summaryJson = json; self.summaryDate = date } else { self.summaryJson = nil; self.summaryDate = nil }
+                 if let (json, date) = reflectionResult { self.reflectionJson = json; self.reflectionDate = date } else { self.reflectionJson = nil; self.reflectionDate = nil }
+                 // if let (json, date) = trendResult { self.trendJson = json; self.trendDate = date } else { self.trendJson = nil; self.trendDate = nil }
+                 // if let (json, date) = recommendationsResult { self.recommendationsJson = json; self.recommendationsDate = date } else { self.recommendationsJson = nil; self.recommendationsDate = nil }
+                 // if let (json, date) = forecastResult { self.forecastJson = json; self.forecastDate = date } else { self.forecastJson = nil; self.forecastDate = nil }
+                 // if let (json, date) = journeyResult { self.journeyJson = json; self.journeyDate = date } else { self.journeyJson = nil; self.journeyDate = nil }
+
+                 // Update state for NEW insights
+                 if let (json, date) = feelResult { self.feelInsightsJson = json; self.feelInsightsDate = date } else { self.feelInsightsJson = nil; self.feelInsightsDate = nil }
+                 if let (json, date) = thinkResult { self.thinkInsightsJson = json; self.thinkInsightsDate = date } else { self.thinkInsightsJson = nil; self.thinkInsightsDate = nil }
+                 if let (json, date) = actResult { self.actInsightsJson = json; self.actInsightsDate = date } else { self.actInsightsJson = nil; self.actInsightsDate = nil }
+                 if let (json, date) = learnResult { self.learnInsightsJson = json; self.learnInsightsDate = date } else { self.learnInsightsJson = nil; self.learnInsightsDate = nil }
+
+
                  isLoadingInsights = false
                  print("[InsightsView] Finished loading insights.")
              }

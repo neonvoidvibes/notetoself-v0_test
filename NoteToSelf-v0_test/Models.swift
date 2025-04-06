@@ -183,7 +183,7 @@ enum SubscriptionTier: String, Codable, Hashable { // Added Hashable
     var hasAdvancedInsights: Bool { self == .premium }
 }
 
-// MARK: - AI Insight Models (Phase 5)
+// MARK: - AI Insight Models (Phase 5 & Beyond)
 
 // Structure for Weekly Summary Insight
 struct WeeklySummaryResult: Codable, Equatable {
@@ -198,7 +198,7 @@ struct WeeklySummaryResult: Codable, Equatable {
     }
 }
 
-// Structure for Mood Trend Insight
+// Structure for Mood Trend Insight (Original Version)
 struct MoodTrendResult: Codable, Equatable {
     var overallTrend: String = "Stable" // e.g., "Improving", "Declining", "Stable", "Fluctuating"
     var dominantMood: String = "Neutral" // Name of the most frequent mood
@@ -301,6 +301,45 @@ struct ForecastResult: Codable, Equatable { // Conformance should now be automat
         // Directly initialize with nil values matching the optional properties
         ForecastResult(moodPredictionText: nil, emergingTopics: nil, consistencyForecast: nil, actionPlanItems: nil)
     }
+}
+
+// --- NEW Insight Structures (Feel, Think, Act, Learn) ---
+
+// MARK: - Feel Insight (Card #3)
+struct MoodTrendPoint: Codable, Equatable, Identifiable { // Data for the 7-day chart
+    let id = UUID() // Conformance to Identifiable
+    let date: Date
+    let moodValue: Double // Represent mood numerically (e.g., 1-5 scale)
+    let label: String // Peak/dip label
+}
+
+struct FeelInsightResult: Codable, Equatable {
+    var moodTrendChartData: [MoodTrendPoint]? // Data points for the chart
+    var moodSnapshotText: String? // Metaphor-rich summary text
+    static func empty() -> FeelInsightResult { FeelInsightResult(moodTrendChartData: nil, moodSnapshotText: nil) }
+}
+
+// MARK: - Think Insight (Card #4)
+struct ThinkInsightResult: Codable, Equatable {
+    var themeOverviewText: String? // Text extracting recurring topics/challenges
+    var valueReflectionText: String? // Text comparing stated values vs. choices
+    static func empty() -> ThinkInsightResult { ThinkInsightResult(themeOverviewText: nil, valueReflectionText: nil) }
+}
+
+// MARK: - Act Insight (Card #5)
+// Reusing RecommendationItem from RecommendationResult
+struct ActInsightResult: Codable, Equatable {
+    var actionForecastText: String? // Text projecting opportunities/risks
+    var personalizedRecommendations: [RecommendationResult.RecommendationItem]? // Focus on high-leverage actions
+    static func empty() -> ActInsightResult { ActInsightResult(actionForecastText: nil, personalizedRecommendations: nil) }
+}
+
+// MARK: - Learn Insight (Card #6)
+struct LearnInsightResult: Codable, Equatable {
+    var takeawayText: String? // Most significant insight/shift
+    var beforeAfterText: String? // Comparison highlighting shift/outcome
+    var nextStepText: String? // Gentle suggestion for applying takeaway
+    static func empty() -> LearnInsightResult { LearnInsightResult(takeawayText: nil, beforeAfterText: nil, nextStepText: nil) }
 }
 
 

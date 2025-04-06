@@ -32,12 +32,17 @@ func triggerAllInsightGenerations(
 
     // Create generators, passing dependencies including AppState where needed
     let summaryGenerator = WeeklySummaryGenerator(llmService: llmService, databaseService: databaseService)
-    let moodTrendGenerator = MoodTrendGenerator(llmService: llmService, databaseService: databaseService)
-    let recommendationGenerator = RecommendationGenerator(llmService: llmService, databaseService: databaseService)
-    // UPDATED: Instantiate JourneyNarrativeGenerator
+    // let moodTrendGenerator = MoodTrendGenerator(llmService: llmService, databaseService: databaseService) // Keep original Mood Trend commented out if replaced by Feel
+    let recommendationGenerator = RecommendationGenerator(llmService: llmService, databaseService: databaseService) // Keep original Recs commented out if replaced by Act
     let journeyNarrativeGenerator = JourneyNarrativeGenerator(llmService: llmService, databaseService: databaseService, appState: appState)
     let aiReflectionGenerator = AIReflectionGenerator(llmService: llmService, databaseService: databaseService, appState: appState)
-    let forecastGenerator = ForecastGenerator(llmService: llmService, databaseService: databaseService, appState: appState)
+    let forecastGenerator = ForecastGenerator(llmService: llmService, databaseService: databaseService, appState: appState) // Keep original Forecast commented out if replaced by Act
+
+    // Instantiate NEW generators
+    let feelGenerator = FeelInsightGenerator(llmService: llmService, databaseService: databaseService)
+    let thinkGenerator = ThinkInsightGenerator(llmService: llmService, databaseService: databaseService)
+    let actGenerator = ActInsightGenerator(llmService: llmService, databaseService: databaseService)
+    let learnGenerator = LearnInsightGenerator(llmService: llmService, databaseService: databaseService)
 
 
     // Run generators concurrently in detached tasks
@@ -46,11 +51,23 @@ func triggerAllInsightGenerations(
 
     let force = forceGeneration // Capture the flag locally for the tasks
 
+    // Existing Tasks
     print("[InsightUtils] Launching WeeklySummaryGenerator...")
     Task.detached(priority: .background) {
         await summaryGenerator.generateAndStoreIfNeeded()
         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] WeeklySummary generation task finished.") }
     }
+    print("[InsightUtils] Launching JourneyNarrativeGenerator...")
+    Task.detached(priority: .background) {
+         await journeyNarrativeGenerator.generateAndStoreIfNeeded(forceGeneration: force)
+         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Journey Narrative generation task finished.") }
+    }
+    print("[InsightUtils] Launching AIReflectionGenerator...")
+    Task.detached(priority: .background) {
+         await aiReflectionGenerator.generateAndStoreIfNeeded()
+         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] AI Reflection generation task finished.") }
+    }
+    /* // Keep old generators commented out if they are fully replaced
     print("[InsightUtils] Launching MoodTrendGenerator...")
     Task.detached(priority: .background) {
         await moodTrendGenerator.generateAndStoreIfNeeded()
@@ -61,24 +78,35 @@ func triggerAllInsightGenerations(
          await recommendationGenerator.generateAndStoreIfNeeded()
          await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Recommendations generation task finished.") }
     }
-
-    // --- Updated Generator ---
-    print("[InsightUtils] Launching JourneyNarrativeGenerator...")
-    Task.detached(priority: .background) {
-         // Pass the captured force flag here
-         await journeyNarrativeGenerator.generateAndStoreIfNeeded(forceGeneration: force)
-         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Journey Narrative generation task finished.") }
-    }
-    print("[InsightUtils] Launching AIReflectionGenerator...")
-    Task.detached(priority: .background) {
-         await aiReflectionGenerator.generateAndStoreIfNeeded()
-         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] AI Reflection generation task finished.") }
-    }
-    print("[InsightUtils] Launching ForecastGenerator...")
+     print("[InsightUtils] Launching ForecastGenerator...")
      Task.detached(priority: .background) {
           await forecastGenerator.generateAndStoreIfNeeded()
           await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Forecast generation task finished.") }
      }
+    */
+
+     // --- NEW TASKS ---
+     print("[InsightUtils] Launching FeelInsightGenerator...")
+     Task.detached(priority: .background) {
+         await feelGenerator.generateAndStoreIfNeeded()
+         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Feel Insights generation task finished.") }
+     }
+     print("[InsightUtils] Launching ThinkInsightGenerator...")
+     Task.detached(priority: .background) {
+         await thinkGenerator.generateAndStoreIfNeeded()
+         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Think Insights generation task finished.") }
+     }
+     print("[InsightUtils] Launching ActInsightGenerator...")
+     Task.detached(priority: .background) {
+         await actGenerator.generateAndStoreIfNeeded()
+         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Act Insights generation task finished.") }
+     }
+     print("[InsightUtils] Launching LearnInsightGenerator...")
+     Task.detached(priority: .background) {
+         await learnGenerator.generateAndStoreIfNeeded()
+         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Learn Insights generation task finished.") }
+     }
+
 
     print("✅ [InsightUtils] All background insight generation tasks launched.")
 }

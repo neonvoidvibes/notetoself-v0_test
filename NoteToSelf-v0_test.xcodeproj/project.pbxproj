@@ -13,6 +13,18 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		64281C502DD2E12800B48FE9 /* ActInsightCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ActInsightCard.swift; path = "Insights/Insight-Cards/ActInsightCard.swift"; sourceTree = "<group>"; };
+		64281C522DD2E12C00B48FE9 /* ActInsightGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ActInsightGenerator.swift; path = "Insights/Insight-Generators/ActInsightGenerator.swift"; sourceTree = "<group>"; };
+		64281C542DD2E13A00B48FE9 /* ActDetailContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ActDetailContent.swift; path = "Insights/insight-detail/ActDetailContent.swift"; sourceTree = "<group>"; };
+		64281C562DD2E14900B48FE9 /* FeelInsightCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FeelInsightCard.swift; path = "Insights/Insight-Cards/FeelInsightCard.swift"; sourceTree = "<group>"; };
+		64281C582DD2E14D00B48FE9 /* FeelInsightGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FeelInsightGenerator.swift; path = "Insights/Insight-Generators/FeelInsightGenerator.swift"; sourceTree = "<group>"; };
+		64281C5A2DD2E15900B48FE9 /* FeelDetailContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FeelDetailContent.swift; path = "Insights/insight-detail/FeelDetailContent.swift"; sourceTree = "<group>"; };
+		64281C5C2DD2E16700B48FE9 /* LearnInsightCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LearnInsightCard.swift; path = "Insights/Insight-Cards/LearnInsightCard.swift"; sourceTree = "<group>"; };
+		64281C5E2DD2E16B00B48FE9 /* LearnInsightGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LearnInsightGenerator.swift; path = "Insights/Insight-Generators/LearnInsightGenerator.swift"; sourceTree = "<group>"; };
+		64281C602DD2E17700B48FE9 /* LearnDetailContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LearnDetailContent.swift; path = "Insights/insight-detail/LearnDetailContent.swift"; sourceTree = "<group>"; };
+		64281C622DD2E18400B48FE9 /* ThinkInsightCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ThinkInsightCard.swift; path = "Insights/Insight-Cards/ThinkInsightCard.swift"; sourceTree = "<group>"; };
+		64281C642DD2E18800B48FE9 /* ThinkInsightGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ThinkInsightGenerator.swift; path = "Insights/Insight-Generators/ThinkInsightGenerator.swift"; sourceTree = "<group>"; };
+		64281C662DD2E19400B48FE9 /* ThinkDetailContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ThinkDetailContent.swift; path = "Insights/insight-detail/ThinkDetailContent.swift"; sourceTree = "<group>"; };
 		6483FB4C2D8E9E5100E8EA20 /* NoteToSelf-v0_test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NoteToSelf-v0_test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		64D8462D2DA049B40003CAC1 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -79,6 +91,7 @@
 				64D8462D2DA049B40003CAC1 /* LaunchScreen.storyboard */,
 				6483FB4E2D8E9E5100E8EA20 /* NoteToSelf-v0_test */,
 				6483FB4D2D8E9E5100E8EA20 /* Products */,
+				64D850772DA324CD0003CAC1 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -88,6 +101,25 @@
 				6483FB4C2D8E9E5100E8EA20 /* NoteToSelf-v0_test.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		64D850772DA324CD0003CAC1 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				64281C502DD2E12800B48FE9 /* ActInsightCard.swift */,
+				64281C662DD2E19400B48FE9 /* ThinkDetailContent.swift */,
+				64281C522DD2E12C00B48FE9 /* ActInsightGenerator.swift */,
+				64281C5E2DD2E16B00B48FE9 /* LearnInsightGenerator.swift */,
+				64281C622DD2E18400B48FE9 /* ThinkInsightCard.swift */,
+				64281C642DD2E18800B48FE9 /* ThinkInsightGenerator.swift */,
+				64281C562DD2E14900B48FE9 /* FeelInsightCard.swift */,
+				64281C542DD2E13A00B48FE9 /* ActDetailContent.swift */,
+				64281C5C2DD2E16700B48FE9 /* LearnInsightCard.swift */,
+				64281C602DD2E17700B48FE9 /* LearnDetailContent.swift */,
+				64281C582DD2E14D00B48FE9 /* FeelInsightGenerator.swift */,
+				64281C5A2DD2E15900B48FE9 /* FeelDetailContent.swift */,
+			);
+			name = "Recovered References";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -147,7 +179,6 @@
 				64F78B382D989BD700925FE8 /* XCRemoteSwiftPackageReference "swift-openai-responses" */,
 			);
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 6483FB4D2D8E9E5100E8EA20 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (

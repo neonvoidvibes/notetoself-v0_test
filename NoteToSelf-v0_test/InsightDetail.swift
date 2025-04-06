@@ -9,7 +9,13 @@ enum InsightType: String, Codable, Equatable, Hashable { // Added Equatable & Ha
     case aiReflection // Replaces chat
     case moodAnalysis // Replaces moodTrends
     case recommendations
-    case forecast // New card
+    case forecast // Existing new card
+
+    // NEW CASES for Card Groups
+    case feelInsights // #3
+    case thinkInsights // #4
+    case actInsights // #5
+    case learnInsights // #6
 
     // Obsolete types removed as they are no longer displayed insight cards
 }
@@ -154,7 +160,28 @@ struct InsightDetailView: View {
                            forecastResult: forecastData,
                            generatedDate: genDate
                        )
-                  }
+
+                   // --- NEW CASES ---
+                   case .feelInsights:
+                        if let result = insight.data as? FeelInsightResult {
+                             FeelDetailContent(result: result, generatedDate: Date()) // Placeholder date
+                        } else { Text("Error: Invalid Feel Insight data") }
+
+                   case .thinkInsights:
+                        if let result = insight.data as? ThinkInsightResult {
+                            ThinkDetailContent(result: result, generatedDate: Date()) // Placeholder date
+                        } else { Text("Error: Invalid Think Insight data") }
+
+                   case .actInsights:
+                        if let result = insight.data as? ActInsightResult {
+                            ActDetailContent(result: result, generatedDate: Date()) // Placeholder date
+                        } else { Text("Error: Invalid Act Insight data") }
+
+                   case .learnInsights:
+                       if let result = insight.data as? LearnInsightResult {
+                           LearnDetailContent(result: result, generatedDate: Date()) // Placeholder date
+                       } else { Text("Error: Invalid Learn Insight data") }
+                   }
               }
           }
           .navigationTitle(insight.title) // Set title from insight
