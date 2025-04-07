@@ -235,9 +235,7 @@ struct InsightsView: View {
              }.padding(.horizontal, styles.layout.paddingXL).padding(.top, 8)
              #endif
 
-            // --- NEW TOP CARDS ---
-
-             // [4.1] Show Skeleton or Card
+            // --- Daily Reflection Card ---
               if isLoadingInsights && dailyReflectionJson == nil {
                   SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
               } else {
@@ -253,7 +251,7 @@ struct InsightsView: View {
                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
               }
 
-
+             // --- Week in Review Card ---
               if isLoadingInsights && weekInReviewJson == nil {
                   SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
               } else {
@@ -269,11 +267,31 @@ struct InsightsView: View {
                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
               }
 
+            // --- Add New Entry CTA ---
+             VStack(spacing: styles.layout.spacingM) {
+                 Text("Capture your thoughts and feelings as they happen.")
+                     .font(styles.typography.bodyFont)
+                     .foregroundColor(styles.colors.textSecondary)
+                     .multilineTextAlignment(.center)
+                     .padding(.horizontal) // Add horizontal padding to text
 
-            // --- NEW GROUPED CARDS ---
-            // Note: These cards still have their *internal* loading state.
-            // We might show skeleton *initially* and then the card shows its own loader briefly.
+                 Button("Add New Entry") {
+                     // Trigger sheet presentation in JournalView
+                     appState.presentNewJournalEntrySheet = true
+                     // Switch to Journal tab
+                     NotificationCenter.default.post(
+                         name: NSNotification.Name("SwitchToTab"),
+                         object: nil,
+                         userInfo: ["tabIndex": 0] // Index 0 = Journal
+                     )
+                 }
+                 .buttonStyle(UIStyles.PrimaryButtonStyle())
+             }
+             .padding(.horizontal, styles.layout.paddingXL) // Padding for the whole CTA VStack
+             .padding(.vertical, styles.layout.spacingL) // Vertical padding
 
+
+            // --- Feel Card ---
             if isLoadingInsights && feelInsightsJson == nil {
                 SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
             } else {
@@ -287,7 +305,7 @@ struct InsightsView: View {
                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
             }
 
-
+            // --- Think Card ---
             if isLoadingInsights && thinkInsightsJson == nil {
                 SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
             } else {
@@ -301,7 +319,7 @@ struct InsightsView: View {
                  .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
              }
 
-
+             // --- Act Card ---
             if isLoadingInsights && actInsightsJson == nil {
                 SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
             } else {
@@ -315,7 +333,7 @@ struct InsightsView: View {
                   .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared)
               }
 
-
+             // --- Learn Card ---
              if isLoadingInsights && learnInsightsJson == nil {
                  SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
              } else {
@@ -329,8 +347,26 @@ struct InsightsView: View {
                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.6), value: cardsAppeared)
                }
 
+            // --- Reflect CTA ---
+             VStack(spacing: styles.layout.spacingM) {
+                 Text("Discuss your insights and explore patterns with AI.")
+                     .font(styles.typography.bodyFont)
+                     .foregroundColor(styles.colors.textSecondary)
+                     .multilineTextAlignment(.center)
+                     .padding(.horizontal) // Add horizontal padding to text
 
-            // --- REMOVED OLD WeeklySummaryInsightCard ---
+                 Button("Start Reflection") {
+                     NotificationCenter.default.post(
+                         name: NSNotification.Name("SwitchToTab"),
+                         object: nil,
+                         userInfo: ["tabIndex": 2] // Index 2 = Reflect
+                     )
+                 }
+                 .buttonStyle(UIStyles.PrimaryButtonStyle())
+             }
+              .padding(.horizontal, styles.layout.paddingXL) // Padding for the whole CTA VStack
+              .padding(.vertical, styles.layout.spacingL) // Vertical padding
+
 
             // Bottom padding
             Spacer().frame(height: styles.layout.paddingXL + 80) // Keep bottom padding
@@ -455,28 +491,28 @@ struct InsightsView_Previews: PreviewProvider {
 
      static var previews: some View {
          // Preview showing the empty state specifically
-         PreviewDataLoadingContainer(loadData: false) { // Corrected initializer call
-             InsightsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
-                 .environmentObject(AppState()) // Provide an empty AppState
-                 .environmentObject(chatManager) // Pass chatManager even if empty
-                 .environmentObject(databaseService)
-                 .environmentObject(subscriptionManager)
-                 .environmentObject(ThemeManager.shared)
-                 .environmentObject(UIStyles.shared)
-         }
-         .previewDisplayName("Empty State")
-
-         // Preview showing the loaded state
-         PreviewDataLoadingContainer(loadData: true) { // Corrected initializer call
+          PreviewDataLoadingContainer(loadData: false) { // Corrected initializer call
               InsightsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
-                  .environmentObject(appState) // Use the one with loaded data
-                  .environmentObject(chatManager)
+                  .environmentObject(AppState()) // Provide an empty AppState
+                  .environmentObject(chatManager) // Pass chatManager even if empty
                   .environmentObject(databaseService)
                   .environmentObject(subscriptionManager)
                   .environmentObject(ThemeManager.shared)
                   .environmentObject(UIStyles.shared)
           }
-          .previewDisplayName("Loaded State")
+          .previewDisplayName("Empty State")
+
+         // Preview showing the loaded state
+          PreviewDataLoadingContainer(loadData: true) { // Corrected initializer call
+               InsightsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
+                   .environmentObject(appState) // Use the one with loaded data
+                   .environmentObject(chatManager)
+                   .environmentObject(databaseService)
+                   .environmentObject(subscriptionManager)
+                   .environmentObject(ThemeManager.shared)
+                   .environmentObject(UIStyles.shared)
+           }
+           .previewDisplayName("Loaded State")
      }
 
      // Keep PreviewDataLoadingContainer but allow skipping data load
@@ -511,7 +547,7 @@ struct InsightsView_Previews: PreviewProvider {
               let chatMgr = InsightsView_Previews.chatManager
               do {
                   let entries = try dbService.loadAllJournalEntries()
-                  await MainActor.run { state.journalEntries = entries }
+                  await MainActor.run { state._journalEntries = entries } // Modify underlying storage
                   print("Preview: Loaded \(entries.count) entries")
                   let chats = try dbService.loadAllChats()
                   await MainActor.run { chatMgr.chats = chats; if let first = chats.first { chatMgr.currentChat = first } else { chatMgr.currentChat = Chat() } }

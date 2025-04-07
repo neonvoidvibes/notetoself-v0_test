@@ -91,11 +91,16 @@ struct JournalView: View {
                         do {
                             try databaseService.saveJournalEntry(newEntry, embedding: embeddingVector)
                             await MainActor.run {
+                                 // Update the underlying storage directly
+                                 appState._journalEntries.insert(newEntry, at: 0)
+                                 appState._journalEntries.sort { $0.date > $1.date } // Keep sorted
+                                 // Update the expanded ID using the computed property accessor (which handles simulation)
                                  withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                                     appState.journalEntries.insert(newEntry, at: 0)
-                                     appState.journalEntries.sort { $0.date > $1.date } // Keep sorted
                                      appState.journalExpandedEntryId = newEntry.id // Expand new entry by default using AppState
                                  }
+                                 // Manually trigger objectWillChange if needed for immediate UI update when simulating
+                                 // if appState.simulateEmptyState { appState.objectWillChange.send() }
+
                             }
                             // Call global trigger function
                             await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, appState: appState)
@@ -167,12 +172,20 @@ struct JournalView: View {
                  }
              }
         }
+        // [7.1 trigger] Observe the flag from AppState
+        .onChange(of: appState.presentNewJournalEntrySheet) { _, shouldPresent in
+             if shouldPresent {
+                 showingNewEntrySheet = true
+                 // Reset the flag immediately after triggering the presentation
+                 appState.presentNewJournalEntrySheet = false
+                 print("[JournalView] Triggered new entry sheet presentation via AppState flag.")
+             }
+         }
     } // End Body
 
 
     // MARK: - Computed View Properties
 
-    // Restore the headerView definition
     private var headerView: some View {
         ZStack(alignment: .center) {
             // Title truly centered
@@ -253,60 +266,71 @@ struct JournalView: View {
 
     private var journalContent: some View {
         ScrollViewReader { scrollProxy in
-            ScrollView {
-                 GeometryReader { geometry in
-                     Color.clear.preference(
-                         key: ScrollOffsetPreferenceKey.self,
-                         value: geometry.frame(in: .named("scrollView")).minY
-                     )
-                 }
-                 .frame(height: 0)
+            // Use a VStack to contain the ScrollView content + the new CTA
+             VStack(spacing: 0) {
+                ScrollView {
+                     GeometryReader { geometry in
+                         Color.clear.preference(
+                             key: ScrollOffsetPreferenceKey.self,
+                             value: geometry.frame(in: .named("scrollView")).minY
+                         )
+                     }
+                     .frame(height: 0)
 
-                 // --- Journey Card ---
-                 JourneyInsightCard()
-                     .padding(.horizontal, styles.layout.paddingL) // Standard horizontal padding
-                     .padding(.top, styles.layout.spacingXL)       // Ample top padding
-                     .padding(.bottom, styles.layout.spacingL)     // Ample bottom padding
+                     // --- Journey Card ---
+                     JourneyInsightCard()
+                         .padding(.horizontal, styles.layout.paddingL) // Standard horizontal padding
+                         .padding(.top, styles.layout.spacingXL)       // Ample top padding
+                         .padding(.bottom, styles.layout.spacingL)     // Ample bottom padding
 
-                 // --- Entry List / Empty State ---
-                 if filteredEntries.isEmpty {
-                    emptyState
-                 } else {
-                    journalList
-                 }
-            } // End ScrollView
-            .coordinateSpace(name: "scrollView")
-            .disabled(mainScrollingDisabled)
-            // Add onAppear here to restore scroll position when tab becomes active
-            .onAppear {
-                 // Use a slight delay to ensure the view hierarchy is ready
-                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Increased delay slightly
-                      // Check if there's a previously expanded entry AND it exists in the currently filtered list
-                      guard let entryId = appState.journalExpandedEntryId,
-                            filteredEntries.contains(where: { $0.id == entryId }) else {
-                          print("[JournalView.onAppear] No valid expanded entry ID (\(appState.journalExpandedEntryId?.uuidString ?? "nil")) or entry not in filtered list. Cannot scroll.")
-                          return // Don't scroll if ID is nil or not visible
-                      }
-                      // Scroll to that entry without animation
-                      scrollProxy.scrollTo(entryId, anchor: .top)
-                      print("[JournalView.onAppear] Restored scroll to expanded entry: \(entryId)")
-                 }
-            }
-            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                let scrollingDown = value < lastScrollPosition
-                if abs(value - lastScrollPosition) > 10 {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
-                        else { tabBarOffset = 0; tabBarVisible = true }
+                     // --- Entry List / Empty State ---
+                     if filteredEntries.isEmpty {
+                        emptyState
+                     } else {
+                        journalList
+                     }
+
+                     // --- Insights CTA Section [NEW] ---
+                     // Place it *inside* the ScrollView but *after* the main content
+                     // Only show if there are entries (otherwise emptyState handles CTA)
+                     if !appState.journalEntries.isEmpty { // Use the unfiltered check here
+                          ctaSectionView
+                     }
+
+                } // End ScrollView
+                .coordinateSpace(name: "scrollView")
+                .disabled(mainScrollingDisabled)
+                // Add onAppear here to restore scroll position when tab becomes active
+                .onAppear {
+                     // Use a slight delay to ensure the view hierarchy is ready
+                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Increased delay slightly
+                          // Check if there's a previously expanded entry AND it exists in the currently filtered list
+                          guard let entryId = appState.journalExpandedEntryId,
+                                filteredEntries.contains(where: { $0.id == entryId }) else {
+                              print("[JournalView.onAppear] No valid expanded entry ID (\(appState.journalExpandedEntryId?.uuidString ?? "nil")) or entry not in filtered list. Cannot scroll.")
+                              return // Don't scroll if ID is nil or not visible
+                          }
+                          // Scroll to that entry without animation
+                          scrollProxy.scrollTo(entryId, anchor: .top)
+                          print("[JournalView.onAppear] Restored scroll to expanded entry: \(entryId)")
+                     }
+                }
+                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                    let scrollingDown = value < lastScrollPosition
+                    if abs(value - lastScrollPosition) > 10 {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
+                            else { tabBarOffset = 0; tabBarVisible = true }
+                        }
+                        lastScrollPosition = value
                     }
-                    lastScrollPosition = value
                 }
-            }
-            .simultaneousGesture(
-                TapGesture().onEnded {
-                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                }
-            )
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
+                )
+            } // End Containing VStack
         } // End ScrollViewReader
     }
 
@@ -339,8 +363,36 @@ struct JournalView: View {
              }
          }
          // REMOVED: .padding(.horizontal, 20)
-         .padding(.bottom, 100) // Keep bottom padding
+         // Reduce bottom padding slightly to make room for CTA
+         .padding(.bottom, styles.layout.paddingXL)
     }
+
+     // [NEW] CTA Section View
+     private var ctaSectionView: some View {
+         VStack(spacing: styles.layout.spacingM) {
+             Text("Review your patterns and progress over time.")
+                 .font(styles.typography.bodyFont)
+                 .foregroundColor(styles.colors.textSecondary)
+                 .multilineTextAlignment(.center)
+
+             Button("Go to Insights") {
+                 NotificationCenter.default.post(
+                     name: NSNotification.Name("SwitchToTab"),
+                     object: nil,
+                     userInfo: ["tabIndex": 1] // Index 1 = Insights
+                 )
+             }
+             .buttonStyle(UIStyles.PrimaryButtonStyle()) // Use primary style
+         }
+         .padding(.horizontal, styles.layout.paddingXL) // Standard horizontal padding
+         .padding(.vertical, styles.layout.spacingXL) // Ample vertical padding
+          // Add slight background tint if desired
+         // .background(styles.colors.secondaryBackground.opacity(0.3))
+         // .cornerRadius(styles.layout.radiusL)
+         // .padding(.horizontal, styles.layout.paddingL) // Padding around the background
+         .padding(.bottom, 100) // Ensure enough space below CTA, above bottom bar
+     }
+
 
     private var emptyState: some View {
         VStack(alignment: .center, spacing: 16) {
@@ -369,6 +421,12 @@ struct JournalView: View {
        }
        .frame(maxWidth: .infinity)
        .padding()
+       // Add the CTA here as well for consistency when *truly* empty
+        .overlay(alignment: .bottom) {
+            if appState._journalEntries.isEmpty && searchTags.isEmpty && selectedMoods.isEmpty && dateFilterType == .all {
+                ctaSectionView
+            }
+        }
     }
 
     private var floatingAddButton: some View {
@@ -402,10 +460,13 @@ struct JournalView: View {
 
     @MainActor
     private func updateEntryInAppState(_ updatedEntry: JournalEntry) {
-        if let index = appState.journalEntries.firstIndex(where: { $0.id == updatedEntry.id }) {
-            withAnimation { appState.journalEntries[index] = updatedEntry }
+        // Update underlying storage directly
+         if let index = appState._journalEntries.firstIndex(where: { $0.id == updatedEntry.id }) {
+            withAnimation { appState._journalEntries[index] = updatedEntry }
             if fullscreenEntry?.id == updatedEntry.id { fullscreenEntry = updatedEntry }
-            appState.journalEntries.sort { $0.date > $1.date } // Keep sorted
+            appState._journalEntries.sort { $0.date > $1.date } // Keep sorted
+             // Manually trigger update if simulating
+             // if appState.simulateEmptyState { appState.objectWillChange.send() }
         } else {
              print("Warning: Tried to update entry \(updatedEntry.id) in AppState, but not found.")
         }
@@ -414,16 +475,19 @@ struct JournalView: View {
     // Modify the deleteEntry function to show confirmation first
     private func deleteEntry(_ entry: JournalEntry) {
         Task { @MainActor in
-            if let index = appState.journalEntries.firstIndex(where: { $0.id == entry.id }) {
-                _ = withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { appState.journalEntries.remove(at: index) }
+            // Use underlying storage for deletion
+            if let index = appState._journalEntries.firstIndex(where: { $0.id == entry.id }) {
+                _ = withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { appState._journalEntries.remove(at: index) }
+                 // Manually trigger update if simulating
+                 // if appState.simulateEmptyState { appState.objectWillChange.send() }
             }
             if fullscreenEntry?.id == entry.id { fullscreenEntry = nil }
             if editingEntry?.id == entry.id { editingEntry = nil }
         }
         Task.detached(priority: .background) {
             do {
-                // Add await here as deleteJournalEntry might become async later
-                try await databaseService.deleteJournalEntry(id: entry.id)
+                // Assuming deleteJournalEntry is synchronous for now
+                try databaseService.deleteJournalEntry(id: entry.id)
                 print("✅ Successfully deleted journal entry \(entry.id) from DB.")
             } catch {
                 print("‼️ Error deleting journal entry \(entry.id) from DB: \(error)")
@@ -434,13 +498,14 @@ struct JournalView: View {
     // Function to toggle star status
     @MainActor
     private func toggleStar(_ entry: JournalEntry) {
-        guard let index = appState.journalEntries.firstIndex(where: { $0.id == entry.id }) else {
+        // Use underlying storage for modification
+        guard let index = appState._journalEntries.firstIndex(where: { $0.id == entry.id }) else {
             print("Error: Could not find entry \(entry.id) to star.")
             return
         }
 
-        appState.journalEntries[index].isStarred.toggle()
-        let newStatus = appState.journalEntries[index].isStarred
+        appState._journalEntries[index].isStarred.toggle()
+        let newStatus = appState._journalEntries[index].isStarred
         print("[JournalView] Toggling star for entry \(entry.id) to \(newStatus)")
 
         // Update fullscreen/editing views if they are showing this entry
@@ -451,6 +516,10 @@ struct JournalView: View {
             editingEntry?.isStarred = newStatus
         }
 
+         // Manually trigger update if simulating
+         // if appState.simulateEmptyState { appState.objectWillChange.send() }
+
+
         // Persist change to DB in background
         Task.detached(priority: .background) { [databaseService] in
             do {
@@ -459,7 +528,7 @@ struct JournalView: View {
             } catch {
                 print("‼️ Error toggling star for entry \(entry.id) in DB: \(error)")
                 // Consider reverting UI state on error?
-                // await MainActor.run { appState.journalEntries[index].isStarred.toggle() }
+                // await MainActor.run { appState._journalEntries[index].isStarred.toggle() }
             }
         }
     }

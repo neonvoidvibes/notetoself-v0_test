@@ -426,6 +426,7 @@ class AppState: ObservableObject {
     @Published var subscriptionTier: SubscriptionTier = .free
     @Published var hasSeenOnboarding: Bool = false
     @Published var simulateEmptyState: Bool = false // Flag for developer toggle
+    @Published var presentNewJournalEntrySheet: Bool = false // Flag to trigger new entry sheet
 
     // Computed property for views to observe
     // Returns empty array if simulation is enabled, otherwise returns real entries
