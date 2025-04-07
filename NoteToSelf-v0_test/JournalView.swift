@@ -9,7 +9,7 @@ struct JournalView: View {
     @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled
 
     // View State
-    @State private var showingNewEntrySheet = false // Reinstated local state
+    // @State private var showingNewEntrySheet = false // REMOVED local state
     @State private var editingEntry: JournalEntry? = nil
     @State private var fullscreenEntry: JournalEntry? = nil
 
@@ -78,7 +78,7 @@ struct JournalView: View {
                 journalContent // Extracted ScrollView content
             }
 
-            floatingAddButton // Extracted floating button
+            floatingAddButton // Extracted floating button (action now sets AppState flag)
         } // End ZStack
         .onAppear { // Trigger animation when view appears
             // Use DispatchQueue to delay slightly if needed for visual effect
@@ -86,43 +86,7 @@ struct JournalView: View {
                 headerAppeared = true
             }
         }
-        // Reinstate sheet presentation here
-         .fullScreenCover(isPresented: $showingNewEntrySheet) {
-              EditableFullscreenEntryView(
-                  initialMood: .neutral,
-                  onSave: { text, mood, intensity in
-                      let newEntry = JournalEntry(text: text, mood: mood, date: Date(), intensity: intensity)
-                      Task {
-                          let embeddingVector = await generateEmbedding(for: newEntry.text)
-                          do {
-                              try databaseService.saveJournalEntry(newEntry, embedding: embeddingVector)
-                              await MainActor.run {
-                                   // Update the underlying storage directly
-                                   appState._journalEntries.insert(newEntry, at: 0)
-                                   appState._journalEntries.sort { $0.date > $1.date } // Keep sorted
-                                   // Update the expanded ID using the computed property accessor (which handles simulation)
-                                   withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                                       appState.journalExpandedEntryId = newEntry.id // Expand new entry by default using AppState
-                                   }
-                                   // Manually trigger objectWillChange if needed for immediate UI update when simulating
-                                   // if appState.simulateEmptyState { appState.objectWillChange.send() }
-
-                              }
-                              // Call global trigger function
-                              await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, appState: appState)
-                          } catch {
-                              print("‼️ Error saving new journal entry \(newEntry.id) to DB: \(error)")
-                          }
-                      }
-                      // Sheet dismisses automatically on completion
-                  },
-                  onCancel: {
-                      print("[JournalView] New entry sheet cancelled.")
-                      // No need to switch tabs, already on Journal
-                  },
-                  autoFocusText: true
-              )
-         }
+        // REMOVED .fullScreenCover(isPresented: $showingNewEntrySheet)
         .fullScreenCover(item: $fullscreenEntry) { entry in
             FullscreenEntryView(
                 entry: entry,
@@ -186,16 +150,7 @@ struct JournalView: View {
                  }
              }
         }
-        // Reinstate onChange for triggering sheet presentation
-         .onChange(of: appState.presentNewJournalEntrySheet) { _, shouldPresent in
-              if shouldPresent {
-                  print("[JournalView] Detected presentNewJournalEntrySheet = true") // Debug Print
-                  showingNewEntrySheet = true
-                  // Reset the flag immediately after triggering the presentation
-                  appState.presentNewJournalEntrySheet = false
-                  print("[JournalView] Set showingNewEntrySheet = true, reset AppState flag.") // Debug Print
-              }
-          }
+        // REMOVED onChange(of: appState.presentNewJournalEntrySheet) modifier
     } // End Body
 
 
@@ -397,10 +352,9 @@ struct JournalView: View {
              .buttonStyle(UIStyles.PrimaryButtonStyle()) // Use primary style
          }
          .padding(.horizontal, styles.layout.paddingXL) // Standard horizontal padding
-         .padding(.vertical, styles.layout.spacingL) // Use less vertical padding
-         .padding(.bottom, styles.layout.spacingS) // Reduce bottom padding significantly
-         // Add top padding only if it's not the absolute first thing after header
-         .padding(.top, groupedEntries.first?.0 == "Today" ? styles.layout.spacingL : 0)
+         // Adjust padding around the CTA section
+         .padding(.top, styles.layout.spacingXL) // Increased top padding
+         .padding(.bottom, styles.layout.spacingM) // Reduced bottom padding before next header
      }
 
 
@@ -439,7 +393,12 @@ struct JournalView: View {
             Spacer()
             HStack {
                 Spacer()
-                Button(action: { showingNewEntrySheet = true }) {
+                Button(action: {
+                    // Set flag directly for JournalView FAB
+                    print("[JournalView] FAB Tapped - Setting presentNewJournalEntrySheet = true")
+                     appState.objectWillChange.send() // Ensure update is published
+                    appState.presentNewJournalEntrySheet = true
+                 }) {
                     Image(systemName: "plus")
                         .renderingMode(.template) // Ensure foregroundColor takes effect
                         .font(.system(size: 24, weight: .bold))

@@ -208,7 +208,43 @@ struct MainTabView: View {
 
       }
       .environment(\.settingsScrollingDisabled, isSwipingSettings)
-      // REMOVED .fullScreenCover for new entry sheet
+      // Reinstate modal presentation for new entry sheet
+      .fullScreenCover(isPresented: $appState.presentNewJournalEntrySheet) {
+          EditableFullscreenEntryView(
+              onSave: { text, mood, intensity in
+                  print("[MainTabView] New Entry Saved.")
+                  let newEntry = JournalEntry(text: text, mood: mood, date: Date(), intensity: intensity)
+                  Task {
+                      let embeddingVector = await generateEmbedding(for: newEntry.text)
+                      do {
+                          try databaseService.saveJournalEntry(newEntry, embedding: embeddingVector)
+                          await MainActor.run {
+                               appState._journalEntries.insert(newEntry, at: 0)
+                               appState._journalEntries.sort { $0.date > $1.date }
+                               withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                                   appState.journalExpandedEntryId = newEntry.id
+                               }
+                               print("[MainTabView] Saved new entry, state updated.")
+                               // Ensure tab is Journal after save
+                               if selectedTab != 0 { selectedTab = 0 }
+                          }
+                          await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, appState: appState)
+                      } catch {
+                          print("‼️ Error saving new journal entry from MainTabView: \(error)")
+                      }
+                  }
+                  // Flag automatically set false by dismissal
+              },
+              onCancel: {
+                  // If cancelled, switch back to Insights tab
+                  print("[MainTabView] New Entry Cancelled. Switching back to Insights.")
+                  // Post notification instead of direct setting to ensure decoupling
+                  NotificationCenter.default.post(name: .switchToTabNotification, object: nil, userInfo: ["tabIndex": 1])
+                  // Flag automatically set false by dismissal
+              },
+              autoFocusText: true
+          )
+      }
       .onAppear {
           bottomSheetOffset = peekHeight - fullSheetHeight
           if !appState.hasSeenOnboarding { appState.hasSeenOnboarding = true }
@@ -233,7 +269,22 @@ struct MainTabView: View {
                   } else { print("[MainTabView] Error: Received invalid tab index \(tabIndex)") }
              } else { print("[MainTabView] Error: Received notification without valid tabIndex") }
        }
-       // REMOVED onChange for presentNewJournalEntrySheet
+       // Reinstate onChange to handle switching *before* presentation
+        .onChange(of: appState.presentNewJournalEntrySheet) { _, shouldPresent in
+             if shouldPresent {
+                 print("[MainTabView] Detected presentNewJournalEntrySheet = true")
+                 // Ensure we are on the Journal tab *before* the sheet tries to present
+                 // Add a small delay to allow sheet animation to start
+                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Short delay
+                     if self.selectedTab != 0 {
+                         print("[MainTabView] Switching to Journal tab (0) with delay.")
+                         // Do NOT disable animation here, let the default tab switch animate slightly
+                         self.selectedTab = 0
+                     }
+                 }
+                 // Resetting the flag is now handled by the .fullScreenCover modifier's binding
+             }
+         }
       .environment(\.keyboardVisible, isKeyboardVisible)
   }
 }
