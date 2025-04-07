@@ -222,8 +222,6 @@ struct InsightsView: View {
     private func insightsCardList(scrollProxy: ScrollViewProxy) -> some View {
         LazyVStack(spacing: styles.layout.cardSpacing) { // Use standard card spacing
 
-            // REMOVED #if DEBUG block with subscription picker
-
             // --- Daily Reflection Card ---
               if isLoadingInsights && dailyReflectionJson == nil {
                   SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
@@ -266,9 +264,19 @@ struct InsightsView: View {
 
                  Button("Add New Entry") {
                      print("[InsightsView] Add New Entry button tapped.") // Debug Print
-                     // Just set the AppState flag. MainTabView will handle presentation.
-                     appState.presentNewJournalEntrySheet = true
-                     print("[InsightsView] Set presentNewJournalEntrySheet = true") // Debug Print
+                     // Post notification to switch tab FIRST
+                     print("[InsightsView] Posting switchToTabNotification (index 0)") // Debug Print
+                     NotificationCenter.default.post(
+                         name: .switchToTabNotification, // Use standard name
+                         object: nil,
+                         userInfo: ["tabIndex": 0] // Index 0 = Journal
+                     )
+                     // THEN set the flag, possibly after a tiny delay
+                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Small delay
+                         appState.objectWillChange.send() // Ensure state update is observed
+                         appState.presentNewJournalEntrySheet = true
+                         print("[InsightsView] Set presentNewJournalEntrySheet = true") // Debug Print
+                     }
                  }
                  .buttonStyle(UIStyles.PrimaryButtonStyle())
              }
@@ -397,10 +405,19 @@ struct InsightsView: View {
              // [7.1] Add Journal Entry Button
              Button("Add Journal Entry") {
                  print("[InsightsView] Empty State - Add New Entry button tapped.") // Debug Print
-                 // Just set the AppState flag. MainTabView will handle presentation.
-                 appState.presentNewJournalEntrySheet = true
-                 print("[InsightsView] Empty State - Set presentNewJournalEntrySheet = true") // Debug Print
-                 // Don't switch tab here, MainTabView will handle it if needed.
+                  // Post notification to switch tab FIRST
+                  print("[InsightsView] Empty State - Posting switchToTabNotification (index 0)")
+                  NotificationCenter.default.post(
+                      name: .switchToTabNotification,
+                      object: nil,
+                      userInfo: ["tabIndex": 0]
+                  )
+                  // THEN set the flag, possibly after a tiny delay
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                      appState.objectWillChange.send()
+                      appState.presentNewJournalEntrySheet = true
+                      print("[InsightsView] Empty State - Set presentNewJournalEntrySheet = true")
+                  }
              }
              .buttonStyle(UIStyles.PrimaryButtonStyle())
              .padding(.horizontal, styles.layout.paddingXL * 1.5) // Make button slightly narrower

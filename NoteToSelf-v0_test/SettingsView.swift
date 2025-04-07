@@ -504,6 +504,16 @@ struct DeveloperSection: View {
             )
             .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 8)
         }
+        // Set default subscription tier to Pro when the view appears
+        .onAppear {
+             #if DEBUG
+             // Set default only if it's not already Pro
+             if appState.subscriptionTier != .pro {
+                 appState.subscriptionTier = .pro
+                 print("[Dev Section] Default subscription set to Pro on appear.")
+             }
+             #endif
+         }
     }
 }
 

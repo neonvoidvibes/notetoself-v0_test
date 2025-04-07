@@ -345,11 +345,14 @@ struct JournalView: View {
     }
 
     private var journalList: some View {
-        LazyVStack(spacing: styles.layout.radiusM, pinnedViews: [.sectionHeaders]) { // Pinned views attempt stickiness
+        LazyVStack(spacing: styles.layout.radiusM, pinnedViews: [.sectionHeaders]) {
              // Use the groupedEntries computed property
-             ForEach(groupedEntries, id: \.0) { section, entries in
+             ForEach(groupedEntries.indices, id: \.self) { sectionIndex in
+                 let (section, entries) = groupedEntries[sectionIndex]
                  Section(header: SharedSectionHeader(title: section, backgroundColor: styles.colors.appBackground)
                                      .id("header-\(section)")
+                                     // Reduce top padding for headers *after* the CTA section
+                                     .padding(.top, (sectionIndex > 0 && groupedEntries[sectionIndex-1].0 == "Today") ? styles.layout.spacingS : 12)
                  ) {
                      ForEach(entries) { entry in
                          JournalEntryCard(
@@ -371,10 +374,11 @@ struct JournalView: View {
                  }
              }
          }
-         .padding(.bottom, styles.layout.paddingXL) // Keep bottom padding
+         .padding(.bottom, styles.layout.paddingXL) // Keep bottom padding for scroll space
     }
 
-     // [NEW] CTA Section View (Kept definition, but called conditionally now)
+
+     // CTA Section View
      private var ctaSectionView: some View {
          VStack(spacing: styles.layout.spacingM) {
              Text("Review your patterns and progress over time.")
@@ -393,10 +397,10 @@ struct JournalView: View {
              .buttonStyle(UIStyles.PrimaryButtonStyle()) // Use primary style
          }
          .padding(.horizontal, styles.layout.paddingXL) // Standard horizontal padding
-         .padding(.vertical, styles.layout.spacingXL) // Ample vertical padding
-         // Ensure CTA padding doesn't clash with LazyVStack spacing
-         .padding(.top, styles.layout.spacingL) // Add space above CTA
-         .padding(.bottom, 100) // Ensure enough space below CTA, above bottom bar
+         .padding(.vertical, styles.layout.spacingL) // Use less vertical padding
+         .padding(.bottom, styles.layout.spacingS) // Reduce bottom padding significantly
+         // Add top padding only if it's not the absolute first thing after header
+         .padding(.top, groupedEntries.first?.0 == "Today" ? styles.layout.spacingL : 0)
      }
 
 

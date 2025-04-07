@@ -121,23 +121,23 @@ struct MainTabView: View {
 
   var body: some View {
       ZStack {
-          // Background layers (kept as is)
+          // Background layers
           styles.colors.appBackground.ignoresSafeArea()
           styles.colors.inputBackground.ignoresSafeArea()
           if !bottomSheetExpanded {
               if selectedTab == 0 || selectedTab == 1 { styles.colors.appBackground.ignoresSafeArea() }
           } else { styles.colors.bottomSheetBackground.ignoresSafeArea() }
-          // Status bar background (kept as is)
+          // Status bar background
           VStack(spacing: 0) { styles.colors.statusBarBackground.frame(height: styles.layout.topSafeAreaPadding); Spacer() }.ignoresSafeArea()
 
           // Main content container
           VStack(spacing: 0) {
               ZStack {
-                  // --- Reverted to ZStack for view switching ---
-                  Group { // Use Group for conditional content
+                  // ZStack for view switching
+                  Group {
                        if selectedTab == 0 {
                            JournalView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
-                               .transition(.opacity) // Add a simple transition
+                               .transition(.opacity)
                        } else if selectedTab == 1 {
                            InsightsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
                                .transition(.opacity)
@@ -148,18 +148,17 @@ struct MainTabView: View {
                                .transition(.opacity)
                        }
                    }
-                   // No longer using TabView modifiers like .tabViewStyle or .animation
               }
               .offset(y: bottomSheetExpanded ? -fullSheetHeight * 0.25 : 0)
               .animation(styles.animation.bottomSheetAnimation, value: bottomSheetExpanded)
               .environment(\.bottomSheetExpanded, bottomSheetExpanded)
-              // Auto-close gestures... (kept as is)
+              // Auto-close gestures...
               .onTapGesture { if bottomSheetExpanded { withAnimation(styles.animation.bottomSheetAnimation) { bottomSheetExpanded = false; bottomSheetOffset = peekHeight - fullSheetHeight } } }
               .simultaneousGesture( DragGesture(minimumDistance: 1).onChanged { _ in if bottomSheetExpanded { withAnimation(styles.animation.bottomSheetAnimation) { bottomSheetExpanded = false; bottomSheetOffset = peekHeight - fullSheetHeight } } } )
               .simultaneousGesture( TapGesture().onEnded { if bottomSheetExpanded { withAnimation(styles.animation.bottomSheetAnimation) { bottomSheetExpanded = false; bottomSheetOffset = peekHeight - fullSheetHeight } } } )
 
 
-              // Bottom sheet / tab bar (kept as is)
+              // Bottom sheet / tab bar
               GeometryReader { geometry in
                   if !isKeyboardVisible {
                       VStack(spacing: 0) {
@@ -201,7 +200,7 @@ struct MainTabView: View {
           .disabled(isSwipingSettings || showingChatHistory)
           .gesture(settingsDrag)
 
-          // Overlays (Settings, Chat History)... (kept as is)
+          // Overlays (Settings, Chat History)...
            Color.black.opacity(showingSettings ? 0.5 : 0).opacity(dragOffset != 0 ? (showingSettings ? 0.5 - (dragOffset / screenWidth) * 0.5 : (dragOffset / screenWidth) * 0.5) : (showingSettings ? 0.5 : 0)).ignoresSafeArea().allowsHitTesting(false)
            Color.black.opacity(showingChatHistory ? 0.5 : 0).ignoresSafeArea().allowsHitTesting(false)
            ZStack(alignment: .top) { SettingsView().environmentObject(databaseService).background(styles.colors.menuBackground) }.background(styles.colors.menuBackground).zIndex(100).contentShape(Rectangle()).simultaneousGesture(settingsDrag).frame(width: screenWidth).background(styles.colors.menuBackground).offset(x: settingsOffset).zIndex(2)
@@ -209,11 +208,11 @@ struct MainTabView: View {
 
       }
       .environment(\.settingsScrollingDisabled, isSwipingSettings)
-      // REMOVED modal presentation logic for new entry sheet
+      // REMOVED .fullScreenCover for new entry sheet
       .onAppear {
           bottomSheetOffset = peekHeight - fullSheetHeight
           if !appState.hasSeenOnboarding { appState.hasSeenOnboarding = true }
-          // Notification observers... (kept as is)
+          // Notification observers...
            NotificationCenter.default.addObserver(forName: .toggleSettingsNotification, object: nil, queue: .main) { _ in print("[MainTabView] Received toggleSettingsNotification"); withAnimation(.easeInOut(duration: 0.3)) { showingSettings.toggle(); settingsOffset = showingSettings ? 0 : -screenWidth } }
            NotificationCenter.default.addObserver(forName: .toggleChatHistoryNotification, object: nil, queue: .main) { _ in print("[MainTabView] Received toggleChatHistoryNotification"); withAnimation(.easeInOut(duration: 0.3)) { showingChatHistory.toggle(); chatHistoryOffset = showingChatHistory ? 0 : screenWidth } }
            NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { _ in withAnimation(.easeInOut(duration: 0.25)) { isKeyboardVisible = true } }
@@ -234,7 +233,7 @@ struct MainTabView: View {
                   } else { print("[MainTabView] Error: Received invalid tab index \(tabIndex)") }
              } else { print("[MainTabView] Error: Received notification without valid tabIndex") }
        }
-       // REMOVED onChange(of: appState.presentNewJournalEntrySheet) modifier
+       // REMOVED onChange for presentNewJournalEntrySheet
       .environment(\.keyboardVisible, isKeyboardVisible)
   }
 }
