@@ -16,12 +16,12 @@ actor WeekInReviewGenerator {
 
         let calendar = Calendar.current
         var shouldGenerate = true
-        var lastGenerationDate: Date? = nil
+        // Removed lastGenerationDate variable
 
         // 1. Check regeneration threshold (only generate if older than ~7 days)
         do {
             if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                lastGenerationDate = latest.generatedDate
+                // Removed assignment to lastGenerationDate
                 let daysSinceLast = calendar.dateComponents([.day], from: latest.generatedDate, to: Date()).day ?? regenerationThresholdDays + 1
                 if daysSinceLast < regenerationThresholdDays {
                     print("[WeekInReviewGenerator] Skipping generation: Last review generated \(daysSinceLast) days ago (Threshold: \(regenerationThresholdDays)).")

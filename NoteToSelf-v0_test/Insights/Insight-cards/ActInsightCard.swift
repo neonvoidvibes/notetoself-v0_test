@@ -127,25 +127,20 @@ struct ActInsightCard: View {
         loadError = false
         print("[ActInsightCard] Loading insight...")
         Task {
-            do {
-                // Removed await from loadLatestInsight
-                if let (json, date) = try? databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                     // Removed await from decodeJSON
-                     decodeJSON(json: json, date: date)
-                } else {
-                    await MainActor.run {
-                        insightResult = nil; generatedDate = nil; isLoading = false
-                        print("[ActInsightCard] No stored insight found.")
-                    }
+            // Removed do-catch block as try? handles errors by returning nil
+            if let (json, date) = try? databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                // Removed await from decodeJSON
+                decodeJSON(json: json, date: date)
+            } else {
+                // This handles both DB error (try? returns nil) and insight not found
+                await MainActor.run {
+                    insightResult = nil; generatedDate = nil; isLoading = false
+                    // Check if the error was due to not finding or an actual DB error if needed
+                    // For now, simply report no insight found.
+                    print("[ActInsightCard] No stored insight found or error loading.")
+                    // Set loadError to true if you want to display an error message
+                    // self.loadError = true
                 }
-            }
-            // Add catch block for robustness, although loadLatestInsight uses try?
-            catch {
-                 print("‼️ [ActInsightCard] Error loading insight: \(error)")
-                 await MainActor.run {
-                      loadError = true
-                      isLoading = false
-                 }
             }
         }
     }
