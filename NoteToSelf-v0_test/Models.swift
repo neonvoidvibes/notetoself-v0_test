@@ -307,24 +307,38 @@ struct MoodTrendPoint: Identifiable, Codable, Equatable {
         self.label = label
     }
 
-     // Custom Decoder if needed (usually not necessary if just excluding)
+     // Custom Decoder to handle date string from LLM
      init(from decoder: Decoder) throws {
          let container = try decoder.container(keyedBy: CodingKeys.self)
-         date = try container.decode(Date.self, forKey: .date)
+
+         // Decode other properties normally
          moodValue = try container.decode(Double.self, forKey: .moodValue)
          label = try container.decode(String.self, forKey: .label)
+
+         // Decode date as String and parse
+         let dateString = try container.decode(String.self, forKey: .date)
+         let formatter = ISO8601DateFormatter()
+         // Attempt multiple formats if necessary, start with the most likely one
+         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds] // Common format with optional milliseconds
+         if let decodedDate = formatter.date(from: dateString) {
+              self.date = decodedDate
+         } else {
+              // Try without fractional seconds
+              formatter.formatOptions = [.withInternetDateTime]
+              if let decodedDate = formatter.date(from: dateString) {
+                  self.date = decodedDate
+              } else {
+                   // Throw error if parsing fails after trying formats
+                   throw DecodingError.dataCorruptedError(forKey: .date, in: container, debugDescription: "Date string '\(dateString)' does not match expected ISO8601 format.")
+              }
+         }
+
          // Generate a new ID upon decoding
          id = UUID()
      }
 
-     // Custom Encoder (if needed, usually not if just excluding)
-     func encode(to encoder: Encoder) throws {
-         var container = encoder.container(keyedBy: CodingKeys.self)
-         try container.encode(date, forKey: .date)
-         try container.encode(moodValue, forKey: .moodValue)
-         try container.encode(label, forKey: .label)
-         // Do not encode 'id'
-     }
+     // Encoder can often use the default implementation if only decoding is custom
+     // func encode(to encoder: Encoder) throws { ... } // Keep default unless specific encoding needed
 }
 
 struct FeelInsightResult: Codable, Equatable {

@@ -24,84 +24,118 @@ actor FeelInsightGenerator {
                 lastGenerationDate = latest.generatedDate
                 let daysSinceLast = calendar.dateComponents([.day], from: latest.generatedDate, to: Date()).day ?? regenerationThresholdDays + 1
                 if daysSinceLast < regenerationThresholdDays {
-                    print("[FeelInsightGenerator] Skipping generation: Last insight generated \(daysSinceLast) days ago.")
+                    print("✅ [FeelInsightGenerator] Check Passed (Recently Generated): Skipping generation. Last insight generated \(daysSinceLast) days ago.")
                     shouldGenerate = false
                 } else {
-                     print("[FeelInsightGenerator] Last insight is old enough. Checking for new entries...")
+                     print("✅ [FeelInsightGenerator] Check Passed (Old Enough): Last insight is \(daysSinceLast) days old. Checking for new entries...")
                 }
             } else {
-                print("[FeelInsightGenerator] No previous insight found. Will generate.")
+                print("✅ [FeelInsightGenerator] Check Passed (No Previous): No previous insight found. Will generate.")
             }
         } catch {
-            print("‼️ [FeelInsightGenerator] Error loading latest insight: \(error). Proceeding.")
+            print("‼️ [FeelInsightGenerator] Error loading latest insight: \(error). Proceeding with generation check.")
+            // Decide if you want to force generation on load error? For now, let's proceed.
         }
 
-        guard shouldGenerate else { return }
+        guard shouldGenerate else {
+             print("🏁 [FeelInsightGenerator] Finished: Skipped due to recent generation.")
+             return
+        }
 
         // 2. Fetch necessary data (e.g., last 7-14 days of entries)
         let entries: [JournalEntry]
-        let fetchStartDate = calendar.date(byAdding: .day, value: -14, to: Date())! // Fetch last 14 days
+        let fetchStartDate = calendar.date(byAdding: .day, value: -14, to: Date())!
         do {
+            // Fetch and filter entries
             entries = try databaseService.loadAllJournalEntries().filter { $0.date >= fetchStartDate }
+            print("✅ [FeelInsightGenerator] Data Fetch: Fetched \(entries.count) entries from the last 14 days.")
         } catch {
-            print("‼️ [FeelInsightGenerator] Error fetching journal entries: \(error)")
+            print("‼️ [FeelInsightGenerator] Data Fetch Failed: Error fetching journal entries: \(error)")
+            print("🏁 [FeelInsightGenerator] Finished: Aborted due to data fetch error.")
             return
         }
 
-        // Check if there are new entries since the last generation (if applicable)
+        // 3. Check Minimum Entry Count
+        guard entries.count >= 3 else {
+            print("⚠️ [FeelInsightGenerator] Minimum Entry Check Failed: Skipping generation. Need at least 3 entries in the last 14 days, found \(entries.count).")
+            print("🏁 [FeelInsightGenerator] Finished: Skipped due to insufficient entries.")
+            return
+        }
+        print("✅ [FeelInsightGenerator] Minimum Entry Check Passed: Have \(entries.count) entries.")
+
+
+        // 4. Check for New Entries Since Last Generation (if applicable)
          if let lastGenDate = lastGenerationDate {
               let hasNewEntries = entries.contains { $0.date > lastGenDate }
-              if !hasNewEntries && !entries.isEmpty {
-                   print("[FeelInsightGenerator] Skipping generation: No new entries since last insight.")
-                    try? databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
+              if !hasNewEntries {
+                   print("⚠️ [FeelInsightGenerator] New Entry Check Failed: Skipping LLM generation as no entries are newer than the last insight (\(lastGenDate.formatted())).")
+                   // Attempt to update timestamp to prevent repeated checks until threshold passes
+                   do {
+                       try await databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
+                       print("✅ [FeelInsightGenerator] Timestamp updated for existing insight.")
+                   } catch {
+                        print("‼️ [FeelInsightGenerator] Error updating timestamp: \(error)")
+                   }
+                   print("🏁 [FeelInsightGenerator] Finished: Skipped LLM call due to no new entries.")
                    return
+              } else {
+                   print("✅ [FeelInsightGenerator] New Entry Check Passed: Found entries newer than last insight.")
               }
+         } else {
+             // This is the first generation or last generation failed, proceed.
+              print("✅ [FeelInsightGenerator] New Entry Check Passed: First generation run or no previous date found.")
          }
 
-        guard entries.count >= 3 else {
-            print("⚠️ [FeelInsightGenerator] Skipping generation: Insufficient entries (\(entries.count)) for context.")
-            return
-        }
-
-        print("[FeelInsightGenerator] Using \(entries.count) entries for context.")
-
-        // 3. Format prompt context
+        // 5. Format prompt context
         let context = entries.map { entry in
             "Date: \(entry.date.formatted(date: .numeric, time: .omitted)), Mood: \(entry.mood.name)\n\(entry.text.prefix(150))..."
         }.joined(separator: "\n\n")
 
-        // 4. Get system prompt
+        // 6. Get system prompt
         let systemPrompt = SystemPrompts.feelInsightPrompt(entriesContext: context)
 
-        // 5. Call LLMService
+        // 7. Call LLMService
+        print("⏳ [FeelInsightGenerator] Calling LLMService...")
         do {
             let result: FeelInsightResult = try await llmService.generateStructuredOutput(
                 systemPrompt: systemPrompt,
-                userMessage: "Generate the Feel insight (Mood Trend, Snapshot, Dominant Mood) based on the context.", // Updated user message
+                userMessage: "Generate the Feel insight (Mood Trend, Snapshot, Dominant Mood) based on the context.",
                 responseModel: FeelInsightResult.self
             )
 
-             print("✅ [FeelInsightGenerator] LLM Success. Dominant Mood: \(result.dominantMood ?? "N/A")") // Log dominant mood
+             print("✅ [FeelInsightGenerator] LLM Success. Dominant Mood: \(result.dominantMood ?? "N/A")")
 
-            // 6. Encode result
+            // 8. Encode result
+             print("⏳ [FeelInsightGenerator] Encoding result...")
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .iso8601 // Ensure dates are encoded properly for chart data
+             encoder.outputFormatting = [.prettyPrinted, .sortedKeys] // Make JSON easier to read in DB/logs
             guard let jsonData = try? encoder.encode(result),
                   let jsonString = String(data: jsonData, encoding: .utf8) else {
-                print("‼️ [FeelInsightGenerator] Failed to encode result to JSON string.")
+                print("‼️ [FeelInsightGenerator] Encoding Failed: Failed to encode result to JSON string.")
+                print("🏁 [FeelInsightGenerator] Finished: Aborted due to encoding error.")
                 return
             }
+             print("✅ [FeelInsightGenerator] Encoding successful.")
+             // print("📄 [FeelInsightGenerator] Generated JSON:\n\(jsonString)") // Uncomment to log full JSON
 
-            // 7. Save to Database
+            // 9. Save to Database
+             print("⏳ [FeelInsightGenerator] Saving insight to database...")
             try databaseService.saveGeneratedInsight(
                 type: insightTypeIdentifier,
                 date: Date(),
                 jsonData: jsonString
             )
-            print("✅ [FeelInsightGenerator] Insight saved to database.")
+            print("✅ [FeelInsightGenerator] Insight saved successfully to database.")
 
         } catch let error as LLMService.LLMError {
             print("‼️ [FeelInsightGenerator] LLM generation failed: \(error.localizedDescription)")
+            // Optionally log more details based on error type
+            if case .decodingError(let reason) = error {
+                 print("   LLM Decoding Error Detail: \(reason)")
+            }
+        } catch let error as DatabaseError {
+             print("‼️ [FeelInsightGenerator] Database save failed: \(error)")
         } catch {
             print("‼️ [FeelInsightGenerator] An unexpected error occurred: \(error)")
         }
