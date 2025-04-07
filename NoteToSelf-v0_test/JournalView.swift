@@ -9,7 +9,7 @@ struct JournalView: View {
     @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled
 
     // View State
-    // @State private var showingNewEntrySheet = false // REMOVED local state
+    @State private var showingNewEntrySheet = false // Reinstated local state
     @State private var editingEntry: JournalEntry? = nil
     @State private var fullscreenEntry: JournalEntry? = nil
 
@@ -86,7 +86,43 @@ struct JournalView: View {
                 headerAppeared = true
             }
         }
-        // REMOVED .fullScreenCover(isPresented: $showingNewEntrySheet)
+        // Reinstate sheet presentation here
+         .fullScreenCover(isPresented: $showingNewEntrySheet) {
+              EditableFullscreenEntryView(
+                  initialMood: .neutral,
+                  onSave: { text, mood, intensity in
+                      let newEntry = JournalEntry(text: text, mood: mood, date: Date(), intensity: intensity)
+                      Task {
+                          let embeddingVector = await generateEmbedding(for: newEntry.text)
+                          do {
+                              try databaseService.saveJournalEntry(newEntry, embedding: embeddingVector)
+                              await MainActor.run {
+                                   // Update the underlying storage directly
+                                   appState._journalEntries.insert(newEntry, at: 0)
+                                   appState._journalEntries.sort { $0.date > $1.date } // Keep sorted
+                                   // Update the expanded ID using the computed property accessor (which handles simulation)
+                                   withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                                       appState.journalExpandedEntryId = newEntry.id // Expand new entry by default using AppState
+                                   }
+                                   // Manually trigger objectWillChange if needed for immediate UI update when simulating
+                                   // if appState.simulateEmptyState { appState.objectWillChange.send() }
+
+                              }
+                              // Call global trigger function
+                              await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, appState: appState)
+                          } catch {
+                              print("‼️ Error saving new journal entry \(newEntry.id) to DB: \(error)")
+                          }
+                      }
+                      // Sheet dismisses automatically on completion
+                  },
+                  onCancel: {
+                      print("[JournalView] New entry sheet cancelled.")
+                      // No need to switch tabs, already on Journal
+                  },
+                  autoFocusText: true
+              )
+         }
         .fullScreenCover(item: $fullscreenEntry) { entry in
             FullscreenEntryView(
                 entry: entry,
@@ -150,7 +186,16 @@ struct JournalView: View {
                  }
              }
         }
-        // REMOVED onChange(of: appState.presentNewJournalEntrySheet) modifier
+        // Reinstate onChange for triggering sheet presentation
+         .onChange(of: appState.presentNewJournalEntrySheet) { _, shouldPresent in
+              if shouldPresent {
+                  print("[JournalView] Detected presentNewJournalEntrySheet = true") // Debug Print
+                  showingNewEntrySheet = true
+                  // Reset the flag immediately after triggering the presentation
+                  appState.presentNewJournalEntrySheet = false
+                  print("[JournalView] Set showingNewEntrySheet = true, reset AppState flag.") // Debug Print
+              }
+          }
     } // End Body
 
 
@@ -236,46 +281,47 @@ struct JournalView: View {
 
     private var journalContent: some View {
         ScrollViewReader { scrollProxy in
-            // Use a VStack to contain the ScrollView content + the new CTA
+             // Use a standard VStack here, ScrollView is inside
              VStack(spacing: 0) {
                 ScrollView {
-                     GeometryReader { geometry in
-                         Color.clear.preference(
-                             key: ScrollOffsetPreferenceKey.self,
-                             value: geometry.frame(in: .named("scrollView")).minY
-                         )
-                     }
-                     .frame(height: 0)
+                     VStack(spacing: 0) { // Add inner VStack
+                         GeometryReader { geometry in
+                             Color.clear.preference(
+                                 key: ScrollOffsetPreferenceKey.self,
+                                 value: geometry.frame(in: .named("scrollView")).minY
+                             )
+                         }
+                         .frame(height: 0)
 
-                     // --- Journey Card ---
-                     JourneyInsightCard()
-                         .padding(.horizontal, styles.layout.paddingL) // Standard horizontal padding
-                         .padding(.top, styles.layout.spacingXL)       // Ample top padding
-                         .padding(.bottom, styles.layout.spacingL)     // Ample bottom padding
+                         // --- Journey Card ---
+                         JourneyInsightCard()
+                             .padding(.horizontal, styles.layout.paddingL)
+                             .padding(.top, styles.layout.spacingXL)
+                             .padding(.bottom, styles.layout.spacingL)
 
-                     // --- Entry List / Empty State ---
-                     if filteredEntries.isEmpty {
-                        emptyState
-                     } else {
-                        journalList // Modified to include CTA conditionally
-                     }
+                         // --- Entry List / Empty State ---
+                         if filteredEntries.isEmpty {
+                            emptyState
+                         } else {
+                            journalList // Does not include CTA anymore
+                         }
 
-                     // --- Insights CTA Section Moved Inside journalList ---
-
+                         // --- Insights CTA Section [Moved Here] ---
+                         // Place it *after* the LazyVStack/emptyState but *inside* ScrollView
+                         if !appState.journalEntries.isEmpty { // Use underlying entries for check
+                              ctaSectionView
+                         }
+                     } // End inner VStack
                 } // End ScrollView
                 .coordinateSpace(name: "scrollView")
                 .disabled(mainScrollingDisabled)
-                // Add onAppear here to restore scroll position when tab becomes active
                 .onAppear {
-                     // Use a slight delay to ensure the view hierarchy is ready
-                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Increased delay slightly
-                          // Check if there's a previously expanded entry AND it exists in the currently filtered list
+                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                           guard let entryId = appState.journalExpandedEntryId,
                                 filteredEntries.contains(where: { $0.id == entryId }) else {
-                              print("[JournalView.onAppear] No valid expanded entry ID (\(appState.journalExpandedEntryId?.uuidString ?? "nil")) or entry not in filtered list. Cannot scroll.")
-                              return // Don't scroll if ID is nil or not visible
+                              print("[JournalView.onAppear] No valid expanded entry ID or entry not in filtered list. Cannot scroll.")
+                              return
                           }
-                          // Scroll to that entry without animation
                           scrollProxy.scrollTo(entryId, anchor: .top)
                           print("[JournalView.onAppear] Restored scroll to expanded entry: \(entryId)")
                      }
@@ -301,13 +347,12 @@ struct JournalView: View {
 
     private var journalList: some View {
         LazyVStack(spacing: styles.layout.radiusM, pinnedViews: [.sectionHeaders]) {
-             // Use the groupedEntries computed property
              ForEach(groupedEntries.indices, id: \.self) { sectionIndex in
                  let (section, entries) = groupedEntries[sectionIndex]
                  Section(header: SharedSectionHeader(title: section, backgroundColor: styles.colors.appBackground)
                                      .id("header-\(section)")
-                                     // Reduce top padding for headers *after* the CTA section
-                                     .padding(.top, (sectionIndex > 0 && groupedEntries[sectionIndex-1].0 == "Today") ? styles.layout.spacingS : 12)
+                                     // Standard padding, CTA logic removed
+                                     .padding(.top, 12)
                  ) {
                      ForEach(entries) { entry in
                          JournalEntryCard(
@@ -321,11 +366,7 @@ struct JournalView: View {
                          .transition(.opacity.combined(with: .move(edge: .top)))
                          .id(entry.id)
                      }
-
-                     // [7.1 Relocation] Insert CTA after "Today" section's entries
-                     if section == "Today" {
-                          ctaSectionView
-                     }
+                     // REMOVED CTA from here
                  }
              }
          }
@@ -352,9 +393,8 @@ struct JournalView: View {
              .buttonStyle(UIStyles.PrimaryButtonStyle()) // Use primary style
          }
          .padding(.horizontal, styles.layout.paddingXL) // Standard horizontal padding
-         // Adjust padding around the CTA section
-         .padding(.top, styles.layout.spacingXL) // Increased top padding
-         .padding(.bottom, styles.layout.spacingM) // Reduced bottom padding before next header
+         .padding(.vertical, styles.layout.spacingXL) // Standard vertical padding
+         .padding(.bottom, 100) // Ensure enough space below CTA, above bottom bar
      }
 
 
