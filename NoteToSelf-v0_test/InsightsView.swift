@@ -272,16 +272,9 @@ struct InsightsView: View {
 
                  Button("Add New Entry") {
                      print("[InsightsView] Add New Entry button tapped.") // Debug Print
-                     // Trigger sheet presentation in JournalView
+                     // Just set the AppState flag. MainTabView will handle presentation.
                      appState.presentNewJournalEntrySheet = true
                      print("[InsightsView] Set presentNewJournalEntrySheet = true") // Debug Print
-                     // Switch to Journal tab
-                     print("[InsightsView] Posting switchToTabNotification (index 0)") // Debug Print
-                     NotificationCenter.default.post(
-                         name: .switchToTabNotification, // Use standard name
-                         object: nil,
-                         userInfo: ["tabIndex": 0] // Index 0 = Journal
-                     )
                  }
                  .buttonStyle(UIStyles.PrimaryButtonStyle())
              }
@@ -354,6 +347,8 @@ struct InsightsView: View {
                      .padding(.horizontal) // Add horizontal padding to text
 
                  Button("Start Reflection") {
+                     print("[InsightsView] Start Reflection button tapped.") // Debug Print
+                     chatManager.startNewChat() // Start a new chat first
                      print("[InsightsView] Posting switchToTabNotification (index 2)") // Debug Print
                      NotificationCenter.default.post(
                          name: .switchToTabNotification, // Use standard name
@@ -406,12 +401,11 @@ struct InsightsView: View {
 
              // [7.1] Add Journal Entry Button
              Button("Add Journal Entry") {
-                 print("[InsightsView] Empty State - Posting switchToTabNotification (index 0)") // Debug Print
-                 NotificationCenter.default.post(
-                     name: .switchToTabNotification, // Use standard name
-                     object: nil,
-                     userInfo: ["tabIndex": 0] // Index 0 is Journal Tab
-                 )
+                 print("[InsightsView] Empty State - Add New Entry button tapped.") // Debug Print
+                 // Just set the AppState flag. MainTabView will handle presentation.
+                 appState.presentNewJournalEntrySheet = true
+                 print("[InsightsView] Empty State - Set presentNewJournalEntrySheet = true") // Debug Print
+                 // Don't switch tab here, MainTabView will handle it if needed.
              }
              .buttonStyle(UIStyles.PrimaryButtonStyle())
              .padding(.horizontal, styles.layout.paddingXL * 1.5) // Make button slightly narrower

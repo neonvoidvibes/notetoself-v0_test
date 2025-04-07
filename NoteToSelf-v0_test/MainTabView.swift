@@ -198,33 +198,33 @@ struct MainTabView: View {
           // Main content: disabled during settings swipes
           VStack(spacing: 0) {
               ZStack {
-                  if selectedTab == 0 {
-                      JournalView(tabBarOffset: .constant(0),
-                                  lastScrollPosition: .constant(0),
-                                  tabBarVisible: .constant(true))
-                           // Pass bottomSheetExpanded state to the modifier
-                          .mainCardStyle(isExpanded: bottomSheetExpanded)
-                  } else if selectedTab == 1 {
-                      InsightsView(tabBarOffset: .constant(0),
-                       lastScrollPosition: .constant(0),
-                       tabBarVisible: .constant(true))
-                           // Pass bottomSheetExpanded state to the modifier
-                          .mainCardStyle(isExpanded: bottomSheetExpanded)
-                  } else if selectedTab == 2 {
-                      ReflectionsView(tabBarOffset: .constant(0),
-                       lastScrollPosition: .constant(0),
-                       tabBarVisible: .constant(true),
-                       // chatManager: chatManager, // Removed argument
-                       showChatHistory: {
-                           withAnimation(.easeInOut(duration: 0.3)) {
-                               showingChatHistory = true
-                               chatHistoryOffset = 0
-                           }
-                       })
-                          // Pass bottomSheetExpanded state to the modifier
-                          .mainCardStyle(isExpanded: bottomSheetExpanded)
-                          .environmentObject(chatManager) // Added modifier
-                  }
+                  // Use TabView for content switching
+                   TabView(selection: $selectedTab) {
+                       JournalView(tabBarOffset: .constant(0),
+                                   lastScrollPosition: .constant(0),
+                                   tabBarVisible: .constant(true))
+                           .tag(0)
+
+                       InsightsView(tabBarOffset: .constant(0),
+                                    lastScrollPosition: .constant(0),
+                                    tabBarVisible: .constant(true))
+                           .tag(1)
+
+                       ReflectionsView(tabBarOffset: .constant(0),
+                                       lastScrollPosition: .constant(0),
+                                       tabBarVisible: .constant(true),
+                                       showChatHistory: {
+                                           withAnimation(.easeInOut(duration: 0.3)) {
+                                               showingChatHistory = true
+                                               chatHistoryOffset = 0
+                                           }
+                                       })
+                           .environmentObject(chatManager)
+                           .tag(2)
+                   }
+                   .tabViewStyle(.page(indexDisplayMode: .never)) // Hide default paging indicators
+                   .animation(styles.animation.tabSwitchAnimation, value: selectedTab) // Animate tab transition
+
               }
               .offset(y: bottomSheetExpanded ? -fullSheetHeight * 0.25 : 0)
               .animation(styles.animation.bottomSheetAnimation, value: bottomSheetExpanded)
@@ -464,8 +464,44 @@ struct MainTabView: View {
       }
       // IMPORTANT: Remove the mainScrollingDisabled environment variable to allow scrolling
       .environment(\.settingsScrollingDisabled, isSwipingSettings)
-      // No need to pass environment objects down again here
-      // .preferredColorScheme(.dark) // REMOVED
+      // Present New Entry Sheet Modally
+      .fullScreenCover(isPresented: $appState.presentNewJournalEntrySheet) {
+          EditableFullscreenEntryView(
+              onSave: { text, mood, intensity in
+                  // This save logic runs *after* the sheet is dismissed
+                  print("[MainTabView] New Entry Saved.")
+                  let newEntry = JournalEntry(text: text, mood: mood, date: Date(), intensity: intensity)
+                  Task {
+                      let embeddingVector = await generateEmbedding(for: newEntry.text)
+                      do {
+                          try databaseService.saveJournalEntry(newEntry, embedding: embeddingVector)
+                          await MainActor.run {
+                               appState._journalEntries.insert(newEntry, at: 0)
+                               appState._journalEntries.sort { $0.date > $1.date }
+                               withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                                   appState.journalExpandedEntryId = newEntry.id
+                               }
+                               print("[MainTabView] Saved new entry, state updated.")
+                          }
+                          await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, appState: appState)
+                      } catch {
+                          print("‼️ Error saving new journal entry from MainTabView: \(error)")
+                      }
+                  }
+                  // No need to switch tab here, we should already be on Journal
+              },
+              onCancel: {
+                  // If cancelled, switch back to Insights tab
+                  print("[MainTabView] New Entry Cancelled. Switching back to Insights.")
+                  selectedTab = 1 // Explicitly set tab index
+                   // Reset the flag if dismissal doesn't handle it automatically
+                   if appState.presentNewJournalEntrySheet {
+                       appState.presentNewJournalEntrySheet = false
+                   }
+              },
+              autoFocusText: true
+          )
+      }
       .onAppear {
           bottomSheetOffset = peekHeight - fullSheetHeight
           // Remove sample data loading
@@ -502,16 +538,12 @@ struct MainTabView: View {
 
           // Add keyboard observers
           NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
-               // Extract keyboard frame if needed for more precise adjustments
-               // let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
                withAnimation(.easeInOut(duration: 0.25)) { // Match typical keyboard animation
                    isKeyboardVisible = true
                }
            }
 
            NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { notification in
-               // Extract keyboard frame if needed
-               // let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
                withAnimation(.easeInOut(duration: 0.25)) { // Match typical keyboard animation
                    isKeyboardVisible = false
                }
@@ -523,7 +555,9 @@ struct MainTabView: View {
              if let userInfo = notification.userInfo, let tabIndex = userInfo["tabIndex"] as? Int {
                  print("[MainTabView] Switching to tab index: \(tabIndex)") // Debug Print
                   if tabIndex >= 0 && tabIndex < 3 { // Basic validation
-                      selectedTab = tabIndex
+                      if selectedTab != tabIndex { // Avoid redundant sets
+                          selectedTab = tabIndex
+                      }
                   } else {
                       print("[MainTabView] Error: Received invalid tab index \(tabIndex)")
                   }

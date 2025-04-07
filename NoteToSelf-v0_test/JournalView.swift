@@ -81,37 +81,8 @@ struct JournalView: View {
                 headerAppeared = true
             }
         }
-        .fullScreenCover(isPresented: $showingNewEntrySheet) {
-            EditableFullscreenEntryView(
-                initialMood: .neutral,
-                onSave: { text, mood, intensity in
-                    let newEntry = JournalEntry(text: text, mood: mood, date: Date(), intensity: intensity)
-                    Task {
-                        let embeddingVector = await generateEmbedding(for: newEntry.text)
-                        do {
-                            try databaseService.saveJournalEntry(newEntry, embedding: embeddingVector)
-                            await MainActor.run {
-                                 // Update the underlying storage directly
-                                 appState._journalEntries.insert(newEntry, at: 0)
-                                 appState._journalEntries.sort { $0.date > $1.date } // Keep sorted
-                                 // Update the expanded ID using the computed property accessor (which handles simulation)
-                                 withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                                     appState.journalExpandedEntryId = newEntry.id // Expand new entry by default using AppState
-                                 }
-                                 // Manually trigger objectWillChange if needed for immediate UI update when simulating
-                                 // if appState.simulateEmptyState { appState.objectWillChange.send() }
-
-                            }
-                            // Call global trigger function
-                            await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, appState: appState)
-                        } catch {
-                            print("‼️ Error saving new journal entry \(newEntry.id) to DB: \(error)")
-                        }
-                    }
-                },
-                autoFocusText: true
-            )
-        }
+        // --- Sheet presentation is now handled by MainTabView ---
+        // REMOVED .fullScreenCover(isPresented: $showingNewEntrySheet)
         .fullScreenCover(item: $fullscreenEntry) { entry in
             FullscreenEntryView(
                 entry: entry,
@@ -172,16 +143,7 @@ struct JournalView: View {
                  }
              }
         }
-        // [7.1 trigger] Observe the flag from AppState
-        .onChange(of: appState.presentNewJournalEntrySheet) { _, shouldPresent in
-             if shouldPresent {
-                 print("[JournalView] Detected presentNewJournalEntrySheet = true") // Debug Print
-                 showingNewEntrySheet = true
-                 // Reset the flag immediately after triggering the presentation
-                 appState.presentNewJournalEntrySheet = false
-                 print("[JournalView] Set showingNewEntrySheet = true, reset AppState flag.") // Debug Print
-             }
-         }
+        // REMOVED onChange(of: appState.presentNewJournalEntrySheet) modifier
     } // End Body
 
 

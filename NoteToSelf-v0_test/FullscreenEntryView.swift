@@ -167,7 +167,7 @@ struct EditableFullscreenEntryView: View {
     var initialMood: Mood = .neutral
     var onSave: (String, Mood, Int) -> Void
     var onDelete: (() -> Void)?
-    var onCancel: (() -> Void)?
+    var onCancel: (() -> Void)? // Added onCancel closure
     var autoFocusText: Bool = false
 
     @Environment(\.dismiss) private var dismiss
@@ -191,7 +191,7 @@ struct EditableFullscreenEntryView: View {
         self.initialMood = initialMood
         self.onSave = onSave
         self.onDelete = onDelete
-        self.onCancel = onCancel
+        self.onCancel = onCancel // Assign onCancel
         self.autoFocusText = autoFocusText
 
         self._entryText = State(initialValue: "")
@@ -207,7 +207,7 @@ struct EditableFullscreenEntryView: View {
         self.initialMood = entry.mood
         self.onSave = onSave
         self.onDelete = onDelete
-        self.onCancel = onCancel
+        self.onCancel = onCancel // Assign onCancel
         self.autoFocusText = autoFocusText
 
         self._entryText = State(initialValue: entry.text)
@@ -238,11 +238,8 @@ struct EditableFullscreenEntryView: View {
                         if !entryText.isEmpty {
                             showingCancelConfirmation = true
                         } else {
-                            if let onCancel = onCancel {
-                                onCancel()
-                            } else {
-                                dismiss()
-                            }
+                            onCancel?() // Call onCancel before dismissing
+                            dismiss()
                         }
                     }) {
                         Image(systemName: "xmark")
@@ -401,11 +398,8 @@ struct EditableFullscreenEntryView: View {
                     confirmText: "Discard",
                     confirmAction: {
                         showingCancelConfirmation = false
-                        if let onCancel = onCancel {
-                            onCancel()
-                        } else {
-                            dismiss()
-                        }
+                        onCancel?() // Call onCancel before dismissing
+                        dismiss()
                     },
                     cancelAction: {
                         showingCancelConfirmation = false
