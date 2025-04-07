@@ -32,7 +32,7 @@ struct LearnInsightCard: View {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
                     // Header
                     HStack {
-                        Text("Learn") // Card Title
+                        Text("Learning & Growth") // [6.1] Updated Title
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
                         Spacer()
@@ -121,7 +121,7 @@ struct LearnInsightCard: View {
             loadInsight()
         }
         .fullScreenCover(isPresented: $showingFullScreen) {
-             InsightFullScreenView(title: "Learn Insights") {
+             InsightFullScreenView(title: "Learning & Growth") { // [6.1] Updated Detail Title
                   LearnDetailContent(
                       result: insightResult ?? .empty(),
                       generatedDate: generatedDate

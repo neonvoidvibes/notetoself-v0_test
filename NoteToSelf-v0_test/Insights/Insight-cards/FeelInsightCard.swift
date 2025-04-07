@@ -11,19 +11,12 @@ struct FeelInsightCard: View {
     @State private var showingFullScreen = false
     @ObservedObject private var styles = UIStyles.shared
 
-    // State is now managed by InsightsView, accept as parameters
-    // @State private var insightResult: FeelInsightResult? = nil
-    // @State private var generatedDate: Date? = nil
-    // @State private var isLoading: Bool = false
-    // @State private var loadError: Bool = false
-
-    // Accept data from parent instead of loading internally
-    // Assuming InsightsView passes decoded result and date
-     @State private var insightResult: FeelInsightResult? = nil // Keep local state for decoded result
-     @State private var generatedDate: Date? = nil
-     @State private var isLoading: Bool = false // Still manage internal loading/error state
-     @State private var loadError: Bool = false
-     private let insightTypeIdentifier = "feelInsights" // Keep identifier for loading
+    // Keep internal loading logic for now
+    @State private var insightResult: FeelInsightResult? = nil
+    @State private var generatedDate: Date? = nil
+    @State private var isLoading: Bool = false
+    @State private var loadError: Bool = false
+    private let insightTypeIdentifier = "feelInsights"
 
 
     // Helper to get Mood enum from name string
@@ -46,7 +39,7 @@ struct FeelInsightCard: View {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
                     // Header
                     HStack {
-                        Text("Feel") // Card Title
+                        Text("Emotional Patterns") // [6.1] Updated Title
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
                         Spacer()
@@ -169,7 +162,7 @@ struct FeelInsightCard: View {
             loadInsight() // Reload internal data on notification
         }
         .fullScreenCover(isPresented: $showingFullScreen) {
-             InsightFullScreenView(title: "Feel Insights") {
+             InsightFullScreenView(title: "Emotional Patterns") { // [6.1] Updated Detail Title
                   FeelDetailContent(
                       result: insightResult ?? .empty(),
                       generatedDate: generatedDate
