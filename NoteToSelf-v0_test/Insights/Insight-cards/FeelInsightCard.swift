@@ -11,17 +11,32 @@ struct FeelInsightCard: View {
     @State private var showingFullScreen = false
     @ObservedObject private var styles = UIStyles.shared
 
-    @State private var insightResult: FeelInsightResult? = nil
-    @State private var generatedDate: Date? = nil
-    @State private var isLoading: Bool = false
-    @State private var loadError: Bool = false
-    private let insightTypeIdentifier = "feelInsights"
+    // State is now managed by InsightsView, accept as parameters
+    // @State private var insightResult: FeelInsightResult? = nil
+    // @State private var generatedDate: Date? = nil
+    // @State private var isLoading: Bool = false
+    // @State private var loadError: Bool = false
+
+    // Accept data from parent instead of loading internally
+    // Assuming InsightsView passes decoded result and date
+     @State private var insightResult: FeelInsightResult? = nil // Keep local state for decoded result
+     @State private var generatedDate: Date? = nil
+     @State private var isLoading: Bool = false // Still manage internal loading/error state
+     @State private var loadError: Bool = false
+     private let insightTypeIdentifier = "feelInsights" // Keep identifier for loading
+
 
     // Helper to get Mood enum from name string
      private func moodFromName(_ name: String?) -> Mood? {
          guard let name = name else { return nil }
          return Mood.allCases.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }
      }
+
+    // [5.1] Check if insight is fresh (within 24 hours)
+    private var isFresh: Bool {
+        guard let genDate = generatedDate else { return false }
+        return Calendar.current.dateComponents([.hour], from: genDate, to: Date()).hour ?? 25 < 24
+    }
 
     var body: some View {
         styles.expandableCard(
@@ -35,6 +50,12 @@ struct FeelInsightCard: View {
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
                         Spacer()
+
+                        // [5.1] Add NEW Badge conditionally
+                        if isFresh && appState.subscriptionTier == .premium {
+                            NewBadgeView()
+                        }
+
                         Image(systemName: "heart.circle.fill") // Icon
                             .foregroundColor(styles.colors.accent)
                             .font(.system(size: 20))
@@ -50,9 +71,12 @@ struct FeelInsightCard: View {
                                 .frame(maxWidth: .infinity, alignment: .center)
                                 .frame(minHeight: 100) // Increase min height to account for chart
                         } else if loadError {
-                            Text("Could not load Feel insights.")
+                            // [4.2] Improved Error Message
+                            Text("Couldn't load Feel insights.\nPlease try again later.")
                                 .font(styles.typography.bodySmall)
                                 .foregroundColor(styles.colors.error)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: .infinity, alignment: .center)
                                 .frame(minHeight: 100) // Increase min height
                         } else if let result = insightResult {
                             // Display Dominant Mood Icon + Snapshot Text in HStack
@@ -130,7 +154,7 @@ struct FeelInsightCard: View {
                          Text("Unlock emotional pattern insights with Premium.")
                              .font(styles.typography.bodySmall)
                              .foregroundColor(styles.colors.textSecondary)
-                             .frame(maxWidth: .infinity, minHeight: 100, alignment: .center) // Increase min height
+                             .frame(maxWidth: .infinity, minHeight: 100, alignment: .center) // Increase height
                              .multilineTextAlignment(.center)
                     }
                 }
@@ -139,10 +163,10 @@ struct FeelInsightCard: View {
         )
         .contentShape(Rectangle())
         .onTapGesture { if appState.subscriptionTier == .premium { showingFullScreen = true } }
-        .onAppear(perform: loadInsight)
+        .onAppear(perform: loadInsight) // Still load internally on appear
         .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
             print("[FeelInsightCard] Received insightsDidUpdate notification.")
-            loadInsight()
+            loadInsight() // Reload internal data on notification
         }
         .fullScreenCover(isPresented: $showingFullScreen) {
              InsightFullScreenView(title: "Feel Insights") {
@@ -156,26 +180,30 @@ struct FeelInsightCard: View {
         }
     }
 
+    // Keep internal loading logic for now
     private func loadInsight() {
         guard !isLoading else { return }
         isLoading = true
         loadError = false
         print("[FeelInsightCard] Loading insight...")
         Task {
-            // Removed do-catch block as try? handles errors by returning nil
-            if let (json, date) = try? databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                // Removed await from decodeJSON
-                decodeJSON(json: json, date: date)
-            } else {
-                // This handles both DB error (try? returns nil) and insight not found
+            do {
+                if let (json, date) = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                    decodeJSON(json: json, date: date)
+                } else {
+                    await MainActor.run {
+                        insightResult = nil; generatedDate = nil; isLoading = false
+                        print("[FeelInsightCard] No stored insight found.")
+                    }
+                }
+            } catch {
+                print("‼️ [FeelInsightCard] Error loading insight: \(error)")
                 await MainActor.run {
-                    insightResult = nil; generatedDate = nil; isLoading = false
-                    print("[FeelInsightCard] No stored insight found or error loading.")
+                    insightResult = nil; generatedDate = nil; isLoading = false; loadError = true
                 }
             }
         }
     }
-
 
     @MainActor
     private func decodeJSON(json: String, date: Date) {
@@ -183,7 +211,8 @@ struct FeelInsightCard: View {
         if let data = json.data(using: .utf8) {
             do {
                 let decoder = JSONDecoder()
-                decoder.dateDecodingStrategy = .iso8601
+                // Decoder strategy already set in Models.swift for MoodTrendPoint
+                // decoder.dateDecodingStrategy = .iso8601
                 let result = try decoder.decode(FeelInsightResult.self, from: data)
                 self.insightResult = result
                 self.generatedDate = date

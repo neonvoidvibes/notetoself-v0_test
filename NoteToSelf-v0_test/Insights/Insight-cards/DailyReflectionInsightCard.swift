@@ -24,6 +24,13 @@ struct DailyReflectionInsightCard: View {
     private var snapshotText: String? { insightResult?.snapshotText }
     private var reflectionPrompts: [String]? { insightResult?.reflectionPrompts }
 
+    // [5.1] Check if insight is fresh (within 24 hours)
+    private var isFresh: Bool {
+        guard let genDate = generatedDate else { return false }
+        // Consider insight new if generated within the last 24 hours
+        return Calendar.current.dateComponents([.hour], from: genDate, to: Date()).hour ?? 25 < 24
+    }
+
     var body: some View {
         styles.expandableCard(
             scrollProxy: scrollProxy,
@@ -36,10 +43,16 @@ struct DailyReflectionInsightCard: View {
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text) // Standard color
                         Spacer()
-                        // UPDATED Icon
+
+                        // [5.1] Add NEW Badge conditionally
+                        if isFresh && appState.subscriptionTier == .premium {
+                            NewBadgeView()
+                        }
+
+                        // Icon
                         Image(systemName: "brain.head.profile")
                              .foregroundColor(styles.colors.accent)
-                             .font(.system(size: 20)) // Match other card icon sizes
+                             .font(.system(size: 20))
                          if appState.subscriptionTier == .free { // Gating
                             Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
                         }
@@ -52,9 +65,12 @@ struct DailyReflectionInsightCard: View {
                                 .frame(maxWidth: .infinity, alignment: .center)
                                 .frame(minHeight: 60)
                         } else if decodeError { // Use decodeError state
-                            Text("Could not load daily reflection.")
-                                .font(styles.typography.bodySmall) // Error text can be smaller
+                            // [4.2] Improved Error Message
+                            Text("Couldn't load reflection.\nPlease try again later.")
+                                .font(styles.typography.bodySmall)
                                 .foregroundColor(styles.colors.error)
+                                .multilineTextAlignment(.center) // Center align error
+                                .frame(maxWidth: .infinity, alignment: .center)
                                 .frame(minHeight: 60)
                         } else if let snapshot = snapshotText, !snapshot.isEmpty {
                              VStack(alignment: .leading, spacing: styles.layout.spacingS) { // Use spacing S for less gap
@@ -63,8 +79,7 @@ struct DailyReflectionInsightCard: View {
                                      .foregroundColor(styles.colors.text) // Ensure primary text color
                                      .lineLimit(3) // Allow more lines for snapshot
 
-                                // --- REMOVED Button ---
-                                // The "Continue in Chat" button is removed from here.
+                                // Button removed
                              }
 
                         } else {
@@ -140,15 +155,48 @@ struct DailyReflectionInsightCard: View {
     }
 }
 
+// MARK: - Reusable New Badge View [5.1]
+struct NewBadgeView: View {
+    @ObservedObject private var styles = UIStyles.shared
+
+    var body: some View {
+        Text("NEW")
+            .font(.system(size: 10, weight: .bold))
+            .foregroundColor(styles.colors.accentContrastText)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(styles.colors.accent.opacity(0.9))
+            .clipShape(Capsule())
+    }
+}
+
+
 #Preview {
     // Pass nil for preview as InsightsView now handles loading
     ScrollView {
-        DailyReflectionInsightCard(jsonString: nil, generatedDate: nil)
-            .padding()
-            .environmentObject(AppState())
-            .environmentObject(DatabaseService()) // Keep DB if detail view needs it
-            .environmentObject(UIStyles.shared)
-            .environmentObject(ThemeManager.shared)
+        VStack {
+            DailyReflectionInsightCard(jsonString: """
+            {
+                "snapshotText": "This is a preview snapshot.",
+                "reflectionPrompts": ["Prompt 1?", "Prompt 2?"]
+            }
+            """, generatedDate: Date()) // Preview with fresh data
+
+            DailyReflectionInsightCard(jsonString: """
+            {
+                "snapshotText": "This is older data.",
+                "reflectionPrompts": ["Prompt A?", "Prompt B?"]
+            }
+            """, generatedDate: Calendar.current.date(byAdding: .day, value: -2, to: Date())) // Preview with old data
+
+             DailyReflectionInsightCard(jsonString: nil, generatedDate: nil) // Preview empty
+
+        }
+        .padding()
     }
+    .environmentObject(AppState())
+    .environmentObject(DatabaseService()) // Keep DB if detail view needs it
+    .environmentObject(UIStyles.shared)
+    .environmentObject(ThemeManager.shared)
     .background(Color.gray.opacity(0.1))
 }

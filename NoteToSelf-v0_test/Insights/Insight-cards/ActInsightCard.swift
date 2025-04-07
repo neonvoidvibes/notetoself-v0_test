@@ -10,6 +10,7 @@ struct ActInsightCard: View {
     @State private var showingFullScreen = false
     @ObservedObject private var styles = UIStyles.shared
 
+    // Keep internal loading for now
     @State private var insightResult: ActInsightResult? = nil
     @State private var generatedDate: Date? = nil
     @State private var isLoading: Bool = false
@@ -29,6 +30,12 @@ struct ActInsightCard: View {
          }
      }
 
+    // [5.1] Check if insight is fresh (within 24 hours)
+    private var isFresh: Bool {
+        guard let genDate = generatedDate else { return false }
+        return Calendar.current.dateComponents([.hour], from: genDate, to: Date()).hour ?? 25 < 24
+    }
+
     var body: some View {
         styles.expandableCard(
             scrollProxy: scrollProxy,
@@ -41,6 +48,12 @@ struct ActInsightCard: View {
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
                         Spacer()
+
+                        // [5.1] Add NEW Badge conditionally
+                        if isFresh && appState.subscriptionTier == .premium {
+                            NewBadgeView()
+                        }
+
                         Image(systemName: "figure.walk.motion") // Icon
                             .foregroundColor(styles.colors.accent)
                             .font(.system(size: 20))
@@ -56,9 +69,12 @@ struct ActInsightCard: View {
                                  .frame(maxWidth: .infinity, alignment: .center)
                                  .frame(minHeight: 60)
                          } else if loadError {
-                             Text("Could not load Act insights.")
+                             // [4.2] Improved Error Message
+                             Text("Couldn't load Act insights.\nPlease try again later.")
                                  .font(styles.typography.bodySmall)
                                  .foregroundColor(styles.colors.error)
+                                 .multilineTextAlignment(.center)
+                                 .frame(maxWidth: .infinity, alignment: .center)
                                  .frame(minHeight: 60)
                          } else if let result = insightResult {
                             // Show Action Forecast Snippet Primarily with Icon
@@ -71,10 +87,17 @@ struct ActInsightCard: View {
                                       .padding(.top, 2)
 
                                  VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
-                                     Text(result.actionForecastText ?? "Action forecast pending...")
-                                         .font(styles.typography.bodyFont)
-                                         .foregroundColor(styles.colors.text)
-                                         .lineLimit(3) // Allow more lines
+                                     if let forecast = result.actionForecastText, !forecast.isEmpty {
+                                         Text(forecast)
+                                             .font(styles.typography.bodyFont)
+                                             .foregroundColor(styles.colors.text)
+                                             .lineLimit(3) // Allow more lines
+                                     } else {
+                                          Text("Action forecast pending...")
+                                             .font(styles.typography.bodyFont)
+                                             .foregroundColor(styles.colors.text)
+                                             .lineLimit(3)
+                                     }
                                  }
                              }
                               .padding(.bottom, styles.layout.spacingS)
@@ -121,27 +144,28 @@ struct ActInsightCard: View {
         }
     }
 
+     // Keep internal loading logic
      private func loadInsight() {
         guard !isLoading else { return }
         isLoading = true
         loadError = false
         print("[ActInsightCard] Loading insight...")
         Task {
-            // Removed do-catch block as try? handles errors by returning nil
-            if let (json, date) = try? databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                // Removed await from decodeJSON
-                decodeJSON(json: json, date: date)
-            } else {
-                // This handles both DB error (try? returns nil) and insight not found
-                await MainActor.run {
-                    insightResult = nil; generatedDate = nil; isLoading = false
-                    // Check if the error was due to not finding or an actual DB error if needed
-                    // For now, simply report no insight found.
-                    print("[ActInsightCard] No stored insight found or error loading.")
-                    // Set loadError to true if you want to display an error message
-                    // self.loadError = true
-                }
-            }
+             do {
+                 if let (json, date) = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                     decodeJSON(json: json, date: date)
+                 } else {
+                     await MainActor.run {
+                         insightResult = nil; generatedDate = nil; isLoading = false
+                         print("[ActInsightCard] No stored insight found.")
+                     }
+                 }
+             } catch {
+                 print("‼️ [ActInsightCard] Error loading insight: \(error)")
+                 await MainActor.run {
+                     insightResult = nil; generatedDate = nil; isLoading = false; loadError = true
+                 }
+             }
         }
     }
 

@@ -83,6 +83,7 @@ class UIStyles: ObservableObject {
         let slowAnimation = SwiftUI.Animation.easeInOut(duration: 0.5)
         let bottomSheetAnimation = SwiftUI.Animation.spring(response: 0.5, dampingFraction: 0.7)
         let tabSwitchAnimation = SwiftUI.Animation.spring(response: 0.4, dampingFraction: 0.7)
+        let shimmerAnimation = SwiftUI.Animation.linear(duration: 1.5).repeatForever(autoreverses: false) // Shimmer specific
     }
 
     var headerPadding: EdgeInsets {
@@ -326,4 +327,67 @@ struct RoundedCorner: Shape {
       )
       return Path(path.cgPath)
   }
+}
+
+// MARK: - Shimmer Effect [4.1]
+struct Shimmer: ViewModifier {
+    @State private var phase: CGFloat = 0
+    @ObservedObject private var styles = UIStyles.shared // Access styles for animation
+
+    // Define gradient colors based on theme's secondary background
+    private var shimmerColor1: Color { styles.colors.secondaryBackground.opacity(0.3) }
+    private var shimmerColor2: Color { styles.colors.secondaryBackground.opacity(0.1) }
+
+    func body(content: Content) -> some View {
+        content
+            .modifier(AnimatedMask(phase: phase)
+                // CORRECTED: Use simpler animation modifier for repeating animations
+                .animation(styles.animation.shimmerAnimation)
+            )
+            .onAppear { phase = 0.8 } // Trigger animation on appear
+    }
+
+    // Sub-modifier for the animated mask
+    struct AnimatedMask: AnimatableModifier {
+        var phase: CGFloat = 0
+
+        var animatableData: CGFloat {
+            get { phase }
+            set { phase = newValue }
+        }
+
+        func body(content: Content) -> some View {
+            content
+                .mask(GradientMask(phase: phase).scaleEffect(3))
+        }
+    }
+
+    // Sub-view for the gradient mask
+    struct GradientMask: View {
+        let phase: CGFloat
+        // Reuse shimmer colors defined in the main modifier
+        @ObservedObject private var styles = UIStyles.shared
+        private var shimmerColor1: Color { styles.colors.secondaryBackground.opacity(0.3) }
+        private var shimmerColor2: Color { styles.colors.secondaryBackground.opacity(0.1) }
+
+
+        var body: some View {
+            LinearGradient(gradient: Gradient(stops: [
+                .init(color: shimmerColor1, location: phase),
+                .init(color: shimmerColor2, location: phase + 0.1),
+                .init(color: shimmerColor1, location: phase + 0.2)
+            ]), startPoint: .topLeading, endPoint: .bottomTrailing)
+        }
+    }
+}
+
+// Extension to easily apply shimmer
+extension View {
+    @ViewBuilder func shimmer(_ condition: Bool = true) -> some View {
+        if condition {
+            modifier(Shimmer())
+        } else {
+            self
+        }
+    }
 }

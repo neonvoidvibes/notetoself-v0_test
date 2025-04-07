@@ -10,11 +10,18 @@ struct ThinkInsightCard: View {
     @State private var showingFullScreen = false
     @ObservedObject private var styles = UIStyles.shared
 
+    // Keep internal loading for now
     @State private var insightResult: ThinkInsightResult? = nil
     @State private var generatedDate: Date? = nil
     @State private var isLoading: Bool = false
     @State private var loadError: Bool = false
     private let insightTypeIdentifier = "thinkInsights"
+
+    // [5.1] Check if insight is fresh (within 24 hours)
+    private var isFresh: Bool {
+        guard let genDate = generatedDate else { return false }
+        return Calendar.current.dateComponents([.hour], from: genDate, to: Date()).hour ?? 25 < 24
+    }
 
     var body: some View {
         styles.expandableCard(
@@ -28,6 +35,12 @@ struct ThinkInsightCard: View {
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
                         Spacer()
+
+                        // [5.1] Add NEW Badge conditionally
+                        if isFresh && appState.subscriptionTier == .premium {
+                            NewBadgeView()
+                        }
+
                         Image(systemName: "brain.head.profile") // Icon
                             .foregroundColor(styles.colors.accent)
                             .font(.system(size: 20))
@@ -43,9 +56,12 @@ struct ThinkInsightCard: View {
                                  .frame(maxWidth: .infinity, alignment: .center)
                                  .frame(minHeight: 60)
                          } else if loadError {
-                             Text("Could not load Think insights.")
+                             // [4.2] Improved Error Message
+                             Text("Couldn't load Think insights.\nPlease try again later.")
                                  .font(styles.typography.bodySmall)
                                  .foregroundColor(styles.colors.error)
+                                 .multilineTextAlignment(.center)
+                                 .frame(maxWidth: .infinity, alignment: .center)
                                  .frame(minHeight: 60)
                          } else if let result = insightResult {
                             // Show Theme Overview Snippet Primarily with Icon
@@ -58,10 +74,17 @@ struct ThinkInsightCard: View {
                                      .padding(.top, 2)
 
                                  VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
-                                     Text(result.themeOverviewText ?? "Recurring themes analysis pending...")
-                                         .font(styles.typography.bodyFont)
-                                         .foregroundColor(styles.colors.text)
-                                         .lineLimit(3) // Allow more lines
+                                     if let overview = result.themeOverviewText, !overview.isEmpty {
+                                         Text(overview)
+                                             .font(styles.typography.bodyFont)
+                                             .foregroundColor(styles.colors.text)
+                                             .lineLimit(3) // Allow more lines
+                                     } else {
+                                         Text("Recurring themes analysis pending...")
+                                             .font(styles.typography.bodyFont)
+                                             .foregroundColor(styles.colors.text)
+                                             .lineLimit(3)
+                                     }
                                  }
                              }
                               .padding(.bottom, styles.layout.spacingS)
@@ -108,24 +131,28 @@ struct ThinkInsightCard: View {
         }
     }
 
+     // Keep internal loading logic
      private func loadInsight() {
         guard !isLoading else { return }
         isLoading = true
         loadError = false
         print("[ThinkInsightCard] Loading insight...")
         Task {
-            do {
-                // Removed await from loadLatestInsight
-                if let (json, date) = try? databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                     // Removed await from decodeJSON
-                     decodeJSON(json: json, date: date)
-                } else {
-                    await MainActor.run {
-                        insightResult = nil; generatedDate = nil; isLoading = false
-                        print("[ThinkInsightCard] No stored insight found.")
-                    }
-                }
-            }
+             do {
+                 if let (json, date) = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                      decodeJSON(json: json, date: date)
+                 } else {
+                     await MainActor.run {
+                         insightResult = nil; generatedDate = nil; isLoading = false
+                         print("[ThinkInsightCard] No stored insight found.")
+                     }
+                 }
+             } catch {
+                 print("‼️ [ThinkInsightCard] Error loading insight: \(error)")
+                 await MainActor.run {
+                     insightResult = nil; generatedDate = nil; isLoading = false; loadError = true
+                 }
+             }
         }
     }
 

@@ -21,7 +21,7 @@ struct WeekInReviewCard: View {
     @State private var isLoading: Bool = false // Used briefly during decode
     @State private var decodeError: Bool = false
 
-    // Calculate if the insight is fresh (generated within last 24 hours)
+    // [5.1] Use isFresh computed property
     private var isFresh: Bool {
         guard let genDate = generatedDate else { return false }
         return Calendar.current.dateComponents([.hour], from: genDate, to: Date()).hour ?? 25 < 24
@@ -72,14 +72,9 @@ struct WeekInReviewCard: View {
                              .font(styles.typography.caption.weight(.medium))
                              .foregroundColor(styles.colors.textSecondary)
 
-                        if isFresh && appState.subscriptionTier == .premium { // Check isFresh logic is correct
-                            Text("NEW")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(styles.colors.accentContrastText)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(styles.colors.accent.opacity(0.9))
-                                .clipShape(Capsule())
+                        // [5.1] Use reusable NewBadgeView
+                        if isFresh && appState.subscriptionTier == .premium {
+                            NewBadgeView()
                         }
                         if appState.subscriptionTier == .free { // Gating
                             Image(systemName: "lock.fill")
@@ -95,9 +90,12 @@ struct WeekInReviewCard: View {
                                 .frame(maxWidth: .infinity, alignment: .center)
                                 .frame(minHeight: 100) // Increase height for chart placeholder
                         } else if decodeError {
-                            Text("Could not load weekly review.")
-                                .font(styles.typography.bodySmall) // Error text can be smaller
+                            // [4.2] Improved Error Message
+                            Text("Couldn't load weekly review.\nPlease try again later.")
+                                .font(styles.typography.bodySmall)
                                 .foregroundColor(styles.colors.error)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: .infinity, alignment: .center)
                                 .frame(minHeight: 100) // Increase height
                         } else if let result = insightResult {
                              VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
@@ -184,8 +182,9 @@ struct WeekInReviewCard: View {
         guard let trendData = trendData, trendData.count == 7 else { return [] } // Ensure exactly 7 days
 
         let calendar = Calendar.current
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EE" // Short weekday format (e.g., "Mon")
+        // Ensure shortWeekdaySymbols respects locale by using calendar instance
+        let shortWeekdaySymbols = calendar.shortWeekdaySymbols
+        guard shortWeekdaySymbols.count == 7 else { return [] } // Safety check
 
         // Sort data by date just in case it's not already sorted
         let sortedData = trendData.sorted { $0.date < $1.date }
@@ -198,9 +197,10 @@ struct WeekInReviewCard: View {
         }
 
         // Ensure all 7 days are present, defaulting to 0 if missing
-         let weekdays = (1...7).map { calendar.shortWeekdaySymbols[$0-1] } // Sun, Mon, ..., Sat
-         return weekdays.enumerated().map { index, dayString in
-             let weekdayIndex = index + 1 // Calendar weekday index (1-7)
+         // Map weekday index (1..7) to the correct symbol index (0..6)
+         return (1...7).map { weekdayIndex in
+             let symbolIndex = (weekdayIndex - calendar.firstWeekday + 7) % 7 // Adjust for firstWeekday (e.g., Sunday=1 vs Monday=2)
+             let dayString = shortWeekdaySymbols[symbolIndex]
              let value = valuesByWeekday[weekdayIndex] ?? 0.0 // Default to 0 if no data for the day
              return WeeklyBarChartDataPoint(day: dayString, value: value)
          }
