@@ -115,8 +115,8 @@ struct DailyReflectionDetailContent: View {
                  .padding(.top, styles.layout.spacingL) // Keep space above button
 
             } // End Main VStack
-            .padding(.horizontal, styles.layout.paddingXL) // Re-add horizontal padding here
-            .padding(.vertical, styles.layout.paddingL) // Re-add vertical padding here
+            // REMOVED horizontal padding, keeping vertical
+            .padding(.vertical, styles.layout.paddingL)
         } // End ScrollView
     }
 }
@@ -130,7 +130,8 @@ struct DailyReflectionDetailContent: View {
             "How might you adjust your evening routine to combat the fatigue observed?"
         ]
     )
-    return InsightFullScreenView(title: "Daily Reflection (Data)") {
+    // Use return keyword explicitly as required inside #Preview
+    return InsightFullScreenView(title: "Daily Reflection") {
         DailyReflectionDetailContent(result: mockResult, generatedDate: Date())
     }
     .environmentObject(UIStyles.shared)
@@ -141,7 +142,8 @@ struct DailyReflectionDetailContent: View {
 // Preview with empty data
 #Preview("Empty Data") {
     let emptyResult = DailyReflectionResult.empty()
-    return InsightFullScreenView(title: "Daily Reflection (Empty)") {
+    // Use return keyword explicitly as required inside #Preview
+    return InsightFullScreenView(title: "Daily Reflection") {
         DailyReflectionDetailContent(result: emptyResult, generatedDate: nil)
     }
     .environmentObject(UIStyles.shared)
