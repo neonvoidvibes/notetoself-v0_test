@@ -293,9 +293,11 @@ struct ChatHistoryView: View {
         return true
     }
 
+    // Check if ANY message text contains ANY search tag
     return chat.messages.contains { message in
         searchTags.contains { tag in
-            (message as? MessageDisplayable)?.text.lowercased().contains(tag.lowercased()) ?? false
+             // Directly access .text since message is ChatMessage
+            message.text.lowercased().contains(tag.lowercased())
         }
     }
   }

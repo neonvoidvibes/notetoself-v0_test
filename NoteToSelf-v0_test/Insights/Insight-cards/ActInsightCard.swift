@@ -139,6 +139,14 @@ struct ActInsightCard: View {
                     }
                 }
             }
+            // Add catch block for robustness, although loadLatestInsight uses try?
+            catch {
+                 print("‼️ [ActInsightCard] Error loading insight: \(error)")
+                 await MainActor.run {
+                      loadError = true
+                      isLoading = false
+                 }
+            }
         }
     }
 

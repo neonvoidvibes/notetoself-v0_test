@@ -288,11 +288,43 @@ struct ForecastResult: Codable, Equatable {
 // MARK: - Feel, Think, Act, Learn Insights (Grouped Cards)
 
 // Feel Insight (Card #3)
-struct MoodTrendPoint: Codable, Equatable, Identifiable {
-    let id = UUID()
+struct MoodTrendPoint: Identifiable, Codable, Equatable {
+    let id: UUID // Initialize locally, don't decode/encode
     let date: Date
     let moodValue: Double
     let label: String
+
+    // Coding keys to exclude 'id' from JSON
+    enum CodingKeys: String, CodingKey {
+        case date, moodValue, label
+    }
+
+    // Initialize with a new UUID
+    init(id: UUID = UUID(), date: Date, moodValue: Double, label: String) {
+        self.id = id
+        self.date = date
+        self.moodValue = moodValue
+        self.label = label
+    }
+
+     // Custom Decoder if needed (usually not necessary if just excluding)
+     init(from decoder: Decoder) throws {
+         let container = try decoder.container(keyedBy: CodingKeys.self)
+         date = try container.decode(Date.self, forKey: .date)
+         moodValue = try container.decode(Double.self, forKey: .moodValue)
+         label = try container.decode(String.self, forKey: .label)
+         // Generate a new ID upon decoding
+         id = UUID()
+     }
+
+     // Custom Encoder (if needed, usually not if just excluding)
+     func encode(to encoder: Encoder) throws {
+         var container = encoder.container(keyedBy: CodingKeys.self)
+         try container.encode(date, forKey: .date)
+         try container.encode(moodValue, forKey: .moodValue)
+         try container.encode(label, forKey: .label)
+         // Do not encode 'id'
+     }
 }
 
 struct FeelInsightResult: Codable, Equatable {
