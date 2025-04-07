@@ -122,7 +122,7 @@ struct InsightsView: View {
                              .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: headerAppeared)
                      }
                      HStack {
-                         Button(action: { NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil) }) {
+                         Button(action: { NotificationCenter.default.post(name: .toggleSettingsNotification, object: nil) }) { // Use standard name
                              VStack(spacing: 6) {
                                  HStack { Rectangle().fill(styles.colors.accent).frame(width: 28, height: 2); Spacer() }
                                  HStack { Rectangle().fill(styles.colors.accent).frame(width: 20, height: 2); Spacer() }
@@ -211,12 +211,7 @@ struct InsightsView: View {
             print("[InsightsView] Received insightsDidUpdate notification. Reloading insights.")
             loadStoredInsights() // Reload data on notification (don't set isLoadingInsights = true here)
         }
-        // Keep tab switching logic if needed
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToTab"))) { notification in
-             if let userInfo = notification.userInfo, let tabIndex = userInfo["tabIndex"] as? Int {
-                 NotificationCenter.default.post(name: NSNotification.Name("SwitchTab"), object: nil, userInfo: ["tabIndex": tabIndex])
-             }
-         }
+        // REMOVED the .onReceive listener for .switchToTabNotification
     }
 
     // MARK: - Card List View
@@ -276,11 +271,14 @@ struct InsightsView: View {
                      .padding(.horizontal) // Add horizontal padding to text
 
                  Button("Add New Entry") {
+                     print("[InsightsView] Add New Entry button tapped.") // Debug Print
                      // Trigger sheet presentation in JournalView
                      appState.presentNewJournalEntrySheet = true
+                     print("[InsightsView] Set presentNewJournalEntrySheet = true") // Debug Print
                      // Switch to Journal tab
+                     print("[InsightsView] Posting switchToTabNotification (index 0)") // Debug Print
                      NotificationCenter.default.post(
-                         name: NSNotification.Name("SwitchToTab"),
+                         name: .switchToTabNotification, // Use standard name
                          object: nil,
                          userInfo: ["tabIndex": 0] // Index 0 = Journal
                      )
@@ -356,8 +354,9 @@ struct InsightsView: View {
                      .padding(.horizontal) // Add horizontal padding to text
 
                  Button("Start Reflection") {
+                     print("[InsightsView] Posting switchToTabNotification (index 2)") // Debug Print
                      NotificationCenter.default.post(
-                         name: NSNotification.Name("SwitchToTab"),
+                         name: .switchToTabNotification, // Use standard name
                          object: nil,
                          userInfo: ["tabIndex": 2] // Index 2 = Reflect
                      )
@@ -407,8 +406,9 @@ struct InsightsView: View {
 
              // [7.1] Add Journal Entry Button
              Button("Add Journal Entry") {
+                 print("[InsightsView] Empty State - Posting switchToTabNotification (index 0)") // Debug Print
                  NotificationCenter.default.post(
-                     name: NSNotification.Name("SwitchToTab"),
+                     name: .switchToTabNotification, // Use standard name
                      object: nil,
                      userInfo: ["tabIndex": 0] // Index 0 is Journal Tab
                  )

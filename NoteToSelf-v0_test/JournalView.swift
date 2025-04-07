@@ -175,10 +175,11 @@ struct JournalView: View {
         // [7.1 trigger] Observe the flag from AppState
         .onChange(of: appState.presentNewJournalEntrySheet) { _, shouldPresent in
              if shouldPresent {
+                 print("[JournalView] Detected presentNewJournalEntrySheet = true") // Debug Print
                  showingNewEntrySheet = true
                  // Reset the flag immediately after triggering the presentation
                  appState.presentNewJournalEntrySheet = false
-                 print("[JournalView] Triggered new entry sheet presentation via AppState flag.")
+                 print("[JournalView] Set showingNewEntrySheet = true, reset AppState flag.") // Debug Print
              }
          }
     } // End Body
@@ -213,7 +214,7 @@ struct JournalView: View {
             // Menu button on left and filter button on right
             HStack {
                 Button(action: {
-                    NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
+                    NotificationCenter.default.post(name: .toggleSettingsNotification, object: nil) // Use standard name
                 }) {
                     VStack(spacing: 6) {
                         HStack {
@@ -376,8 +377,9 @@ struct JournalView: View {
                  .multilineTextAlignment(.center)
 
              Button("Go to Insights") {
+                  print("[JournalView] Posting switchToTabNotification (index 1)") // Debug Print
                  NotificationCenter.default.post(
-                     name: NSNotification.Name("SwitchToTab"),
+                     name: .switchToTabNotification, // Use standard name
                      object: nil,
                      userInfo: ["tabIndex": 1] // Index 1 = Insights
                  )

@@ -1,6 +1,16 @@
 import SwiftUI
 import Combine
 
+// Define standard notification name
+extension Notification.Name {
+    static let switchToTabNotification = Notification.Name("SwitchToTabNotification")
+    // Keep existing settings toggle notification
+    static let toggleSettingsNotification = Notification.Name("ToggleSettings")
+     // Keep existing chat history toggle notification
+     static let toggleChatHistoryNotification = Notification.Name("ToggleChatHistory")
+}
+
+
 struct MainTabView: View {
   @EnvironmentObject private var appState: AppState // Use EnvironmentObject
   @EnvironmentObject private var chatManager: ChatManager // Use EnvironmentObject
@@ -467,28 +477,28 @@ struct MainTabView: View {
           }
 
           // Add notification observer for menu button
-          NotificationCenter.default.addObserver(forName: NSNotification.Name("ToggleSettings"), object: nil, queue: .main) { _ in
-              withAnimation(.easeInOut(duration: 0.3)) {
-                  showingSettings.toggle()
-                  if showingSettings {
-                      settingsOffset = 0
-                  } else {
-                      settingsOffset = -screenWidth
-                  }
-              }
-          }
+           NotificationCenter.default.addObserver(forName: .toggleSettingsNotification, object: nil, queue: .main) { _ in
+               withAnimation(.easeInOut(duration: 0.3)) {
+                   showingSettings.toggle()
+                   if showingSettings {
+                       settingsOffset = 0
+                   } else {
+                       settingsOffset = -screenWidth
+                   }
+               }
+           }
 
-          // Add notification observer for chat history button
-          NotificationCenter.default.addObserver(forName: NSNotification.Name("ToggleChatHistory"), object: nil, queue: .main) { _ in
-              withAnimation(.easeInOut(duration: 0.3)) {
-                  showingChatHistory.toggle()
-                  if showingChatHistory {
-                      chatHistoryOffset = 0
-                  } else {
-                      chatHistoryOffset = screenWidth
-                  }
-              }
-          }
+           // Add notification observer for chat history button
+            NotificationCenter.default.addObserver(forName: .toggleChatHistoryNotification, object: nil, queue: .main) { _ in
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showingChatHistory.toggle()
+                    if showingChatHistory {
+                        chatHistoryOffset = 0
+                    } else {
+                        chatHistoryOffset = screenWidth
+                    }
+                }
+            }
 
           // Add keyboard observers
           NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
@@ -507,6 +517,20 @@ struct MainTabView: View {
                }
            }
       }
+       // Add observer for tab switching notification
+       .onReceive(NotificationCenter.default.publisher(for: .switchToTabNotification)) { notification in
+             print("[MainTabView] Received switchToTabNotification") // Debug Print
+             if let userInfo = notification.userInfo, let tabIndex = userInfo["tabIndex"] as? Int {
+                 print("[MainTabView] Switching to tab index: \(tabIndex)") // Debug Print
+                  if tabIndex >= 0 && tabIndex < 3 { // Basic validation
+                      selectedTab = tabIndex
+                  } else {
+                      print("[MainTabView] Error: Received invalid tab index \(tabIndex)")
+                  }
+             } else {
+                 print("[MainTabView] Error: Received notification without valid tabIndex")
+             }
+       }
       .environment(\.keyboardVisible, isKeyboardVisible)
   }
 }
