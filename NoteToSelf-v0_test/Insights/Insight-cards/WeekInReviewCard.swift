@@ -73,10 +73,10 @@ struct WeekInReviewCard: View {
                              .foregroundColor(styles.colors.textSecondary)
 
                         // [5.1] Use reusable NewBadgeView
-                        if isFresh && appState.subscriptionTier == .premium {
+                        if isFresh && appState.subscriptionTier == .pro { // CORRECTED: Check .pro
                             NewBadgeView()
                         }
-                        if appState.subscriptionTier == .free { // Gating
+                        if appState.subscriptionTier == .free { // Gating check is correct (.free)
                             Image(systemName: "lock.fill")
                                 .foregroundColor(styles.colors.textSecondary)
                                 .padding(.leading, 4) // Space before lock
@@ -84,7 +84,7 @@ struct WeekInReviewCard: View {
                     }
 
                     // Content Snippet (Summary Text)
-                    if appState.subscriptionTier == .premium {
+                    if appState.subscriptionTier == .pro { // CORRECTED: Check .pro
                         if isLoading { // Decoding in progress
                             ProgressView().tint(styles.colors.accent)
                                 .frame(maxWidth: .infinity, alignment: .center)
@@ -148,7 +148,7 @@ struct WeekInReviewCard: View {
                                 .frame(minHeight: 100, alignment: .center) // Increase height
                         }
                     } else {
-                         Text("Unlock weekly reviews and pattern analysis with Premium.")
+                         Text("Unlock weekly reviews and pattern analysis with Premium.") // User-facing text can remain "Premium"
                              .font(styles.typography.bodySmall) // Keep small for locked state
                              .foregroundColor(styles.colors.textSecondary)
                              .frame(maxWidth: .infinity, minHeight: 100, alignment: .center) // Increase height
@@ -159,7 +159,7 @@ struct WeekInReviewCard: View {
             }
         )
         .contentShape(Rectangle())
-        .onTapGesture { if appState.subscriptionTier == .premium { showingFullScreen = true } }
+        .onTapGesture { if appState.subscriptionTier == .pro { showingFullScreen = true } } // CORRECTED: Check .pro
         .onAppear { decodeJSON() } // Decode initial JSON
         .onChange(of: jsonString) { // Re-decode if JSON string changes
             oldValue, newValue in
@@ -199,7 +199,10 @@ struct WeekInReviewCard: View {
         // Ensure all 7 days are present, defaulting to 0 if missing
          // Map weekday index (1..7) to the correct symbol index (0..6)
          return (1...7).map { weekdayIndex in
-             let symbolIndex = (weekdayIndex - calendar.firstWeekday + 7) % 7 // Adjust for firstWeekday (e.g., Sunday=1 vs Monday=2)
+             // Adjust for firstWeekday (e.g., Sunday=1 vs Monday=2)
+              // Example: If firstWeekday is 2 (Mon), Sunday (1) should map to index 6.
+              // (weekdayIndex - calendar.firstWeekday + 7) % 7
+             let symbolIndex = (weekdayIndex - calendar.firstWeekday + 7) % 7
              let dayString = shortWeekdaySymbols[symbolIndex]
              let value = valuesByWeekday[weekdayIndex] ?? 0.0 // Default to 0 if no data for the day
              return WeeklyBarChartDataPoint(day: dayString, value: value)

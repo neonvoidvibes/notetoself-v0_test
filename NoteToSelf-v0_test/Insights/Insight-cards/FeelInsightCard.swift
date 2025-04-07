@@ -45,20 +45,20 @@ struct FeelInsightCard: View {
                         Spacer()
 
                         // [5.1] Add NEW Badge conditionally
-                        if isFresh && appState.subscriptionTier == .premium {
+                        if isFresh && appState.subscriptionTier == .pro { // CORRECTED: Check .pro
                             NewBadgeView()
                         }
 
                         Image(systemName: "heart.circle.fill") // Icon
                             .foregroundColor(styles.colors.accent)
                             .font(.system(size: 20))
-                         if appState.subscriptionTier == .free { // Gating
+                         if appState.subscriptionTier == .free { // Gating check is correct (.free)
                             Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
                         }
                     }
 
                     // Content Snippets
-                    if appState.subscriptionTier == .premium {
+                    if appState.subscriptionTier == .pro { // CORRECTED: Check .pro
                         if isLoading {
                             ProgressView().tint(styles.colors.accent)
                                 .frame(maxWidth: .infinity, alignment: .center)
@@ -144,7 +144,7 @@ struct FeelInsightCard: View {
                                 .frame(minHeight: 100, alignment: .center) // Increase min height
                         }
                     } else {
-                         Text("Unlock emotional pattern insights with Premium.")
+                         Text("Unlock emotional pattern insights with Premium.") // User-facing text can remain "Premium"
                              .font(styles.typography.bodySmall)
                              .foregroundColor(styles.colors.textSecondary)
                              .frame(maxWidth: .infinity, minHeight: 100, alignment: .center) // Increase height
@@ -155,7 +155,7 @@ struct FeelInsightCard: View {
             }
         )
         .contentShape(Rectangle())
-        .onTapGesture { if appState.subscriptionTier == .premium { showingFullScreen = true } }
+        .onTapGesture { if appState.subscriptionTier == .pro { showingFullScreen = true } } // CORRECTED: Check .pro
         .onAppear(perform: loadInsight) // Still load internally on appear
         .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
             print("[FeelInsightCard] Received insightsDidUpdate notification.")

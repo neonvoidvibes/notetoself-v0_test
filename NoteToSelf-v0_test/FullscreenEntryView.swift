@@ -167,7 +167,7 @@ struct EditableFullscreenEntryView: View {
     var initialMood: Mood = .neutral
     var onSave: (String, Mood, Int) -> Void
     var onDelete: (() -> Void)?
-    var onCancel: (() -> Void)? // Added onCancel closure
+    var onCancel: (() -> Void)? // Keep onCancel for confirmation logic
     var autoFocusText: Bool = false
 
     @Environment(\.dismiss) private var dismiss
@@ -238,7 +238,7 @@ struct EditableFullscreenEntryView: View {
                         if !entryText.isEmpty {
                             showingCancelConfirmation = true
                         } else {
-                            onCancel?() // Call onCancel before dismissing
+                            onCancel?() // Call onCancel here
                             dismiss()
                         }
                     }) {
@@ -398,7 +398,7 @@ struct EditableFullscreenEntryView: View {
                     confirmText: "Discard",
                     confirmAction: {
                         showingCancelConfirmation = false
-                        onCancel?() // Call onCancel before dismissing
+                        onCancel?() // Call onCancel here
                         dismiss()
                     },
                     cancelAction: {

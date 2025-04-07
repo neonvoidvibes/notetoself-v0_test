@@ -46,13 +46,13 @@ final class SubscriptionManager: ObservableObject {
     func subscribeMonthly() {
         print("Attempting to subscribe (stub)...")
         updateSubscriptionStatus(to: true)
-        print("Subscription successful (stub). User is now subscribed.")
+        print("Subscription successful (stub). User is now Pro.") // Updated text
     }
 
     func restorePurchase() {
         print("Attempting to restore purchases (stub)...")
         updateSubscriptionStatus(to: true) // Assume success for stub
-        print("Purchases restored (stub). User is now subscribed.")
+        print("Purchases restored (stub). User is now Pro.") // Updated text
     }
 
     // --- Debug Function ---

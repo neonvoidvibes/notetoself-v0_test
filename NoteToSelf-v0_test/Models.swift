@@ -177,10 +177,10 @@ enum Mood: String, CaseIterable, Codable, Hashable { // Added Hashable
 // MARK: - Subscription Status (Keep if AppState uses it)
 enum SubscriptionTier: String, Codable, Hashable { // Added Hashable
     case free
-    case premium
+    case pro // Renamed from premium
 
-    var hasUnlimitedReflections: Bool { self == .premium }
-    var hasAdvancedInsights: Bool { self == .premium }
+    var hasUnlimitedReflections: Bool { self == .pro }
+    var hasAdvancedInsights: Bool { self == .pro }
 }
 
 // MARK: - AI Insight Models
@@ -446,7 +446,7 @@ class AppState: ObservableObject {
         return count
     }
     var canUseReflections: Bool {
-        return subscriptionTier == .premium || dailyReflectionsUsed < freeReflectionsLimit
+        return subscriptionTier == .pro || dailyReflectionsUsed < freeReflectionsLimit // Updated to .pro
     }
 
     // Computed properties now access the potentially simulated journalEntries

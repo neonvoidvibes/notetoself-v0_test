@@ -9,8 +9,7 @@ struct JournalView: View {
     @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled
 
     // View State
-    @State private var showingNewEntrySheet = false
-    // @State private var expandedEntryId: UUID? = nil // REMOVED - Moved to AppState
+    @State private var showingNewEntrySheet = false // Reinstated local state
     @State private var editingEntry: JournalEntry? = nil
     @State private var fullscreenEntry: JournalEntry? = nil
 
@@ -45,6 +44,12 @@ struct JournalView: View {
             customEndDate: customEndDate
         )
     }
+
+    // Grouped entries for list display
+    private var groupedEntries: [(String, [JournalEntry])] {
+        JournalDateGrouping.groupEntriesByTimePeriod(filteredEntries)
+    }
+
 
     // Function to clear filters
     private func clearFilters(closePanel: Bool = false) {
@@ -81,8 +86,43 @@ struct JournalView: View {
                 headerAppeared = true
             }
         }
-        // --- Sheet presentation is now handled by MainTabView ---
-        // REMOVED .fullScreenCover(isPresented: $showingNewEntrySheet)
+        // Reinstate sheet presentation here
+         .fullScreenCover(isPresented: $showingNewEntrySheet) {
+              EditableFullscreenEntryView(
+                  initialMood: .neutral,
+                  onSave: { text, mood, intensity in
+                      let newEntry = JournalEntry(text: text, mood: mood, date: Date(), intensity: intensity)
+                      Task {
+                          let embeddingVector = await generateEmbedding(for: newEntry.text)
+                          do {
+                              try databaseService.saveJournalEntry(newEntry, embedding: embeddingVector)
+                              await MainActor.run {
+                                   // Update the underlying storage directly
+                                   appState._journalEntries.insert(newEntry, at: 0)
+                                   appState._journalEntries.sort { $0.date > $1.date } // Keep sorted
+                                   // Update the expanded ID using the computed property accessor (which handles simulation)
+                                   withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                                       appState.journalExpandedEntryId = newEntry.id // Expand new entry by default using AppState
+                                   }
+                                   // Manually trigger objectWillChange if needed for immediate UI update when simulating
+                                   // if appState.simulateEmptyState { appState.objectWillChange.send() }
+
+                              }
+                              // Call global trigger function
+                              await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, appState: appState)
+                          } catch {
+                              print("‼️ Error saving new journal entry \(newEntry.id) to DB: \(error)")
+                          }
+                      }
+                      // Sheet dismisses automatically on completion
+                  },
+                  onCancel: {
+                      print("[JournalView] New entry sheet cancelled.")
+                      // No need to switch tabs, already on Journal
+                  },
+                  autoFocusText: true
+              )
+         }
         .fullScreenCover(item: $fullscreenEntry) { entry in
             FullscreenEntryView(
                 entry: entry,
@@ -119,6 +159,9 @@ struct JournalView: View {
                     }
                 },
                 onDelete: { deleteEntry(entryToEdit) },
+                 onCancel: {
+                     print("[JournalView] Edit entry sheet cancelled.")
+                 },
                 autoFocusText: true
             )
         }
@@ -143,7 +186,16 @@ struct JournalView: View {
                  }
              }
         }
-        // REMOVED onChange(of: appState.presentNewJournalEntrySheet) modifier
+        // Reinstate onChange for triggering sheet presentation
+         .onChange(of: appState.presentNewJournalEntrySheet) { _, shouldPresent in
+              if shouldPresent {
+                  print("[JournalView] Detected presentNewJournalEntrySheet = true") // Debug Print
+                  showingNewEntrySheet = true
+                  // Reset the flag immediately after triggering the presentation
+                  appState.presentNewJournalEntrySheet = false
+                  print("[JournalView] Set showingNewEntrySheet = true, reset AppState flag.") // Debug Print
+              }
+          }
     } // End Body
 
 
@@ -250,15 +302,10 @@ struct JournalView: View {
                      if filteredEntries.isEmpty {
                         emptyState
                      } else {
-                        journalList
+                        journalList // Modified to include CTA conditionally
                      }
 
-                     // --- Insights CTA Section [NEW] ---
-                     // Place it *inside* the ScrollView but *after* the main content
-                     // Only show if there are entries (otherwise emptyState handles CTA)
-                     if !appState.journalEntries.isEmpty { // Use the unfiltered check here
-                          ctaSectionView
-                     }
+                     // --- Insights CTA Section Moved Inside journalList ---
 
                 } // End ScrollView
                 .coordinateSpace(name: "scrollView")
@@ -299,38 +346,35 @@ struct JournalView: View {
 
     private var journalList: some View {
         LazyVStack(spacing: styles.layout.radiusM, pinnedViews: [.sectionHeaders]) { // Pinned views attempt stickiness
-             let groupedEntries = JournalDateGrouping.groupEntriesByTimePeriod(filteredEntries)
+             // Use the groupedEntries computed property
              ForEach(groupedEntries, id: \.0) { section, entries in
-                 // Use the RENAMED component, passing the correct background
                  Section(header: SharedSectionHeader(title: section, backgroundColor: styles.colors.appBackground)
                                      .id("header-\(section)")
                  ) {
                      ForEach(entries) { entry in
                          JournalEntryCard(
                              entry: entry,
-                             isExpanded: appState.journalExpandedEntryId == entry.id, // Use AppState
-                             onTap: { // Restore onTap for expansion
-                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                     // Update AppState on tap
-                                     appState.journalExpandedEntryId = appState.journalExpandedEntryId == entry.id ? nil : entry.id
-                                 }
-                             },
-                             onExpand: { fullscreenEntry = entry }, // Restore onExpand
-                             onStar: { toggleStar(entry) } // Keep star action
+                             isExpanded: appState.journalExpandedEntryId == entry.id,
+                             onTap: { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { appState.journalExpandedEntryId = appState.journalExpandedEntryId == entry.id ? nil : entry.id } },
+                             onExpand: { fullscreenEntry = entry },
+                             onStar: { toggleStar(entry) }
                          )
-                         .padding(.horizontal, styles.layout.paddingL) // Apply padding here
+                         .padding(.horizontal, styles.layout.paddingL)
                          .transition(.opacity.combined(with: .move(edge: .top)))
-                         .id(entry.id) // IMPORTANT: Add ID to individual card for ScrollViewReader
+                         .id(entry.id)
+                     }
+
+                     // [7.1 Relocation] Insert CTA after "Today" section's entries
+                     if section == "Today" {
+                          ctaSectionView
                      }
                  }
              }
          }
-         // REMOVED: .padding(.horizontal, 20)
-         // Reduce bottom padding slightly to make room for CTA
-         .padding(.bottom, styles.layout.paddingXL)
+         .padding(.bottom, styles.layout.paddingXL) // Keep bottom padding
     }
 
-     // [NEW] CTA Section View
+     // [NEW] CTA Section View (Kept definition, but called conditionally now)
      private var ctaSectionView: some View {
          VStack(spacing: styles.layout.spacingM) {
              Text("Review your patterns and progress over time.")
@@ -350,10 +394,8 @@ struct JournalView: View {
          }
          .padding(.horizontal, styles.layout.paddingXL) // Standard horizontal padding
          .padding(.vertical, styles.layout.spacingXL) // Ample vertical padding
-          // Add slight background tint if desired
-         // .background(styles.colors.secondaryBackground.opacity(0.3))
-         // .cornerRadius(styles.layout.radiusL)
-         // .padding(.horizontal, styles.layout.paddingL) // Padding around the background
+         // Ensure CTA padding doesn't clash with LazyVStack spacing
+         .padding(.top, styles.layout.spacingL) // Add space above CTA
          .padding(.bottom, 100) // Ensure enough space below CTA, above bottom bar
      }
 
@@ -385,12 +427,7 @@ struct JournalView: View {
        }
        .frame(maxWidth: .infinity)
        .padding()
-       // Add the CTA here as well for consistency when *truly* empty
-        .overlay(alignment: .bottom) {
-            if appState._journalEntries.isEmpty && searchTags.isEmpty && selectedMoods.isEmpty && dateFilterType == .all {
-                ctaSectionView
-            }
-        }
+       // Don't show the "Go to Insights" CTA when the journal is truly empty
     }
 
     private var floatingAddButton: some View {

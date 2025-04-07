@@ -50,7 +50,7 @@ struct SettingsView: View {
                          // Close button (double chevron) at right side
                          Button(action: {
                              // Post notification to toggle settings visibility (handled by MainTabView)
-                             NotificationCenter.default.post(name: NSNotification.Name("ToggleSettings"), object: nil)
+                             NotificationCenter.default.post(name: .toggleSettingsNotification, object: nil) // Use standard name
                          }) {
                              Image(systemName: "chevron.right.2")
                                  .font(.system(size: 20, weight: .bold))
@@ -73,7 +73,7 @@ struct SettingsView: View {
                               .transition(.scale.combined(with: .opacity))
 
                         // Subscription section
-                        SubscriptionSection(subscriptionTier: appState.subscriptionTier)
+                        SubscriptionSection(subscriptionTier: appState.subscriptionTier) // Pass renamed tier
                             .transition(.scale.combined(with: .opacity))
                             // .padding(.top, 40) // Removed extra top padding
 
@@ -94,7 +94,7 @@ struct SettingsView: View {
 
                         // Developer Section (DEBUG ONLY)
                         #if DEBUG
-                        DeveloperSection() // Now contains the toggle
+                        DeveloperSection() // Now contains the toggle and sub picker
                             .transition(.scale.combined(with: .opacity))
                         #endif
 
@@ -152,7 +152,7 @@ struct AppearanceSection: View {
 
 // MARK: - Subscription Section
 struct SubscriptionSection: View {
-    let subscriptionTier: SubscriptionTier
+    let subscriptionTier: SubscriptionTier // Now expects .free or .pro
     // Access shared styles - Use @ObservedObject
     @ObservedObject private var styles = UIStyles.shared
 
@@ -166,18 +166,18 @@ struct SubscriptionSection: View {
                 VStack(spacing: styles.layout.spacingM) {
                     HStack {
                         VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                            Text(subscriptionTier == .premium ? "Premium" : "Free")
+                            Text(subscriptionTier == .pro ? "Pro" : "Free") // Updated label
                                 .font(styles.typography.title3) // Use styles instance
                                 .foregroundColor(styles.colors.text) // Use styles instance
 
-                            Text(subscriptionTier == .premium ? "Unlimited reflections and advanced insights" : "Basic features with limited reflections")
+                            Text(subscriptionTier == .pro ? "Unlimited reflections and advanced insights" : "Basic features with limited reflections") // Updated label
                                 .font(styles.typography.bodySmall) // Use styles instance
                                 .foregroundColor(styles.colors.textSecondary) // Use styles instance
                         }
 
                         Spacer()
 
-                        if subscriptionTier == .premium {
+                        if subscriptionTier == .pro { // Updated check
                             Image(systemName: "checkmark.seal.fill")
                                 .font(.system(size: styles.layout.iconSizeL))
                                 .foregroundColor(styles.colors.accent) // Use styles instance
@@ -189,7 +189,7 @@ struct SubscriptionSection: View {
                          Button {
                              // Show subscription options
                          } label: {
-                              Text("Upgrade to Premium")
+                              Text("Upgrade to Pro") // Updated label
                                   .foregroundColor(styles.colors.primaryButtonText) // Apply color directly to Text
                          }
                           // Pass the styles instance to the button style initializer
@@ -471,6 +471,22 @@ struct DeveloperSection: View {
                     .buttonStyle(UIStyles.GhostButtonStyle()) // Use Ghost style
                     .disabled(isGenerating)
                     .frame(maxWidth: .infinity, alignment: .center)
+
+                    Divider().background(styles.colors.divider)
+
+                    // Subscription Tier Picker (Moved Here)
+                    HStack {
+                         Text("Subscription Tier:")
+                             .font(styles.typography.bodyFont)
+                             .foregroundColor(styles.colors.text)
+                         Spacer()
+                         Picker("", selection: $appState.subscriptionTier) {
+                             Text("Free").tag(SubscriptionTier.free)
+                             Text("Pro").tag(SubscriptionTier.pro) // Renamed
+                         }
+                         .pickerStyle(SegmentedPickerStyle())
+                         .frame(maxWidth: 150) // Limit width
+                    }
 
                     Divider().background(styles.colors.divider)
 

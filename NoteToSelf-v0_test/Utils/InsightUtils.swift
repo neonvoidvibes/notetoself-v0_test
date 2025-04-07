@@ -21,7 +21,8 @@ func triggerAllInsightGenerations(
     // Check subscription status - only bypass if forced
     if !forceGeneration {
         // Await here as appState is MainActor isolated
-        guard await appState.subscriptionTier == .premium else {
+        // CORRECTED: Check against .pro
+        guard await appState.subscriptionTier == .pro else {
             print("[InsightUtils] Skipping insight generation (Free tier and not forced).")
             return
         }

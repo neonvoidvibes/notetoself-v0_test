@@ -122,7 +122,10 @@ struct InsightsView: View {
                              .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: headerAppeared)
                      }
                      HStack {
-                         Button(action: { NotificationCenter.default.post(name: .toggleSettingsNotification, object: nil) }) { // Use standard name
+                         Button(action: {
+                              print("[InsightsView] Settings Button Tapped") // Debug Print
+                              NotificationCenter.default.post(name: .toggleSettingsNotification, object: nil) // Use standard name
+                          }) {
                              VStack(spacing: 6) {
                                  HStack { Rectangle().fill(styles.colors.accent).frame(width: 28, height: 2); Spacer() }
                                  HStack { Rectangle().fill(styles.colors.accent).frame(width: 20, height: 2); Spacer() }
@@ -219,16 +222,7 @@ struct InsightsView: View {
     private func insightsCardList(scrollProxy: ScrollViewProxy) -> some View {
         LazyVStack(spacing: styles.layout.cardSpacing) { // Use standard card spacing
 
-             #if DEBUG // Keep debug toggle
-             HStack {
-                 Text("Sub:").font(styles.typography.bodySmall).foregroundColor(styles.colors.textSecondary)
-                 Picker("", selection: $appState.subscriptionTier) {
-                     Text("Free").tag(SubscriptionTier.free)
-                     Text("Premium").tag(SubscriptionTier.premium)
-                 }.pickerStyle(SegmentedPickerStyle()).frame(width: 150)
-                 Spacer()
-             }.padding(.horizontal, styles.layout.paddingXL).padding(.top, 8)
-             #endif
+            // REMOVED #if DEBUG block with subscription picker
 
             // --- Daily Reflection Card ---
               if isLoadingInsights && dailyReflectionJson == nil {

@@ -45,7 +45,7 @@ struct DailyReflectionInsightCard: View {
                         Spacer()
 
                         // [5.1] Add NEW Badge conditionally
-                        if isFresh && appState.subscriptionTier == .premium {
+                        if isFresh && appState.subscriptionTier == .pro { // CORRECTED: Check .pro
                             NewBadgeView()
                         }
 
@@ -53,13 +53,13 @@ struct DailyReflectionInsightCard: View {
                         Image(systemName: "brain.head.profile")
                              .foregroundColor(styles.colors.accent)
                              .font(.system(size: 20))
-                         if appState.subscriptionTier == .free { // Gating
+                         if appState.subscriptionTier == .free { // Gating check is correct (.free)
                             Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
                         }
                     }
 
                     // Content Snippet (Daily Snapshot)
-                    if appState.subscriptionTier == .premium {
+                    if appState.subscriptionTier == .pro { // CORRECTED: Check .pro
                         if isLoading { // Loading means decoding in progress
                             ProgressView().tint(styles.colors.accent)
                                 .frame(maxWidth: .infinity, alignment: .center)
@@ -90,7 +90,7 @@ struct DailyReflectionInsightCard: View {
                                 .frame(minHeight: 60, alignment: .center)
                         }
                     } else {
-                         Text("Unlock daily AI reflections with Premium.")
+                         Text("Unlock daily AI reflections with Premium.") // User-facing text can remain "Premium"
                              .font(styles.typography.bodySmall) // Keep small for locked state
                              .foregroundColor(styles.colors.textSecondary)
                              .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
@@ -102,7 +102,7 @@ struct DailyReflectionInsightCard: View {
         )
         .contentShape(Rectangle())
         // Keep tap gesture for opening detail view
-        .onTapGesture { if appState.subscriptionTier == .premium { showingFullScreen = true } }
+        .onTapGesture { if appState.subscriptionTier == .pro { showingFullScreen = true } } // CORRECTED: Check .pro
         .onAppear { decodeJSON() } // Decode initial JSON on appear
         .onChange(of: jsonString) { // Re-decode if JSON string changes
              oldValue, newValue in

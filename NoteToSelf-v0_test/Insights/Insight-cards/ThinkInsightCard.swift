@@ -37,20 +37,20 @@ struct ThinkInsightCard: View {
                         Spacer()
 
                         // [5.1] Add NEW Badge conditionally
-                        if isFresh && appState.subscriptionTier == .premium {
+                        if isFresh && appState.subscriptionTier == .pro { // CORRECTED: Check .pro
                             NewBadgeView()
                         }
 
                         Image(systemName: "brain.head.profile") // Icon
                             .foregroundColor(styles.colors.accent)
                             .font(.system(size: 20))
-                        if appState.subscriptionTier == .free { // Gating
+                        if appState.subscriptionTier == .free { // Gating check is correct (.free)
                            Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
                        }
                     }
 
                     // Content Snippets
-                    if appState.subscriptionTier == .premium {
+                    if appState.subscriptionTier == .pro { // CORRECTED: Check .pro
                          if isLoading {
                              ProgressView().tint(styles.colors.accent)
                                  .frame(maxWidth: .infinity, alignment: .center)
@@ -102,7 +102,7 @@ struct ThinkInsightCard: View {
                                   .frame(minHeight: 60, alignment: .center)
                          }
                     } else {
-                         Text("Unlock strategic thinking insights with Premium.")
+                         Text("Unlock strategic thinking insights with Premium.") // User-facing text can remain "Premium"
                              .font(styles.typography.bodySmall)
                              .foregroundColor(styles.colors.textSecondary)
                              .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
@@ -113,7 +113,7 @@ struct ThinkInsightCard: View {
             }
         )
         .contentShape(Rectangle())
-        .onTapGesture { if appState.subscriptionTier == .premium { showingFullScreen = true } }
+        .onTapGesture { if appState.subscriptionTier == .pro { showingFullScreen = true } } // CORRECTED: Check .pro
         .onAppear(perform: loadInsight)
         .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
             print("[ThinkInsightCard] Received insightsDidUpdate notification.")
