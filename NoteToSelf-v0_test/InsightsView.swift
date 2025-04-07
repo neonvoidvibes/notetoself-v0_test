@@ -263,20 +263,11 @@ struct InsightsView: View {
                      .padding(.horizontal) // Add horizontal padding to text
 
                  Button("Add New Entry") {
-                     print("[InsightsView] Add New Entry button tapped.") // Debug Print
-                     // Post notification to switch tab FIRST
-                     print("[InsightsView] Posting switchToTabNotification (index 0)") // Debug Print
-                     NotificationCenter.default.post(
-                         name: .switchToTabNotification, // Use standard name
-                         object: nil,
-                         userInfo: ["tabIndex": 0] // Index 0 = Journal
-                     )
-                     // THEN set the flag, possibly after a tiny delay
-                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Small delay
-                         appState.objectWillChange.send() // Ensure state update is observed
-                         appState.presentNewJournalEntrySheet = true
-                         print("[InsightsView] Set presentNewJournalEntrySheet = true") // Debug Print
-                     }
+                     print("[InsightsView] Add New Entry button tapped.")
+                     // Only set the flag. MainTabView handles presentation.
+                     appState.objectWillChange.send() // Ensure update is published
+                     appState.presentNewJournalEntrySheet = true
+                     print("[InsightsView] Set presentNewJournalEntrySheet = true")
                  }
                  .buttonStyle(UIStyles.PrimaryButtonStyle())
              }
@@ -405,19 +396,12 @@ struct InsightsView: View {
              // [7.1] Add Journal Entry Button
              Button("Add Journal Entry") {
                  print("[InsightsView] Empty State - Add New Entry button tapped.") // Debug Print
-                  // Post notification to switch tab FIRST
-                  print("[InsightsView] Empty State - Posting switchToTabNotification (index 0)")
-                  NotificationCenter.default.post(
-                      name: .switchToTabNotification,
-                      object: nil,
-                      userInfo: ["tabIndex": 0]
-                  )
-                  // THEN set the flag, possibly after a tiny delay
-                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                      appState.objectWillChange.send()
-                      appState.presentNewJournalEntrySheet = true
-                      print("[InsightsView] Empty State - Set presentNewJournalEntrySheet = true")
-                  }
+                 // Explicitly send objectWillChange before setting flag
+                 appState.objectWillChange.send()
+                 // Just set the AppState flag. MainTabView will handle presentation.
+                 appState.presentNewJournalEntrySheet = true
+                 print("[InsightsView] Empty State - Set presentNewJournalEntrySheet = true") // Debug Print
+                 // Don't switch tab here, MainTabView will handle it if needed.
              }
              .buttonStyle(UIStyles.PrimaryButtonStyle())
              .padding(.horizontal, styles.layout.paddingXL * 1.5) // Make button slightly narrower

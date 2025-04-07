@@ -208,7 +208,7 @@ struct MainTabView: View {
 
       }
       .environment(\.settingsScrollingDisabled, isSwipingSettings)
-      // Reinstate modal presentation for new entry sheet
+      // Present New Entry Sheet Modally
       .fullScreenCover(isPresented: $appState.presentNewJournalEntrySheet) {
           EditableFullscreenEntryView(
               onSave: { text, mood, intensity in
@@ -226,7 +226,10 @@ struct MainTabView: View {
                                }
                                print("[MainTabView] Saved new entry, state updated.")
                                // Ensure tab is Journal after save
-                               if selectedTab != 0 { selectedTab = 0 }
+                               if selectedTab != 0 {
+                                   print("[MainTabView] Switching to Journal tab (0) after save.")
+                                   selectedTab = 0
+                               }
                           }
                           await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, appState: appState)
                       } catch {
@@ -236,10 +239,8 @@ struct MainTabView: View {
                   // Flag automatically set false by dismissal
               },
               onCancel: {
-                  // If cancelled, switch back to Insights tab
-                  print("[MainTabView] New Entry Cancelled. Switching back to Insights.")
-                  // Post notification instead of direct setting to ensure decoupling
-                  NotificationCenter.default.post(name: .switchToTabNotification, object: nil, userInfo: ["tabIndex": 1])
+                  print("[MainTabView] New Entry Cancelled. No tab switch.")
+                  // No action needed, sheet dismissal leaves user on original tab (Insights)
                   // Flag automatically set false by dismissal
               },
               autoFocusText: true
@@ -254,7 +255,7 @@ struct MainTabView: View {
            NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { _ in withAnimation(.easeInOut(duration: 0.25)) { isKeyboardVisible = true } }
            NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in withAnimation(.easeInOut(duration: 0.25)) { isKeyboardVisible = false } }
       }
-       // Keep observer for tab switching notification
+       // Keep observer for tab switching notification (used by Reflect/Insights buttons)
        .onReceive(NotificationCenter.default.publisher(for: .switchToTabNotification)) { notification in
              print("[MainTabView] Received switchToTabNotification")
              if let userInfo = notification.userInfo, let tabIndex = userInfo["tabIndex"] as? Int {
@@ -269,22 +270,7 @@ struct MainTabView: View {
                   } else { print("[MainTabView] Error: Received invalid tab index \(tabIndex)") }
              } else { print("[MainTabView] Error: Received notification without valid tabIndex") }
        }
-       // Reinstate onChange to handle switching *before* presentation
-        .onChange(of: appState.presentNewJournalEntrySheet) { _, shouldPresent in
-             if shouldPresent {
-                 print("[MainTabView] Detected presentNewJournalEntrySheet = true")
-                 // Ensure we are on the Journal tab *before* the sheet tries to present
-                 // Add a small delay to allow sheet animation to start
-                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Short delay
-                     if self.selectedTab != 0 {
-                         print("[MainTabView] Switching to Journal tab (0) with delay.")
-                         // Do NOT disable animation here, let the default tab switch animate slightly
-                         self.selectedTab = 0
-                     }
-                 }
-                 // Resetting the flag is now handled by the .fullScreenCover modifier's binding
-             }
-         }
+       // REMOVED onChange for presentNewJournalEntrySheet
       .environment(\.keyboardVisible, isKeyboardVisible)
   }
 }
