@@ -48,12 +48,12 @@ struct FeelInsightCard: View {
                         if isLoading {
                             ProgressView().tint(styles.colors.accent)
                                 .frame(maxWidth: .infinity, alignment: .center)
-                                .frame(minHeight: 60)
+                                .frame(minHeight: 100) // Increase min height to account for chart
                         } else if loadError {
                             Text("Could not load Feel insights.")
                                 .font(styles.typography.bodySmall)
                                 .foregroundColor(styles.colors.error)
-                                .frame(minHeight: 60)
+                                .frame(minHeight: 100) // Increase min height
                         } else if let result = insightResult {
                             // Display Dominant Mood Icon + Snapshot Text in HStack
                             HStack(alignment: .top, spacing: styles.layout.spacingM) {
@@ -61,11 +61,10 @@ struct FeelInsightCard: View {
                                 if let dominantMoodName = result.dominantMood, let moodEnum = moodFromName(dominantMoodName) {
                                      moodEnum.icon
                                          .foregroundColor(moodEnum.color)
-                                         .font(.system(size: 24)) // Slightly larger icon for emphasis
-                                         .frame(width: 24, height: 24) // Fixed size
-                                         .padding(.top, 2) // Align icon slightly better with text
+                                         .font(.system(size: 24))
+                                         .frame(width: 24, height: 24)
+                                         .padding(.top, 2)
                                 } else {
-                                     // Placeholder if no dominant mood
                                      Image(systemName: "circle.dashed")
                                           .foregroundColor(styles.colors.textSecondary)
                                           .font(.system(size: 24))
@@ -74,38 +73,64 @@ struct FeelInsightCard: View {
                                 }
 
                                 // Snapshot Text
-                                VStack(alignment: .leading, spacing: styles.layout.spacingXS){ // Wrap text in VStack if needed
+                                VStack(alignment: .leading, spacing: styles.layout.spacingXS){
                                     if let snapshot = result.moodSnapshotText, !snapshot.isEmpty {
                                         Text(snapshot)
                                             .font(styles.typography.bodyFont)
                                             .foregroundColor(styles.colors.text)
-                                            .lineLimit(3) // Allow enough lines for snapshot
+                                            .lineLimit(2) // Limit snapshot text to 2 lines
                                     } else {
                                         Text("Emotional snapshot analysis pending.")
                                              .font(styles.typography.bodyFont)
                                              .foregroundColor(styles.colors.text)
+                                             .lineLimit(2)
                                     }
                                 }
                             }
-                             .padding(.bottom, styles.layout.spacingS)
+                            .padding(.bottom, styles.layout.spacingS) // Space between text and chart
+
+                            // [3.1] Mini Sparkline Chart
+                             if #available(iOS 16.0, *) {
+                                 if let chartData = result.moodTrendChartData, !chartData.isEmpty {
+                                     MiniSparklineChart(
+                                         data: chartData,
+                                         gradient: LinearGradient(
+                                             colors: [styles.colors.accent, styles.colors.accent.opacity(0.5)], // Use accent gradient
+                                             startPoint: .leading,
+                                             endPoint: .trailing
+                                         )
+                                     )
+                                      // Add padding around chart
+                                     .padding(.vertical, styles.layout.spacingXS)
+                                 } else {
+                                     // Optional: Placeholder if chart data is missing but insight exists
+                                     Rectangle()
+                                          .fill(styles.colors.secondaryBackground.opacity(0.5))
+                                          .frame(height: 50)
+                                          .cornerRadius(styles.layout.radiusM)
+                                          .overlay(Text("Chart data unavailable").font(.caption).foregroundColor(styles.colors.textSecondary))
+                                          .padding(.vertical, styles.layout.spacingXS)
+                                 }
+                             }
 
                              // Helping Text
                              Text("Tap for mood chart & details.")
                                  .font(styles.typography.caption)
                                  .foregroundColor(styles.colors.accent)
                                  .frame(maxWidth: .infinity, alignment: .leading)
+                                 .padding(.top, styles.layout.spacingXS) // Space above helping text
 
                         } else {
                             Text("Emotional insights available with regular journaling.")
                                 .font(styles.typography.bodyFont)
                                 .foregroundColor(styles.colors.text)
-                                .frame(minHeight: 60, alignment: .center)
+                                .frame(minHeight: 100, alignment: .center) // Increase min height
                         }
                     } else {
                          Text("Unlock emotional pattern insights with Premium.")
                              .font(styles.typography.bodySmall)
                              .foregroundColor(styles.colors.textSecondary)
-                             .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
+                             .frame(maxWidth: .infinity, minHeight: 100, alignment: .center) // Increase min height
                              .multilineTextAlignment(.center)
                     }
                 }
@@ -137,16 +162,15 @@ struct FeelInsightCard: View {
         loadError = false
         print("[FeelInsightCard] Loading insight...")
         Task {
-            do {
-                // Removed await from loadLatestInsight
-                if let (json, date) = try? databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                    // Removed await from decodeJSON
-                    decodeJSON(json: json, date: date)
-                } else {
-                    await MainActor.run {
-                        insightResult = nil; generatedDate = nil; isLoading = false
-                        print("[FeelInsightCard] No stored insight found.")
-                    }
+            // Removed do-catch block as try? handles errors by returning nil
+            if let (json, date) = try? databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                // Removed await from decodeJSON
+                decodeJSON(json: json, date: date)
+            } else {
+                // This handles both DB error (try? returns nil) and insight not found
+                await MainActor.run {
+                    insightResult = nil; generatedDate = nil; isLoading = false
+                    print("[FeelInsightCard] No stored insight found or error loading.")
                 }
             }
         }

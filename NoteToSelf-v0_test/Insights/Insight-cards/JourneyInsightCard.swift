@@ -15,7 +15,7 @@ struct JourneyInsightCard: View {
     @State private var loadError: Bool = false
     private let insightTypeIdentifier = "journeyNarrative" // Updated identifier
 
-    // Data for the 7-day habit chart (used in expanded view)
+    // Data for the 7-day habit chart (used in collapsed AND expanded view)
      private var habitData: [Bool] {
          let calendar = Calendar.current
          let today = calendar.startOfDay(for: Date())
@@ -97,14 +97,22 @@ struct JourneyInsightCard: View {
         VStack(spacing: 0) {
             // --- Collapsed/Header View ---
             HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                VStack(alignment: .leading, spacing: styles.layout.spacingM) { // Increased spacing
                     Text("Journey")
                         .font(styles.typography.title3)
                         .foregroundColor(styles.colors.text)
 
-                    Text(streakSubHeadline)
-                        .font(styles.typography.bodyFont.weight(.bold))
-                        .foregroundColor(colorScheme == .light ? styles.colors.accent : styles.colors.secondaryAccent)
+                    // Use slightly different text color depending on light/dark mode for streak
+                     Text(streakSubHeadline)
+                         .font(styles.typography.bodyFont.weight(.bold))
+                         .foregroundColor(colorScheme == .light ? styles.colors.accent : styles.colors.secondaryAccent)
+
+
+                    // [3.3] Add Mini Activity Dots
+                    MiniActivityDots(habitData: habitData)
+                        // Add padding below dots
+                        .padding(.bottom, styles.layout.spacingXS)
+
 
                     // Display loading/error state or the snippet
                     HStack {
@@ -121,14 +129,14 @@ struct JourneyInsightCard: View {
                              Text(narrativeSnippetDisplay)
                                  .font(styles.typography.bodySmall)
                                  .foregroundColor(styles.colors.textSecondary)
-                                 .lineLimit(3)
+                                 .lineLimit(2) // Limit snippet to 2 lines
                                  .fixedSize(horizontal: false, vertical: true)
                          }
                          Spacer() // Push text/loader left
                     }
-                     .frame(minHeight: 40) // Ensure space for multiple lines or loader
+                     .frame(minHeight: 30) // Adjust min height for snippet
                 }
-                .frame(minHeight: 70)
+                // REMOVED .frame(minHeight: 70) - let content dictate height
                 Spacer()
                 Image(systemName: "chevron.down")
                     .font(.system(size: 14, weight: .bold))
@@ -246,7 +254,7 @@ struct JourneyInsightCard: View {
         .cornerRadius(styles.layout.radiusL)
         .overlay(
             RoundedRectangle(cornerRadius: styles.layout.radiusL)
-                .stroke(styles.colors.accent, lineWidth: 2)
+                .stroke(styles.colors.accent, lineWidth: 2) // Keep accent border
         )
         .onAppear { loadInsight() }
         .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in

@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts // Import Charts
 
 struct WeekInReviewCard: View {
     @EnvironmentObject var appState: AppState
@@ -92,39 +93,67 @@ struct WeekInReviewCard: View {
                         if isLoading { // Decoding in progress
                             ProgressView().tint(styles.colors.accent)
                                 .frame(maxWidth: .infinity, alignment: .center)
-                                .frame(minHeight: 60)
+                                .frame(minHeight: 100) // Increase height for chart placeholder
                         } else if decodeError {
                             Text("Could not load weekly review.")
                                 .font(styles.typography.bodySmall) // Error text can be smaller
                                 .foregroundColor(styles.colors.error)
-                                .frame(minHeight: 60)
-                        } else if let summary = summaryText, !summary.isEmpty {
+                                .frame(minHeight: 100) // Increase height
+                        } else if let result = insightResult {
                              VStack(alignment: .leading, spacing: styles.layout.spacingXS) {
-                                 Text(summary)
-                                     .font(styles.typography.bodyFont) // Ensure bodyFont
-                                     .foregroundColor(styles.colors.text) // Ensure primary text color
-                                     .lineLimit(3) // Allow more lines for summary
+                                 if let summary = summaryText, !summary.isEmpty {
+                                     Text(summary)
+                                         .font(styles.typography.bodyFont) // Ensure bodyFont
+                                         .foregroundColor(styles.colors.text) // Ensure primary text color
+                                         .lineLimit(2) // Limit summary text to 2 lines
+                                 } else {
+                                     Text("Weekly summary analysis pending.")
+                                         .font(styles.typography.bodyFont)
+                                         .foregroundColor(styles.colors.text)
+                                         .lineLimit(2)
+                                 }
                              }
-                              .padding(.bottom, styles.layout.spacingS)
+                             .padding(.bottom, styles.layout.spacingS) // Space between text and chart
+
+                            // [3.2] Mini Bar Chart
+                             if #available(iOS 16.0, *) {
+                                  let barChartData = transformToBarChartData(result.moodTrendChartData)
+                                  if !barChartData.isEmpty {
+                                      MiniWeeklyBarChart(
+                                          data: barChartData,
+                                          color: styles.colors.accent
+                                      )
+                                      .padding(.vertical, styles.layout.spacingXS) // Padding around chart
+                                  } else {
+                                     // Optional: Placeholder if chart data is missing but insight exists
+                                     Rectangle()
+                                          .fill(styles.colors.secondaryBackground.opacity(0.5))
+                                          .frame(height: 50)
+                                          .cornerRadius(styles.layout.radiusM)
+                                          .overlay(Text("Chart data unavailable").font(.caption).foregroundColor(styles.colors.textSecondary))
+                                          .padding(.vertical, styles.layout.spacingXS)
+                                  }
+                             }
 
                              // Helping Text
                              Text("Tap for weekly patterns & insights.")
                                  .font(styles.typography.caption)
                                  .foregroundColor(styles.colors.accent)
                                  .frame(maxWidth: .infinity, alignment: .leading)
+                                 .padding(.top, styles.layout.spacingXS) // Space above helping text
 
                         } else {
                              // Handles nil jsonString or empty decoded data
                             Text("Weekly review available after a week of journaling.")
                                 .font(styles.typography.bodyFont) // Ensure bodyFont
                                 .foregroundColor(styles.colors.text) // Ensure primary text color
-                                .frame(minHeight: 60, alignment: .center)
+                                .frame(minHeight: 100, alignment: .center) // Increase height
                         }
                     } else {
                          Text("Unlock weekly reviews and pattern analysis with Premium.")
                              .font(styles.typography.bodySmall) // Keep small for locked state
                              .foregroundColor(styles.colors.textSecondary)
-                             .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
+                             .frame(maxWidth: .infinity, minHeight: 100, alignment: .center) // Increase height
                              .multilineTextAlignment(.center)
                     }
                 }
@@ -149,6 +178,34 @@ struct WeekInReviewCard: View {
               .environmentObject(appState)
         }
     }
+
+    // [3.2] Helper to transform MoodTrendPoint data to WeeklyBarChartDataPoint
+    private func transformToBarChartData(_ trendData: [MoodTrendPoint]?) -> [WeeklyBarChartDataPoint] {
+        guard let trendData = trendData, trendData.count == 7 else { return [] } // Ensure exactly 7 days
+
+        let calendar = Calendar.current
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EE" // Short weekday format (e.g., "Mon")
+
+        // Sort data by date just in case it's not already sorted
+        let sortedData = trendData.sorted { $0.date < $1.date }
+
+        // Create a dictionary to map weekday index (1=Sun..7=Sat) to value
+        var valuesByWeekday: [Int: Double] = [:]
+        for point in sortedData {
+            let weekdayIndex = calendar.component(.weekday, from: point.date)
+            valuesByWeekday[weekdayIndex] = point.moodValue
+        }
+
+        // Ensure all 7 days are present, defaulting to 0 if missing
+         let weekdays = (1...7).map { calendar.shortWeekdaySymbols[$0-1] } // Sun, Mon, ..., Sat
+         return weekdays.enumerated().map { index, dayString in
+             let weekdayIndex = index + 1 // Calendar weekday index (1-7)
+             let value = valuesByWeekday[weekdayIndex] ?? 0.0 // Default to 0 if no data for the day
+             return WeeklyBarChartDataPoint(day: dayString, value: value)
+         }
+    }
+
 
     // Decode function using the passed-in jsonString
      @MainActor

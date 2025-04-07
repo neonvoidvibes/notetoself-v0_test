@@ -35,6 +35,7 @@ struct InsightsView: View {
 
 
     @State private var isLoadingInsights: Bool = false
+    @State private var lastLoadTimestamp: Date? = nil // [2.1] State for timestamp
 
     // Animation states
     @State private var headerAppeared = false
@@ -53,6 +54,15 @@ struct InsightsView: View {
     private var hasAnyEntries: Bool {
         !appState.journalEntries.isEmpty
     }
+
+    // [2.1] Formatter for the timestamp
+    private var timestampFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }
+
 
     var body: some View {
         ZStack {
@@ -83,6 +93,27 @@ struct InsightsView: View {
                  }
                  .padding(.top, 12)
                  .padding(.bottom, 12)
+
+                 // [2.1] Timestamp and Divider
+                 VStack(spacing: 10) { // Add spacing between divider and text
+                     Rectangle() // Use Rectangle for line
+                         .fill(styles.colors.accent.opacity(0.2)) // Subtle accent color
+                         .frame(height: 1)
+                         .padding(.horizontal, styles.layout.paddingXL) // Match card padding
+
+                     if let timestamp = lastLoadTimestamp {
+                         Text("Last updated: \(timestamp, formatter: timestampFormatter)")
+                             .font(styles.typography.caption)
+                             .foregroundColor(styles.colors.textSecondary)
+                     } else {
+                         // Optional: Placeholder if timestamp is nil
+                         Text("Updating...")
+                             .font(styles.typography.caption)
+                             .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                     }
+                 }
+                 .padding(.bottom, styles.layout.spacingL) // Add padding below timestamp
+
 
                 // Main content ScrollView
                 ScrollViewReader { scrollProxy in
@@ -232,7 +263,7 @@ struct InsightsView: View {
             // Bottom padding
             Spacer().frame(height: styles.layout.paddingXL + 80) // Keep bottom padding
         }
-        .padding(.top, 20) // Add some top padding before cards start
+        .padding(.top, 0) // REMOVED top padding, handled by timestamp area
     }
 
 
@@ -342,6 +373,7 @@ struct InsightsView: View {
 
 
                  isLoadingInsights = false
+                 lastLoadTimestamp = Date() // [2.1] Update timestamp when loading finishes
                  print("[InsightsView] Finished loading insights.")
              }
          }
