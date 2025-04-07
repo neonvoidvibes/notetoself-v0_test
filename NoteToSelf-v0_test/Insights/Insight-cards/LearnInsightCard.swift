@@ -115,8 +115,10 @@ struct LearnInsightCard: View {
         print("[LearnInsightCard] Loading insight...")
         Task {
             do {
-                if let (json, date) = try? await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                     await decodeJSON(json: json, date: date)
+                // Removed await from loadLatestInsight
+                if let (json, date) = try? databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                     // Removed await from decodeJSON
+                     decodeJSON(json: json, date: date)
                 } else {
                     await MainActor.run {
                         insightResult = nil; generatedDate = nil; isLoading = false

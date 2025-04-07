@@ -268,15 +268,14 @@ struct JourneyInsightCard: View {
         narrativeResult = nil // Reset result before loading
 
         Task {
-            var loadedJson: String? = nil
+            // Removed unused loadedJson variable
             var loadedDate: Date? = nil
             var decodeError: Error? = nil
             var finalResult: StreakNarrativeResult? = nil
 
             do {
-                // Step 1: Load from DB
-                if let (json, date) = try await databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                    loadedJson = json
+                // Step 1: Load from DB - Removed await
+                if let (json, date) = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
                     loadedDate = date
                     print("[JourneyCard] Loaded JSON from DB (Length: \(json.count)): >>>\(json.prefix(200))...<<<") // Log loaded JSON
 
