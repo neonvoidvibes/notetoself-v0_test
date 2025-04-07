@@ -32,19 +32,14 @@ struct DailyReflectionInsightCard: View {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
                     // Header
                     HStack {
-                        Text("AI Insights") // Card Title
+                        Text("Daily Reflection") // UPDATED Title
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text) // Standard color
                         Spacer()
-                        // AI Avatar Icon
-                         ZStack {
-                              Circle()
-                                  .fill(styles.colors.accent.opacity(0.2))
-                                  .frame(width: 30, height: 30)
-                              Image(systemName: "sparkles")
-                                  .foregroundColor(styles.colors.accent)
-                                  .font(.system(size: 16))
-                          }
+                        // UPDATED Icon
+                        Image(systemName: "brain.head.profile")
+                             .foregroundColor(styles.colors.accent)
+                             .font(.system(size: 20)) // Match other card icon sizes
                          if appState.subscriptionTier == .free { // Gating
                             Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
                         }
@@ -68,31 +63,8 @@ struct DailyReflectionInsightCard: View {
                                      .foregroundColor(styles.colors.text) // Ensure primary text color
                                      .lineLimit(3) // Allow more lines for snapshot
 
-                                // --- REPLACED Button ---
-                                // Use HStack with Spacer for right alignment
-                                HStack {
-                                    Spacer() // Push button to the right
-                                    Button(action: {
-                                        NotificationCenter.default.post(
-                                            name: NSNotification.Name("SwitchToTab"),
-                                            object: nil,
-                                            userInfo: ["tabIndex": 2] // Index 2 should be Reflections tab
-                                        )
-                                    }) {
-                                        HStack(spacing: 4) { // Consistent spacing
-                                            Text("Continue in Chat")
-                                                 .font(styles.typography.smallLabelFont) // Match font of "Open" button
-                                            Image(systemName: "arrow.right") // Keep arrow right
-                                                .font(.system(size: styles.layout.iconSizeS)) // Match size of "Open" button icon
-                                        }
-                                        .foregroundColor(styles.colors.accent) // Accent color for text/icon
-                                        .padding(.horizontal, 12) // Standard padding
-                                        .padding(.vertical, 6)   // Standard padding
-                                        .background(styles.colors.secondaryBackground) // Secondary background
-                                        .cornerRadius(styles.layout.radiusM) // Standard corner radius
-                                    }
-                                }
-                                .padding(.top, styles.layout.spacingM) // Add space above button
+                                // --- REMOVED Button ---
+                                // The "Continue in Chat" button is removed from here.
                              }
 
                         } else {
@@ -114,7 +86,7 @@ struct DailyReflectionInsightCard: View {
             }
         )
         .contentShape(Rectangle())
-        // Keep tap gesture for opening detail view, button handles chat switching
+        // Keep tap gesture for opening detail view
         .onTapGesture { if appState.subscriptionTier == .premium { showingFullScreen = true } }
         .onAppear { decodeJSON() } // Decode initial JSON on appear
         .onChange(of: jsonString) { // Re-decode if JSON string changes
