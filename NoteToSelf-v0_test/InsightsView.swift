@@ -349,6 +349,7 @@ struct InsightsView: View {
                  Button("Start Reflection") {
                      print("[InsightsView] Start Reflection button tapped.") // Debug Print
                      chatManager.startNewChat() // Start a new chat first
+                     print("[InsightsView] Called startNewChat().") // Debug Print
                      print("[InsightsView] Posting switchToTabNotification (index 2)") // Debug Print
                      NotificationCenter.default.post(
                          name: .switchToTabNotification, // Use standard name

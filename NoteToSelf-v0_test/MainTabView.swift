@@ -158,224 +158,120 @@ struct MainTabView: View {
   // Add a new state variable to track keyboard visibility
   @State private var isKeyboardVisible = false
 
+  // Function to handle tab switching and closing bottom sheet
+   private func switchTab(to index: Int) {
+       guard index != selectedTab else { // Don't do anything if already on the target tab
+           // Close sheet if trying to tap current tab's button again
+           if bottomSheetExpanded {
+               withAnimation(styles.animation.bottomSheetAnimation) {
+                   bottomSheetExpanded = false
+                   bottomSheetOffset = peekHeight - fullSheetHeight
+               }
+           }
+           return
+       }
+
+       DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Keep delay for visual feedback
+           selectedTab = index
+           // Always close bottom sheet on tab switch from nav buttons
+           withAnimation(styles.animation.bottomSheetAnimation) {
+               bottomSheetExpanded = false
+               bottomSheetOffset = peekHeight - fullSheetHeight
+           }
+       }
+   }
+
   var body: some View {
       ZStack {
-          // Base background layer (visible during transitions or if layers above are transparent)
-          styles.colors.appBackground
-              .ignoresSafeArea()
+          // Base background layer
+          styles.colors.appBackground.ignoresSafeArea()
+          // Input area background
+          styles.colors.inputBackground.ignoresSafeArea()
 
-          // NEW: Background color specifically for the input/tab bar area interaction
-          // This covers the main view's background during keyboard animations in ReflectionsView
-          styles.colors.inputBackground
-               .ignoresSafeArea() // Ensure it extends to screen edges, especially bottom
-
-          // Conditional Background: Accent when sheet expanded, otherwise gradient/solid based on tab
-          if bottomSheetExpanded {
-              // Use accent color when bottom sheet is expanded
-              styles.colors.bottomSheetBackground // Use bottomSheetBackground when expanded
-                  .ignoresSafeArea()
-          } else {
-              // Use background logic based on tab when bottom sheet is collapsed
-              // This layer sits ABOVE the inputBackground, so it defines the visible background when keyboard is NOT transitioning
-              if selectedTab == 2 {
-                  // Specific background for ReflectionsView tab (Tab 2) when closed
-                   // No specific background needed here, as the inputBackground below handles it
-              } else {
-                  // Standard background for Journal (Tab 0) and Insights (Tab 1) when closed
-                   styles.colors.appBackground
-                       .ignoresSafeArea()
+          // Conditional content background
+          if !bottomSheetExpanded {
+              if selectedTab == 0 || selectedTab == 1 {
+                  styles.colors.appBackground.ignoresSafeArea()
               }
+              // No specific background needed for Tab 2 (Reflect) when closed, handled by inputBackground
+          } else {
+              styles.colors.bottomSheetBackground.ignoresSafeArea()
           }
 
           // Status bar area
           VStack(spacing: 0) {
-              styles.colors.statusBarBackground // Use dedicated status bar background color
+              styles.colors.statusBarBackground
                   .frame(height: styles.layout.topSafeAreaPadding)
               Spacer()
           }
           .ignoresSafeArea()
 
-          // Main content: disabled during settings swipes
+          // Main content container
           VStack(spacing: 0) {
               ZStack {
                   // Use TabView for content switching
                    TabView(selection: $selectedTab) {
-                       JournalView(tabBarOffset: .constant(0),
-                                   lastScrollPosition: .constant(0),
-                                   tabBarVisible: .constant(true))
-                           .tag(0)
-
-                       InsightsView(tabBarOffset: .constant(0),
-                                    lastScrollPosition: .constant(0),
-                                    tabBarVisible: .constant(true))
+                       JournalView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
+                            .tag(0)
+                       InsightsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
                            .tag(1)
-
-                       ReflectionsView(tabBarOffset: .constant(0),
-                                       lastScrollPosition: .constant(0),
-                                       tabBarVisible: .constant(true),
-                                       showChatHistory: {
-                                           withAnimation(.easeInOut(duration: 0.3)) {
-                                               showingChatHistory = true
-                                               chatHistoryOffset = 0
-                                           }
-                                       })
+                       ReflectionsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true),
+                           showChatHistory: {
+                               withAnimation(.easeInOut(duration: 0.3)) { showingChatHistory = true; chatHistoryOffset = 0 }
+                           })
                            .environmentObject(chatManager)
                            .tag(2)
                    }
-                   .tabViewStyle(.page(indexDisplayMode: .never)) // Hide default paging indicators
-                   .animation(styles.animation.tabSwitchAnimation, value: selectedTab) // Animate tab transition
+                   .tabViewStyle(.page(indexDisplayMode: .never)) // Keep paging style
+                   // Remove tab switch animation here to prevent conflict with modal presentation
+                   // .animation(styles.animation.tabSwitchAnimation, value: selectedTab)
 
               }
               .offset(y: bottomSheetExpanded ? -fullSheetHeight * 0.25 : 0)
               .animation(styles.animation.bottomSheetAnimation, value: bottomSheetExpanded)
               .environment(\.bottomSheetExpanded, bottomSheetExpanded)
-              // Auto-close on tap
-              .onTapGesture {
-                  if bottomSheetExpanded {
-                      withAnimation(styles.animation.bottomSheetAnimation) {
-                          bottomSheetExpanded = false
-                          bottomSheetOffset = peekHeight - fullSheetHeight
-                      }
-                  }
-              }
-              // Auto-close on any drag (scroll) gesture in the main content
-              .simultaneousGesture(
-                  DragGesture(minimumDistance: 1)
-                      .onChanged { _ in
-                          if bottomSheetExpanded {
-                              withAnimation(styles.animation.bottomSheetAnimation) {
-                                  bottomSheetExpanded = false
-                                  bottomSheetOffset = peekHeight - fullSheetHeight
-                              }
-                          }
-                      }
-              )
-              // Also preserve the previous tap gesture (for redundancy)
-              .simultaneousGesture(
-                  TapGesture().onEnded {
-                      if bottomSheetExpanded {
-                          withAnimation(styles.animation.bottomSheetAnimation) {
-                              bottomSheetExpanded = false
-                              bottomSheetOffset = peekHeight - fullSheetHeight
-                          }
-                      }
-                  }
-              )
+              // Auto-close gestures... (kept as is)
+              .onTapGesture { if bottomSheetExpanded { withAnimation(styles.animation.bottomSheetAnimation) { bottomSheetExpanded = false; bottomSheetOffset = peekHeight - fullSheetHeight } } }
+              .simultaneousGesture( DragGesture(minimumDistance: 1).onChanged { _ in if bottomSheetExpanded { withAnimation(styles.animation.bottomSheetAnimation) { bottomSheetExpanded = false; bottomSheetOffset = peekHeight - fullSheetHeight } } } )
+              .simultaneousGesture( TapGesture().onEnded { if bottomSheetExpanded { withAnimation(styles.animation.bottomSheetAnimation) { bottomSheetExpanded = false; bottomSheetOffset = peekHeight - fullSheetHeight } } } )
 
-              // Bottom sheet / tab bar - using GeometryReader for precise positioning
+
+              // Bottom sheet / tab bar
               GeometryReader { geometry in
                   if !isKeyboardVisible {
                       VStack(spacing: 0) {
-                          // Chevron button - positioned at the very top with no spacing
-                          Button(action: {
-                              withAnimation(styles.animation.bottomSheetAnimation) {
-                                  bottomSheetExpanded.toggle()
+                          // Chevron button
+                          Button(action: { withAnimation(styles.animation.bottomSheetAnimation) { bottomSheetExpanded.toggle() } }) {
+                              VStack(spacing: 4) {
+                                  Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up").font(.system(size: 18, weight: .bold)).foregroundColor(styles.colors.accent)
+                                  if !bottomSheetExpanded { Text("Navigation").font(.system(size: 10, weight: .regular, design: .monospaced)).foregroundColor(styles.colors.text) }
                               }
-                          }) {
-                              VStack(spacing: 4) { // Add spacing for the text
-                                  Image(systemName: bottomSheetExpanded ? "chevron.down" : "chevron.up")
-                                      .font(.system(size: 18, weight: .bold))
-                                      // Use Accent color regardless of state
-                                      .foregroundColor(styles.colors.accent)
-
-                                  // Add Navigation text below the chevron, only when not expanded
-                                  if !bottomSheetExpanded {
-                                      Text("Navigation")
-                                          .font(.system(size: 10, weight: .regular, design: .monospaced))
-                                          // Use Accent color when closed
-                                          .foregroundColor(styles.colors.text)
-                                  }
-                              }
-                              // Apply conditional height for chevron button area
                               .frame(height: bottomSheetExpanded ? peekHeight / 2 : peekHeight)
                               .contentShape(Rectangle())
-                               // Increase conditional top padding: more when closed
-                              .padding(.top, bottomSheetExpanded ? 0 : 20) // Increased from 10 to 20
-                              // Restore original padding logic below chevron
+                              .padding(.top, bottomSheetExpanded ? 0 : 20)
                               .padding(.bottom, bottomSheetExpanded ? 16 : 8)
-                          }
-                          .buttonStyle(PlainButtonStyle())
+                          }.buttonStyle(PlainButtonStyle())
 
-                          // Tab buttons - only shown when expanded
+                          // Tab buttons (use direct callback)
                           if bottomSheetExpanded {
                               HStack(spacing: 0) {
                                   Spacer()
-                                  NavigationTabButton(
-                                      icon: "pencil",
-                                      title: "Journal",
-                                      isSelected: selectedTab == 0,
-                                      // Use Accent color when expanded
-                                      foregroundColor: styles.colors.accent
-                                  ) {
-                                      // Move selectedTab change inside asyncAfter
-                                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Short delay before starting collapse
-                                          selectedTab = 0 // Change tab state *just before* animating sheet collapse
-                                          withAnimation(styles.animation.bottomSheetAnimation) {
-                                              bottomSheetExpanded = false
-                                              bottomSheetOffset = peekHeight - fullSheetHeight
-                                          }
-                                      }
-                                  }
+                                  NavigationTabButton(icon: "pencil", title: "Journal", isSelected: selectedTab == 0, index: 0, action: switchTab)
                                   Spacer()
-                                  NavigationTabButton(
-                                      icon: "chart.bar.fill",
-                                      title: "Insights",
-                                      isSelected: selectedTab == 1,
-                                      // Use Accent color when expanded
-                                      foregroundColor: styles.colors.accent
-                                  ) {
-                                      // Move selectedTab change inside asyncAfter
-                                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Short delay
-                                          selectedTab = 1
-                                          withAnimation(styles.animation.bottomSheetAnimation) {
-                                              bottomSheetExpanded = false
-                                              bottomSheetOffset = peekHeight - fullSheetHeight
-                                          }
-                                      }
-                                  }
+                                  NavigationTabButton(icon: "chart.bar.fill", title: "Insights", isSelected: selectedTab == 1, index: 1, action: switchTab)
                                   Spacer()
-                                  NavigationTabButton(
-                                      icon: "bubble.left.fill",
-                                      title: "Reflect",
-                                      isSelected: selectedTab == 2,
-                                      // Use Accent color when expanded
-                                      foregroundColor: styles.colors.accent
-                                  ) {
-                                      // Move selectedTab change inside asyncAfter
-                                      DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // Short delay
-                                          selectedTab = 2
-                                          withAnimation(styles.animation.bottomSheetAnimation) {
-                                              bottomSheetExpanded = false
-                                              bottomSheetOffset = peekHeight - fullSheetHeight
-                                          }
-                                      }
-                                  }
+                                  NavigationTabButton(icon: "bubble.left.fill", title: "Reflect", isSelected: selectedTab == 2, index: 2, action: switchTab)
                                   Spacer()
                               }
-                              .padding(.vertical, 12) // Restore original vertical padding
+                              .padding(.vertical, 12)
                               .padding(.bottom, 8)
-                              // Apply conditional height for tab buttons area
                               .frame(height: bottomSheetExpanded ? fullSheetHeight - (peekHeight / 2) : 0)
                           }
                       }
                       .frame(width: geometry.size.width, height: bottomSheetExpanded ? fullSheetHeight : peekHeight)
                       .opacity(isKeyboardVisible ? 0 : 1)
-                      .animation(.default, value: isKeyboardVisible) // USE DEFAULT ANIMATION
-                      .background(
-                           Group {
-                               // Determine background based on expanded state and current tab
-                               if bottomSheetExpanded {
-                                   styles.colors.bottomSheetBackground // Use specific color when open
-                               } else {
-                                   if selectedTab == 2 { // Reflections View
-                                       // Use inputBackground to match the area above it
-                                       styles.colors.inputBackground
-                                   } else { // Journal or Insights View
-                                       styles.colors.appBackground // Match main app background
-                                   }
-                               }
-                           }
-                      )
+                      .animation(.default, value: isKeyboardVisible)
+                      .background( bottomSheetExpanded ? styles.colors.bottomSheetBackground : (selectedTab == 2 ? styles.colors.inputBackground : styles.colors.appBackground) )
                   }
               }
               .frame(height: isKeyboardVisible ? 0 : (bottomSheetExpanded ? fullSheetHeight : peekHeight))
@@ -384,83 +280,16 @@ struct MainTabView: View {
           .disabled(isSwipingSettings || showingChatHistory)
           .gesture(settingsDrag)
 
-          // Dim overlay for Settings
-          Color.black
-              .opacity(showingSettings ? 0.5 : 0)
-              .opacity(
-                  dragOffset != 0
-                      ? (showingSettings
-                          ? 0.5 - (dragOffset / screenWidth) * 0.5
-                          : (dragOffset / screenWidth) * 0.5)
-                      : (showingSettings ? 0.5 : 0)
-              )
-              .ignoresSafeArea()
-              .allowsHitTesting(false)
+          // Overlays (Settings, Chat History)... (kept as is)
+           // Dim overlay for Settings
+           Color.black.opacity(showingSettings ? 0.5 : 0).opacity(dragOffset != 0 ? (showingSettings ? 0.5 - (dragOffset / screenWidth) * 0.5 : (dragOffset / screenWidth) * 0.5) : (showingSettings ? 0.5 : 0)).ignoresSafeArea().allowsHitTesting(false)
+           // Dim overlay for Chat History
+           Color.black.opacity(showingChatHistory ? 0.5 : 0).ignoresSafeArea().allowsHitTesting(false)
+           // Settings overlay
+           ZStack(alignment: .top) { SettingsView().environmentObject(databaseService).background(styles.colors.menuBackground) }.background(styles.colors.menuBackground).zIndex(100).contentShape(Rectangle()).simultaneousGesture(settingsDrag).frame(width: screenWidth).background(styles.colors.menuBackground).offset(x: settingsOffset).zIndex(2)
+           // Chat History overlay
+           ZStack(alignment: .top) { ChatHistoryView(chatManager: chatManager, onSelectChat: { selectedChat in chatManager.loadChat(selectedChat); withAnimation(.easeInOut(duration: 0.3)) { showingChatHistory = false; chatHistoryOffset = screenWidth }; if selectedTab != 2 { selectedTab = 2 } }, onDismiss: { withAnimation(.easeInOut(duration: 0.3)) { showingChatHistory = false; chatHistoryOffset = screenWidth } }).background(styles.colors.menuBackground) }.background(styles.colors.menuBackground).zIndex(100).contentShape(Rectangle()).frame(width: screenWidth).background(styles.colors.menuBackground).offset(x: chatHistoryOffset).zIndex(2)
 
-          // Dim overlay for Chat History
-          Color.black
-              .opacity(showingChatHistory ? 0.5 : 0)
-              .ignoresSafeArea()
-              .allowsHitTesting(false)
-
-          // Settings overlay, no disable so we can swipe inside it
-          ZStack(alignment: .top) {
-              VStack(spacing: 0) {
-                  // Header is now handled inside SettingsView
-
-                  // Actual Settings content
-                  SettingsView()
-                      .environmentObject(databaseService) // Inject DatabaseService here
-                      .background(styles.colors.menuBackground)
-              }
-              .background(styles.colors.menuBackground)
-              .zIndex(100)
-          }
-          .contentShape(Rectangle())
-          .simultaneousGesture(settingsDrag)
-          .frame(width: screenWidth)
-          .background(styles.colors.menuBackground)
-          .offset(x: settingsOffset)
-          .zIndex(2)
-
-          // Chat History overlay
-          ZStack(alignment: .top) {
-              VStack(spacing: 0) {
-                  // The header is now handled inside ChatHistoryView
-
-                  // Actual Chat History content
-                  ChatHistoryView(chatManager: chatManager, onSelectChat: { selectedChat in
-                      // Load the selected chat
-                      chatManager.loadChat(selectedChat)
-
-                      // Close the chat history view
-                      withAnimation(.easeInOut(duration: 0.3)) {
-                          showingChatHistory = false
-                          chatHistoryOffset = screenWidth
-                      }
-
-                      // Make sure we're on the Reflections tab
-                      if selectedTab != 2 {
-                          // No animation needed here, change happens before view appears
-                          selectedTab = 2
-                      }
-                  }, onDismiss: {
-                      // Close the chat history view
-                      withAnimation(.easeInOut(duration: 0.3)) {
-                          showingChatHistory = false
-                          chatHistoryOffset = screenWidth
-                      }
-                  })
-                  .background(styles.colors.menuBackground)
-              }
-              .background(styles.colors.menuBackground)
-              .zIndex(100)
-          }
-          .contentShape(Rectangle())
-          .frame(width: screenWidth)
-          .background(styles.colors.menuBackground)
-          .offset(x: chatHistoryOffset)
-          .zIndex(2)
       }
       // IMPORTANT: Remove the mainScrollingDisabled environment variable to allow scrolling
       .environment(\.settingsScrollingDisabled, isSwipingSettings)
@@ -468,7 +297,6 @@ struct MainTabView: View {
       .fullScreenCover(isPresented: $appState.presentNewJournalEntrySheet) {
           EditableFullscreenEntryView(
               onSave: { text, mood, intensity in
-                  // This save logic runs *after* the sheet is dismissed
                   print("[MainTabView] New Entry Saved.")
                   let newEntry = JournalEntry(text: text, mood: mood, date: Date(), intensity: intensity)
                   Task {
@@ -482,81 +310,49 @@ struct MainTabView: View {
                                    appState.journalExpandedEntryId = newEntry.id
                                }
                                print("[MainTabView] Saved new entry, state updated.")
+                               // Ensure tab is Journal after save
+                               if selectedTab != 0 { selectedTab = 0 }
                           }
                           await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, appState: appState)
                       } catch {
                           print("‼️ Error saving new journal entry from MainTabView: \(error)")
                       }
                   }
-                  // No need to switch tab here, we should already be on Journal
+                  // Flag is automatically set to false by .fullScreenCover dismissal
               },
               onCancel: {
-                  // If cancelled, switch back to Insights tab
-                  print("[MainTabView] New Entry Cancelled. Switching back to Insights.")
-                  selectedTab = 1 // Explicitly set tab index
-                   // Reset the flag if dismissal doesn't handle it automatically
-                   if appState.presentNewJournalEntrySheet {
-                       appState.presentNewJournalEntrySheet = false
-                   }
+                  print("[MainTabView] New Entry Cancelled.")
+                  // Switch back to Insights tab if cancelled
+                  if selectedTab != 1 {
+                       print("[MainTabView] Switching back to Insights tab (1).")
+                       // Use standard notification for consistency, MainTabView will receive it
+                       NotificationCenter.default.post(name: .switchToTabNotification, object: nil, userInfo: ["tabIndex": 1])
+                  }
+                   // Flag is automatically set to false by .fullScreenCover dismissal
               },
               autoFocusText: true
           )
       }
       .onAppear {
           bottomSheetOffset = peekHeight - fullSheetHeight
-          // Remove sample data loading
-
-          if !appState.hasSeenOnboarding {
-              // This logic might need review - should onboarding status be persisted?
-              // For now, keep the logic but remove sample data load.
-              appState.hasSeenOnboarding = true
-          }
-
-          // Add notification observer for menu button
-           NotificationCenter.default.addObserver(forName: .toggleSettingsNotification, object: nil, queue: .main) { _ in
-               withAnimation(.easeInOut(duration: 0.3)) {
-                   showingSettings.toggle()
-                   if showingSettings {
-                       settingsOffset = 0
-                   } else {
-                       settingsOffset = -screenWidth
-                   }
-               }
-           }
-
-           // Add notification observer for chat history button
-            NotificationCenter.default.addObserver(forName: .toggleChatHistoryNotification, object: nil, queue: .main) { _ in
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    showingChatHistory.toggle()
-                    if showingChatHistory {
-                        chatHistoryOffset = 0
-                    } else {
-                        chatHistoryOffset = screenWidth
-                    }
-                }
-            }
-
-          // Add keyboard observers
-          NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
-               withAnimation(.easeInOut(duration: 0.25)) { // Match typical keyboard animation
-                   isKeyboardVisible = true
-               }
-           }
-
-           NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { notification in
-               withAnimation(.easeInOut(duration: 0.25)) { // Match typical keyboard animation
-                   isKeyboardVisible = false
-               }
-           }
+          if !appState.hasSeenOnboarding { appState.hasSeenOnboarding = true }
+          // Add notification observers... (kept as is)
+           NotificationCenter.default.addObserver(forName: .toggleSettingsNotification, object: nil, queue: .main) { _ in withAnimation(.easeInOut(duration: 0.3)) { showingSettings.toggle(); settingsOffset = showingSettings ? 0 : -screenWidth } }
+           NotificationCenter.default.addObserver(forName: .toggleChatHistoryNotification, object: nil, queue: .main) { _ in withAnimation(.easeInOut(duration: 0.3)) { showingChatHistory.toggle(); chatHistoryOffset = showingChatHistory ? 0 : screenWidth } }
+           NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { _ in withAnimation(.easeInOut(duration: 0.25)) { isKeyboardVisible = true } }
+           NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in withAnimation(.easeInOut(duration: 0.25)) { isKeyboardVisible = false } }
       }
        // Add observer for tab switching notification
        .onReceive(NotificationCenter.default.publisher(for: .switchToTabNotification)) { notification in
              print("[MainTabView] Received switchToTabNotification") // Debug Print
              if let userInfo = notification.userInfo, let tabIndex = userInfo["tabIndex"] as? Int {
-                 print("[MainTabView] Switching to tab index: \(tabIndex)") // Debug Print
+                 print("[MainTabView] Current tab: \(selectedTab), Requested tab: \(tabIndex)") // Debug Print
                   if tabIndex >= 0 && tabIndex < 3 { // Basic validation
                       if selectedTab != tabIndex { // Avoid redundant sets
+                           print("[MainTabView] Switching to tab index: \(tabIndex)") // Debug Print
                           selectedTab = tabIndex
+                      } else {
+                          print("[MainTabView] Already on tab index: \(tabIndex). No switch needed.") // Debug Print
                       }
                   } else {
                       print("[MainTabView] Error: Received invalid tab index \(tabIndex)")
@@ -565,6 +361,22 @@ struct MainTabView: View {
                  print("[MainTabView] Error: Received notification without valid tabIndex")
              }
        }
+       // Handle triggering the sheet presentation
+        .onChange(of: appState.presentNewJournalEntrySheet) { _, shouldPresent in
+             if shouldPresent {
+                 print("[MainTabView] Detected presentNewJournalEntrySheet = true")
+                 // Ensure we are on the Journal tab *before* the sheet tries to present
+                 // Disable animation during this specific tab switch
+                 if selectedTab != 0 {
+                     print("[MainTabView] Switching to Journal tab (0) without animation.")
+                     withAnimation(nil) { // Disable animation
+                         selectedTab = 0
+                     }
+                 }
+                 // The .fullScreenCover modifier will handle the actual presentation
+                 // We don't need to reset the flag here, sheet dismissal handles it.
+             }
+         }
       .environment(\.keyboardVisible, isKeyboardVisible)
   }
 }
@@ -581,54 +393,46 @@ var keyboardVisible: Bool {
 }
 }
 
+// Modify NavigationTabButton to accept index and callback
 struct NavigationTabButton: View {
   let icon: String
   let title: String
   let isSelected: Bool
-  // Add foregroundColor parameter with default value
+  let index: Int // Add index
   var foregroundColor: Color = Color.white
-  let action: () -> Void
-  @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
+  let action: (Int) -> Void // Change action to accept index
+  @ObservedObject private var styles = UIStyles.shared
 
-  // Fixed dimensions
-  private let buttonWidth: CGFloat = 80 // Define button width
+  private let buttonWidth: CGFloat = 80
   private let iconSize: CGFloat = 24
-  private let underscoreHeight: CGFloat = 4 // Increased thickness
+  private let underscoreHeight: CGFloat = 4
 
   var body: some View {
-      Button(action: action) {
-          VStack(spacing: 6) { // Increased spacing from 4 to 6
-              Spacer() // Pushes content down within the button frame initially
-
-              // Icon
+      Button(action: { action(index) }) { // Call action with index
+          VStack(spacing: 6) {
+              Spacer()
               Image(systemName: icon)
                   .font(.system(size: iconSize, weight: isSelected ? .bold : .regular))
-                  .foregroundColor(foregroundColor) // Use parameter
-                  .frame(height: iconSize) // Keep icon height fixed
-
-              // Text label
+                  .foregroundColor(foregroundColor)
+                  .frame(height: iconSize)
               Text(title)
                   .font(isSelected ?
-                        .system(size: 12, weight: .bold, design: .monospaced) : // Consider theme typography?
+                        .system(size: 12, weight: .bold, design: .monospaced) :
                         styles.typography.caption)
-                  .foregroundColor(foregroundColor) // Use parameter
-
-              // Underscore indicator
+                  .foregroundColor(foregroundColor)
               Rectangle()
-                  .fill(foregroundColor) // Use parameter
-                  .frame(width: 40, height: underscoreHeight) // Increased width from 35 to 40
+                  .fill(foregroundColor)
+                  .frame(width: 40, height: underscoreHeight)
                   .opacity(isSelected ? 1 : 0)
-
-              Spacer(minLength: 2) // Add small spacer below underscore if needed
+              Spacer(minLength: 2)
           }
-          // Remove horizontal padding from VStack to allow text full width
-          .frame(width: buttonWidth) // Keep fixed width for the overall button tap area
-          // Removed explicit height and temporary background
+          .frame(width: buttonWidth)
       }
       .buttonStyle(ScaleButtonStyle())
-      .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected) // Restore animation
+      .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
   }
 }
+
 
 struct ScaleButtonStyle: ButtonStyle {
   func makeBody(configuration: Configuration) -> some View {
