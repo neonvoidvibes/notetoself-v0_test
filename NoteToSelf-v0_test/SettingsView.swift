@@ -94,7 +94,7 @@ struct SettingsView: View {
 
                         // Developer Section (DEBUG ONLY)
                         #if DEBUG
-                        DeveloperSection()
+                        DeveloperSection() // Now contains the toggle
                             .transition(.scale.combined(with: .opacity))
                         #endif
 
@@ -213,6 +213,7 @@ struct SubscriptionSection: View {
                     }
                     // Pass the styles instance to the button style initializer
                     .buttonStyle(UIStyles.GhostButtonStyle()) // Style observes internally
+                    .frame(maxWidth: .infinity, alignment: .center)
                 }
                 .padding(styles.layout.paddingL)
                 .frame(maxWidth: .infinity)
@@ -430,6 +431,7 @@ struct DeveloperSection: View {
 
             styles.card(
                 VStack(spacing: styles.layout.spacingM) {
+                    // Force Update Button
                     Button {
                         guard !isGenerating else { return } // Prevent multiple clicks
                         isGenerating = true
@@ -470,15 +472,15 @@ struct DeveloperSection: View {
                     .disabled(isGenerating)
                     .frame(maxWidth: .infinity, alignment: .center)
 
+                    Divider().background(styles.colors.divider)
 
-                    // Optional: Add generation status/message if needed
-                    // if !generationMessage.isEmpty {
-                    //      Text(generationMessage)
-                    //          .font(styles.typography.caption)
-                    //          .foregroundColor(styles.colors.textSecondary)
-                    //          .padding(.top, 4)
-                    //          .frame(maxWidth: .infinity, alignment: .center)
-                    // }
+                    // Simulate Empty State Toggle
+                    Toggle(isOn: $appState.simulateEmptyState) {
+                         Text("Simulate Empty Journal State")
+                             .foregroundColor(styles.colors.text)
+                    }
+                    .tint(styles.colors.accent)
+                    .font(styles.typography.bodyFont)
 
                 }
                 .padding(styles.layout.paddingL)

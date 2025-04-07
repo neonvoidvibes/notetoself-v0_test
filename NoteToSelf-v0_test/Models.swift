@@ -420,10 +420,24 @@ struct MoodDataPoint: Identifiable, Codable, Equatable {
 // MARK: - App State
 @MainActor
 class AppState: ObservableObject {
-    @Published var journalEntries: [JournalEntry] = []
+    // The actual stored entries loaded from the database
+    @Published var _journalEntries: [JournalEntry] = []
     @Published var journalExpandedEntryId: UUID? = nil
     @Published var subscriptionTier: SubscriptionTier = .free
     @Published var hasSeenOnboarding: Bool = false
+    @Published var simulateEmptyState: Bool = false // Flag for developer toggle
+
+    // Computed property for views to observe
+    // Returns empty array if simulation is enabled, otherwise returns real entries
+    var journalEntries: [JournalEntry] {
+        get {
+            return simulateEmptyState ? [] : _journalEntries
+        }
+        set {
+            // Allow setting the underlying storage, but the getter handles simulation
+            _journalEntries = newValue
+        }
+    }
 
     let freeReflectionsLimit = 3
     var dailyReflectionsUsed: Int {
@@ -434,8 +448,9 @@ class AppState: ObservableObject {
         return subscriptionTier == .premium || dailyReflectionsUsed < freeReflectionsLimit
     }
 
+    // Computed properties now access the potentially simulated journalEntries
     var currentStreak: Int {
-        guard !journalEntries.isEmpty else { return 0 }
+        guard !journalEntries.isEmpty else { return 0 } // Use computed property
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
@@ -457,6 +472,6 @@ class AppState: ObservableObject {
     var hasEntryToday: Bool {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        return journalEntries.contains { calendar.isDate($0.date, inSameDayAs: today) }
+        return journalEntries.contains { calendar.isDate($0.date, inSameDayAs: today) } // Use computed property
     }
 }

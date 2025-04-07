@@ -1,6 +1,49 @@
 import SwiftUI
 import Charts
 
+// MARK: - Skeleton Card View [4.1]
+struct SkeletonCardView: View {
+    @ObservedObject private var styles = UIStyles.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: styles.layout.spacingL) {
+            // Header Placeholder
+            HStack {
+                RoundedRectangle(cornerRadius: styles.layout.radiusM) // Title placeholder
+                    .fill(styles.colors.secondaryBackground.opacity(0.5))
+                    .frame(width: 120, height: 20)
+                Spacer()
+                RoundedRectangle(cornerRadius: styles.layout.radiusM) // Icon/Badge placeholder
+                    .fill(styles.colors.secondaryBackground.opacity(0.5))
+                    .frame(width: 50, height: 20)
+            }
+
+            // Content Placeholder
+            RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                .fill(styles.colors.secondaryBackground.opacity(0.5))
+                .frame(height: 60) // Approximate height for content/chart area
+
+             // Optional: Placeholder for "Open" button area
+             HStack {
+                  Spacer()
+                  RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                      .fill(styles.colors.secondaryBackground.opacity(0.3))
+                      .frame(width: 80, height: 28)
+             }
+        }
+        .padding(styles.layout.cardInnerPadding) // Match card padding
+        .background(styles.colors.cardBackground)
+        .cornerRadius(styles.layout.radiusM) // Match card corner radius
+        .overlay( // Match card border
+             RoundedRectangle(cornerRadius: styles.layout.radiusM)
+                 .stroke(styles.colors.divider, lineWidth: 1)
+         )
+        .shimmer() // Apply shimmer effect
+    }
+}
+
+
+// MARK: - Main Insights View
 struct InsightsView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var chatManager: ChatManager // Keep if needed by AI Reflection Card
@@ -29,12 +72,11 @@ struct InsightsView: View {
     @State private var learnInsightsDate: Date? = nil
 
     // Remaining Old Cards (Keep for now)
-    // Removed: summaryJson, summaryDate
     @State private var journeyJson: String? = nil // For Journey Narrative
     @State private var journeyDate: Date? = nil
 
 
-    @State private var isLoadingInsights: Bool = false
+    @State private var isLoadingInsights: Bool = false // Controls *initial* skeleton display
     @State private var lastLoadTimestamp: Date? = nil // [2.1] State for timestamp
 
     // Animation states
@@ -48,8 +90,6 @@ struct InsightsView: View {
          guard let generatedDate = weekInReviewDate else { return false }
          return Calendar.current.dateComponents([.hour], from: generatedDate, to: Date()).hour ?? 25 < 24
      }
-
-    // Removed: isWeeklySummaryFresh (related to deleted card)
 
     private var hasAnyEntries: Bool {
         !appState.journalEntries.isEmpty
@@ -94,8 +134,6 @@ struct InsightsView: View {
                  .padding(.top, 12)
                  .padding(.bottom, 12) // Restore original bottom padding
 
-                 // REMOVED Timestamp and Divider from here
-
 
                 // Main content ScrollView
                 ScrollViewReader { scrollProxy in
@@ -116,13 +154,10 @@ struct InsightsView: View {
                               .padding(.top, 0) // Minimal top padding
                               .padding(.bottom, styles.layout.spacingM) // Space before cards
                               .padding(.horizontal, styles.layout.paddingXL) // Match card padding
-                         } else if !hasAnyEntries && !isLoadingInsights {
-                             // Don't show placeholder if empty state is showing
-                         } else {
-                              // Optional: Placeholder while loading initially
+                         } else if isLoadingInsights && hasAnyEntries { // Show placeholder only during initial load AND if entries exist
                               HStack {
                                   Spacer()
-                                  Text("Updating...")
+                                  Text("Loading insights...")
                                       .font(styles.typography.caption)
                                       .foregroundColor(styles.colors.textSecondary.opacity(0.7))
                                   Spacer()
@@ -136,15 +171,10 @@ struct InsightsView: View {
 
                         // Initial Empty State or Content
                         if !hasAnyEntries {
-                            emptyStateView // Keep existing empty state
+                            emptyStateView // Show modified empty state
                         } else {
-                            // Loading Indicator or Cards
-                            if isLoadingInsights && areAllInsightsNil() { // Check if ALL insights are nil before showing global loader
-                                loadingView // Keep existing loading view
-                            } else {
-                                // Display Cards in Fixed Order
-                                insightsCardList(scrollProxy: scrollProxy)
-                            }
+                            // [4.1] Use Skeleton Cards during initial load, otherwise show cards
+                             insightsCardList(scrollProxy: scrollProxy)
                         }
                     }
                     .coordinateSpace(name: "scrollView")
@@ -164,14 +194,22 @@ struct InsightsView: View {
             }
         }
         .onAppear {
-            loadStoredInsights() // Load data on appear
+            // [4.1] Trigger initial load only if no timestamp exists yet
+             if lastLoadTimestamp == nil {
+                  isLoadingInsights = true
+                  loadStoredInsights()
+             } else {
+                 // Optionally trigger a background refresh without showing skeletons
+                 // loadStoredInsights() // Or maybe skip if timestamp is recent enough
+             }
+
             // Trigger animations
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { headerAppeared = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { cardsAppeared = true }
         }
         .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
             print("[InsightsView] Received insightsDidUpdate notification. Reloading insights.")
-            loadStoredInsights() // Reload data on notification
+            loadStoredInsights() // Reload data on notification (don't set isLoadingInsights = true here)
         }
         // Keep tab switching logic if needed
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToTab"))) { notification in
@@ -199,75 +237,97 @@ struct InsightsView: View {
 
             // --- NEW TOP CARDS ---
 
-             // 1. AI Insights (Daily Reflection) Card (#1)
-              DailyReflectionInsightCard(
-                   jsonString: dailyReflectionJson, // Pass loaded data
-                   generatedDate: dailyReflectionDate, // Pass loaded date
-                   scrollProxy: scrollProxy,
-                   cardId: "dailyReflectionCard"
-               )
-               .id("dailyReflectionCard")
-               .padding(.horizontal, styles.layout.paddingXL)
-               .opacity(cardsAppeared ? 1 : 0)
-               .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
+             // [4.1] Show Skeleton or Card
+              if isLoadingInsights && dailyReflectionJson == nil {
+                  SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
+              } else {
+                  DailyReflectionInsightCard(
+                       jsonString: dailyReflectionJson,
+                       generatedDate: dailyReflectionDate,
+                       scrollProxy: scrollProxy,
+                       cardId: "dailyReflectionCard"
+                   )
+                   .id("dailyReflectionCard")
+                   .padding(.horizontal, styles.layout.paddingXL)
+                   .opacity(cardsAppeared ? 1 : 0)
+                   .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
+              }
 
-             // 2. Week in Review Card (#2)
-              WeekInReviewCard(
-                   jsonString: weekInReviewJson, // Pass loaded data
-                   generatedDate: weekInReviewDate, // Pass loaded date
-                   scrollProxy: scrollProxy,
-                   cardId: "weekInReviewCard"
-               )
-               .id("weekInReviewCard")
-               .padding(.horizontal, styles.layout.paddingXL)
-               .opacity(cardsAppeared ? 1 : 0)
-               .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
+
+              if isLoadingInsights && weekInReviewJson == nil {
+                  SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
+              } else {
+                  WeekInReviewCard(
+                       jsonString: weekInReviewJson,
+                       generatedDate: weekInReviewDate,
+                       scrollProxy: scrollProxy,
+                       cardId: "weekInReviewCard"
+                   )
+                   .id("weekInReviewCard")
+                   .padding(.horizontal, styles.layout.paddingXL)
+                   .opacity(cardsAppeared ? 1 : 0)
+                   .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
+              }
 
 
             // --- NEW GROUPED CARDS ---
+            // Note: These cards still have their *internal* loading state.
+            // We might show skeleton *initially* and then the card shows its own loader briefly.
 
-             // 3. Feel Card (#3)
-              FeelInsightCard( // Keep internal loading for grouped cards for now
-                  scrollProxy: scrollProxy,
-                  cardId: "feelCard"
-              )
-              .id("feelCard")
-              .padding(.horizontal, styles.layout.paddingXL)
-              .opacity(cardsAppeared ? 1 : 0)
-              .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
-
-
-              // 4. Think Card (#4)
-               ThinkInsightCard( // Keep internal loading
-                   scrollProxy: scrollProxy,
-                   cardId: "thinkCard"
-               )
-               .id("thinkCard")
-               .padding(.horizontal, styles.layout.paddingXL)
-               .opacity(cardsAppeared ? 1 : 0)
-               .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
-
-
-               // 5. Act Card (#5)
-                ActInsightCard( // Keep internal loading
+            if isLoadingInsights && feelInsightsJson == nil {
+                SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
+            } else {
+                FeelInsightCard(
                     scrollProxy: scrollProxy,
-                    cardId: "actCard"
+                    cardId: "feelCard"
                 )
-                .id("actCard")
+                .id("feelCard")
                 .padding(.horizontal, styles.layout.paddingXL)
                 .opacity(cardsAppeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared)
+                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
+            }
 
 
-                // 6. Learn Card (#6)
-                 LearnInsightCard( // Keep internal loading
+            if isLoadingInsights && thinkInsightsJson == nil {
+                SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
+            } else {
+                 ThinkInsightCard(
                      scrollProxy: scrollProxy,
-                     cardId: "learnCard"
+                     cardId: "thinkCard"
                  )
-                 .id("learnCard")
+                 .id("thinkCard")
                  .padding(.horizontal, styles.layout.paddingXL)
                  .opacity(cardsAppeared ? 1 : 0)
-                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.6), value: cardsAppeared)
+                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
+             }
+
+
+            if isLoadingInsights && actInsightsJson == nil {
+                SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
+            } else {
+                  ActInsightCard(
+                      scrollProxy: scrollProxy,
+                      cardId: "actCard"
+                  )
+                  .id("actCard")
+                  .padding(.horizontal, styles.layout.paddingXL)
+                  .opacity(cardsAppeared ? 1 : 0)
+                  .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared)
+              }
+
+
+             if isLoadingInsights && learnInsightsJson == nil {
+                 SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
+             } else {
+                   LearnInsightCard(
+                       scrollProxy: scrollProxy,
+                       cardId: "learnCard"
+                   )
+                   .id("learnCard")
+                   .padding(.horizontal, styles.layout.paddingXL)
+                   .opacity(cardsAppeared ? 1 : 0)
+                   .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.6), value: cardsAppeared)
+               }
 
 
             // --- REMOVED OLD WeeklySummaryInsightCard ---
@@ -279,11 +339,12 @@ struct InsightsView: View {
     }
 
 
-    // MARK: - Component Views (Keep emptyStateView and loadingView)
+    // MARK: - Component Views
     private var emptyStateView: some View {
-         VStack(spacing: styles.layout.spacingL) { // Keep existing empty state
-             Spacer(minLength: 100)
+         VStack(spacing: styles.layout.spacingL) {
+             Spacer(minLength: 60) // Adjust spacer if needed
              ZStack {
+                 // ... (Circles animation remains the same) ...
                  ForEach(0..<3) { i in
                      Circle().fill(styles.colors.accent.opacity(0.1 - Double(i) * 0.03))
                          .frame(width: 120 + CGFloat(i * 20), height: 120 + CGFloat(i * 20))
@@ -300,34 +361,38 @@ struct InsightsView: View {
                  .shadow(color: styles.colors.accent.opacity(0.3), radius: 2, x: 0, y: 0)
                  .offset(y: headerAppeared ? 0 : 20).opacity(headerAppeared ? 1 : 0)
                  .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.5), value: headerAppeared)
-             Text("Start journaling regularly to discover patterns and receive personalized insights here.")
+
+             // [7.2] Updated Text
+             Text("Add more journal entries to unlock pattern analysis and personalized insights here.")
                  .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
                  .multilineTextAlignment(.center).padding(.horizontal, styles.layout.paddingXL)
                  .offset(y: headerAppeared ? 0 : 20).opacity(headerAppeared ? 1 : 0)
                  .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.6), value: headerAppeared)
-             Spacer()
+
+             // [7.1] Add Journal Entry Button
+             Button("Add Journal Entry") {
+                 NotificationCenter.default.post(
+                     name: NSNotification.Name("SwitchToTab"),
+                     object: nil,
+                     userInfo: ["tabIndex": 0] // Index 0 is Journal Tab
+                 )
+             }
+             .buttonStyle(UIStyles.PrimaryButtonStyle())
+             .padding(.horizontal, styles.layout.paddingXL * 1.5) // Make button slightly narrower
+             .padding(.top, styles.layout.spacingL) // Space above button
+             .offset(y: headerAppeared ? 0 : 20) // Match text animation
+             .opacity(headerAppeared ? 1 : 0)
+             .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.7), value: headerAppeared)
+
+             Spacer() // Pushes content towards center vertically
          }.padding(.vertical, 50)
      }
 
-    private var loadingView: some View {
-         VStack(spacing: 20) { // Keep existing loading view
-             ZStack {
-                 Circle().stroke(styles.colors.tertiaryBackground, lineWidth: 4).frame(width: 60, height: 60)
-                 Circle().trim(from: 0, to: 0.7)
-                     .stroke(LinearGradient(gradient: Gradient(colors: [styles.colors.accent, styles.colors.accent.opacity(0.5)]), startPoint: .leading, endPoint: .trailing), style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                     .frame(width: 60, height: 60).rotationEffect(Angle(degrees: headerAppeared ? 360 : 0))
-                     .animation(Animation.linear(duration: 1).repeatForever(autoreverses: false), value: headerAppeared)
-             }
-             Text("Loading Insights...").font(styles.typography.bodyFont).foregroundColor(styles.colors.accent)
-         }.padding(.vertical, 50)
-     }
 
     // Helper to check if all insight states are nil
     private func areAllInsightsNil() -> Bool {
         return dailyReflectionJson == nil &&
                weekInReviewJson == nil &&
-               // summaryJson == nil && // Removed old weekly summary check
-               // reflectionJson == nil && // Already removed
                feelInsightsJson == nil &&
                thinkInsightsJson == nil &&
                actInsightsJson == nil &&
@@ -344,49 +409,36 @@ struct InsightsView: View {
           }
          print("[InsightsView] Loading stored insights from DB...")
          Task {
-             // Load NEW Top Cards insights
+             // ... (async let fetches remain the same) ...
              async let dailyReflectionFetch = try? self.databaseService.loadLatestInsight(type: "dailyReflection")
              async let weekInReviewFetch = try? self.databaseService.loadLatestInsight(type: "weekInReview")
-
-             // Load Grouped Cards insights
              async let feelFetch = try? self.databaseService.loadLatestInsight(type: "feelInsights")
              async let thinkFetch = try? self.databaseService.loadLatestInsight(type: "thinkInsights")
              async let actFetch = try? self.databaseService.loadLatestInsight(type: "actInsights")
              async let learnFetch = try? self.databaseService.loadLatestInsight(type: "learnInsights")
-
-             // Load Remaining Old insights
-             // async let summaryFetch = try? self.databaseService.loadLatestInsight(type: "weeklySummary") // Removed old weekly summary
              async let journeyFetch = try? self.databaseService.loadLatestInsight(type: "journeyNarrative")
 
-             // Await results
              let dailyReflectionResult = await dailyReflectionFetch
              let weekInReviewResult = await weekInReviewFetch
              let feelResult = await feelFetch
              let thinkResult = await thinkFetch
              let actResult = await actFetch
              let learnResult = await learnFetch
-             // let summaryResult = await summaryFetch // Removed old weekly summary
              let journeyResult = await journeyFetch
 
-
              await MainActor.run {
-                 // Update state for NEW Top Cards
+                 // Update state variables...
                  if let (json, date) = dailyReflectionResult { self.dailyReflectionJson = json; self.dailyReflectionDate = date } else { self.dailyReflectionJson = nil; self.dailyReflectionDate = nil }
                  if let (json, date) = weekInReviewResult { self.weekInReviewJson = json; self.weekInReviewDate = date } else { self.weekInReviewJson = nil; self.weekInReviewDate = nil }
-
-                 // Update state for NEW Grouped Cards
                  if let (json, date) = feelResult { self.feelInsightsJson = json; self.feelInsightsDate = date } else { self.feelInsightsJson = nil; self.feelInsightsDate = nil }
                  if let (json, date) = thinkResult { self.thinkInsightsJson = json; self.thinkInsightsDate = date } else { self.thinkInsightsJson = nil; self.thinkInsightsDate = nil }
                  if let (json, date) = actResult { self.actInsightsJson = json; self.actInsightsDate = date } else { self.actInsightsJson = nil; self.actInsightsDate = nil }
                  if let (json, date) = learnResult { self.learnInsightsJson = json; self.learnInsightsDate = date } else { self.learnInsightsJson = nil; self.learnInsightsDate = nil }
-
-                 // Update state for Remaining Old Cards
-                 // self.summaryJson = nil; self.summaryDate = nil // Explicitly nil removed summary state
                  if let (json, date) = journeyResult { self.journeyJson = json; self.journeyDate = date } else { self.journeyJson = nil; self.journeyDate = nil }
 
-
+                 // Set isLoadingInsights to false AFTER data is loaded/processed
                  isLoadingInsights = false
-                 lastLoadTimestamp = Date() // [2.1] Update timestamp when loading finishes
+                 lastLoadTimestamp = Date() // Update timestamp
                  print("[InsightsView] Finished loading insights.")
              }
          }
@@ -402,27 +454,57 @@ struct InsightsView_Previews: PreviewProvider {
      @StateObject static var chatManager = ChatManager(databaseService: databaseService, llmService: llmService, subscriptionManager: subscriptionManager)
 
      static var previews: some View {
-         PreviewDataLoadingContainer {
+         // Preview showing the empty state specifically
+         PreviewDataLoadingContainer(loadData: false) { // Corrected initializer call
              InsightsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
-                 .environmentObject(appState)
-                 .environmentObject(chatManager)
+                 .environmentObject(AppState()) // Provide an empty AppState
+                 .environmentObject(chatManager) // Pass chatManager even if empty
                  .environmentObject(databaseService)
                  .environmentObject(subscriptionManager)
                  .environmentObject(ThemeManager.shared)
-                 .environmentObject(UIStyles.shared) // Add UIStyles to environment
+                 .environmentObject(UIStyles.shared)
          }
+         .previewDisplayName("Empty State")
+
+         // Preview showing the loaded state
+         PreviewDataLoadingContainer(loadData: true) { // Corrected initializer call
+              InsightsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
+                  .environmentObject(appState) // Use the one with loaded data
+                  .environmentObject(chatManager)
+                  .environmentObject(databaseService)
+                  .environmentObject(subscriptionManager)
+                  .environmentObject(ThemeManager.shared)
+                  .environmentObject(UIStyles.shared)
+          }
+          .previewDisplayName("Loaded State")
      }
 
+     // Keep PreviewDataLoadingContainer but allow skipping data load
+     // Make initializer public or internal if needed across modules
      struct PreviewDataLoadingContainer<Content: View>: View {
          @ViewBuilder let content: Content
+         let loadData: Bool // Add flag
          @State private var isLoading = true
+
+         // Corrected Initializer with labels
+          init(loadData: Bool, @ViewBuilder content: () -> Content) {
+              self.loadData = loadData
+              self.content = content()
+          }
+
+
          var body: some View {
              Group {
-                 if isLoading { ProgressView("Loading Preview Data...").frame(maxWidth: .infinity, maxHeight: .infinity).background(UIStyles.shared.colors.appBackground).onAppear { Task { await loadData(); isLoading = false } } }
+                 if isLoading && loadData { // Only show loader if loadData is true
+                      ProgressView("Loading Preview Data...").frame(maxWidth: .infinity, maxHeight: .infinity).background(UIStyles.shared.colors.appBackground).onAppear { Task { await performDataLoad(); isLoading = false } }
+                 } else if isLoading && !loadData { // If not loading data, just set isLoading to false
+                      Color.clear.onAppear { isLoading = false }
+                 }
                  else { content }
              }
          }
-         func loadData() async {
+         func performDataLoad() async { // Renamed function
+              guard loadData else { return } // Skip if flag is false
               print("Preview: Starting data load...")
               let dbService = InsightsView_Previews.databaseService
               let state = InsightsView_Previews.appState
