@@ -92,27 +92,9 @@ struct InsightsView: View {
                      }.padding(.horizontal, styles.layout.paddingXL)
                  }
                  .padding(.top, 12)
-                 .padding(.bottom, 12)
+                 .padding(.bottom, 12) // Restore original bottom padding
 
-                 // [2.1] Timestamp and Divider
-                 VStack(spacing: 10) { // Add spacing between divider and text
-                     Rectangle() // Use Rectangle for line
-                         .fill(styles.colors.accent.opacity(0.2)) // Subtle accent color
-                         .frame(height: 1)
-                         .padding(.horizontal, styles.layout.paddingXL) // Match card padding
-
-                     if let timestamp = lastLoadTimestamp {
-                         Text("Last updated: \(timestamp, formatter: timestampFormatter)")
-                             .font(styles.typography.caption)
-                             .foregroundColor(styles.colors.textSecondary)
-                     } else {
-                         // Optional: Placeholder if timestamp is nil
-                         Text("Updating...")
-                             .font(styles.typography.caption)
-                             .foregroundColor(styles.colors.textSecondary.opacity(0.7))
-                     }
-                 }
-                 .padding(.bottom, styles.layout.spacingL) // Add padding below timestamp
+                 // REMOVED Timestamp and Divider from here
 
 
                 // Main content ScrollView
@@ -121,6 +103,36 @@ struct InsightsView: View {
                         GeometryReader { geometry in // For scroll offset detection
                             Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: geometry.frame(in: .named("scrollView")).minY)
                         }.frame(height: 0)
+
+                         // --- Timestamp Display moved here ---
+                         if let timestamp = lastLoadTimestamp {
+                              HStack { // Use HStack for alignment if needed
+                                  Spacer() // Center align
+                                  Text("Last updated: \(timestamp, formatter: timestampFormatter)")
+                                      .font(styles.typography.caption)
+                                      .foregroundColor(styles.colors.textSecondary.opacity(0.8))
+                                  Spacer()
+                              }
+                              .padding(.top, 0) // Minimal top padding
+                              .padding(.bottom, styles.layout.spacingM) // Space before cards
+                              .padding(.horizontal, styles.layout.paddingXL) // Match card padding
+                         } else if !hasAnyEntries && !isLoadingInsights {
+                             // Don't show placeholder if empty state is showing
+                         } else {
+                              // Optional: Placeholder while loading initially
+                              HStack {
+                                  Spacer()
+                                  Text("Updating...")
+                                      .font(styles.typography.caption)
+                                      .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                                  Spacer()
+                              }
+                               .padding(.top, 0)
+                               .padding(.bottom, styles.layout.spacingM)
+                               .padding(.horizontal, styles.layout.paddingXL)
+                         }
+                         // --- End Timestamp ---
+
 
                         // Initial Empty State or Content
                         if !hasAnyEntries {
@@ -263,7 +275,7 @@ struct InsightsView: View {
             // Bottom padding
             Spacer().frame(height: styles.layout.paddingXL + 80) // Keep bottom padding
         }
-        .padding(.top, 0) // REMOVED top padding, handled by timestamp area
+        .padding(.top, 0) // No top padding needed on LazyVStack itself
     }
 
 
@@ -326,9 +338,10 @@ struct InsightsView: View {
 
     // --- Data Loading ---
     private func loadStoredInsights() {
-         if areAllInsightsNil() {
-             isLoadingInsights = true
-         }
+         // Set initial loading state only if starting completely fresh
+          if lastLoadTimestamp == nil {
+              isLoadingInsights = true
+          }
          print("[InsightsView] Loading stored insights from DB...")
          Task {
              // Load NEW Top Cards insights
