@@ -60,6 +60,8 @@ struct DailyReflectionInsightCard: View {
                                          .foregroundColor(styles.colors.text)
                                          .lineLimit(3)
                                  }
+                                 // Add bottom padding specifically to this VStack when content exists
+                                 .padding(.bottom, styles.layout.paddingL)
                              } else {
                                  EmptyStateView(message: "Processing reflection...")
                              }
@@ -71,7 +73,7 @@ struct DailyReflectionInsightCard: View {
                          LockedContentView(message: "Unlock daily AI reflections with Premium.")
                     }
                 }
-                // Removed bottom padding here, let content/VStack handle it
+                // No explicit padding needed here; expandableCard handles outer padding
             }
         )
         .contentShape(Rectangle())
