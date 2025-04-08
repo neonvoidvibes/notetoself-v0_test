@@ -225,10 +225,9 @@ struct MainTabView: View {
                                    appState.journalExpandedEntryId = newEntry.id
                                }
                                print("[MainTabView] Saved new entry, state updated.")
-                               // REMOVED direct tab switch: selectedTab = 0
-                               // SET flag for delayed tab switch
-                               appState.tabToSelectAfterSheetDismissal = 0
-                               print("[MainTabView] Set flag to switch to Journal tab (0) after save.")
+                               // Switch tab directly after saving state
+                               self.selectedTab = 0
+                               print("[MainTabView] Switched to Journal tab (0) after save.")
                           }
                           await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, appState: appState)
                       } catch {
@@ -239,7 +238,7 @@ struct MainTabView: View {
               },
               onCancel: {
                   print("[MainTabView] New Entry Cancelled. No tab switch.")
-                  // No action needed, sheet dismissal leaves user on original tab (Insights)
+                  // No action needed, sheet dismissal leaves user on original tab
                   // Flag automatically set false by dismissal
               },
               autoFocusText: true
@@ -269,18 +268,14 @@ struct MainTabView: View {
                   } else { print("[MainTabView] Error: Received invalid tab index \(tabIndex)") }
              } else { print("[MainTabView] Error: Received notification without valid tabIndex") }
        }
-       // ADDED onChange to handle delayed tab switching after sheet dismissal
+       // Modified onChange to only reset flag after dismissal
        .onChange(of: appState.presentNewJournalEntrySheet) { _, isPresented in
-            // Only act when the sheet is dismissed (isPresented becomes false)
+            // Only act when the sheet is dismissed
             if !isPresented {
-                // Check if a tab switch was requested
-                if let targetTab = appState.tabToSelectAfterSheetDismissal {
-                    print("[MainTabView] Sheet dismissed, switching to requested tab: \(targetTab)")
-                    selectedTab = targetTab
-                    // Reset the flag in AppState
+                // Reset the flag in AppState if it was set
+                if appState.tabToSelectAfterSheetDismissal != nil {
+                    print("[MainTabView] Sheet dismissed, resetting tabToSelectAfterSheetDismissal flag.")
                     appState.tabToSelectAfterSheetDismissal = nil
-                } else {
-                    print("[MainTabView] Sheet dismissed, no tab switch requested.")
                 }
             }
         }

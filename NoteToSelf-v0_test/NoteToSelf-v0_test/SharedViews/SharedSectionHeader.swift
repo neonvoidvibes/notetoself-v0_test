@@ -24,9 +24,10 @@ struct SharedSectionHeader: View {
         // Increased padding to align with indented card content
         .padding(.leading, styles.layout.paddingL * 2)
         .frame(maxWidth: .infinity, alignment: .leading) // Ensure HStack takes full width for background
-        // REMOVED: .padding(.top, 12)
-        .padding(.bottom, 5) // Consistent bottom padding
-        .listRowInsets(EdgeInsets()) // For List compatibility
+        // REMOVED: .padding(.top, 12) - Removed in previous step
+        // REMOVED: .padding(.bottom, 5) - Let font line height and LazyVStack spacing control gap
+        .padding(.vertical, 8) // Apply some vertical padding for visual spacing within the background
+        .listRowInsets(EdgeInsets()) // For List compatibility - important for sticky behavior
         .background(backgroundColor) // Apply the specific background color
     }
 }
@@ -44,7 +45,7 @@ struct SharedSectionHeader: View {
         .frame(height: 100)
 
         ScrollView {
-            LazyVStack(pinnedViews: .sectionHeaders) {
+            LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) { // Set spacing to 0 here too
                 Section(header: SharedSectionHeader(title: "App Section (Journal/Insights)", backgroundColor: UIStyles.shared.colors.appBackground)) {
                     Text("Journal Item 1")
                 }

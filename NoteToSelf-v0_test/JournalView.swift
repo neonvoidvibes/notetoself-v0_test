@@ -257,7 +257,7 @@ struct JournalView: View {
             .padding(.horizontal, styles.layout.paddingXL)
         }
         .padding(.top, 8)
-        .padding(.bottom, 8)
+        .padding(.bottom, 8) // Existing bottom padding here is likely fine
     }
 
 
@@ -282,7 +282,7 @@ struct JournalView: View {
     private var journalContent: some View {
         ScrollViewReader { scrollProxy in
              ScrollView {
-                 VStack(spacing: 0) { // Main container VStack
+                 VStack(spacing: 0) { // Main container VStack - Set spacing to 0
                      GeometryReader { geometry in
                          Color.clear.preference(
                              key: ScrollOffsetPreferenceKey.self,
@@ -345,7 +345,8 @@ struct JournalView: View {
 
     // NEW: Combined journal list with integrated CTA placement logic
     private var journalListWithCTA: some View {
-        LazyVStack(spacing: styles.layout.radiusM, pinnedViews: [.sectionHeaders]) {
+        // Set LazyVStack spacing to 0 to minimize gap between sections
+        LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
             let entriesGrouped = groupedEntries // Cache for efficiency
             let hasToday = entriesGrouped.contains { $0.0 == "Today" }
             let hasYesterday = entriesGrouped.contains { $0.0 == "Yesterday" }
@@ -355,21 +356,28 @@ struct JournalView: View {
 
                 Section(header: SharedSectionHeader(title: section, backgroundColor: styles.colors.appBackground)
                                     .id("header-\(section)")
-                                    .padding(.top, 12)
+                                    // Removed top padding from header view itself
                 ) {
-                    ForEach(entries) { entry in
-                        JournalEntryCard(
-                            entry: entry,
-                            isExpanded: appState.journalExpandedEntryId == entry.id,
-                            onTap: { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { appState.journalExpandedEntryId = appState.journalExpandedEntryId == entry.id ? nil : entry.id } },
-                            onExpand: { fullscreenEntry = entry },
-                            onStar: { toggleStar(entry) }
-                        )
-                        .padding(.horizontal, styles.layout.paddingL)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                        .id(entry.id)
+                    // Add spacing *between* cards within a section using a regular VStack
+                    VStack(spacing: styles.layout.radiusM) { // Use standard card spacing here
+                         ForEach(entries) { entry in
+                             JournalEntryCard(
+                                 entry: entry,
+                                 isExpanded: appState.journalExpandedEntryId == entry.id,
+                                 onTap: { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { appState.journalExpandedEntryId = appState.journalExpandedEntryId == entry.id ? nil : entry.id } },
+                                 onExpand: { fullscreenEntry = entry },
+                                 onStar: { toggleStar(entry) }
+                             )
+                             // REMOVED horizontal padding here - apply to VStack below
+                             .transition(.opacity.combined(with: .move(edge: .top)))
+                             .id(entry.id)
+                         }
                     }
-                }
+                    .padding(.horizontal, styles.layout.paddingL) // Apply horizontal padding to the card group
+                    // Add bottom padding to the card group to create space before next header/CTA
+                    .padding(.bottom, styles.layout.paddingL)
+
+                } // End Section
 
                 // CTA Placement Logic:
                 // Place AFTER "Today" section if it exists
@@ -380,7 +388,7 @@ struct JournalView: View {
                 else if section == "Yesterday" && !hasToday {
                     ctaSectionView.padding(.vertical, styles.layout.paddingXL)
                 }
-            }
+            } // End ForEach sections
 
             // CTA Placement Logic (Fallback):
             // Place at the very end if NEITHER "Today" NOR "Yesterday" sections exist
@@ -388,8 +396,7 @@ struct JournalView: View {
                 // Ensure it's only added if there are SOME entries at all
                 ctaSectionView.padding(.vertical, styles.layout.paddingXL)
             }
-        }
-        // No bottom padding needed here, handled by Spacer in journalContent
+        } // End LazyVStack
     }
 
 
