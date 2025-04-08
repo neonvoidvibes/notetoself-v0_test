@@ -130,7 +130,7 @@ struct MainTabView: View {
           // Status bar background
           VStack(spacing: 0) { styles.colors.statusBarBackground.frame(height: styles.layout.topSafeAreaPadding); Spacer() }.ignoresSafeArea()
 
-          // Main content container
+          // Main content container - APPLY OPACITY AND ANIMATION HERE
           VStack(spacing: 0) {
               ZStack {
                   // ZStack for view switching
@@ -197,6 +197,8 @@ struct MainTabView: View {
               .frame(height: isKeyboardVisible ? 0 : (bottomSheetExpanded ? fullSheetHeight : peekHeight))
               .gesture(bottomSheetDrag)
           }
+          .opacity(appState.isFadingOutForNewEntry ? 0.0 : 1.0) // Fade out main content
+          .animation(.easeInOut(duration: 0.3), value: appState.isFadingOutForNewEntry) // Animate fade
           .disabled(isSwipingSettings || showingChatHistory)
           .gesture(settingsDrag)
 
@@ -238,9 +240,21 @@ struct MainTabView: View {
               onCancel: {
                   print("[MainTabView] New Entry Cancelled. No tab switch.")
               },
-              autoFocusText: true,
-              startFaded: true // Pass true here for the fade effect
+              autoFocusText: true
+              // REMOVED startFaded: true - fade is now controlled by parent
           )
+          // Set/reset the fade flag based on sheet presentation
+          .onAppear {
+               // Delay setting the fade flag slightly to allow sheet animation
+               DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                   appState.isFadingOutForNewEntry = true
+                   print("[MainTabView] Sheet appeared, setting isFadingOutForNewEntry = true")
+               }
+           }
+           .onDisappear {
+               appState.isFadingOutForNewEntry = false
+               print("[MainTabView] Sheet disappeared, setting isFadingOutForNewEntry = false")
+           }
       }
       .onAppear {
           bottomSheetOffset = peekHeight - fullSheetHeight
@@ -266,17 +280,7 @@ struct MainTabView: View {
                   } else { print("[MainTabView] Error: Received invalid tab index \(tabIndex)") }
              } else { print("[MainTabView] Error: Received notification without valid tabIndex") }
        }
-       // Modified onChange to only reset flag after dismissal
-       .onChange(of: appState.presentNewJournalEntrySheet) { _, isPresented in
-            // Only act when the sheet is dismissed
-            if !isPresented {
-                // Reset the flag in AppState if it was set
-                if appState.tabToSelectAfterSheetDismissal != nil {
-                    print("[MainTabView] Sheet dismissed, resetting tabToSelectAfterSheetDismissal flag.")
-                    appState.tabToSelectAfterSheetDismissal = nil
-                }
-            }
-        }
+       // REMOVED onChange logic for presentNewJournalEntrySheet (replaced by onAppear/onDisappear on sheet)
       .environment(\.keyboardVisible, isKeyboardVisible)
   }
 }

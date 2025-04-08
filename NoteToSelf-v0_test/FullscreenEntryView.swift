@@ -166,9 +166,9 @@ struct EditableFullscreenEntryView: View {
     var initialMood: Mood = .neutral
     var onSave: (String, Mood, Int) -> Void
     var onDelete: (() -> Void)?
-    var onCancel: (() -> Void)? // Keep onCancel for confirmation logic
+    var onCancel: (() -> Void)?
     var autoFocusText: Bool = false
-    let startFaded: Bool // New property
+    // REMOVED: let startFaded: Bool
 
     @Environment(\.dismiss) private var dismiss
     @State private var entryText: String
@@ -178,7 +178,7 @@ struct EditableFullscreenEntryView: View {
     @State private var selectedIntensity: Int
     @State private var showingCancelConfirmation = false
     @State private var showingDeleteConfirmation = false
-    @State private var contentOpacity: Double = 1.0 // State for fade effect
+    // REMOVED: @State private var contentOpacity: Double = 1.0
 
     private let date: Date
     private let isNewEntry: Bool
@@ -188,13 +188,13 @@ struct EditableFullscreenEntryView: View {
     @ObservedObject private var styles = UIStyles.shared
 
     // Initializer for new entries
-    init(initialMood: Mood = .neutral, onSave: @escaping (String, Mood, Int) -> Void, onDelete: (() -> Void)? = nil, onCancel: (() -> Void)? = nil, autoFocusText: Bool = false, startFaded: Bool = false) { // Added startFaded
+    init(initialMood: Mood = .neutral, onSave: @escaping (String, Mood, Int) -> Void, onDelete: (() -> Void)? = nil, onCancel: (() -> Void)? = nil, autoFocusText: Bool = false) { // Removed startFaded
         self.initialMood = initialMood
         self.onSave = onSave
         self.onDelete = onDelete
         self.onCancel = onCancel
         self.autoFocusText = autoFocusText
-        self.startFaded = startFaded // Assign startFaded
+        // REMOVED: self.startFaded = startFaded
 
         self._entryText = State(initialValue: "")
         self._selectedMood = State(initialValue: initialMood)
@@ -212,7 +212,7 @@ struct EditableFullscreenEntryView: View {
         self.onDelete = onDelete
         self.onCancel = onCancel
         self.autoFocusText = autoFocusText
-        self.startFaded = false // Editing never starts faded
+        // REMOVED: self.startFaded = false
 
         self._entryText = State(initialValue: entry.text)
         self._selectedMood = State(initialValue: entry.mood)
@@ -236,9 +236,9 @@ struct EditableFullscreenEntryView: View {
                 }
 
             VStack(spacing: 0) {
-                // Custom navigation bar (Always visible, not faded)
+                // Custom navigation bar
                 HStack {
-                    Button(action: handleCancel) { // Use helper function
+                    Button(action: handleCancel) { // Reverted to standard cancel logic
                         Image(systemName: "xmark")
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(styles.colors.text)
@@ -252,7 +252,7 @@ struct EditableFullscreenEntryView: View {
                 .padding(.top, styles.layout.topSafeAreaPadding)
                 .padding(.bottom, styles.layout.paddingM)
 
-                // Main content ScrollView - Apply opacity here
+                // Main content ScrollView - No opacity modifier here
                 ScrollView {
                     VStack(alignment: .leading, spacing: styles.layout.spacingXL) {
                         // Header with mood and action buttons
@@ -338,15 +338,15 @@ struct EditableFullscreenEntryView: View {
                         Spacer(minLength: 100)
                     }
                 }
-                .opacity(contentOpacity) // Apply opacity to ScrollView content
-                .animation(.easeInOut(duration: 0.3), value: contentOpacity) // Animate opacity changes
+                // REMOVED: .opacity(contentOpacity)
+                // REMOVED: .animation(.easeInOut(duration: 0.3), value: contentOpacity)
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 5)
                         .onChanged { _ in isTextFieldFocused = false }
                 )
             } // End Main VStack
 
-            // Save button (Always visible, not faded)
+            // Save button
             VStack {
                 Spacer()
                 HStack {
@@ -370,7 +370,7 @@ struct EditableFullscreenEntryView: View {
                         Button(action: {
                             if !entryText.isEmpty {
                                 onSave(entryText, selectedMood, selectedIntensity)
-                                dismiss() // Save dismisses directly, no fade needed
+                                dismiss()
                             }
                         }) {
                             Text("Save")
@@ -409,7 +409,7 @@ struct EditableFullscreenEntryView: View {
                     confirmAction: {
                         showingDeleteConfirmation = false
                         onDelete?()
-                        dismiss() // Dismiss after delete
+                        dismiss()
                     },
                     cancelAction: { showingDeleteConfirmation = false },
                     isDestructive: true
@@ -424,15 +424,7 @@ struct EditableFullscreenEntryView: View {
                     isTextFieldFocused = true
                 }
             }
-            // Initial fade out if applicable
-            if isNewEntry && startFaded {
-                 // Delay slightly longer for sheet presentation + focus animation
-                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                     withAnimation(.easeInOut(duration: 0.3)) {
-                         contentOpacity = 0.0
-                     }
-                 }
-            }
+            // REMOVED: Initial fade out logic
         }
     } // End body
 
@@ -441,36 +433,23 @@ struct EditableFullscreenEntryView: View {
         if !entryText.isEmpty {
             showingCancelConfirmation = true
         } else {
-            dismissFlow()
+            // Dismiss directly if text is empty
+            print("[EditableFullscreenEntryView] Dismissing directly (empty text).")
+            onCancel?()
+            dismiss()
         }
     }
 
     // Helper function to handle discard confirmation
     private func handleDiscardConfirmation() {
         showingCancelConfirmation = false
-        dismissFlow()
+        // Dismiss directly after confirmation
+        print("[EditableFullscreenEntryView] Dismissing after discard confirmation.")
+        onCancel?()
+        dismiss()
     }
 
-    // Helper function for dismissal flow (with potential fade-in)
-    private func dismissFlow() {
-        if startFaded {
-            // Fade in first, then dismiss
-            print("[EditableFullscreenEntryView] Fading content back in before dismissing.")
-            withAnimation(.easeInOut(duration: 0.3)) {
-                contentOpacity = 1.0
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { // Delay dismissal
-                print("[EditableFullscreenEntryView] Dismissing after fade-in.")
-                onCancel?()
-                dismiss()
-            }
-        } else {
-            // Dismiss directly if not started faded
-            print("[EditableFullscreenEntryView] Dismissing directly.")
-            onCancel?()
-            dismiss()
-        }
-    }
+    // REMOVED: dismissFlow helper
 
     // Helper functions defined within the struct
     private func formatDate(_ date: Date) -> String {
@@ -489,7 +468,7 @@ struct EditableFullscreenEntryView: View {
 struct FullscreenEntryView_Previews: PreviewProvider {
     static var previews: some View {
         let sampleEntry = JournalEntry(
-            text: "This is a sample journal entry with some text to preview how it would look in the fullscreen view. The text should be displayed prominently and be easy to read.",
+            text: "This is a sample journal entry...",
             mood: .happy,
             date: Date()
         )
@@ -504,11 +483,9 @@ struct FullscreenEntryView_Previews: PreviewProvider {
             EditableFullscreenEntryView(onSave: { _, _, _ in })
                 .previewDisplayName("New Entry Mode")
 
-            // Preview the faded start state
-             EditableFullscreenEntryView(onSave: { _, _, _ in }, startFaded: true)
-                 .previewDisplayName("New Entry Mode (Faded Start)")
+            // REMOVED: Preview for faded start state
         }
          .environmentObject(UIStyles.shared)
-         .environmentObject(ThemeManager.shared) // Added for styles dependency
+         .environmentObject(ThemeManager.shared)
     }
 }
