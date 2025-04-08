@@ -197,24 +197,21 @@ class UIStyles: ObservableObject {
         .padding(.bottom, layout.spacingS)
     }
 
-     // MARK: - Expandable Card Helper (SINGLE Corrected Version)
-     // This helper now creates the simplified ExpandableCard which doesn't handle internal expansion.
-     // Highlighting is handled externally by applying modifiers in the parent view (InsightsView).
+     // MARK: - Expandable Card Helper (Updated)
     func expandableCard<Content: View>(
-        // Removed isPrimary: Bool = false,
         scrollProxy: ScrollViewProxy? = nil,
         cardId: String? = nil,
+        showOpenButton: Bool = true, // Add parameter with default
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
         ExpandableCard( // Call the simplified ExpandableCard struct's explicit init
             content: content,
             scrollProxy: scrollProxy,
             cardId: cardId,
-            // Pass the current theme's components directly
             colors: self.colors,
             typography: self.typography,
-            layout: self.layout
-            // Removed isPrimary argument
+            layout: self.layout,
+            showOpenButton: showOpenButton // Pass parameter through
         )
     }
 
@@ -341,8 +338,8 @@ struct Shimmer: ViewModifier {
     func body(content: Content) -> some View {
         content
             .modifier(AnimatedMask(phase: phase)
-                // CORRECTED: Use simpler animation modifier for repeating animations
-                .animation(styles.animation.shimmerAnimation)
+                // Use repeating animation without value
+                .animation(styles.animation.shimmerAnimation) // REMOVED value: phase
             )
             .onAppear { phase = 0.8 } // Trigger animation on appear
     }

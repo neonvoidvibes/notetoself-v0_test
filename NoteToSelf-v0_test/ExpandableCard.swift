@@ -9,6 +9,8 @@ struct ExpandableCard<Content: View>: View {
     let colors: ThemeColors
     let typography: ThemeTypography
     let layout: UIStyles.Layout
+    let showOpenButton: Bool // New parameter
+
     // scrollProxy and cardId might not be strictly needed now, but keep for potential future use cases
     var scrollProxy: ScrollViewProxy? = nil
     var cardId: String? = nil
@@ -23,7 +25,8 @@ struct ExpandableCard<Content: View>: View {
         cardId: String? = nil,
         colors: ThemeColors,
         typography: ThemeTypography,
-        layout: UIStyles.Layout
+        layout: UIStyles.Layout,
+        showOpenButton: Bool = true // Default to true
     ) {
         self.content = content
         self.scrollProxy = scrollProxy
@@ -31,6 +34,7 @@ struct ExpandableCard<Content: View>: View {
         self.colors = colors
         self.typography = typography
         self.layout = layout
+        self.showOpenButton = showOpenButton // Assign new parameter
     }
 
     var body: some View {
@@ -39,15 +43,17 @@ struct ExpandableCard<Content: View>: View {
             content()
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Keep "Open" Button below content - positioned using padding
-            HStack {
-                Spacer()
-                ExpandCollapseButtonInternal(hovered: hovered) // Pass hover state
-                    .opacity(hovered ? 1.0 : 0.85) // Slightly less fade when not hovered
-                    .animation(.easeInOut(duration: 0.2), value: hovered)
+            // Conditionally show "Open" Button
+            if showOpenButton {
+                HStack {
+                    Spacer()
+                    ExpandCollapseButtonInternal(hovered: hovered) // Pass hover state
+                        .opacity(hovered ? 1.0 : 0.85) // Slightly less fade when not hovered
+                        .animation(.easeInOut(duration: 0.2), value: hovered)
+                }
+                 .padding(.trailing, 4)
+                 .padding(.bottom, 4)
             }
-             .padding(.trailing, 4)
-             .padding(.bottom, 4)
 
         }
         .padding(layout.cardInnerPadding) // Apply inner padding to the content VStack
@@ -113,7 +119,8 @@ fileprivate struct ExpandCollapseButtonInternal: View { // Make fileprivate
         },
         colors: UIStyles.shared.colors,
         typography: UIStyles.shared.typography,
-        layout: UIStyles.shared.layout
+        layout: UIStyles.shared.layout,
+        showOpenButton: true // Explicitly show in preview
     )
     .padding()
     .environmentObject(UIStyles.shared)

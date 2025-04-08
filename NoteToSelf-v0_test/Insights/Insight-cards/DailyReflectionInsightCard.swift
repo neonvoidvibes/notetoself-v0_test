@@ -28,11 +28,11 @@ struct DailyReflectionInsightCard: View {
     }
 
     var body: some View {
-        // Conditional Content: Button or Card - Reverted: Always show card
         // Always use expandableCard structure
         styles.expandableCard(
             scrollProxy: scrollProxy,
             cardId: cardId,
+            showOpenButton: hasContent, // Pass hasContent to control button visibility
             content: {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
                     // Header
@@ -41,18 +41,15 @@ struct DailyReflectionInsightCard: View {
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
                         Spacer()
-                        // REMOVED "New" Badge reference here (it was removed in previous step)
                         Image(systemName: "brain.head.profile")
                              .foregroundColor(styles.colors.accent)
                              .font(.system(size: 20))
-                        // Gating lock icon remains if needed by parent logic, but card interaction depends on hasContent
                          if appState.subscriptionTier == .free {
                             Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
                         }
                     }
 
                     // Content Snippet (Conditional Display)
-                    // Subscription check now happens before displaying content or placeholder
                     if appState.subscriptionTier == .pro {
                         if hasContent {
                              // Display snapshot text if content is available
@@ -64,25 +61,23 @@ struct DailyReflectionInsightCard: View {
                                          .lineLimit(3)
                                  }
                              } else {
-                                 // Fallback within hasContent=true (shouldn't normally happen)
                                  EmptyStateView(message: "Processing reflection...")
                              }
                         } else {
-                            // Display explanatory text if no content
-                             EmptyStateView(message: "Add a journal entry in the last 24 hours to see your daily reflection.") // Use shared view
+                            // Display NEW explanatory text if no content
+                            EmptyStateView(message: "Add a journal note to see your daily reflection.")
                         }
                     } else {
-                         // Locked content view for free tier
-                         LockedContentView(message: "Unlock daily AI reflections with Premium.") // Use shared view
+                         LockedContentView(message: "Unlock daily AI reflections with Premium.")
                     }
                 }
-                .padding(.bottom, styles.layout.paddingL)
+                // Removed bottom padding here, let content/VStack handle it
             }
         )
         .contentShape(Rectangle())
         // Only allow opening if content exists AND user is subscribed
         .onTapGesture {
-             if hasContent && appState.subscriptionTier == .pro { // Check both
+             if hasContent && appState.subscriptionTier == .pro {
                  showingFullScreen = true
              } else {
                  print("[DailyReflectionCard] Tap ignored (No content or Free Tier).")
@@ -135,7 +130,6 @@ struct DailyReflectionInsightCard: View {
     }
 }
 
-// REMOVED Local NewBadgeView definition
 
 #Preview {
     // Pass nil for preview as InsightsView now handles loading
@@ -149,13 +143,13 @@ struct DailyReflectionInsightCard: View {
              }
              """, generatedDate: Date())
 
-              // Preview No Content (should show card with explanation)
+              // Preview No Content (should show card with explanation, no Open button)
               DailyReflectionInsightCard(jsonString: nil, generatedDate: nil)
 
-              // Preview Empty JSON String (should show card with explanation)
+              // Preview Empty JSON String (should show card with explanation, no Open button)
               DailyReflectionInsightCard(jsonString: "", generatedDate: nil)
 
-              // Preview JSON with Empty Snapshot (should show card with explanation)
+              // Preview JSON with Empty Snapshot (should show card with explanation, no Open button)
               DailyReflectionInsightCard(jsonString: """
                {
                    "snapshotText": "",
