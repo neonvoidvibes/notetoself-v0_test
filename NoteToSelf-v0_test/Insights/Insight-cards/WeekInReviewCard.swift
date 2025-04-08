@@ -158,10 +158,8 @@ struct WeekInReviewCard: View {
                                 .frame(minHeight: 100, alignment: .center) // Increase height
                         }
                     } else {
-                         Text("Unlock weekly reviews and pattern analysis with Premium.") // User-facing text can remain "Premium"
-                             .font(styles.typography.bodySmall) // Keep small for locked state
-                             .foregroundColor(styles.colors.textSecondary)
-                             .frame(maxWidth: .infinity, minHeight: 100, alignment: .center) // Increase height
+                         // Use LockedContentView with updated text
+                         LockedContentView(message: "Unlock weekly reviews and pattern analysis with Pro.")
                              .multilineTextAlignment(.center)
                     }
                 }

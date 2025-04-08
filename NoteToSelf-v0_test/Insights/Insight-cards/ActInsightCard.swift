@@ -118,10 +118,8 @@ struct ActInsightCard: View {
                                   .frame(minHeight: 60, alignment: .center)
                          }
                     } else {
-                         Text("Unlock actionable suggestions with Premium.") // Text can remain "Premium" for user display if desired
-                             .font(styles.typography.bodySmall)
-                             .foregroundColor(styles.colors.textSecondary)
-                             .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
+                         // Use LockedContentView with updated text
+                         LockedContentView(message: "Unlock actionable suggestions with Pro.")
                              .multilineTextAlignment(.center)
                     }
                 }

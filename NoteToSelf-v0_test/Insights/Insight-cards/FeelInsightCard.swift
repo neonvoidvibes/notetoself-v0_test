@@ -147,10 +147,8 @@ struct FeelInsightCard: View {
                                 .frame(minHeight: 100, alignment: .center) // Increase min height
                         }
                     } else {
-                         Text("Unlock emotional pattern insights with Premium.") // User-facing text can remain "Premium"
-                             .font(styles.typography.bodySmall)
-                             .foregroundColor(styles.colors.textSecondary)
-                             .frame(maxWidth: .infinity, minHeight: 100, alignment: .center) // Increase height
+                         // Use LockedContentView with updated text
+                         LockedContentView(message: "Unlock emotional pattern insights with Pro.")
                              .multilineTextAlignment(.center)
                     }
                 }

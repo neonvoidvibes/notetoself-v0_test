@@ -106,10 +106,8 @@ struct LearnInsightCard: View {
                                   .frame(minHeight: 60, alignment: .center)
                          }
                     } else {
-                         Text("Unlock learning summaries and growth insights with Premium.") // User-facing text can remain "Premium"
-                             .font(styles.typography.bodySmall)
-                             .foregroundColor(styles.colors.textSecondary)
-                             .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
+                         // Use LockedContentView with updated text
+                         LockedContentView(message: "Unlock learning summaries and growth insights with Pro.")
                              .multilineTextAlignment(.center)
                     }
                 }

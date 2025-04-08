@@ -105,10 +105,8 @@ struct ThinkInsightCard: View {
                                   .frame(minHeight: 60, alignment: .center)
                          }
                     } else {
-                         Text("Unlock strategic thinking insights with Premium.") // User-facing text can remain "Premium"
-                             .font(styles.typography.bodySmall)
-                             .foregroundColor(styles.colors.textSecondary)
-                             .frame(maxWidth: .infinity, minHeight: 60, alignment: .center)
+                         // Use LockedContentView with updated text
+                         LockedContentView(message: "Unlock strategic thinking insights with Pro.")
                              .multilineTextAlignment(.center)
                     }
                 }

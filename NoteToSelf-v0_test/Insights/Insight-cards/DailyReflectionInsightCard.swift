@@ -73,7 +73,7 @@ struct DailyReflectionInsightCard: View {
                             EmptyStateView(message: "Add a journal note to see your daily reflection.")
                         }
                     } else {
-                         LockedContentView(message: "Unlock daily AI reflections with Premium.")
+                         LockedContentView(message: "Unlock daily AI reflections with Pro.")
                     }
                 }
                 // No explicit padding needed here; expandableCard handles outer padding

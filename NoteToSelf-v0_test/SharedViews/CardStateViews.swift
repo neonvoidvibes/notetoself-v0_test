@@ -9,7 +9,7 @@ struct LockedContentView: View {
 
     var body: some View {
          Text(message)
-             .font(styles.typography.bodySmall)
+             .font(styles.typography.bodyFont) // Use bodyFont for larger size
              .foregroundColor(styles.colors.textSecondary)
              .frame(maxWidth: .infinity, minHeight: 80, alignment: .center) // Standard min height
              .multilineTextAlignment(.center)
