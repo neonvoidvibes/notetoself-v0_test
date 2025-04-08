@@ -91,6 +91,10 @@ struct WeekInReviewCard: View {
                              }
                              .padding(.leading, 4) // Keep padding before the group
                         }
+                        Image(systemName: "calendar.circle.fill") // [10.1] Added icon
+                            .foregroundColor(styles.colors.accent)
+                            .font(.system(size: 20))
+                            .padding(.leading, 8) // Add padding between badge/lock and icon
                     }
 
                     // Content Snippet (Summary Text)

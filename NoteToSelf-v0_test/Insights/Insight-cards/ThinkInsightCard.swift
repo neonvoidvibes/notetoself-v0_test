@@ -41,7 +41,7 @@ struct ThinkInsightCard: View {
                             NewBadgeView()
                         }
 
-                        Image(systemName: "brain.head.profile") // Icon
+                        Image(systemName: "lightbulb.circle.fill") // [10.1] Updated icon
                             .foregroundColor(styles.colors.accent)
                             .font(.system(size: 20))
                         if appState.subscriptionTier == .free { // Gating check is correct (.free)

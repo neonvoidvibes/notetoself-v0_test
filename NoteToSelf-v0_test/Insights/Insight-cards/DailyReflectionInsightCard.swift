@@ -41,7 +41,7 @@ struct DailyReflectionInsightCard: View {
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
                         Spacer()
-                        Image(systemName: "brain.head.profile")
+                        Image(systemName: "sun.max.circle.fill") // [10.1] Updated icon
                              .foregroundColor(styles.colors.accent)
                              .font(.system(size: 20))
                          if appState.subscriptionTier == .free {
