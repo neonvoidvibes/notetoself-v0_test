@@ -96,8 +96,31 @@ actor WeekInReviewGenerator {
             "Date: \(entry.date.formatted(date: .numeric, time: .omitted)), Mood: \(entry.mood.name)\n\(entry.text.prefix(150))..."
         }.joined(separator: "\n\n")
 
+        // [11.1] Load other recent insights for context
+        var feelContextJSON: String? = nil
+        var thinkContextJSON: String? = nil
+        var actContextJSON: String? = nil
+        var learnContextJSON: String? = nil
+        do {
+             feelContextJSON = try databaseService.loadLatestInsight(type: "feelInsights")?.jsonData
+             thinkContextJSON = try databaseService.loadLatestInsight(type: "thinkInsights")?.jsonData
+             actContextJSON = try databaseService.loadLatestInsight(type: "actInsights")?.jsonData
+             learnContextJSON = try databaseService.loadLatestInsight(type: "learnInsights")?.jsonData
+             print("[WeekInReviewGenerator] Loaded context insights - Feel: \(feelContextJSON != nil), Think: \(thinkContextJSON != nil), Act: \(actContextJSON != nil), Learn: \(learnContextJSON != nil)")
+        } catch {
+             print("⚠️ [WeekInReviewGenerator] Error loading context insights: \(error)")
+             // Proceed without context insights if loading fails
+        }
+
         // 5. Get system prompt (Ensure this exists in SystemPrompts.swift)
-        let systemPrompt = SystemPrompts.weekInReviewPrompt(entriesContext: context)
+        // Pass loaded insight JSON strings to the prompt function
+        let systemPrompt = SystemPrompts.weekInReviewPrompt(
+            entriesContext: context,
+            feelContext: feelContextJSON,
+            thinkContext: thinkContextJSON,
+            actContext: actContextJSON,
+            learnContext: learnContextJSON
+        )
 
         // 6. Call LLMService
         do {

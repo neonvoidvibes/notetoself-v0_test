@@ -101,7 +101,14 @@ struct SystemPrompts {
      }
 
      // Week in Review Prompt (Card #2)
-     static func weekInReviewPrompt(entriesContext: String) -> String {
+     // [11.1] Updated to accept context from other insights
+     static func weekInReviewPrompt(
+         entriesContext: String,
+         feelContext: String?,
+         thinkContext: String?,
+         actContext: String?,
+         learnContext: String?
+     ) -> String {
          """
          \(basePrompt)
 
@@ -111,7 +118,13 @@ struct SystemPrompts {
          ```
          \(entriesContext.isEmpty ? "No entries provided for this week." : entriesContext)
          ```
-         Based ONLY on the provided weekly context, generate a comprehensive review including a summary, key themes, mood trend data, recurring theme insights, action highlights, and a key takeaway.
+         Based ONLY on the provided context (prioritizing recent entries, then Feel/Think insights if available), generate an action forecast projecting potential outcomes based on observed patterns and provide 1-2 personalized, high-leverage recommendations *that directly address the themes or feelings highlighted in the context*.
+         Feel Insight Context: \(feelContext ?? "Not available.")
+         Think Insight Context: \(thinkContext ?? "Not available.")
+         Act Insight Context: \(actContext ?? "Not available.")
+         Learn Insight Context: \(learnContext ?? "Not available.")
+
+         Based on the weekly entries and the contextual insights above, generate a comprehensive review including a summary, key themes, mood trend data, recurring theme insights (synthesizing Think context), action highlights (synthesizing Act context), and a key takeaway (synthesizing Learn context).
 
          You MUST respond ONLY with a single, valid JSON object matching this exact structure:
          {
@@ -126,9 +139,9 @@ struct SystemPrompts {
              { "date": "YYYY-MM-DDTHH:mm:ssZ", "moodValue": 3.8, "label": ""},
              { "date": "YYYY-MM-DDTHH:mm:ssZ", "moodValue": 4.5, "label": "Peak: Relaxed"}
            ],
-           "recurringThemesText": "A brief (1-2 sentences) summary highlighting the most important recurring Think themes or value alignments observed during the week.",
-           "actionHighlightsText": "A brief (1-2 sentences) summary highlighting impactful actions or habits from the Act dimension that had noticeable effects during the week.",
-           "takeawayText": "A concise (1 sentence) statement identifying the week's most significant learning or takeaway from the Learn dimension."
+           "recurringThemesText": "A brief (1-2 sentences) summary synthesizing the recurring Think themes or value alignments observed during the week, informed by the Think Insight context if provided.",
+           "actionHighlightsText": "A brief (1-2 sentences) summary synthesizing impactful actions or habits from the Act dimension that had noticeable effects during the week, informed by the Act Insight context if provided.",
+           "takeawayText": "A concise (1 sentence) statement synthesizing the week's most significant learning or takeaway from the Learn dimension, informed by the Learn Insight context if provided."
          }
          For moodTrendChartData: Provide exactly 7 data points representing Sunday to Saturday of the reviewed week. Use ISO8601 format for dates (use the start of each day). Estimate `moodValue` (1.0-5.0). Provide brief `label` ONLY for significant peaks/dips (1-3 max). If context is insufficient, provide null for `moodTrendChartData` and default text for other fields.
          Do not include any introductory text, apologies, explanations, code block markers (like ```json), or markdown formatting outside the JSON structure itself. Ensure all string values are properly escaped.
