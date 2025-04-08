@@ -54,9 +54,9 @@ struct ActInsightCard: View {
                             NewBadgeView()
                         }
 
-                        Image(systemName: "figure.walk.motion") // Icon
+                        Image(systemName: "play") // Icon
                             .foregroundColor(styles.colors.accent)
-                            .font(.system(size: 20))
+                            .font(.system(size: 30)) // Increased size
                         if appState.subscriptionTier == .free { // Gating check is correct (.free)
                            HStack(spacing: 4) { // Group badge and lock
                                ProBadgeView()

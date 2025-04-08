@@ -49,9 +49,9 @@ struct FeelInsightCard: View {
                             NewBadgeView()
                         }
 
-                        Image(systemName: "heart.circle.fill") // Icon
+                        Image(systemName: "bolt") // Icon
                             .foregroundColor(styles.colors.accent)
-                            .font(.system(size: 20))
+                            .font(.system(size: 30)) // Increased size
                          if appState.subscriptionTier == .free { // Gating check is correct (.free)
                              HStack(spacing: 4) { // Group badge and lock
                                  ProBadgeView()

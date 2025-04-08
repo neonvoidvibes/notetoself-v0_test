@@ -41,9 +41,9 @@ struct DailyReflectionInsightCard: View {
                             .font(styles.typography.title3)
                             .foregroundColor(styles.colors.text)
                         Spacer()
-                        Image(systemName: "sun.max.circle.fill") // [10.1] Updated icon
+                        Image(systemName: "checkmark.arrow.trianglehead.counterclockwise") // [10.1] Updated icon
                              .foregroundColor(styles.colors.accent)
-                             .font(.system(size: 20))
+                             .font(.system(size: 30)) // Increased size
                          if appState.subscriptionTier == .free {
                             HStack(spacing: 4) { // Group badge and lock
                                 ProBadgeView()

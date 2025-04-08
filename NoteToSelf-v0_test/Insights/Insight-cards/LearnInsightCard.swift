@@ -42,9 +42,9 @@ struct LearnInsightCard: View {
                             NewBadgeView()
                         }
 
-                        Image(systemName: "graduationcap.circle.fill") // Icon
+                        Image(systemName: "apple.meditate") // Icon
                             .foregroundColor(styles.colors.accent)
-                            .font(.system(size: 20))
+                            .font(.system(size: 30)) // Increased size
                         if appState.subscriptionTier == .free { // Gating check is correct (.free)
                             HStack(spacing: 4) { // Group badge and lock
                                 ProBadgeView()
