@@ -40,12 +40,19 @@ actor ActInsightGenerator {
 
         // 2. Fetch necessary data (e.g., last 7 days of entries, maybe latest Feel/Think insights)
         let entries: [JournalEntry]
-        let fetchStartDate = calendar.date(byAdding: .day, value: -7, to: Date())!
         var feelInsightJSON: String? = nil
         var thinkInsightJSON: String? = nil
+        let relevantEntries: [JournalEntry]
 
         do {
-            entries = try databaseService.loadAllJournalEntries().filter { $0.date >= fetchStartDate }
+            // Fetch ALL entries sorted descending, then apply the rolling window logic
+            let allEntriesSorted = try databaseService.loadAllJournalEntries() // Assumes DB returns sorted desc
+            relevantEntries = getEntriesForRollingWindow(allEntriesSortedDesc: allEntriesSorted)
+            print("✅ [ActInsightGenerator] Data Fetch: Using \(relevantEntries.count) entries from rolling window.")
+            // Keep original 'entries' variable name for minimal downstream changes
+            entries = relevantEntries
+
+            // Fetch dependent insights
             feelInsightJSON = try databaseService.loadLatestInsight(type: "feelInsights")?.jsonData
             thinkInsightJSON = try databaseService.loadLatestInsight(type: "thinkInsights")?.jsonData
         } catch {
@@ -61,10 +68,10 @@ actor ActInsightGenerator {
                     try? databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
                    return
               }
-         }
+        }
 
-        guard entries.count >= 2 else { // Need some recent entries for action context
-            print("⚠️ [ActInsightGenerator] Skipping generation: Insufficient entries (\(entries.count)) for context.")
+        guard entries.count >= 2 else { // Minimum 2 entries for action context
+            print("⚠️ [ActInsightGenerator] Skipping generation: Insufficient entries (\(entries.count)) in rolling window for context.")
             return
         }
 

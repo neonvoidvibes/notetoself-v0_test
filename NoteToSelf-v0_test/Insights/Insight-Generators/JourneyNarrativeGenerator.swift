@@ -80,7 +80,12 @@ actor JourneyNarrativeGenerator {
         // Fetch necessary data (e.g., last 5-7 entries for context) - potentially redundant if fetched above, but safe
         let entries: [JournalEntry]
         // Add await here for safety when accessing MainActor property from background actor
-        entries = await Array(appState.journalEntries.prefix(7))
+        // Fetch ALL entries sorted descending from AppState (as source of truth), then apply the rolling window logic
+        let allEntriesSorted = await appState.journalEntries // Assumes AppState holds sorted entries
+        let relevantEntries = getEntriesForRollingWindow(allEntriesSortedDesc: allEntriesSorted)
+        print("✅ [JourneyNarrativeGenerator] Data Fetch: Using \(relevantEntries.count) entries from rolling window.")
+        // Keep original 'entries' variable name
+        entries = relevantEntries
 
         // Need at least one entry usually to generate meaningful narrative
         guard !entries.isEmpty else {
@@ -89,7 +94,7 @@ actor JourneyNarrativeGenerator {
             return
         }
 
-        print("[JourneyNarrativeGenerator] Using \(entries.count) recent entries for context.")
+        print("[JourneyNarrativeGenerator] Using \(entries.count) entries from rolling window for context.")
         // Add await here because appState is MainActor and this is a background actor
         let currentStreak = await appState.currentStreak
 

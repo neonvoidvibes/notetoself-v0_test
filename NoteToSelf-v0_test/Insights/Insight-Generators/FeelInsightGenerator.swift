@@ -44,24 +44,27 @@ actor FeelInsightGenerator {
 
         // 2. Fetch necessary data (e.g., last 7-14 days of entries)
         let entries: [JournalEntry]
-        let fetchStartDate = calendar.date(byAdding: .day, value: -14, to: Date())!
+        // Fetch ALL entries sorted descending, then apply the rolling window logic
+        let relevantEntries: [JournalEntry]
         do {
-            // Fetch and filter entries
-            entries = try databaseService.loadAllJournalEntries().filter { $0.date >= fetchStartDate }
-            print("✅ [FeelInsightGenerator] Data Fetch: Fetched \(entries.count) entries from the last 14 days.")
+            let allEntriesSorted = try databaseService.loadAllJournalEntries() // Assumes DB returns sorted desc
+            relevantEntries = getEntriesForRollingWindow(allEntriesSortedDesc: allEntriesSorted)
+            print("✅ [FeelInsightGenerator] Data Fetch: Using \(relevantEntries.count) entries from rolling window.")
+            // Keep original 'entries' variable name for minimal downstream changes
+            entries = relevantEntries
         } catch {
             print("‼️ [FeelInsightGenerator] Data Fetch Failed: Error fetching journal entries: \(error)")
             print("🏁 [FeelInsightGenerator] Finished: Aborted due to data fetch error.")
             return
         }
 
-        // 3. Check Minimum Entry Count
-        guard entries.count >= 3 else {
-            print("⚠️ [FeelInsightGenerator] Minimum Entry Check Failed: Skipping generation. Need at least 3 entries in the last 14 days, found \(entries.count).")
+        // 3. Check Minimum Entry Count for the relevant window
+        guard entries.count >= 2 else { // Adjusted minimum to 2 for Feel
+            print("⚠️ [FeelInsightGenerator] Minimum Entry Check Failed: Skipping generation. Need at least 2 entries in the rolling window, found \(entries.count).")
             print("🏁 [FeelInsightGenerator] Finished: Skipped due to insufficient entries.")
             return
         }
-        print("✅ [FeelInsightGenerator] Minimum Entry Check Passed: Have \(entries.count) entries.")
+        print("✅ [FeelInsightGenerator] Minimum Entry Check Passed: Have \(entries.count) entries in rolling window.")
 
 
         // 4. Check for New Entries Since Last Generation (if applicable)

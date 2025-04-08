@@ -86,9 +86,12 @@ struct InsightsView: View {
     @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
 
     // Calculate if Week in Review is fresh (< 24 hours)
-     private var isWeekInReviewFresh: Bool {
+     // Check if WeekInReview is currently active for display (Generated Sun 3am, Active for 45 hours)
+     private var isWeekInReviewActive: Bool {
          guard let generatedDate = weekInReviewDate else { return false }
-         return Calendar.current.dateComponents([.hour], from: generatedDate, to: Date()).hour ?? 25 < 24
+         let hoursSinceGenerated = Calendar.current.dateComponents([.hour], from: generatedDate, to: Date()).hour ?? 46 // Default to expired
+         // Show if generated within the last 45 hours (allowing a slight buffer might be okay if needed)
+         return hoursSinceGenerated < 45
      }
 
     private var hasAnyEntries: Bool {
@@ -251,6 +254,8 @@ struct InsightsView: View {
                    .padding(.horizontal, styles.layout.paddingXL)
                    .opacity(cardsAppeared ? 1 : 0)
                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
+                   // Add vertical padding only if there is content
+                   .padding(.vertical, dailyReflectionHasContent ? styles.layout.spacingM : 20)
               }
 
             // --- Conditional "Add New Note" Button ---
@@ -278,9 +283,7 @@ struct InsightsView: View {
 
 
              // --- Week in Review Card ---
-              if isLoadingInsights && weekInReviewJson == nil {
-                  SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
-              } else {
+              if isWeekInReviewActive { // Check if the insight is currently active
                   WeekInReviewCard(
                        jsonString: weekInReviewJson,
                        generatedDate: weekInReviewDate,
@@ -291,6 +294,12 @@ struct InsightsView: View {
                    .padding(.horizontal, styles.layout.paddingXL)
                    .opacity(cardsAppeared ? 1 : 0)
                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
+              } else if isLoadingInsights && weekInReviewJson == nil {
+                   // Only show skeleton during initial load phase if the card *might* appear later
+                   SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
+              } else {
+                   // Don't show anything if not active and not initial loading
+                   EmptyView()
               }
 
             // --- REMOVED: Original Add New Entry CTA Section ---

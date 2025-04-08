@@ -40,9 +40,14 @@ actor LearnInsightGenerator {
 
         // 2. Fetch necessary data (e.g., last 7-14 days of entries)
         let entries: [JournalEntry]
-        let fetchStartDate = calendar.date(byAdding: .day, value: -14, to: Date())!
+        // Fetch ALL entries sorted descending, then apply the rolling window logic
+        let relevantEntries: [JournalEntry]
         do {
-            entries = try databaseService.loadAllJournalEntries().filter { $0.date >= fetchStartDate }
+            let allEntriesSorted = try databaseService.loadAllJournalEntries() // Assumes DB returns sorted desc
+            relevantEntries = getEntriesForRollingWindow(allEntriesSortedDesc: allEntriesSorted)
+            print("✅ [LearnInsightGenerator] Data Fetch: Using \(relevantEntries.count) entries from rolling window.")
+            // Keep original 'entries' variable name for minimal downstream changes
+            entries = relevantEntries
         } catch {
             print("‼️ [LearnInsightGenerator] Error fetching journal entries: \(error)")
             return
@@ -56,10 +61,10 @@ actor LearnInsightGenerator {
                     try? databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
                    return
               }
-         }
+        }
 
-        guard entries.count >= 3 else { // Need some entries for learning context
-            print("⚠️ [LearnInsightGenerator] Skipping generation: Insufficient entries (\(entries.count)) for context.")
+        guard entries.count >= 3 else { // Minimum 3 entries for learning context
+            print("⚠️ [LearnInsightGenerator] Skipping generation: Insufficient entries (\(entries.count)) in rolling window for context.")
             return
         }
 

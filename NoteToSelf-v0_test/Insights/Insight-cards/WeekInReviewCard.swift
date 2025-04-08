@@ -34,8 +34,15 @@ struct WeekInReviewCard: View {
 
         // Use decoded result's dates if available
         if let start = insightResult?.startDate, let end = insightResult?.endDate {
+             // Format to show only Month and Day
              return "\(formatter.string(from: start)) - \(formatter.string(from: end))"
-        } else if let genDate = generatedDate {
+        } else {
+            // Fallback if dates are not in the result (should ideally not happen)
+             print("⚠️ [WeekInReviewCard] Warning: startDate or endDate missing from insightResult. Using fallback period text.")
+             return "Previous Week" // Simple fallback
+        }
+        /* // Removed fallback logic based on generation date, rely on result dates
+         else if let genDate = generatedDate {
             // Fallback: Calculate based on generation date if result dates are nil
              let calendar = Calendar.current
              guard let sunday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: genDate)),
@@ -48,6 +55,7 @@ struct WeekInReviewCard: View {
             // Ultimate fallback
             return "Previous Week"
         }
+         */
     }
 
     // Computed property for snapshot text remains the same

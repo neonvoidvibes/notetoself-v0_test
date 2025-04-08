@@ -38,21 +38,35 @@ actor WeekInReviewGenerator {
 
         guard shouldGenerate else { return }
 
+        // *** NEW: Check if within the active generation window (Sun 3am - Mon 11:59pm) ***
+        let now = Date()
+        let weekday = calendar.component(.weekday, from: now) // Sunday=1, Saturday=7
+        let hour = calendar.component(.hour, from: now)
+
+        // Active Period: Sunday 3:00 AM to Monday 23:59:59 (effectively Tuesday 00:00) = 45 hours
+        let isSundayActivePeriod = (weekday == 1 && hour >= 3) // Sunday 3am onwards
+        let isMondayActivePeriod = (weekday == 2)             // All of Monday
+
+        guard isSundayActivePeriod || isMondayActivePeriod else {
+            print("[WeekInReviewGenerator] Skipping generation: Outside active window (Sun 3am - Mon 11:59pm). Current: weekday \(weekday), hour \(hour)")
+            return
+        }
+        print("[WeekInReviewGenerator] Within active generation window.")
+        // *** END NEW CHECK ***
+
         // 2. Determine date range for the *previous* full week (Sun-Sat)
-        let today = Date()
-        guard let previousSunday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)),
-              let startOfReviewWeek = calendar.date(byAdding: .day, value: -7, to: previousSunday), // Sunday of last week
+        guard let currentWeekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)), // Start of *this* week
+              let startOfReviewWeek = calendar.date(byAdding: .day, value: -7, to: currentWeekStart), // Sunday of last week (7 days before start of *current* week)
               let endOfReviewWeek = calendar.date(byAdding: .day, value: 6, to: startOfReviewWeek) else { // Saturday of last week
             print("‼️ [WeekInReviewGenerator] Could not calculate previous week date range.")
             return
         }
+        // Use variables directly as the guard statement ensures they are non-nil
+        print("[WeekInReviewGenerator] Target review week: \(startOfReviewWeek.formatted(date: .abbreviated, time: .omitted)) - \(endOfReviewWeek.formatted(date: .abbreviated, time: .omitted))")
 
          // Optional: Check if a review for this *specific* week already exists
          // This requires storing start/end dates with the insight and querying based on them.
          // For now, we rely on the regenerationThresholdDays check.
-
-         // Corrected date format here
-        print("[WeekInReviewGenerator] Target review week: \(startOfReviewWeek.formatted(date: .abbreviated, time: .omitted)) - \(endOfReviewWeek.formatted(date: .abbreviated, time: .omitted))")
 
 
         // 3. Fetch necessary data (entries for the target week)
@@ -60,7 +74,9 @@ actor WeekInReviewGenerator {
         do {
             // Fetch all entries and filter for the specific week
             let allEntries = try databaseService.loadAllJournalEntries()
-            entries = allEntries.filter { $0.date >= startOfReviewWeek && $0.date < calendar.date(byAdding: .day, value: 1, to: endOfReviewWeek)! }
+            // Ensure end date comparison is correct for the full Saturday
+            let endOfSaturday = calendar.date(byAdding: .day, value: 1, to: endOfReviewWeek)! // Start of Sunday following the target Saturday
+            entries = allEntries.filter { $0.date >= startOfReviewWeek && $0.date < endOfSaturday }
                              .sorted { $0.date < $1.date } // Ensure chronological order for analysis
         } catch {
             print("‼️ [WeekInReviewGenerator] Error fetching journal entries: \(error)")

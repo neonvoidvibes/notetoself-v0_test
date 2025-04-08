@@ -100,3 +100,50 @@ func triggerAllInsightGenerations(
 
     print("✅ [InsightUtils] All background insight generation tasks launched.")
 }
+
+// Helper function to get journal entries based on the "past 7 calendar days OR last 7 entries, whichever comes first" rule.
+// Assumes input entries are sorted descending by date.
+func getEntriesForRollingWindow(allEntriesSortedDesc: [JournalEntry]) -> [JournalEntry] {
+    let calendar = Calendar.current
+    let now = Date()
+    guard let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now)) else {
+        print("⚠️ [getEntriesForRollingWindow] Could not calculate seven days ago.")
+        return Array(allEntriesSortedDesc.prefix(7)) // Fallback to last 7 entries
+    }
+
+    // Filter by date (entries on or after the start of the day 7 days ago)
+    let entriesLast7Days = allEntriesSortedDesc.filter { $0.date >= sevenDaysAgo }
+
+    // Get last 7 entries by count
+    let last7Entries = Array(allEntriesSortedDesc.prefix(7))
+
+    // Find the cutoff dates for comparison
+    let dateCutoff = entriesLast7Days.last?.date // Oldest date within the 7-day window
+    let countCutoff = last7Entries.last?.date   // Date of the 7th most recent entry
+
+    if dateCutoff == nil && countCutoff == nil {
+        // No entries at all
+        return []
+    } else if dateCutoff == nil {
+        // Only count limit applies (less than 7 entries total)
+        // This case shouldn't happen if allEntriesSortedDesc is not empty and countCutoff is nil, but included for safety.
+        return last7Entries
+    } else if countCutoff == nil {
+        // Only date limit applies (less than 7 entries in the last 7 days)
+        return entriesLast7Days
+    } else {
+        // Both limits apply, determine which set represents the shorter, more recent period.
+        // Return the list whose oldest entry is NEWER.
+        if dateCutoff! >= countCutoff! {
+            // The 7-day window's oldest entry is newer than or the same as the 7th entry.
+            // This means the 7-day window contains <= 7 entries. Use the 7-day window.
+            // print("[getEntriesForRollingWindow] Using 7-day window (\(entriesLast7Days.count) entries). Date cutoff: \(dateCutoff!), Count cutoff: \(countCutoff!)")
+            return entriesLast7Days
+        } else {
+            // The 7th entry is newer than the oldest entry in the 7-day window.
+            // This means the last 7 entries cover a shorter period. Use the last 7 entries.
+            // print("[getEntriesForRollingWindow] Using last 7 entries. Date cutoff: \(dateCutoff!), Count cutoff: \(countCutoff!)")
+            return last7Entries
+        }
+    }
+}
