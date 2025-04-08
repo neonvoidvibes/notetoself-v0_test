@@ -17,10 +17,17 @@ final class LLMService {
 
     // Helper function to create a Model type from its ID string
     private func createModel(from id: String) -> Model {
+        // Add validation for supported model IDs
+        guard ["gpt-4o", "gpt-4o-mini"].contains(id) else {
+             fatalError("❌ Unsupported model ID requested: \(id). Only 'gpt-4o' and 'gpt-4o-mini' are currently configured.")
+        }
+
         guard let data = "\"\(id)\"".data(using: .utf8),
               let model = try? JSONDecoder().decode(Model.self, from: data) else {
-            fatalError("❌ Failed to create Model enum/struct from id string: \(id)")
+             // This might indicate an issue with the SDK's Model type or the ID string format
+            fatalError("❌ Failed to create Model enum/struct from validated id string: \(id)")
         }
+        print("[LLMService] Using model: \(id)") // Log which model is being used
         return model
     }
 
@@ -28,7 +35,8 @@ final class LLMService {
     func generateChatResponse(systemPrompt: String, userMessage: String) async throws -> String {
         print("LLMService: Generating chat response for user message: '\(userMessage.prefix(50))...'")
 
-        let model = createModel(from: "gpt-4o")
+        // Explicitly use gpt-4o-mini for structured output/insights
+        let model = createModel(from: "gpt-4o-mini")
 
         let request = Request(
             model: model,
