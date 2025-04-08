@@ -24,7 +24,7 @@ struct SharedSectionHeader: View {
         // Increased padding to align with indented card content
         .padding(.leading, styles.layout.paddingL * 2)
         .frame(maxWidth: .infinity, alignment: .leading) // Ensure HStack takes full width for background
-        .padding(.top, 12) // Consistent top padding
+        // REMOVED: .padding(.top, 12)
         .padding(.bottom, 5) // Consistent bottom padding
         .listRowInsets(EdgeInsets()) // For List compatibility
         .background(backgroundColor) // Apply the specific background color

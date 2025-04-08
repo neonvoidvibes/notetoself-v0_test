@@ -225,11 +225,10 @@ struct MainTabView: View {
                                    appState.journalExpandedEntryId = newEntry.id
                                }
                                print("[MainTabView] Saved new entry, state updated.")
-                               // Ensure tab is Journal after save
-                               if selectedTab != 0 {
-                                   print("[MainTabView] Switching to Journal tab (0) after save.")
-                                   selectedTab = 0
-                               }
+                               // REMOVED direct tab switch: selectedTab = 0
+                               // SET flag for delayed tab switch
+                               appState.tabToSelectAfterSheetDismissal = 0
+                               print("[MainTabView] Set flag to switch to Journal tab (0) after save.")
                           }
                           await triggerAllInsightGenerations(llmService: LLMService.shared, databaseService: databaseService, appState: appState)
                       } catch {
@@ -270,7 +269,21 @@ struct MainTabView: View {
                   } else { print("[MainTabView] Error: Received invalid tab index \(tabIndex)") }
              } else { print("[MainTabView] Error: Received notification without valid tabIndex") }
        }
-       // REMOVED onChange for presentNewJournalEntrySheet
+       // ADDED onChange to handle delayed tab switching after sheet dismissal
+       .onChange(of: appState.presentNewJournalEntrySheet) { _, isPresented in
+            // Only act when the sheet is dismissed (isPresented becomes false)
+            if !isPresented {
+                // Check if a tab switch was requested
+                if let targetTab = appState.tabToSelectAfterSheetDismissal {
+                    print("[MainTabView] Sheet dismissed, switching to requested tab: \(targetTab)")
+                    selectedTab = targetTab
+                    // Reset the flag in AppState
+                    appState.tabToSelectAfterSheetDismissal = nil
+                } else {
+                    print("[MainTabView] Sheet dismissed, no tab switch requested.")
+                }
+            }
+        }
       .environment(\.keyboardVisible, isKeyboardVisible)
   }
 }
