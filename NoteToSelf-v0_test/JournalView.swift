@@ -281,100 +281,119 @@ struct JournalView: View {
 
     private var journalContent: some View {
         ScrollViewReader { scrollProxy in
-             // Use a standard VStack here, ScrollView is inside
-             VStack(spacing: 0) {
-                ScrollView {
-                     VStack(spacing: 0) { // Add inner VStack
-                         GeometryReader { geometry in
-                             Color.clear.preference(
-                                 key: ScrollOffsetPreferenceKey.self,
-                                 value: geometry.frame(in: .named("scrollView")).minY
-                             )
-                         }
-                         .frame(height: 0)
-
-                         // --- Journey Card ---
-                         JourneyInsightCard()
-                             .padding(.horizontal, styles.layout.paddingL)
-                             .padding(.top, styles.layout.spacingXL)
-                             .padding(.bottom, styles.layout.spacingL)
-
-                         // --- Entry List / Empty State ---
-                         if filteredEntries.isEmpty {
-                            emptyState
-                         } else {
-                            journalList // Does not include CTA anymore
-                         }
-
-                         // --- Insights CTA Section [Moved Here] ---
-                         // Place it *after* the LazyVStack/emptyState but *inside* ScrollView
-                         if !appState.journalEntries.isEmpty { // Use underlying entries for check
-                              ctaSectionView
-                         }
-                     } // End inner VStack
-                } // End ScrollView
-                .coordinateSpace(name: "scrollView")
-                .disabled(mainScrollingDisabled)
-                .onAppear {
-                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                          guard let entryId = appState.journalExpandedEntryId,
-                                filteredEntries.contains(where: { $0.id == entryId }) else {
-                              print("[JournalView.onAppear] No valid expanded entry ID or entry not in filtered list. Cannot scroll.")
-                              return
-                          }
-                          scrollProxy.scrollTo(entryId, anchor: .top)
-                          print("[JournalView.onAppear] Restored scroll to expanded entry: \(entryId)")
+             ScrollView {
+                 VStack(spacing: 0) { // Main container VStack
+                     GeometryReader { geometry in
+                         Color.clear.preference(
+                             key: ScrollOffsetPreferenceKey.self,
+                             value: geometry.frame(in: .named("scrollView")).minY
+                         )
                      }
-                }
-                .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                    let scrollingDown = value < lastScrollPosition
-                    if abs(value - lastScrollPosition) > 10 {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
-                            else { tabBarOffset = 0; tabBarVisible = true }
-                        }
-                        lastScrollPosition = value
-                    }
-                }
-                .simultaneousGesture(
-                    TapGesture().onEnded {
-                         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                    }
-                )
-            } // End Containing VStack
+                     .frame(height: 0)
+
+                     // --- Journey Card ---
+                     JourneyInsightCard()
+                         .padding(.horizontal, styles.layout.paddingL)
+                         .padding(.top, styles.layout.spacingXL)
+                         .padding(.bottom, styles.layout.spacingL)
+
+                     // --- Entry List / Empty State ---
+                     if filteredEntries.isEmpty {
+                        emptyState
+                     } else {
+                        journalListWithCTA // Use modified list that includes CTA logic
+                     }
+
+                     // Ensure CTA is placed if "Today" and "Yesterday" were empty
+                     // (This logic is now handled within journalListWithCTA)
+
+                     // Bottom padding for FAB
+                     Spacer(minLength: styles.layout.paddingXL + 80) // Keep space for FAB
+
+                 } // End Main container VStack
+             } // End ScrollView
+             .coordinateSpace(name: "scrollView")
+             .disabled(mainScrollingDisabled)
+             .onAppear {
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                       guard let entryId = appState.journalExpandedEntryId,
+                             filteredEntries.contains(where: { $0.id == entryId }) else {
+                           print("[JournalView.onAppear] No valid expanded entry ID or entry not in filtered list. Cannot scroll.")
+                           return
+                       }
+                       scrollProxy.scrollTo(entryId, anchor: .top)
+                       print("[JournalView.onAppear] Restored scroll to expanded entry: \(entryId)")
+                  }
+             }
+             .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                 let scrollingDown = value < lastScrollPosition
+                 if abs(value - lastScrollPosition) > 10 {
+                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                         if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
+                         else { tabBarOffset = 0; tabBarVisible = true }
+                     }
+                     lastScrollPosition = value
+                 }
+             }
+             .simultaneousGesture(
+                 TapGesture().onEnded {
+                      UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                 }
+             )
         } // End ScrollViewReader
     }
 
-    private var journalList: some View {
+    // NEW: Combined journal list with integrated CTA placement logic
+    private var journalListWithCTA: some View {
         LazyVStack(spacing: styles.layout.radiusM, pinnedViews: [.sectionHeaders]) {
-             ForEach(groupedEntries.indices, id: \.self) { sectionIndex in
-                 let (section, entries) = groupedEntries[sectionIndex]
-                 Section(header: SharedSectionHeader(title: section, backgroundColor: styles.colors.appBackground)
-                                     .id("header-\(section)")
-                                     // Standard padding, CTA logic removed
-                                     .padding(.top, 12)
-                 ) {
-                     ForEach(entries) { entry in
-                         JournalEntryCard(
-                             entry: entry,
-                             isExpanded: appState.journalExpandedEntryId == entry.id,
-                             onTap: { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { appState.journalExpandedEntryId = appState.journalExpandedEntryId == entry.id ? nil : entry.id } },
-                             onExpand: { fullscreenEntry = entry },
-                             onStar: { toggleStar(entry) }
-                         )
-                         .padding(.horizontal, styles.layout.paddingL)
-                         .transition(.opacity.combined(with: .move(edge: .top)))
-                         .id(entry.id)
-                     }
-                     // REMOVED CTA from here
-                 }
-             }
-         }
-         .padding(.bottom, styles.layout.paddingXL) // Keep bottom padding for scroll space
+            let entriesGrouped = groupedEntries // Cache for efficiency
+            let hasToday = entriesGrouped.contains { $0.0 == "Today" }
+            let hasYesterday = entriesGrouped.contains { $0.0 == "Yesterday" }
+
+            ForEach(entriesGrouped.indices, id: \.self) { sectionIndex in
+                let (section, entries) = entriesGrouped[sectionIndex]
+
+                Section(header: SharedSectionHeader(title: section, backgroundColor: styles.colors.appBackground)
+                                    .id("header-\(section)")
+                                    .padding(.top, 12)
+                ) {
+                    ForEach(entries) { entry in
+                        JournalEntryCard(
+                            entry: entry,
+                            isExpanded: appState.journalExpandedEntryId == entry.id,
+                            onTap: { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { appState.journalExpandedEntryId = appState.journalExpandedEntryId == entry.id ? nil : entry.id } },
+                            onExpand: { fullscreenEntry = entry },
+                            onStar: { toggleStar(entry) }
+                        )
+                        .padding(.horizontal, styles.layout.paddingL)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .id(entry.id)
+                    }
+                }
+
+                // CTA Placement Logic:
+                // Place AFTER "Today" section if it exists
+                if section == "Today" {
+                    ctaSectionView.padding(.vertical, styles.layout.paddingXL) // Add padding around CTA
+                }
+                // Place AFTER "Yesterday" section if "Today" doesn't exist but "Yesterday" does
+                else if section == "Yesterday" && !hasToday {
+                    ctaSectionView.padding(.vertical, styles.layout.paddingXL)
+                }
+            }
+
+            // CTA Placement Logic (Fallback):
+            // Place at the very end if NEITHER "Today" NOR "Yesterday" sections exist
+            if !hasToday && !hasYesterday && !entriesGrouped.isEmpty {
+                // Ensure it's only added if there are SOME entries at all
+                ctaSectionView.padding(.vertical, styles.layout.paddingXL)
+            }
+        }
+        // No bottom padding needed here, handled by Spacer in journalContent
     }
 
 
-     // CTA Section View
+     // CTA Section View (remains the same)
      private var ctaSectionView: some View {
          VStack(spacing: styles.layout.spacingM) {
              Text("Review your patterns and progress over time.")
@@ -393,8 +412,7 @@ struct JournalView: View {
              .buttonStyle(UIStyles.PrimaryButtonStyle()) // Use primary style
          }
          .padding(.horizontal, styles.layout.paddingXL) // Standard horizontal padding
-         .padding(.vertical, styles.layout.spacingXL) // Standard vertical padding
-         .padding(.bottom, 100) // Ensure enough space below CTA, above bottom bar
+         // Vertical padding added where it's used
      }
 
 

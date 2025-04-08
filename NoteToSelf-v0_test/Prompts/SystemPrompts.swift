@@ -69,28 +69,34 @@ struct SystemPrompts {
 
     // --- NEW Insight Prompts (Daily, Weekly, Feel, Think, Act, Learn) ---
 
-     // Daily Reflection Prompt (Card #1)
-     static func dailyReflectionPrompt(entryContext: String) -> String {
+     // Daily Reflection Prompt (Card #1) - UPDATED
+     static func dailyReflectionPrompt(latestEntryContext: String, weeklyContext: String) -> String {
          """
          \(basePrompt)
 
-         You are acting as a daily reflection assistant. Your task is to provide a brief snapshot of inner clarity based *only* on the user's latest journal entry provided below. Summarize the most meaningful emotional signals, thoughts, actionable moments, or adaptive learnings from the entry. Connect the insight to their ongoing Journal Journey to reinforce continuity. Also provide two concise, on-point reflection questions based on the entry.
+         You are acting as a daily reflection assistant. Your task is to provide a brief snapshot of inner clarity based PRIMARILY on the user's latest journal entry/entries (within the last 24 hours) provided below. Use the additional weekly context (last 7 days) for broader awareness but keep the focus on TODAY. Summarize the most meaningful emotional signals, thoughts, actionable moments, or adaptive learnings from the LATEST entry/entries. Connect the insight to their ongoing Journal Journey to reinforce continuity. Also provide two concise, on-point reflection questions based specifically on the LATEST entry/entries.
 
-         Latest Entry Context:
+         Latest Entry Context (Last 24 Hours - FOCUS HERE):
          ```
-         \(entryContext)
+         \(latestEntryContext)
          ```
-         Based ONLY on the latest entry context, generate the daily snapshot and reflection prompts.
+
+         Weekly Context (Last 7 Days - FOR AWARENESS ONLY):
+         ```
+         \(weeklyContext.isEmpty ? "No weekly context available." : weeklyContext)
+         ```
+
+         Based PRIMARILY on the LATEST entry context, generate the daily snapshot and reflection prompts.
 
          You MUST respond ONLY with a single, valid JSON object matching this exact structure:
          {
-           "snapshotText": "A brief (1-2 sentences) commentary summarizing the key signals (emotional, thought, action, learning) from the entry, linking it to their ongoing journey. Example: 'Today's entry reflects clarity on [Topic], showing progress in [Adaptive Skill]. This builds on your recent focus on [Previous Theme].'",
+           "snapshotText": "A brief (1-2 sentences) commentary summarizing the key signals (emotional, thought, action, learning) from the LATEST entries, linking it to their ongoing journey. Example: 'Today's entry reflects clarity on [Topic], showing progress in [Adaptive Skill]. This builds on your recent focus on [Previous Theme mentioned in weekly context if relevant, otherwise omit].'",
            "reflectionPrompts": [
-             "An insightful question directly related to the entry's content, prompting deeper reflection. Example: 'What made the sense of accomplishment today feel different?'",
-             "A second insightful question, perhaps connecting the entry to broader patterns or future actions. Example: 'How can you carry this feeling of clarity into tomorrow's challenges?'"
+             "An insightful question directly related to the LATEST entry's content, prompting deeper reflection. Example: 'What made the sense of accomplishment today feel different?'",
+             "A second insightful question, perhaps connecting the LATEST entry to broader patterns (using weekly context subtly) or future actions. Example: 'How can you carry this feeling of clarity into tomorrow's challenges?'"
            ]
          }
-         Generate exactly two reflection prompts. Do not include any introductory text, apologies, explanations, code block markers (like ```json), or markdown formatting outside the JSON structure itself. Ensure all string values are properly escaped. If the context is insufficient, provide default text like "Journal today to receive your reflection." for snapshotText and generic prompts.
+         Generate exactly two reflection prompts based on the LATEST entries. Do not include any introductory text, apologies, explanations, code block markers (like ```json), or markdown formatting outside the JSON structure itself. Ensure all string values are properly escaped. If the LATEST context is insufficient, provide default text like "Journal today to receive your reflection." for snapshotText and generic prompts.
          """
      }
 
@@ -238,11 +244,4 @@ struct SystemPrompts {
         Do not include any introductory text, apologies, explanations, code block markers (like ```json), or markdown formatting outside the JSON structure itself. Ensure all string values are properly escaped. If context is insufficient, provide thoughtful default text within the JSON structure (e.g., "Reflect on this week's key moments to identify your main learning.").
         """
     }
-
-    // REMOVED: aiReflectionPrompt
-    // REMOVED: forecastPrompt
-    // REMOVED: weeklySummaryPrompt
-    // REMOVED: moodTrendPrompt
-    // REMOVED: recommendationPrompt
-
 }
