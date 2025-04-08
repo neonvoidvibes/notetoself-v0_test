@@ -58,7 +58,10 @@ struct ActInsightCard: View {
                             .foregroundColor(styles.colors.accent)
                             .font(.system(size: 20))
                         if appState.subscriptionTier == .free { // Gating check is correct (.free)
-                           Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
+                           HStack(spacing: 4) { // Group badge and lock
+                               ProBadgeView()
+                               Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
+                           }
                        }
                     }
 
@@ -126,7 +129,18 @@ struct ActInsightCard: View {
             }
         )
         .contentShape(Rectangle())
-        .onTapGesture { if appState.subscriptionTier == .pro { showingFullScreen = true } } // CORRECTED: Check .pro
+        // [8.2] Updated tap gesture to handle locked state
+        .onTapGesture {
+            if appState.subscriptionTier == .pro {
+                // Pro users can open if content is loaded (or even if loading/error to see status)
+                showingFullScreen = true
+            } else {
+                // Free user tapped locked card
+                print("[ActInsightCard] Locked card tapped. Triggering upgrade flow...")
+                // TODO: [8.2] Implement presentation of upgrade/paywall screen for 'Act Insights'.
+            }
+        }
+        .opacity(appState.subscriptionTier == .free ? 0.7 : 1.0) // [8.1] Dim card slightly when locked
         .onAppear(perform: loadInsight)
         .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
             print("[ActInsightCard] Received insightsDidUpdate notification.")

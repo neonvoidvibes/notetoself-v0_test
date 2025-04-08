@@ -85,9 +85,11 @@ struct WeekInReviewCard: View {
                             NewBadgeView()
                         }
                         if appState.subscriptionTier == .free { // Gating check is correct (.free)
-                            Image(systemName: "lock.fill")
-                                .foregroundColor(styles.colors.textSecondary)
-                                .padding(.leading, 4) // Space before lock
+                             HStack(spacing: 4) { // Group badge and lock
+                                 ProBadgeView()
+                                 Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
+                             }
+                             .padding(.leading, 4) // Keep padding before the group
                         }
                     }
 
@@ -167,7 +169,18 @@ struct WeekInReviewCard: View {
             }
         )
         .contentShape(Rectangle())
-        .onTapGesture { if appState.subscriptionTier == .pro { showingFullScreen = true } } // CORRECTED: Check .pro
+        // [8.2] Updated tap gesture to handle locked state
+        .onTapGesture {
+            if appState.subscriptionTier == .pro {
+                // Pro users can open if content is decoded (or even if loading/error to see status)
+                showingFullScreen = true
+            } else {
+                // Free user tapped locked card
+                print("[WeekInReviewCard] Locked card tapped. Triggering upgrade flow...")
+                // TODO: [8.2] Implement presentation of upgrade/paywall screen for 'Week in Review'.
+            }
+        }
+        .opacity(appState.subscriptionTier == .free ? 0.7 : 1.0) // [8.1] Dim card slightly when locked
         .onAppear { decodeJSON() } // Decode initial JSON
         .onChange(of: jsonString) { // Re-decode if JSON string changes
             oldValue, newValue in

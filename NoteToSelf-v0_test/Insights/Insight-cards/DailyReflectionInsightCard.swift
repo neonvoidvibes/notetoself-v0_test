@@ -45,7 +45,10 @@ struct DailyReflectionInsightCard: View {
                              .foregroundColor(styles.colors.accent)
                              .font(.system(size: 20))
                          if appState.subscriptionTier == .free {
-                            Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
+                            HStack(spacing: 4) { // Group badge and lock
+                                ProBadgeView()
+                                Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
+                            }
                         }
                     }
 
@@ -77,15 +80,23 @@ struct DailyReflectionInsightCard: View {
             }
         )
         .contentShape(Rectangle())
-        // Only allow opening if content exists AND user is subscribed
+        // [8.2] Updated tap gesture to handle locked state
         .onTapGesture {
-             if hasContent && appState.subscriptionTier == .pro {
-                 showingFullScreen = true
-             } else {
-                 print("[DailyReflectionCard] Tap ignored (No content or Free Tier).")
-             }
+            if appState.subscriptionTier == .pro {
+                // Pro users can open only if content exists
+                if hasContent {
+                    showingFullScreen = true
+                } else {
+                     print("[DailyReflectionCard] Tap ignored (Pro user, but no content).")
+                }
+            } else {
+                // Free user tapped locked card
+                print("[DailyReflectionCard] Locked card tapped. Triggering upgrade flow...")
+                // TODO: [8.2] Implement presentation of upgrade/paywall screen for 'Daily Reflection'.
+            }
         }
-        .opacity(hasContent ? 1.0 : 0.7) // Dim card slightly if no content
+        // [8.1] Dim card based on subscription tier AND content status (more dimmed if locked)
+        .opacity(appState.subscriptionTier == .free ? 0.7 : (hasContent ? 1.0 : 0.8))
         .onAppear { decodeJSON() } // Decode initial JSON
         .onChange(of: jsonString) { decodeJSON() } // Re-decode if JSON changes
         .fullScreenCover(isPresented: $showingFullScreen) {
