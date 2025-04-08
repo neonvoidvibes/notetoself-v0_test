@@ -234,14 +234,12 @@ struct MainTabView: View {
                           print("‼️ Error saving new journal entry from MainTabView: \(error)")
                       }
                   }
-                  // Flag automatically set false by dismissal
               },
               onCancel: {
                   print("[MainTabView] New Entry Cancelled. No tab switch.")
-                  // No action needed, sheet dismissal leaves user on original tab
-                  // Flag automatically set false by dismissal
               },
-              autoFocusText: true
+              autoFocusText: true,
+              startFaded: true // Pass true here for the fade effect
           )
       }
       .onAppear {

@@ -145,7 +145,6 @@ struct FullscreenEntryView: View {
                 .animation(.spring(), value: showingDeleteConfirmation)
             }
         }
-        // .preferredColorScheme(.dark) // REMOVED - Let theme handle it
     }
 
     private func formatDate(_ date: Date) -> String {
@@ -169,6 +168,7 @@ struct EditableFullscreenEntryView: View {
     var onDelete: (() -> Void)?
     var onCancel: (() -> Void)? // Keep onCancel for confirmation logic
     var autoFocusText: Bool = false
+    let startFaded: Bool // New property
 
     @Environment(\.dismiss) private var dismiss
     @State private var entryText: String
@@ -178,6 +178,7 @@ struct EditableFullscreenEntryView: View {
     @State private var selectedIntensity: Int
     @State private var showingCancelConfirmation = false
     @State private var showingDeleteConfirmation = false
+    @State private var contentOpacity: Double = 1.0 // State for fade effect
 
     private let date: Date
     private let isNewEntry: Bool
@@ -186,13 +187,14 @@ struct EditableFullscreenEntryView: View {
     // Access shared styles - Use @ObservedObject
     @ObservedObject private var styles = UIStyles.shared
 
-    // Initializers remain the same, no styles passed here
-    init(initialMood: Mood = .neutral, onSave: @escaping (String, Mood, Int) -> Void, onDelete: (() -> Void)? = nil, onCancel: (() -> Void)? = nil, autoFocusText: Bool = false) {
+    // Initializer for new entries
+    init(initialMood: Mood = .neutral, onSave: @escaping (String, Mood, Int) -> Void, onDelete: (() -> Void)? = nil, onCancel: (() -> Void)? = nil, autoFocusText: Bool = false, startFaded: Bool = false) { // Added startFaded
         self.initialMood = initialMood
         self.onSave = onSave
         self.onDelete = onDelete
-        self.onCancel = onCancel // Assign onCancel
+        self.onCancel = onCancel
         self.autoFocusText = autoFocusText
+        self.startFaded = startFaded // Assign startFaded
 
         self._entryText = State(initialValue: "")
         self._selectedMood = State(initialValue: initialMood)
@@ -202,13 +204,15 @@ struct EditableFullscreenEntryView: View {
         self.isLocked = false
     }
 
+    // Initializer for editing existing entries
     init(entry: JournalEntry, onSave: @escaping (String, Mood, Int) -> Void, onDelete: (() -> Void)? = nil, onCancel: (() -> Void)? = nil, autoFocusText: Bool = true) {
         self.entry = entry
         self.initialMood = entry.mood
         self.onSave = onSave
         self.onDelete = onDelete
-        self.onCancel = onCancel // Assign onCancel
+        self.onCancel = onCancel
         self.autoFocusText = autoFocusText
+        self.startFaded = false // Editing never starts faded
 
         self._entryText = State(initialValue: entry.text)
         self._selectedMood = State(initialValue: entry.mood)
@@ -221,7 +225,7 @@ struct EditableFullscreenEntryView: View {
     var body: some View {
         ZStack {
             // Background
-            styles.colors.appBackground // Use styles instance
+            styles.colors.appBackground
                 .ignoresSafeArea()
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -232,30 +236,23 @@ struct EditableFullscreenEntryView: View {
                 }
 
             VStack(spacing: 0) {
-                // Custom navigation bar
+                // Custom navigation bar (Always visible, not faded)
                 HStack {
-                    Button(action: {
-                        if !entryText.isEmpty {
-                            showingCancelConfirmation = true
-                        } else {
-                            onCancel?() // Call onCancel here
-                            dismiss()
-                        }
-                    }) {
+                    Button(action: handleCancel) { // Use helper function
                         Image(systemName: "xmark")
                             .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(styles.colors.text) // Use styles instance
+                            .foregroundColor(styles.colors.text)
                     }
                     Spacer()
                     Text(formatDate(date))
-                        .font(styles.typography.smallLabelFont) // Use styles instance
-                        .foregroundColor(styles.colors.textSecondary) // Use styles instance
+                        .font(styles.typography.smallLabelFont)
+                        .foregroundColor(styles.colors.textSecondary)
                 }
                 .padding(.horizontal, styles.layout.paddingXL)
                 .padding(.top, styles.layout.topSafeAreaPadding)
                 .padding(.bottom, styles.layout.paddingM)
 
-                // Main content
+                // Main content ScrollView - Apply opacity here
                 ScrollView {
                     VStack(alignment: .leading, spacing: styles.layout.spacingXL) {
                         // Header with mood and action buttons
@@ -268,8 +265,8 @@ struct EditableFullscreenEntryView: View {
                                 }
                             }) {
                                 Text(formattedMoodText(selectedMood, intensity: selectedIntensity))
-                                    .font(styles.typography.caption) // Use styles instance
-                                    .foregroundColor(styles.colors.text) // Use styles instance
+                                    .font(styles.typography.caption)
+                                    .foregroundColor(styles.colors.text)
                                     .padding(.vertical, 6)
                                     .padding(.horizontal, 12)
                                     .background(
@@ -287,10 +284,10 @@ struct EditableFullscreenEntryView: View {
                                 }) {
                                     Image(systemName: "trash")
                                         .font(.system(size: styles.layout.iconSizeS))
-                                        .foregroundColor(styles.colors.textSecondary) // Use styles instance
+                                        .foregroundColor(styles.colors.textSecondary)
                                         .padding(.vertical, 6)
                                         .padding(.horizontal, 12)
-                                        .background(styles.colors.secondaryBackground) // Use styles instance
+                                        .background(styles.colors.secondaryBackground)
                                         .cornerRadius(styles.layout.radiusM)
                                 }
                             }
@@ -301,11 +298,10 @@ struct EditableFullscreenEntryView: View {
                         // Mood wheel selector panel
                         if showMoodSelector {
                             VStack {
-                                // Ensure MoodWheel observes UIStyles if needed, or pass style info
                                 MoodWheel(selectedMood: $selectedMood, selectedIntensity: $selectedIntensity)
                                     .padding(.horizontal, styles.layout.spacingM)
                             }
-                            .background(styles.colors.secondaryBackground) // Use styles instance
+                            .background(styles.colors.secondaryBackground)
                             .cornerRadius(styles.layout.radiusL)
                             .padding(.horizontal, styles.layout.paddingXL)
                             .transition(.opacity.combined(with: .move(edge: .top)))
@@ -313,13 +309,13 @@ struct EditableFullscreenEntryView: View {
 
                         // Text editor
                         TextEditor(text: $entryText)
-                            .font(styles.typography.bodyLarge) // Use styles instance
-                            .foregroundColor(styles.colors.text) // Use styles instance
+                            .font(styles.typography.bodyLarge)
+                            .foregroundColor(styles.colors.text)
                             .lineSpacing(8)
                             .padding(.horizontal, styles.layout.paddingXL - 5)
                             .frame(minHeight: 200)
-                            .background(Color.clear) // Keep clear
-                            .scrollContentBackground(.hidden) // Keep hidden
+                            .background(Color.clear)
+                            .scrollContentBackground(.hidden)
                             .focused($isTextFieldFocused)
                             .onChange(of: isTextFieldFocused) { oldValue, newValue in
                                 if newValue {
@@ -330,8 +326,8 @@ struct EditableFullscreenEntryView: View {
                                 Group {
                                     if entryText.isEmpty {
                                         Text("What's on your mind today?")
-                                            .font(styles.typography.bodyLarge) // Use styles instance
-                                            .foregroundColor(styles.colors.placeholderText) // Use styles instance
+                                            .font(styles.typography.bodyLarge)
+                                            .foregroundColor(styles.colors.placeholderText)
                                             .padding(.horizontal, styles.layout.paddingXL)
                                             .padding(.top, 8)
                                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -342,13 +338,15 @@ struct EditableFullscreenEntryView: View {
                         Spacer(minLength: 100)
                     }
                 }
+                .opacity(contentOpacity) // Apply opacity to ScrollView content
+                .animation(.easeInOut(duration: 0.3), value: contentOpacity) // Animate opacity changes
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 5)
                         .onChanged { _ in isTextFieldFocused = false }
                 )
-            }
+            } // End Main VStack
 
-            // Save button
+            // Save button (Always visible, not faded)
             VStack {
                 Spacer()
                 HStack {
@@ -360,57 +358,50 @@ struct EditableFullscreenEntryView: View {
                             }
                         }) {
                             Text("Confirm")
-                                .font(styles.typography.bodyFont) // Use styles instance
-                                .foregroundColor(styles.colors.accentContrastText) // Apply to Text
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(styles.colors.accentContrastText)
                                 .padding(.vertical, 10)
                                 .padding(.horizontal, 20)
-                                .background(RoundedRectangle(cornerRadius: styles.layout.radiusM).fill(styles.colors.accent)) // Use styles instance
+                                .background(RoundedRectangle(cornerRadius: styles.layout.radiusM).fill(styles.colors.accent))
                         }
-                        .tint(styles.colors.accentContrastText) // Apply tint to Button
+                        .tint(styles.colors.accentContrastText)
                         .padding([.trailing, .bottom], 24)
                     } else {
                         Button(action: {
                             if !entryText.isEmpty {
                                 onSave(entryText, selectedMood, selectedIntensity)
-                                dismiss()
+                                dismiss() // Save dismisses directly, no fade needed
                             }
                         }) {
                             Text("Save")
-                                .font(styles.typography.bodyFont) // Use styles instance
-                                .foregroundColor(styles.colors.accentContrastText) // Apply to Text
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(styles.colors.accentContrastText)
                                 .padding(.vertical, 10)
                                 .padding(.horizontal, 20)
-                                .background(RoundedRectangle(cornerRadius: styles.layout.radiusM).fill(styles.colors.accent)) // Use styles instance
+                                .background(RoundedRectangle(cornerRadius: styles.layout.radiusM).fill(styles.colors.accent))
                         }
-                        .tint(styles.colors.accentContrastText) // Apply tint to Button
+                        .tint(styles.colors.accentContrastText)
                         .disabled(entryText.isEmpty)
                         .opacity(entryText.isEmpty ? 0.5 : 1.0)
                         .padding([.trailing, .bottom], 24)
                     }
                 }
             }
+
             // Cancel confirmation modal
             if showingCancelConfirmation {
-                 // Pass styles explicitly if needed, or ensure ConfirmationModal uses @ObservedObject
                 ConfirmationModal(
                     title: "Discard Changes",
                     message: "Are you sure you want to discard this journal entry? Your changes will be lost.",
                     confirmText: "Discard",
-                    confirmAction: {
-                        showingCancelConfirmation = false
-                        onCancel?() // Call onCancel here
-                        dismiss()
-                    },
-                    cancelAction: {
-                        showingCancelConfirmation = false
-                    },
+                    confirmAction: handleDiscardConfirmation, // Use helper
+                    cancelAction: { showingCancelConfirmation = false },
                     isDestructive: true
                 )
                 .animation(.spring(), value: showingCancelConfirmation)
             }
             // Delete confirmation modal
             if showingDeleteConfirmation {
-                 // Pass styles explicitly if needed, or ensure ConfirmationModal uses @ObservedObject
                 ConfirmationModal(
                     title: "Delete Entry",
                     message: "Are you sure you want to delete this journal entry? This action cannot be undone.",
@@ -418,25 +409,68 @@ struct EditableFullscreenEntryView: View {
                     confirmAction: {
                         showingDeleteConfirmation = false
                         onDelete?()
-                        dismiss()
+                        dismiss() // Dismiss after delete
                     },
-                    cancelAction: {
-                        showingDeleteConfirmation = false
-                    },
+                    cancelAction: { showingDeleteConfirmation = false },
                     isDestructive: true
                 )
                 .animation(.spring(), value: showingDeleteConfirmation)
             }
-        }
-        // .preferredColorScheme(.dark) // REMOVED - Let theme handle it
+        } // End ZStack
         .onAppear {
+            // Initial focus
             if autoFocusText {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     isTextFieldFocused = true
                 }
             }
+            // Initial fade out if applicable
+            if isNewEntry && startFaded {
+                 // Delay slightly longer for sheet presentation + focus animation
+                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                     withAnimation(.easeInOut(duration: 0.3)) {
+                         contentOpacity = 0.0
+                     }
+                 }
+            }
         }
     } // End body
+
+    // Helper function to handle cancel action logic
+    private func handleCancel() {
+        if !entryText.isEmpty {
+            showingCancelConfirmation = true
+        } else {
+            dismissFlow()
+        }
+    }
+
+    // Helper function to handle discard confirmation
+    private func handleDiscardConfirmation() {
+        showingCancelConfirmation = false
+        dismissFlow()
+    }
+
+    // Helper function for dismissal flow (with potential fade-in)
+    private func dismissFlow() {
+        if startFaded {
+            // Fade in first, then dismiss
+            print("[EditableFullscreenEntryView] Fading content back in before dismissing.")
+            withAnimation(.easeInOut(duration: 0.3)) {
+                contentOpacity = 1.0
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { // Delay dismissal
+                print("[EditableFullscreenEntryView] Dismissing after fade-in.")
+                onCancel?()
+                dismiss()
+            }
+        } else {
+            // Dismiss directly if not started faded
+            print("[EditableFullscreenEntryView] Dismissing directly.")
+            onCancel?()
+            dismiss()
+        }
+    }
 
     // Helper functions defined within the struct
     private func formatDate(_ date: Date) -> String {
@@ -454,7 +488,6 @@ struct EditableFullscreenEntryView: View {
 
 struct FullscreenEntryView_Previews: PreviewProvider {
     static var previews: some View {
-        // Sample data setup remains the same
         let sampleEntry = JournalEntry(
             text: "This is a sample journal entry with some text to preview how it would look in the fullscreen view. The text should be displayed prominently and be easy to read.",
             mood: .happy,
@@ -470,8 +503,12 @@ struct FullscreenEntryView_Previews: PreviewProvider {
 
             EditableFullscreenEntryView(onSave: { _, _, _ in })
                 .previewDisplayName("New Entry Mode")
+
+            // Preview the faded start state
+             EditableFullscreenEntryView(onSave: { _, _, _ in }, startFaded: true)
+                 .previewDisplayName("New Entry Mode (Faded Start)")
         }
-         // Add environment object for preview if UIStyles is needed by previews
          .environmentObject(UIStyles.shared)
+         .environmentObject(ThemeManager.shared) // Added for styles dependency
     }
 }
