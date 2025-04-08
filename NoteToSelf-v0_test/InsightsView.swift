@@ -103,6 +103,21 @@ struct InsightsView: View {
         return formatter
     }
 
+    // Computed property to check if daily reflection has content
+    // Mirrors the logic in DailyReflectionInsightCard
+    private var dailyReflectionHasContent: Bool {
+        guard let json = dailyReflectionJson,
+              !json.isEmpty,
+              let data = json.data(using: .utf8) else {
+            return false
+        }
+        // Try decoding and check if snapshotText is non-empty
+        if let result = try? JSONDecoder().decode(DailyReflectionResult.self, from: data),
+           !(result.snapshotText?.isEmpty ?? true) {
+            return true
+        }
+        return false
+    }
 
     var body: some View {
         ZStack {
@@ -238,6 +253,30 @@ struct InsightsView: View {
                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
               }
 
+            // --- Conditional "Add New Note" Button ---
+             if !dailyReflectionHasContent {
+                 VStack(spacing: styles.layout.spacingM) {
+                     Text("Capture your thoughts and feelings as they happen.")
+                         .font(styles.typography.bodyFont)
+                         .foregroundColor(styles.colors.textSecondary)
+                         .multilineTextAlignment(.center)
+                         .padding(.horizontal) // Add horizontal padding to text
+
+                     Button("Add New Note") { // Renamed button text
+                         print("[InsightsView] Add New Note button tapped.")
+                         // Only set the flag. MainTabView handles presentation.
+                         appState.objectWillChange.send() // Ensure update is published
+                         appState.presentNewJournalEntrySheet = true
+                         print("[InsightsView] Set presentNewJournalEntrySheet = true")
+                     }
+                     .buttonStyle(UIStyles.PrimaryButtonStyle())
+                 }
+                 .padding(.horizontal, styles.layout.paddingXL) // Padding for the whole CTA VStack
+                 .padding(.vertical, styles.layout.spacingL) // Vertical padding
+                 .transition(.opacity.combined(with: .scale)) // Add animation
+             }
+
+
              // --- Week in Review Card ---
               if isLoadingInsights && weekInReviewJson == nil {
                   SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
@@ -254,25 +293,7 @@ struct InsightsView: View {
                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
               }
 
-            // --- Add New Entry CTA ---
-             VStack(spacing: styles.layout.spacingM) {
-                 Text("Capture your thoughts and feelings as they happen.")
-                     .font(styles.typography.bodyFont)
-                     .foregroundColor(styles.colors.textSecondary)
-                     .multilineTextAlignment(.center)
-                     .padding(.horizontal) // Add horizontal padding to text
-
-                 Button("Add New Entry") {
-                     print("[InsightsView] Add New Entry button tapped.")
-                     // Only set the flag. MainTabView handles presentation.
-                     appState.objectWillChange.send() // Ensure update is published
-                     appState.presentNewJournalEntrySheet = true
-                     print("[InsightsView] Set presentNewJournalEntrySheet = true")
-                 }
-                 .buttonStyle(UIStyles.PrimaryButtonStyle())
-             }
-             .padding(.horizontal, styles.layout.paddingXL) // Padding for the whole CTA VStack
-             .padding(.vertical, styles.layout.spacingL) // Vertical padding
+            // --- REMOVED: Original Add New Entry CTA Section ---
 
 
             // --- Feel Card ---
@@ -393,15 +414,14 @@ struct InsightsView: View {
                  .offset(y: headerAppeared ? 0 : 20).opacity(headerAppeared ? 1 : 0)
                  .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.6), value: headerAppeared)
 
-             // [7.1] Add Journal Entry Button
-             Button("Add Journal Entry") {
-                 print("[InsightsView] Empty State - Add New Entry button tapped.") // Debug Print
+             // Button Text Renamed
+             Button("Add New Note") {
+                 print("[InsightsView] Empty State - Add New Note button tapped.") // Debug Print
                  // Explicitly send objectWillChange before setting flag
                  appState.objectWillChange.send()
                  // Just set the AppState flag. MainTabView will handle presentation.
                  appState.presentNewJournalEntrySheet = true
                  print("[InsightsView] Empty State - Set presentNewJournalEntrySheet = true") // Debug Print
-                 // Don't switch tab here, MainTabView will handle it if needed.
              }
              .buttonStyle(UIStyles.PrimaryButtonStyle())
              .padding(.horizontal, styles.layout.paddingXL * 1.5) // Make button slightly narrower

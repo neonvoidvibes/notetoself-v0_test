@@ -6,7 +6,7 @@ struct DailyReflectionInsightCard: View {
 
     // Accept data from parent
     let jsonString: String?
-    let generatedDate: Date?
+    let generatedDate: Date? // Keep generatedDate, might be useful later
 
     var scrollProxy: ScrollViewProxy? = nil
     var cardId: String? = nil
@@ -16,17 +16,10 @@ struct DailyReflectionInsightCard: View {
 
     // State for DECODED result
     @State private var insightResult: DailyReflectionResult? = nil
-    // isLoading and decodeError removed, handled by presence/absence of insightResult
 
     // Computed properties remain the same, relying on insightResult state
     private var snapshotText: String? { insightResult?.snapshotText }
     private var reflectionPrompts: [String]? { insightResult?.reflectionPrompts }
-
-    // Check if insight is fresh (within 24 hours)
-    private var isFresh: Bool {
-        guard let genDate = generatedDate else { return false }
-        return Calendar.current.dateComponents([.hour], from: genDate, to: Date()).hour ?? 25 < 24
-    }
 
     // Computed property to check if content is available
     private var hasContent: Bool {
@@ -35,99 +28,82 @@ struct DailyReflectionInsightCard: View {
     }
 
     var body: some View {
-        // Conditional Content: Button or Card
-        if hasContent {
-            // --- Card View (Content Available) ---
-            styles.expandableCard(
-                scrollProxy: scrollProxy,
-                cardId: cardId,
-                content: {
-                    VStack(alignment: .leading, spacing: styles.layout.spacingL) {
-                        // Header
-                        HStack {
-                            Text("Daily Reflection")
-                                .font(styles.typography.title3)
-                                .foregroundColor(styles.colors.text)
-                            Spacer()
-
-                            // Show "New" badge only if content exists and is fresh
-                            if isFresh {
-                                NewBadgeView()
-                            }
-
-                            // Icon
-                            Image(systemName: "brain.head.profile")
-                                 .foregroundColor(styles.colors.accent)
-                                 .font(.system(size: 20))
-                        }
-
-                        // Content Snippet (Daily Snapshot)
-                        // No gating needed here as `hasContent` already checked subscription indirectly
-                        if let snapshot = snapshotText, !snapshot.isEmpty {
-                             VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                                 Text(snapshot)
-                                     .font(styles.typography.bodyFont)
-                                     .foregroundColor(styles.colors.text)
-                                     .lineLimit(3)
-                             }
-                        } else {
-                             // Fallback (shouldn't be reached if hasContent is true)
-                             Text("Loading reflection...")
-                                 .font(styles.typography.bodyFont)
-                                 .foregroundColor(styles.colors.textSecondary)
-                                 .frame(minHeight: 60, alignment: .center)
+        // Conditional Content: Button or Card - Reverted: Always show card
+        // Always use expandableCard structure
+        styles.expandableCard(
+            scrollProxy: scrollProxy,
+            cardId: cardId,
+            content: {
+                VStack(alignment: .leading, spacing: styles.layout.spacingL) {
+                    // Header
+                    HStack {
+                        Text("Daily Reflection")
+                            .font(styles.typography.title3)
+                            .foregroundColor(styles.colors.text)
+                        Spacer()
+                        // REMOVED "New" Badge reference here (it was removed in previous step)
+                        Image(systemName: "brain.head.profile")
+                             .foregroundColor(styles.colors.accent)
+                             .font(.system(size: 20))
+                        // Gating lock icon remains if needed by parent logic, but card interaction depends on hasContent
+                         if appState.subscriptionTier == .free {
+                            Image(systemName: "lock.fill").foregroundColor(styles.colors.textSecondary)
                         }
                     }
-                    .padding(.bottom, styles.layout.paddingL)
-                }
-            )
-            .contentShape(Rectangle())
-            // Allow opening detail view only if content exists
-            .onTapGesture { showingFullScreen = true }
-            .onAppear { decodeJSON() } // Decode initial JSON
-            .onChange(of: jsonString) { decodeJSON() } // Re-decode if JSON changes
-            .fullScreenCover(isPresented: $showingFullScreen) {
-                 InsightFullScreenView(title: "Daily Reflection") {
-                      DailyReflectionDetailContent(
-                          result: insightResult ?? .empty(), // Use decoded result
-                          generatedDate: generatedDate // Pass date if needed
-                      )
-                  }
-                  .environmentObject(styles)
-                  .environmentObject(appState)
-            }
 
-        } else {
-            // --- Button View (No Content Available) ---
-            Button {
-                // Action to switch to Journal Tab (Index 0)
-                print("[DailyReflectionCard] Go to Journal button tapped.")
-                NotificationCenter.default.post(
-                    name: .switchToTabNotification,
-                    object: nil,
-                    userInfo: ["tabIndex": 0]
-                )
-            } label: {
-                HStack {
-                    Image(systemName: "plus.circle.fill") // Icon for adding entry
-                        .font(.system(size: 18))
-                    Text("Add Journal Entry for Daily Reflection")
-                        .font(styles.typography.bodyFont.weight(.medium)) // Use body font, medium weight
+                    // Content Snippet (Conditional Display)
+                    // Subscription check now happens before displaying content or placeholder
+                    if appState.subscriptionTier == .pro {
+                        if hasContent {
+                             // Display snapshot text if content is available
+                             if let snapshot = snapshotText, !snapshot.isEmpty {
+                                 VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                                     Text(snapshot)
+                                         .font(styles.typography.bodyFont)
+                                         .foregroundColor(styles.colors.text)
+                                         .lineLimit(3)
+                                 }
+                             } else {
+                                 // Fallback within hasContent=true (shouldn't normally happen)
+                                 EmptyStateView(message: "Processing reflection...")
+                             }
+                        } else {
+                            // Display explanatory text if no content
+                             EmptyStateView(message: "Add a journal entry in the last 24 hours to see your daily reflection.") // Use shared view
+                        }
+                    } else {
+                         // Locked content view for free tier
+                         LockedContentView(message: "Unlock daily AI reflections with Premium.") // Use shared view
+                    }
                 }
-                .foregroundColor(styles.colors.accentContrastText) // Use contrast text color
-                .frame(maxWidth: .infinity) // Make button full width
-                .padding(.vertical, styles.layout.paddingM) // Standard vertical padding
+                .padding(.bottom, styles.layout.paddingL)
             }
-            .background(styles.colors.accent) // Use accent color for background
-            .cornerRadius(styles.layout.radiusM) // Standard corner radius
-            .padding(.horizontal, styles.layout.paddingXL) // Match card horizontal padding
-            // No .onTapGesture here, button action handles the tap
-             .onAppear { decodeJSON() } // Still attempt decode on appear in case JSON becomes available later
-             .onChange(of: jsonString) { decodeJSON() } // Still re-decode if JSON changes
+        )
+        .contentShape(Rectangle())
+        // Only allow opening if content exists AND user is subscribed
+        .onTapGesture {
+             if hasContent && appState.subscriptionTier == .pro { // Check both
+                 showingFullScreen = true
+             } else {
+                 print("[DailyReflectionCard] Tap ignored (No content or Free Tier).")
+             }
+        }
+        .opacity(hasContent ? 1.0 : 0.7) // Dim card slightly if no content
+        .onAppear { decodeJSON() } // Decode initial JSON
+        .onChange(of: jsonString) { decodeJSON() } // Re-decode if JSON changes
+        .fullScreenCover(isPresented: $showingFullScreen) {
+             InsightFullScreenView(title: "Daily Reflection") {
+                  DailyReflectionDetailContent(
+                      result: insightResult ?? .empty(), // Use decoded result
+                      generatedDate: generatedDate // Pass date if needed
+                  )
+              }
+              .environmentObject(styles)
+              .environmentObject(appState)
         }
     }
 
-    // Decode function now uses the passed-in jsonString
+    // Decode function remains the same
     @MainActor
     private func decodeJSON() {
         guard let json = jsonString, !json.isEmpty else {
@@ -135,20 +111,18 @@ struct DailyReflectionInsightCard: View {
             return
         }
 
-        // No loading state needed as UI switches between button/card based on result
         print("[DailyReflectionCard] Decoding JSON...")
 
         if let data = json.data(using: .utf8) {
             do {
                 let result = try JSONDecoder().decode(DailyReflectionResult.self, from: data)
-                // Only update if the snapshot text is actually present
+                // Check if snapshot text is actually present
                 if !(result.snapshotText?.isEmpty ?? true) {
                     self.insightResult = result
                     print("[DailyReflectionCard] Decode success.")
                 } else {
-                    // Treat empty snapshot as no content
-                    self.insightResult = nil
-                    print("[DailyReflectionCard] Decoded successfully, but snapshot is empty. Treating as no content.")
+                    self.insightResult = nil // Treat empty snapshot as no content
+                    print("[DailyReflectionCard] Decoded successfully, but snapshot is empty.")
                 }
             } catch {
                 print("‼️ [DailyReflectionCard] Failed to decode DailyReflectionResult: \(error). JSON: \(json)")
@@ -161,21 +135,7 @@ struct DailyReflectionInsightCard: View {
     }
 }
 
-// MARK: - Reusable New Badge View
-struct NewBadgeView: View {
-    @ObservedObject private var styles = UIStyles.shared
-
-    var body: some View {
-        Text("NEW")
-            .font(.system(size: 10, weight: .bold))
-            .foregroundColor(styles.colors.accentContrastText)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(styles.colors.accent.opacity(0.9))
-            .clipShape(Capsule())
-    }
-}
-
+// REMOVED Local NewBadgeView definition
 
 #Preview {
     // Pass nil for preview as InsightsView now handles loading
@@ -189,21 +149,13 @@ struct NewBadgeView: View {
              }
              """, generatedDate: Date())
 
-             // Preview with OLD Content (should still show card, but no "NEW" badge)
-             DailyReflectionInsightCard(jsonString: """
-             {
-                 "snapshotText": "Older reflection content.",
-                 "reflectionPrompts": ["Old prompt 1?", "Old prompt 2?"]
-             }
-             """, generatedDate: Calendar.current.date(byAdding: .day, value: -2, to: Date()))
-
-              // Preview No Content (should show button)
+              // Preview No Content (should show card with explanation)
               DailyReflectionInsightCard(jsonString: nil, generatedDate: nil)
 
-              // Preview Empty JSON String (should show button)
+              // Preview Empty JSON String (should show card with explanation)
               DailyReflectionInsightCard(jsonString: "", generatedDate: nil)
 
-              // Preview JSON with Empty Snapshot (should show button)
+              // Preview JSON with Empty Snapshot (should show card with explanation)
               DailyReflectionInsightCard(jsonString: """
                {
                    "snapshotText": "",
