@@ -11,83 +11,79 @@ actor FeelInsightGenerator {
         self.databaseService = databaseService
     }
 
-    func generateAndStoreIfNeeded() async {
+    func generateAndStoreIfNeeded(forceGeneration: Bool = false) async {
         print("➡️ [FeelInsightGenerator] Starting generateAndStoreIfNeeded...")
 
         let calendar = Calendar.current
         var shouldGenerate = true
         var lastGenerationDate: Date? = nil
 
-        // 1. Check regeneration threshold
-        do {
-            if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                lastGenerationDate = latest.generatedDate
-                let daysSinceLast = calendar.dateComponents([.day], from: latest.generatedDate, to: Date()).day ?? regenerationThresholdDays + 1
-                if daysSinceLast < regenerationThresholdDays {
-                    print("✅ [FeelInsightGenerator] Check Passed (Recently Generated): Skipping generation. Last insight generated \(daysSinceLast) days ago.")
-                    shouldGenerate = false
+        // 1. Check conditions only if not forcing generation
+        if !forceGeneration {
+            do {
+                if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                    lastGenerationDate = latest.generatedDate
+                    let daysSinceLast = calendar.dateComponents([.day], from: latest.generatedDate, to: Date()).day ?? regenerationThresholdDays + 1
+                    if daysSinceLast < regenerationThresholdDays {
+                        print("[FeelInsightGenerator] Skipping generation (Normal): Last insight generated \(daysSinceLast) days ago.")
+                        shouldGenerate = false
+                    } else {
+                        print("[FeelInsightGenerator] Last insight old enough (Normal). Checking for new entries...")
+                    }
                 } else {
-                     print("✅ [FeelInsightGenerator] Check Passed (Old Enough): Last insight is \(daysSinceLast) days old. Checking for new entries...")
+                    print("[FeelInsightGenerator] No previous insight found (Normal).")
                 }
-            } else {
-                print("✅ [FeelInsightGenerator] Check Passed (No Previous): No previous insight found. Will generate.")
+            } catch {
+                print("‼️ [FeelInsightGenerator] Error loading latest insight (Normal): \(error). Proceeding.")
             }
-        } catch {
-            print("‼️ [FeelInsightGenerator] Error loading latest insight: \(error). Proceeding with generation check.")
-            // Decide if you want to force generation on load error? For now, let's proceed.
+            // Only return if the time threshold check explicitly failed
+            guard shouldGenerate else {
+                 print("🏁 [FeelInsightGenerator] Finished: Skipped due to recent generation (Normal).")
+                 return
+            }
+        } else {
+             print("[FeelInsightGenerator] Bypassing time checks due to forceGeneration.")
         }
 
-        guard shouldGenerate else {
-             print("🏁 [FeelInsightGenerator] Finished: Skipped due to recent generation.")
-             return
-        }
 
-        // 2. Fetch necessary data (e.g., last 7-14 days of entries)
+        // 2. Fetch necessary data (use rolling window)
         let entries: [JournalEntry]
-        // Fetch ALL entries sorted descending, then apply the rolling window logic
-        let relevantEntries: [JournalEntry]
         do {
-            let allEntriesSorted = try databaseService.loadAllJournalEntries() // Assumes DB returns sorted desc
-            relevantEntries = getEntriesForRollingWindow(allEntriesSortedDesc: allEntriesSorted)
-            print("✅ [FeelInsightGenerator] Data Fetch: Using \(relevantEntries.count) entries from rolling window.")
-            // Keep original 'entries' variable name for minimal downstream changes
-            entries = relevantEntries
+            let allEntriesSorted = try databaseService.loadAllJournalEntries()
+            entries = getEntriesForRollingWindow(allEntriesSortedDesc: allEntriesSorted)
+            print("✅ [FeelInsightGenerator] Data Fetch: Using \(entries.count) entries from rolling window.")
         } catch {
             print("‼️ [FeelInsightGenerator] Data Fetch Failed: Error fetching journal entries: \(error)")
             print("🏁 [FeelInsightGenerator] Finished: Aborted due to data fetch error.")
             return
         }
 
-        // 3. Check Minimum Entry Count for the relevant window
-        guard entries.count >= 2 else { // Adjusted minimum to 2 for Feel
-            print("⚠️ [FeelInsightGenerator] Minimum Entry Check Failed: Skipping generation. Need at least 2 entries in the rolling window, found \(entries.count).")
+        // 3. Check Minimum Entry Count (always required)
+        guard entries.count >= 2 else {
+            print("⚠️ [FeelInsightGenerator] Minimum Entry Check Failed: Skipping generation. Need at least 2 entries in rolling window, found \(entries.count).")
             print("🏁 [FeelInsightGenerator] Finished: Skipped due to insufficient entries.")
             return
         }
-        print("✅ [FeelInsightGenerator] Minimum Entry Check Passed: Have \(entries.count) entries in rolling window.")
+        print("✅ [FeelInsightGenerator] Minimum Entry Check Passed: Have \(entries.count) entries.")
 
-
-        // 4. Check for New Entries Since Last Generation (if applicable)
-         if let lastGenDate = lastGenerationDate {
-              let hasNewEntries = entries.contains { $0.date > lastGenDate }
-              if !hasNewEntries {
-                   print("⚠️ [FeelInsightGenerator] New Entry Check Failed: Skipping LLM generation as no entries are newer than the last insight (\(lastGenDate.formatted())).")
-                   // Attempt to update timestamp to prevent repeated checks until threshold passes
-                   do {
-                       try await databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
-                       print("✅ [FeelInsightGenerator] Timestamp updated for existing insight.")
-                   } catch {
-                        print("‼️ [FeelInsightGenerator] Error updating timestamp: \(error)")
-                   }
-                   print("🏁 [FeelInsightGenerator] Finished: Skipped LLM call due to no new entries.")
-                   return
-              } else {
-                   print("✅ [FeelInsightGenerator] New Entry Check Passed: Found entries newer than last insight.")
-              }
-         } else {
-             // This is the first generation or last generation failed, proceed.
-              print("✅ [FeelInsightGenerator] New Entry Check Passed: First generation run or no previous date found.")
-         }
+        // 4. Check for New Entries only if not forcing and time threshold passed
+        if !forceGeneration && shouldGenerate {
+            if let lastGenDate = lastGenerationDate {
+                let hasNewEntries = entries.contains { $0.date > lastGenDate }
+                if !hasNewEntries {
+                    print("⚠️ [FeelInsightGenerator] New Entry Check Failed (Normal): Skipping LLM generation as no entries are newer than last insight.")
+                    try? await databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
+                    print("🏁 [FeelInsightGenerator] Finished: Skipped LLM call due to no new entries (Normal).")
+                    return
+                } else {
+                    print("✅ [FeelInsightGenerator] New Entry Check Passed (Normal): Found newer entries.")
+                }
+            } else {
+                 print("✅ [FeelInsightGenerator] New Entry Check: First generation run (Normal).")
+            }
+        } else if forceGeneration {
+             print("[FeelInsightGenerator] Bypassing new entry check due to forceGeneration.")
+        }
 
         // 5. Format prompt context
         let context = entries.map { entry in

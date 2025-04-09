@@ -11,48 +11,52 @@ actor WeekInReviewGenerator {
         self.databaseService = databaseService
     }
 
-    func generateAndStoreIfNeeded() async {
+    func generateAndStoreIfNeeded(forceGeneration: Bool = false) async {
         print("➡️ [WeekInReviewGenerator] Starting generateAndStoreIfNeeded...")
 
         let calendar = Calendar.current
         var shouldGenerate = true
-        // Removed lastGenerationDate variable
+        let now = Date() // Define 'now' earlier
 
-        // 1. Check regeneration threshold (only generate if older than ~7 days)
-        do {
-            if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                // Removed assignment to lastGenerationDate
-                let daysSinceLast = calendar.dateComponents([.day], from: latest.generatedDate, to: Date()).day ?? regenerationThresholdDays + 1
-                if daysSinceLast < regenerationThresholdDays {
-                    print("[WeekInReviewGenerator] Skipping generation: Last review generated \(daysSinceLast) days ago (Threshold: \(regenerationThresholdDays)).")
+        // 1. Check conditions only if not forcing generation
+        if !forceGeneration {
+            // Check time threshold
+            do {
+                if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                    let daysSinceLast = calendar.dateComponents([.day], from: latest.generatedDate, to: now).day ?? regenerationThresholdDays + 1
+                    if daysSinceLast < regenerationThresholdDays {
+                        print("[WeekInReviewGenerator] Skipping generation (Normal): Last review generated \(daysSinceLast) days ago.")
+                        shouldGenerate = false
+                    } else {
+                        print("[WeekInReviewGenerator] Last review old enough (Normal).")
+                    }
+                } else {
+                    print("[WeekInReviewGenerator] No previous review found (Normal).")
+                }
+            } catch {
+                print("‼️ [WeekInReviewGenerator] Error loading latest insight (Normal): \(error). Proceeding.")
+            }
+
+            // Check active window only if time threshold allows generation
+            if shouldGenerate {
+                let weekday = calendar.component(.weekday, from: now)
+                let hour = calendar.component(.hour, from: now)
+                let isSundayActivePeriod = (weekday == 1 && hour >= 3)
+                let isMondayActivePeriod = (weekday == 2)
+
+                if !(isSundayActivePeriod || isMondayActivePeriod) {
+                    print("[WeekInReviewGenerator] Skipping generation (Normal): Outside active window.")
                     shouldGenerate = false
                 } else {
-                     print("[WeekInReviewGenerator] Last review is old enough (\(daysSinceLast) days).")
+                    print("[WeekInReviewGenerator] Within active generation window (Normal).")
                 }
-            } else {
-                print("[WeekInReviewGenerator] No previous review found. Will generate.")
             }
-        } catch {
-            print("‼️ [WeekInReviewGenerator] Error loading latest insight: \(error). Proceeding.")
+        } else {
+             print("[WeekInReviewGenerator] Bypassing time/window checks due to forceGeneration.")
         }
 
+        // Exit if any check failed (and not forced)
         guard shouldGenerate else { return }
-
-        // *** NEW: Check if within the active generation window (Sun 3am - Mon 11:59pm) ***
-        let now = Date()
-        let weekday = calendar.component(.weekday, from: now) // Sunday=1, Saturday=7
-        let hour = calendar.component(.hour, from: now)
-
-        // Active Period: Sunday 3:00 AM to Monday 23:59:59 (effectively Tuesday 00:00) = 45 hours
-        let isSundayActivePeriod = (weekday == 1 && hour >= 3) // Sunday 3am onwards
-        let isMondayActivePeriod = (weekday == 2)             // All of Monday
-
-        guard isSundayActivePeriod || isMondayActivePeriod else {
-            print("[WeekInReviewGenerator] Skipping generation: Outside active window (Sun 3am - Mon 11:59pm). Current: weekday \(weekday), hour \(hour)")
-            return
-        }
-        print("[WeekInReviewGenerator] Within active generation window.")
-        // *** END NEW CHECK ***
 
         // 2. Determine date range for the *previous* full week (Sun-Sat)
         guard let currentWeekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)), // Start of *this* week

@@ -46,59 +46,57 @@ func triggerAllInsightGenerations(
 
 
     // Run generators concurrently in detached tasks
-    print("[InsightUtils] Launching generation tasks (Forced: \(forceGeneration))...")
+    print("[InsightUtils] Launching generation tasks within TaskGroup (Forced: \(forceGeneration))...")
 
-    let force = forceGeneration // Capture the flag locally for the tasks
+    // Use TaskGroup to run generators concurrently and wait for all to complete
+    await withTaskGroup(of: Void.self) { group in
+        let force = forceGeneration // Capture flag for tasks
 
-    // --- Launch Tasks ---
+        group.addTask(priority: .userInitiated) {
+            print("   🚀 Starting DailyReflectionGenerator...")
+            await dailyReflectionGenerator.generateAndStoreIfNeeded(forceGeneration: force)
+            print("   ✅ Finished DailyReflectionGenerator.")
+        }
+        group.addTask(priority: .background) {
+             print("   🚀 Starting WeekInReviewGenerator...")
+            await weekInReviewGenerator.generateAndStoreIfNeeded(forceGeneration: force)
+            print("   ✅ Finished WeekInReviewGenerator.")
+        }
+        group.addTask(priority: .background) {
+             print("   🚀 Starting FeelInsightGenerator...")
+            await feelGenerator.generateAndStoreIfNeeded(forceGeneration: force)
+            print("   ✅ Finished FeelInsightGenerator.")
+        }
+        group.addTask(priority: .background) {
+             print("   🚀 Starting ThinkInsightGenerator...")
+            await thinkGenerator.generateAndStoreIfNeeded(forceGeneration: force)
+            print("   ✅ Finished ThinkInsightGenerator.")
+        }
+        group.addTask(priority: .background) {
+             print("   🚀 Starting ActInsightGenerator...")
+            await actGenerator.generateAndStoreIfNeeded(forceGeneration: force)
+            print("   ✅ Finished ActInsightGenerator.")
+        }
+        group.addTask(priority: .background) {
+             print("   🚀 Starting LearnInsightGenerator...")
+            await learnGenerator.generateAndStoreIfNeeded(forceGeneration: force)
+            print("   ✅ Finished LearnInsightGenerator.")
+        }
+        group.addTask(priority: .background) {
+             print("   🚀 Starting JourneyNarrativeGenerator...")
+            await journeyNarrativeGenerator.generateAndStoreIfNeeded(forceGeneration: force)
+            print("   ✅ Finished JourneyNarrativeGenerator.")
+        }
 
-    // NEW: Daily Reflection (High Frequency)
-    print("[InsightUtils] Launching DailyReflectionGenerator...")
-    Task.detached(priority: .userInitiated) { // Higher priority as it's daily
-        await dailyReflectionGenerator.generateAndStoreIfNeeded()
-        await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Daily Reflection generation task finished.") }
+        // TaskGroup implicitly waits here for all added tasks to complete
     }
 
-    // NEW: Week in Review (Low Frequency - logic inside generator handles threshold)
-    print("[InsightUtils] Launching WeekInReviewGenerator...")
-    Task.detached(priority: .background) {
-        await weekInReviewGenerator.generateAndStoreIfNeeded()
-        await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Week in Review generation task finished.") }
+    // Post notification ONCE after all tasks in the group are finished
+    await MainActor.run {
+         print("✅ [InsightUtils] All insight generation tasks finished. Posting notification.")
+         NotificationCenter.default.post(name: .insightsDidUpdate, object: nil)
     }
-
-    // Feel, Think, Act, Learn (Moderate Frequency - logic inside generators handles thresholds)
-    print("[InsightUtils] Launching FeelInsightGenerator...")
-     Task.detached(priority: .background) {
-         await feelGenerator.generateAndStoreIfNeeded()
-         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Feel Insights generation task finished.") }
-     }
-     print("[InsightUtils] Launching ThinkInsightGenerator...")
-     Task.detached(priority: .background) {
-         await thinkGenerator.generateAndStoreIfNeeded()
-         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Think Insights generation task finished.") }
-     }
-     print("[InsightUtils] Launching ActInsightGenerator...")
-     Task.detached(priority: .background) {
-         await actGenerator.generateAndStoreIfNeeded()
-         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Act Insights generation task finished.") }
-     }
-     print("[InsightUtils] Launching LearnInsightGenerator...")
-     Task.detached(priority: .background) {
-         await learnGenerator.generateAndStoreIfNeeded()
-         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Learn Insights generation task finished.") }
-     }
-
-     // Keep Journey Narrative
-    print("[InsightUtils] Launching JourneyNarrativeGenerator...")
-    Task.detached(priority: .background) {
-         await journeyNarrativeGenerator.generateAndStoreIfNeeded(forceGeneration: force)
-         await MainActor.run { NotificationCenter.default.post(name: .insightsDidUpdate, object: nil); print("🏁 [InsightUtils] Journey Narrative generation task finished.") }
-    }
-
-    // REMOVED: Old WeeklySummaryGenerator launch
-
-
-    print("✅ [InsightUtils] All background insight generation tasks launched.")
+    print("🏁 [InsightUtils] triggerAllInsightGenerations finished.")
 }
 
 // Helper function to get journal entries based on the "past 7 calendar days OR last 7 entries, whichever comes first" rule.

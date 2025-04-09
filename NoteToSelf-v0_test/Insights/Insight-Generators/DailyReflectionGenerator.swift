@@ -13,7 +13,7 @@ actor DailyReflectionGenerator {
         self.appState = appState
     }
 
-    func generateAndStoreIfNeeded() async {
+    func generateAndStoreIfNeeded(forceGeneration: Bool = false) async {
         print("➡️ [DailyReflectionGenerator] Starting generateAndStoreIfNeeded...")
 
         let calendar = Calendar.current
@@ -21,52 +21,56 @@ actor DailyReflectionGenerator {
         var shouldGenerate = true
         var lastGenerationDate: Date? = nil
 
-        // 1. Check regeneration threshold (simplified - always check for new entries if threshold passed)
-        do {
-            if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                lastGenerationDate = latest.generatedDate
-                let hoursSinceLast = calendar.dateComponents([.hour], from: latest.generatedDate, to: now).hour ?? regenerationThresholdHours + 1
-                if hoursSinceLast < regenerationThresholdHours {
-                    print("[DailyReflectionGenerator] Skipping generation: Last insight generated \(hoursSinceLast) hours ago (Threshold: \(regenerationThresholdHours)).")
-                    shouldGenerate = false
+        // 1. Check conditions only if not forcing generation
+        if !forceGeneration {
+            do {
+                if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                    lastGenerationDate = latest.generatedDate
+                    let hoursSinceLast = calendar.dateComponents([.hour], from: latest.generatedDate, to: now).hour ?? regenerationThresholdHours + 1
+                    if hoursSinceLast < regenerationThresholdHours {
+                        print("[DailyReflectionGenerator] Skipping generation (Normal): Last insight generated \(hoursSinceLast) hours ago.")
+                        shouldGenerate = false
+                    } else {
+                         print("[DailyReflectionGenerator] Last insight old enough (Normal). Checking for new entries...")
+                    }
                 } else {
-                     print("[DailyReflectionGenerator] Last insight is old enough. Checking for new entries...")
+                    print("[DailyReflectionGenerator] No previous insight found (Normal).")
                 }
-            } else {
-                print("[DailyReflectionGenerator] No previous insight found. Will check for recent entries.")
+            } catch {
+                print("‼️ [DailyReflectionGenerator] Error loading latest insight (Normal): \(error). Proceeding.")
             }
-        } catch {
-            print("‼️ [DailyReflectionGenerator] Error loading latest insight: \(error). Proceeding.")
+        } else {
+             print("[DailyReflectionGenerator] Bypassing time checks due to forceGeneration.")
         }
 
         // Fetch necessary data (last 24h and last 7d)
-        // Use appState for potentially faster access, assuming it's kept up-to-date
         let allEntries = await appState.journalEntries
         let entriesLast24h = allEntries.filter { $0.date >= now.addingTimeInterval(-24 * 60 * 60) }
-                                     .sorted { $0.date > $1.date } // Newest first for context prep
+                                     .sorted { $0.date > $1.date } // Newest first
 
-        // Check if there are any entries in the last 24 hours *before* checking generation threshold
+        // Check for sufficient entries *regardless* of force, as we need context
         guard !entriesLast24h.isEmpty else {
-            print("⚠️ [DailyReflectionGenerator] Skipping generation: No entries found in the last 24 hours.")
-            // Save an empty insight to signal the card to show the button state
-            await saveEmptyInsight()
+            print("⚠️ [DailyReflectionGenerator] Skipping generation: No entries found in the last 24 hours (required for context).")
+            await saveEmptyInsight() // Still save empty state if no recent entries
             return
         }
 
-        // Now check the generation threshold *after* confirming there are recent entries
-        guard shouldGenerate else { return }
+        // Check generation threshold and new entry status only if not forcing
+        if !forceGeneration {
+            guard shouldGenerate else { return } // Exit if time threshold wasn't met
 
-        // Check if the most recent entry (within 24h) is newer than the last generation
-        if let lastGenDate = lastGenerationDate, let mostRecentEntryDate = entriesLast24h.first?.date {
-             if mostRecentEntryDate <= lastGenDate {
-                  print("[DailyReflectionGenerator] Skipping generation: No new entries since last insight on \(lastGenDate.formatted()).")
-                  // Update timestamp of existing insight so we don't keep checking until threshold passes
-                   try? databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
-                  return
-             }
-             print("[DailyReflectionGenerator] New entry found since last generation. Proceeding.")
+            if let lastGenDate = lastGenerationDate, let mostRecentEntryDate = entriesLast24h.first?.date {
+                 if mostRecentEntryDate <= lastGenDate {
+                      print("[DailyReflectionGenerator] Skipping generation (Normal): No new entries since last insight.")
+                      try? databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
+                      return
+                 }
+                 print("[DailyReflectionGenerator] New entry found since last generation (Normal). Proceeding.")
+            } else {
+                 print("[DailyReflectionGenerator] First generation run or new entries found (Normal). Proceeding.")
+            }
         } else {
-             print("[DailyReflectionGenerator] First generation run or new entries found. Proceeding.")
+             print("[DailyReflectionGenerator] Bypassing new entry check due to forceGeneration.")
         }
 
         // Prepare context: last 24h for focus, last 7d for broader awareness

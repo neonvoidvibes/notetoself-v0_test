@@ -11,48 +11,48 @@ actor ActInsightGenerator {
         self.databaseService = databaseService
     }
 
-    func generateAndStoreIfNeeded() async {
+    func generateAndStoreIfNeeded(forceGeneration: Bool = false) async {
         print("➡️ [ActInsightGenerator] Starting generateAndStoreIfNeeded...")
 
         let calendar = Calendar.current
         var shouldGenerate = true
         var lastGenerationDate: Date? = nil
 
-        // 1. Check regeneration threshold
-        do {
-            if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                lastGenerationDate = latest.generatedDate
-                let daysSinceLast = calendar.dateComponents([.day], from: latest.generatedDate, to: Date()).day ?? regenerationThresholdDays + 1
-                if daysSinceLast < regenerationThresholdDays {
-                    print("[ActInsightGenerator] Skipping generation: Last insight generated \(daysSinceLast) days ago.")
-                    shouldGenerate = false
-                } else {
-                     print("[ActInsightGenerator] Last insight is old enough. Checking for new entries...")
-                }
-            } else {
-                print("[ActInsightGenerator] No previous insight found. Will generate.")
-            }
-        } catch {
-            print("‼️ [ActInsightGenerator] Error loading latest insight: \(error). Proceeding.")
+        // 1. Check conditions only if not forcing generation
+        if !forceGeneration {
+             do {
+                 if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                     lastGenerationDate = latest.generatedDate
+                     let daysSinceLast = calendar.dateComponents([.day], from: latest.generatedDate, to: Date()).day ?? regenerationThresholdDays + 1
+                     if daysSinceLast < regenerationThresholdDays {
+                         print("[ActInsightGenerator] Skipping generation (Normal): Last insight generated \(daysSinceLast) days ago.")
+                         shouldGenerate = false
+                     } else {
+                          print("[ActInsightGenerator] Last insight old enough (Normal). Checking for new entries...")
+                     }
+                 } else {
+                     print("[ActInsightGenerator] No previous insight found (Normal).")
+                 }
+             } catch {
+                 print("‼️ [ActInsightGenerator] Error loading latest insight (Normal): \(error). Proceeding.")
+             }
+             // Only return if the time threshold check explicitly failed
+             guard shouldGenerate else { return }
+        } else {
+             print("[ActInsightGenerator] Bypassing time checks due to forceGeneration.")
         }
 
-        guard shouldGenerate else { return }
-
-        // 2. Fetch necessary data (e.g., last 7 days of entries, maybe latest Feel/Think insights)
-        let entries: [JournalEntry]
+        // 2. Fetch necessary data (use rolling window)
         var feelInsightJSON: String? = nil
         var thinkInsightJSON: String? = nil
-        let relevantEntries: [JournalEntry]
+        let entries: [JournalEntry]
 
         do {
-            // Fetch ALL entries sorted descending, then apply the rolling window logic
-            let allEntriesSorted = try databaseService.loadAllJournalEntries() // Assumes DB returns sorted desc
-            relevantEntries = getEntriesForRollingWindow(allEntriesSortedDesc: allEntriesSorted)
-            print("✅ [ActInsightGenerator] Data Fetch: Using \(relevantEntries.count) entries from rolling window.")
-            // Keep original 'entries' variable name for minimal downstream changes
-            entries = relevantEntries
+            let allEntriesSorted = try databaseService.loadAllJournalEntries()
+            entries = getEntriesForRollingWindow(allEntriesSortedDesc: allEntriesSorted)
+            print("✅ [ActInsightGenerator] Data Fetch: Using \(entries.count) entries from rolling window.")
 
-            // Fetch dependent insights
+            // Fetch dependent insights (needed regardless of force, for context)
             feelInsightJSON = try databaseService.loadLatestInsight(type: "feelInsights")?.jsonData
             thinkInsightJSON = try databaseService.loadLatestInsight(type: "thinkInsights")?.jsonData
         } catch {
@@ -60,20 +60,29 @@ actor ActInsightGenerator {
             return
         }
 
-        // Check if there are new entries since the last generation (if applicable)
-         if let lastGenDate = lastGenerationDate {
-              let hasNewEntries = entries.contains { $0.date > lastGenDate }
-              if !hasNewEntries && !entries.isEmpty {
-                   print("[ActInsightGenerator] Skipping generation: No new entries since last insight.")
-                    try? databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
-                   return
-              }
-        }
-
-        guard entries.count >= 2 else { // Minimum 2 entries for action context
+         // 3. Check Minimum Entry Count (always required)
+        guard entries.count >= 2 else {
             print("⚠️ [ActInsightGenerator] Skipping generation: Insufficient entries (\(entries.count)) in rolling window for context.")
             return
         }
+
+         // 4. Check for New Entries only if not forcing and time threshold passed
+         if !forceGeneration && shouldGenerate {
+              if let lastGenDate = lastGenerationDate {
+                  let hasNewEntries = entries.contains { $0.date > lastGenDate }
+                  if !hasNewEntries {
+                      print("⚠️ [ActInsightGenerator] New Entry Check Failed (Normal): Skipping LLM generation as no entries are newer than last insight.")
+                      try? await databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
+                      return
+                  } else {
+                       print("✅ [ActInsightGenerator] New Entry Check Passed (Normal): Found newer entries.")
+                  }
+              } else {
+                   print("✅ [ActInsightGenerator] New Entry Check: First generation run (Normal).")
+              }
+         } else if forceGeneration {
+              print("[ActInsightGenerator] Bypassing new entry check due to forceGeneration.")
+         }
 
         print("[ActInsightGenerator] Using \(entries.count) entries for context. Feel Insight Present: \(feelInsightJSON != nil), Think Insight Present: \(thinkInsightJSON != nil)")
 

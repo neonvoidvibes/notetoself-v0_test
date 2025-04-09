@@ -11,62 +11,72 @@ actor LearnInsightGenerator {
         self.databaseService = databaseService
     }
 
-    func generateAndStoreIfNeeded() async {
+    func generateAndStoreIfNeeded(forceGeneration: Bool = false) async {
         print("➡️ [LearnInsightGenerator] Starting generateAndStoreIfNeeded...")
 
         let calendar = Calendar.current
         var shouldGenerate = true
         var lastGenerationDate: Date? = nil
 
-        // 1. Check regeneration threshold
-        do {
-            if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
-                lastGenerationDate = latest.generatedDate
-                let daysSinceLast = calendar.dateComponents([.day], from: latest.generatedDate, to: Date()).day ?? regenerationThresholdDays + 1
-                if daysSinceLast < regenerationThresholdDays {
-                    print("[LearnInsightGenerator] Skipping generation: Last insight generated \(daysSinceLast) days ago.")
-                    shouldGenerate = false
-                } else {
-                     print("[LearnInsightGenerator] Last insight is old enough. Checking for new entries...")
-                }
-            } else {
-                print("[LearnInsightGenerator] No previous insight found. Will generate.")
-            }
-        } catch {
-            print("‼️ [LearnInsightGenerator] Error loading latest insight: \(error). Proceeding.")
+        // 1. Check conditions only if not forcing generation
+        if !forceGeneration {
+             do {
+                 if let latest = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                     lastGenerationDate = latest.generatedDate
+                     let daysSinceLast = calendar.dateComponents([.day], from: latest.generatedDate, to: Date()).day ?? regenerationThresholdDays + 1
+                     if daysSinceLast < regenerationThresholdDays {
+                         print("[LearnInsightGenerator] Skipping generation (Normal): Last insight generated \(daysSinceLast) days ago.")
+                         shouldGenerate = false
+                     } else {
+                          print("[LearnInsightGenerator] Last insight old enough (Normal). Checking for new entries...")
+                     }
+                 } else {
+                     print("[LearnInsightGenerator] No previous insight found (Normal).")
+                 }
+             } catch {
+                 print("‼️ [LearnInsightGenerator] Error loading latest insight (Normal): \(error). Proceeding.")
+             }
+             // Only return if the time threshold check explicitly failed
+             guard shouldGenerate else { return }
+        } else {
+             print("[LearnInsightGenerator] Bypassing time checks due to forceGeneration.")
         }
 
-        guard shouldGenerate else { return }
 
-        // 2. Fetch necessary data (e.g., last 7-14 days of entries)
+        // 2. Fetch necessary data (use rolling window)
         let entries: [JournalEntry]
-        // Fetch ALL entries sorted descending, then apply the rolling window logic
-        let relevantEntries: [JournalEntry]
         do {
-            let allEntriesSorted = try databaseService.loadAllJournalEntries() // Assumes DB returns sorted desc
-            relevantEntries = getEntriesForRollingWindow(allEntriesSortedDesc: allEntriesSorted)
-            print("✅ [LearnInsightGenerator] Data Fetch: Using \(relevantEntries.count) entries from rolling window.")
-            // Keep original 'entries' variable name for minimal downstream changes
-            entries = relevantEntries
+            let allEntriesSorted = try databaseService.loadAllJournalEntries()
+            entries = getEntriesForRollingWindow(allEntriesSortedDesc: allEntriesSorted)
+            print("✅ [LearnInsightGenerator] Data Fetch: Using \(entries.count) entries from rolling window.")
         } catch {
             print("‼️ [LearnInsightGenerator] Error fetching journal entries: \(error)")
             return
         }
 
-        // Check if there are new entries since the last generation (if applicable)
-         if let lastGenDate = lastGenerationDate {
-              let hasNewEntries = entries.contains { $0.date > lastGenDate }
-              if !hasNewEntries && !entries.isEmpty {
-                   print("[LearnInsightGenerator] Skipping generation: No new entries since last insight.")
-                    try? databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
-                   return
-              }
-        }
-
-        guard entries.count >= 3 else { // Minimum 3 entries for learning context
+        // 3. Check Minimum Entry Count (always required)
+        guard entries.count >= 3 else {
             print("⚠️ [LearnInsightGenerator] Skipping generation: Insufficient entries (\(entries.count)) in rolling window for context.")
             return
         }
+
+         // 4. Check for New Entries only if not forcing and time threshold passed
+         if !forceGeneration && shouldGenerate {
+              if let lastGenDate = lastGenerationDate {
+                  let hasNewEntries = entries.contains { $0.date > lastGenDate }
+                  if !hasNewEntries {
+                      print("⚠️ [LearnInsightGenerator] New Entry Check Failed (Normal): Skipping LLM generation as no entries are newer than last insight.")
+                      try? await databaseService.updateInsightTimestamp(type: insightTypeIdentifier, date: Date())
+                      return
+                  } else {
+                       print("✅ [LearnInsightGenerator] New Entry Check Passed (Normal): Found newer entries.")
+                  }
+              } else {
+                   print("✅ [LearnInsightGenerator] New Entry Check: First generation run (Normal).")
+              }
+         } else if forceGeneration {
+              print("[LearnInsightGenerator] Bypassing new entry check due to forceGeneration.")
+         }
 
         print("[LearnInsightGenerator] Using \(entries.count) entries for context.")
 
