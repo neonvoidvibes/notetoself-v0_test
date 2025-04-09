@@ -379,10 +379,10 @@ struct InsightsView: View {
               .padding(.top, styles.layout.spacingXL) // Add space before this section
 
 
-         // Bottom padding
-         Spacer().frame(height: styles.layout.paddingXL + 80) // Keep bottom padding
+         // REMOVED: Spacer().frame(height: styles.layout.paddingXL + 80)
      }
      .padding(.top, 0) // No top padding needed on LazyVStack itself
+     .padding(.bottom, styles.layout.paddingXL + 80) // ADDED: Apply bottom padding directly to LazyVStack
  }
 
 
