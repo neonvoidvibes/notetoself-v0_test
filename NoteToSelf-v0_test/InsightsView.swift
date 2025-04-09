@@ -1,29 +1,24 @@
 import SwiftUI
 import Charts
 
-// MARK: - Skeleton Card View [4.1]
+// MARK: - Skeleton Card View [4.1] - Keep As Is
 struct SkeletonCardView: View {
     @ObservedObject private var styles = UIStyles.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: styles.layout.spacingL) {
-            // Header Placeholder
             HStack {
-                RoundedRectangle(cornerRadius: styles.layout.radiusM) // Title placeholder
+                RoundedRectangle(cornerRadius: styles.layout.radiusM)
                     .fill(styles.colors.secondaryBackground.opacity(0.5))
                     .frame(width: 120, height: 20)
                 Spacer()
-                RoundedRectangle(cornerRadius: styles.layout.radiusM) // Icon/Badge placeholder
+                RoundedRectangle(cornerRadius: styles.layout.radiusM)
                     .fill(styles.colors.secondaryBackground.opacity(0.5))
                     .frame(width: 50, height: 20)
             }
-
-            // Content Placeholder
             RoundedRectangle(cornerRadius: styles.layout.radiusM)
                 .fill(styles.colors.secondaryBackground.opacity(0.5))
-                .frame(height: 60) // Approximate height for content/chart area
-
-             // Optional: Placeholder for "Open" button area
+                .frame(height: 60)
              HStack {
                   Spacer()
                   RoundedRectangle(cornerRadius: styles.layout.radiusM)
@@ -31,367 +26,175 @@ struct SkeletonCardView: View {
                       .frame(width: 80, height: 28)
              }
         }
-        .padding(styles.layout.cardInnerPadding) // Match card padding
+        .padding(styles.layout.cardInnerPadding)
         .background(styles.colors.cardBackground)
-        .cornerRadius(styles.layout.radiusM) // Match card corner radius
-        .overlay( // Match card border
+        .cornerRadius(styles.layout.radiusM)
+        .overlay(
              RoundedRectangle(cornerRadius: styles.layout.radiusM)
                  .stroke(styles.colors.divider, lineWidth: 1)
          )
-        .shimmer() // Apply shimmer effect
+        .shimmer()
     }
 }
 
 
-// MARK: - Main Insights View
+// MARK: - Main Insights View (Rewritten with VStack)
 struct InsightsView: View {
     @EnvironmentObject var appState: AppState
-    @EnvironmentObject var chatManager: ChatManager // Keep if needed by AI Reflection Card
+    @EnvironmentObject var chatManager: ChatManager
     @EnvironmentObject var databaseService: DatabaseService
-    @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled
+    @Environment(\.mainScrollingDisabled) private var mainScrollingDisabled // Keep for disabling scroll if needed
 
-    // Tab Bar State (Keep if still used by parent)
+    // Tab Bar State - No longer used for scroll tracking, but keep if parent needs them
     @Binding var tabBarOffset: CGFloat
     @Binding var lastScrollPosition: CGFloat
     @Binding var tabBarVisible: Bool
 
-    // State for stored raw insight data
-    @State private var dailyReflectionJson: String? = nil // #1
+    // --- State Variables (Keep As Is) ---
+    @State private var dailyReflectionJson: String? = nil
     @State private var dailyReflectionDate: Date? = nil
-    @State private var weekInReviewJson: String? = nil // #2
+    @State private var weekInReviewJson: String? = nil
     @State private var weekInReviewDate: Date? = nil
-
-    // Grouped Insights
-    @State private var feelInsightsJson: String? = nil // #3
+    @State private var feelInsightsJson: String? = nil
     @State private var feelInsightsDate: Date? = nil
-    @State private var thinkInsightsJson: String? = nil // #4
+    @State private var thinkInsightsJson: String? = nil
     @State private var thinkInsightsDate: Date? = nil
-    @State private var actInsightsJson: String? = nil // #5
+    @State private var actInsightsJson: String? = nil
     @State private var actInsightsDate: Date? = nil
-    @State private var learnInsightsJson: String? = nil // #6
+    @State private var learnInsightsJson: String? = nil
     @State private var learnInsightsDate: Date? = nil
-
-    // Remaining Old Cards (Keep for now)
-    @State private var journeyJson: String? = nil // For Journey Narrative
+    @State private var journeyJson: String? = nil
     @State private var journeyDate: Date? = nil
-
-
-    @State private var isLoadingInsights: Bool = false // Controls *initial* skeleton display
-    @State private var lastLoadTimestamp: Date? = nil // [2.1] State for timestamp
-
-    // Animation states
+    @State private var isLoadingInsights: Bool = false
+    @State private var lastLoadTimestamp: Date? = nil
     @State private var headerAppeared = false
     @State private var cardsAppeared = false
+    @ObservedObject private var styles = UIStyles.shared
 
-    @ObservedObject private var styles = UIStyles.shared // Use @ObservedObject
-
-    // Calculate if Week in Review is fresh (< 24 hours)
-     // Check if WeekInReview is currently active for display (Generated Sun 3am, Active for 45 hours)
-     private var isWeekInReviewActive: Bool {
-         guard let generatedDate = weekInReviewDate else { return false }
-         let hoursSinceGenerated = Calendar.current.dateComponents([.hour], from: generatedDate, to: Date()).hour ?? 46 // Default to expired
-         // Show if generated within the last 45 hours (allowing a slight buffer might be okay if needed)
-         return hoursSinceGenerated < 45
-     }
-
-    private var hasAnyEntries: Bool {
-        !appState.journalEntries.isEmpty
+    // --- Computed Properties (Keep As Is) ---
+    private var isWeekInReviewActive: Bool {
+        guard let generatedDate = weekInReviewDate else { return false }
+        let hoursSinceGenerated = Calendar.current.dateComponents([.hour], from: generatedDate, to: Date()).hour ?? 46
+        return hoursSinceGenerated < 45
     }
 
-    // [2.1] Formatter for the timestamp
+    private var hasAnyEntries: Bool { !appState.journalEntries.isEmpty }
+
     private var timestampFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter
+        let formatter = DateFormatter(); formatter.dateStyle = .medium; formatter.timeStyle = .short; return formatter
     }
 
-    // Computed property to check if daily reflection has content
-    // Mirrors the logic in DailyReflectionInsightCard
     private var dailyReflectionHasContent: Bool {
-        guard let json = dailyReflectionJson,
-              !json.isEmpty,
-              let data = json.data(using: .utf8) else {
-            return false
-        }
-        // Try decoding and check if snapshotText is non-empty
-        if let result = try? JSONDecoder().decode(DailyReflectionResult.self, from: data),
-           !(result.snapshotText?.isEmpty ?? true) {
-            return true
-        }
+        guard let json = dailyReflectionJson, !json.isEmpty, let data = json.data(using: .utf8) else { return false }
+        if let result = try? JSONDecoder().decode(DailyReflectionResult.self, from: data), !(result.snapshotText?.isEmpty ?? true) { return true }
         return false
     }
 
+    // MARK: - Body
     var body: some View {
         ZStack {
-            // Background
-            styles.colors.appBackground.ignoresSafeArea() // Simpler background
+            styles.colors.appBackground.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Header
-                 ZStack(alignment: .center) {
-                     VStack(spacing: 8) {
-                         Text("Insights")
-                             .font(styles.typography.title1)
-                             .foregroundColor(styles.colors.text)
-                         Rectangle()
-                             .fill(LinearGradient(gradient: Gradient(colors: [styles.colors.accent.opacity(0.7), styles.colors.accent]), startPoint: .leading, endPoint: .trailing))
-                             .frame(width: headerAppeared ? 30 : 0, height: 3)
-                             .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: headerAppeared)
-                     }
-                     HStack {
-                         Button(action: {
-                              print("[InsightsView] Settings Button Tapped") // Debug Print
-                              NotificationCenter.default.post(name: .toggleSettingsNotification, object: nil) // Use standard name
-                          }) {
-                             VStack(spacing: 6) {
-                                 HStack { Rectangle().fill(styles.colors.accent).frame(width: 28, height: 2); Spacer() }
-                                 HStack { Rectangle().fill(styles.colors.accent).frame(width: 20, height: 2); Spacer() }
-                             }.frame(width: 36, height: 36)
-                         }
-                         Spacer()
-                     }.padding(.horizontal, styles.layout.paddingXL)
-                 }
-                 .padding(.top, 12)
-                 .padding(.bottom, 12) // Restore original bottom padding
+                // --- Header (Keep As Is) ---
+                headerView
 
-
-                // Main content ScrollView
-                // Removed ScrollViewReader
+                // --- ScrollView with VStack ---
                 ScrollView {
-                    // Removed GeometryReader for scroll offset tracking
-                    // Removed .frame(height: 0)
+                    // Main content container using VStack
+                    VStack(spacing: styles.layout.cardSpacing) { // Use cardSpacing for VStack
+                        // Timestamp Display (Keep As Is)
+                        timestampView
 
-                     // --- Timestamp Display moved here ---
-                     if let timestamp = lastLoadTimestamp {
-                          HStack { // Use HStack for alignment if needed
-                              Spacer() // Center align
-                              Text("Last updated: \(timestamp, formatter: timestampFormatter)")
-                                  .font(styles.typography.caption)
-                                  .foregroundColor(styles.colors.textSecondary.opacity(0.8))
-                              Spacer()
-                          }
-                          .padding(.top, 0) // Minimal top padding
-                          .padding(.bottom, styles.layout.spacingM) // Space before cards
-                          .padding(.horizontal, styles.layout.paddingXL) // Match card padding
-                     } else if isLoadingInsights && hasAnyEntries { // Show placeholder only during initial load AND if entries exist
-                          HStack {
-                              Spacer()
-                              Text("Loading insights...")
-                                  .font(styles.typography.caption)
-                                  .foregroundColor(styles.colors.textSecondary.opacity(0.7))
-                              Spacer()
-                          }
-                           .padding(.top, 0)
-                           .padding(.bottom, styles.layout.spacingM)
-                           .padding(.horizontal, styles.layout.paddingXL)
-                     }
-                     // --- End Timestamp ---
-
-
-                    // Initial Empty State or Content
-                    if !hasAnyEntries {
-                        emptyStateView // Show modified empty state
-                    } else {
-                        // [4.1] Use Skeleton Cards during initial load, otherwise show cards
-                         insightsCardList() // Call without proxy
+                        // --- Content: Empty State or Cards ---
+                        if !hasAnyEntries {
+                            emptyStateView // Keep empty state
+                        } else {
+                            // --- Cards & CTAs (Order matters) ---
+                            dailyReflectionSection
+                            addNewNoteCTA // Conditional CTA
+                            weekInReviewSection
+                            feelInsightSection
+                            thinkInsightSection
+                            actInsightSection
+                            learnInsightSection
+                            reflectCTASection // Reflect CTA
+                            engagementHookSection // Engagement Hook
+                        }
                     }
+                    .padding(.top, styles.layout.spacingM) // Add padding above first element
+                    .padding(.bottom, styles.layout.paddingXL + 80) // Padding below last element
                 }
-                .coordinateSpace(name: "scrollView")
-                .disabled(mainScrollingDisabled)
-                // Removed .onPreferenceChange modifier
+                .coordinateSpace(name: "scrollView") // Keep coordinate space if needed elsewhere
+                .disabled(mainScrollingDisabled) // Keep scroll disabling capability
             }
         }
         .onAppear {
-            // [4.1] Trigger initial load only if no timestamp exists yet
-             if lastLoadTimestamp == nil {
-                  isLoadingInsights = true
-                  loadStoredInsights()
-             } else {
-                 // Optionally trigger a background refresh without showing skeletons
-                 // loadStoredInsights() // Or maybe skip if timestamp is recent enough
-             }
-
+            // Trigger initial load
+             if lastLoadTimestamp == nil { isLoadingInsights = true; loadStoredInsights() }
             // Trigger animations
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { headerAppeared = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { cardsAppeared = true }
         }
         .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
             print("[InsightsView] Received insightsDidUpdate notification. Reloading insights.")
-            loadStoredInsights() // Reload data on notification (don't set isLoadingInsights = true here)
+            loadStoredInsights() // Reload data
         }
-        // REMOVED the .onReceive listener for .switchToTabNotification
     }
 
-    // MARK: - Card List View
-    @ViewBuilder
-    private func insightsCardList() -> some View { // Removed scrollProxy parameter
-        LazyVStack(spacing: styles.layout.cardSpacing) { // Use standard card spacing
+    // MARK: - Subviews (Rebuilt Sections)
 
-            // --- Daily Reflection Card ---
-              if isLoadingInsights && dailyReflectionJson == nil {
-                  SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
-              } else {
-                  DailyReflectionInsightCard(
-                       jsonString: dailyReflectionJson,
-                       generatedDate: dailyReflectionDate,
-                       // scrollProxy: scrollProxy, // Removed
-                       cardId: "dailyReflectionCard"
-                   )
-                   .id("dailyReflectionCard")
-                   .padding(.horizontal, styles.layout.paddingXL)
-                   .opacity(cardsAppeared ? 1 : 0)
-                   .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
-                   // Add vertical padding only if there is content
-                   .padding(.vertical, dailyReflectionHasContent ? styles.layout.spacingM : 20)
-              }
-
-            // --- Conditional "Add New Note" Button ---
-             if !dailyReflectionHasContent {
-                 VStack(spacing: styles.layout.spacingM) {
-                     Text("Capture your thoughts and feelings as they happen.")
-                         .font(styles.typography.bodyFont)
-                         .foregroundColor(styles.colors.textSecondary)
-                         .multilineTextAlignment(.center)
-                         .padding(.horizontal) // Add horizontal padding to text
-
-                     Button("Add New Note") { // Renamed button text
-                         print("[InsightsView] Add New Note button tapped.")
-                         // Only set the flag. MainTabView handles presentation.
-                         appState.objectWillChange.send() // Ensure update is published
-                         appState.presentNewJournalEntrySheet = true
-                         print("[InsightsView] Set presentNewJournalEntrySheet = true")
-                     }
-                     .buttonStyle(UIStyles.PrimaryButtonStyle())
-                 }
-                 .padding(.horizontal, styles.layout.paddingXL) // Padding for the whole CTA VStack
-                 .padding(.vertical, styles.layout.spacingL) // Vertical padding
-                 .transition(.opacity.combined(with: .scale)) // Add animation
-             }
-
-
-             // --- Week in Review Card ---
-              if isWeekInReviewActive { // Check if the insight is currently active
-                  WeekInReviewCard(
-                       jsonString: weekInReviewJson,
-                       generatedDate: weekInReviewDate,
-                       // scrollProxy: scrollProxy, // Removed
-                       cardId: "weekInReviewCard"
-                   )
-                   .id("weekInReviewCard")
-                   .padding(.horizontal, styles.layout.paddingXL)
-                   .opacity(cardsAppeared ? 1 : 0)
-                   .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
-              } else if isLoadingInsights && weekInReviewJson == nil {
-                   // Only show skeleton during initial load phase if the card *might* appear later
-                   SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
-              } else {
-                   // Don't show anything if not active and not initial loading
-                   EmptyView()
-              }
-
-            // --- REMOVED: Original Add New Entry CTA Section ---
-
-
-            // --- Feel Card ---
-            if isLoadingInsights && feelInsightsJson == nil {
-                SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
-            } else {
-                FeelInsightCard(
-                    // scrollProxy: scrollProxy, // Removed
-                    cardId: "feelCard"
-                )
-                .id("feelCard")
-                .padding(.horizontal, styles.layout.paddingXL)
-                .opacity(cardsAppeared ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
+    private var headerView: some View {
+        ZStack(alignment: .center) {
+            VStack(spacing: 8) {
+                Text("Insights")
+                    .font(styles.typography.title1)
+                    .foregroundColor(styles.colors.text)
+                Rectangle()
+                    .fill(LinearGradient(gradient: Gradient(colors: [styles.colors.accent.opacity(0.7), styles.colors.accent]), startPoint: .leading, endPoint: .trailing))
+                    .frame(width: headerAppeared ? 30 : 0, height: 3)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: headerAppeared)
             }
+            HStack {
+                Button(action: { NotificationCenter.default.post(name: .toggleSettingsNotification, object: nil) }) {
+                    VStack(spacing: 6) {
+                        HStack { Rectangle().fill(styles.colors.accent).frame(width: 28, height: 2); Spacer() }
+                        HStack { Rectangle().fill(styles.colors.accent).frame(width: 20, height: 2); Spacer() }
+                    }.frame(width: 36, height: 36)
+                }
+                Spacer()
+            }.padding(.horizontal, styles.layout.paddingXL)
+        }
+        .padding(.top, 12)
+        .padding(.bottom, 12)
+    }
 
-            // --- Think Card ---
-            if isLoadingInsights && thinkInsightsJson == nil {
-                SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
-            } else {
-                 ThinkInsightCard(
-                     // scrollProxy: scrollProxy, // Removed
-                     cardId: "thinkCard"
-                 )
-                 .id("thinkCard")
-                 .padding(.horizontal, styles.layout.paddingXL)
-                 .opacity(cardsAppeared ? 1 : 0)
-                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
+    @ViewBuilder private var timestampView: some View {
+        if let timestamp = lastLoadTimestamp {
+             HStack {
+                 Spacer()
+                 Text("Last updated: \(timestamp, formatter: timestampFormatter)")
+                     .font(styles.typography.caption)
+                     .foregroundColor(styles.colors.textSecondary.opacity(0.8))
+                 Spacer()
              }
-
-             // --- Act Card ---
-            if isLoadingInsights && actInsightsJson == nil {
-                SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
-            } else {
-                  ActInsightCard(
-                      // scrollProxy: scrollProxy, // Removed
-                      cardId: "actCard"
-                  )
-                  .id("actCard")
-                  .padding(.horizontal, styles.layout.paddingXL)
-                  .opacity(cardsAppeared ? 1 : 0)
-                  .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared)
-              }
-
-             // --- Learn Card ---
-             if isLoadingInsights && learnInsightsJson == nil {
-                 SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
-             } else {
-                   LearnInsightCard(
-                       // scrollProxy: scrollProxy, // Removed
-                       cardId: "learnCard"
-                   )
-                   .id("learnCard")
-                   .padding(.horizontal, styles.layout.paddingXL)
-                   .opacity(cardsAppeared ? 1 : 0)
-                   .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.6), value: cardsAppeared)
-               }
-
-            // --- Reflect CTA ---
-             VStack(spacing: styles.layout.spacingM) {
-                 Text("Discuss your insights and explore patterns with AI.")
-                     .font(styles.typography.bodyFont)
-                     .foregroundColor(styles.colors.textSecondary)
-                     .multilineTextAlignment(.center)
-                     .padding(.horizontal) // Add horizontal padding to text
-
-                 Button("Start Reflection") {
-                     print("[InsightsView] Start Reflection button tapped.") // Debug Print
-                     chatManager.startNewChat() // Start a new chat first
-                     print("[InsightsView] Called startNewChat().") // Debug Print
-                     print("[InsightsView] Posting switchToTabNotification (index 2)") // Debug Print
-                     NotificationCenter.default.post(
-                         name: .switchToTabNotification, // Use standard name
-                         object: nil,
-                         userInfo: ["tabIndex": 2] // Index 2 = Reflect
-                     )
-                 }
-                 .buttonStyle(UIStyles.PrimaryButtonStyle())
+             .padding(.horizontal, styles.layout.paddingXL)
+        } else if isLoadingInsights && hasAnyEntries {
+             HStack {
+                 Spacer()
+                 Text("Loading insights...")
+                     .font(styles.typography.caption)
+                     .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                 Spacer()
              }
-              .padding(.horizontal, styles.layout.paddingXL) // Padding for the whole CTA VStack
-              .padding(.vertical, styles.layout.spacingL) // Vertical padding
+              .padding(.horizontal, styles.layout.paddingXL)
+        }
+    }
 
-
-          // --- Engagement Hook Section ---
-          engagementHookSection
-              .padding(.top, styles.layout.spacingXL) // Add space before this section
-
-
-         // REMOVED: Spacer().frame(height: styles.layout.paddingXL + 80)
-     }
-     .padding(.top, 0) // No top padding needed on LazyVStack itself
-     .padding(.bottom, styles.layout.paddingXL + 80) // ADDED: Apply bottom padding directly to LazyVStack
- }
-
-
-    // MARK: - Component Views
     private var emptyStateView: some View {
          VStack(spacing: styles.layout.spacingL) {
-             Spacer(minLength: 60) // Adjust spacer if needed
+             Spacer(minLength: 60)
              ZStack {
-                 // ... (Circles animation remains the same) ...
                  ForEach(0..<3) { i in
                      Circle().fill(styles.colors.accent.opacity(0.1 - Double(i) * 0.03))
                          .frame(width: 120 + CGFloat(i * 20), height: 120 + CGFloat(i * 20))
@@ -408,130 +211,215 @@ struct InsightsView: View {
                  .shadow(color: styles.colors.accent.opacity(0.3), radius: 2, x: 0, y: 0)
                  .offset(y: headerAppeared ? 0 : 20).opacity(headerAppeared ? 1 : 0)
                  .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.5), value: headerAppeared)
-
-             // [7.2] Updated Text
              Text("Add more journal entries to unlock pattern analysis and personalized insights here.")
                  .font(styles.typography.bodyFont).foregroundColor(styles.colors.textSecondary)
                  .multilineTextAlignment(.center).padding(.horizontal, styles.layout.paddingXL)
                  .offset(y: headerAppeared ? 0 : 20).opacity(headerAppeared ? 1 : 0)
                  .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.6), value: headerAppeared)
-
-             // Button Text Renamed
              Button("Add New Note") {
-                 print("[InsightsView] Empty State - Add New Note button tapped.") // Debug Print
-                 // Explicitly send objectWillChange before setting flag
                  appState.objectWillChange.send()
-                 // Just set the AppState flag. MainTabView will handle presentation.
                  appState.presentNewJournalEntrySheet = true
-                 print("[InsightsView] Empty State - Set presentNewJournalEntrySheet = true") // Debug Print
              }
              .buttonStyle(UIStyles.PrimaryButtonStyle())
-             .padding(.horizontal, styles.layout.paddingXL * 1.5) // Make button slightly narrower
-             .padding(.top, styles.layout.spacingL) // Space above button
-             .offset(y: headerAppeared ? 0 : 20) // Match text animation
+             .padding(.horizontal, styles.layout.paddingXL * 1.5)
+             .padding(.top, styles.layout.spacingL)
+             .offset(y: headerAppeared ? 0 : 20)
              .opacity(headerAppeared ? 1 : 0)
              .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.7), value: headerAppeared)
-
-             Spacer() // Pushes content towards center vertically
+             Spacer()
          }.padding(.vertical, 50)
      }
 
-    // --- NEW: Engagement Hook Section ---
+    // --- Card Sections ---
+    @ViewBuilder private var dailyReflectionSection: some View {
+        if isLoadingInsights && dailyReflectionJson == nil {
+            SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
+        } else {
+            DailyReflectionInsightCard(
+                 jsonString: dailyReflectionJson,
+                 generatedDate: dailyReflectionDate,
+                 cardId: "dailyReflectionCard"
+             )
+             .id("dailyReflectionCard")
+             .padding(.horizontal, styles.layout.paddingXL)
+             .opacity(cardsAppeared ? 1 : 0)
+             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
+             // Note: Vertical padding handled by VStack spacing or card's internal padding
+        }
+    }
+
+    @ViewBuilder private var addNewNoteCTA: some View {
+        if hasAnyEntries && !dailyReflectionHasContent { // Show only if entries exist but reflection doesn't
+             VStack(spacing: styles.layout.spacingM) {
+                 Text("Capture your thoughts and feelings as they happen.")
+                     .font(styles.typography.bodyFont)
+                     .foregroundColor(styles.colors.textSecondary)
+                     .multilineTextAlignment(.center)
+                     .padding(.horizontal)
+                 Button("Add New Note") {
+                     appState.objectWillChange.send()
+                     appState.presentNewJournalEntrySheet = true
+                 }
+                 .buttonStyle(UIStyles.PrimaryButtonStyle())
+             }
+             .padding(.horizontal, styles.layout.paddingXL)
+             .transition(.opacity.combined(with: .scale))
+         }
+    }
+
+    @ViewBuilder private var weekInReviewSection: some View {
+        if isWeekInReviewActive || (isLoadingInsights && weekInReviewJson == nil) { // Show skeleton only if loading AND it *might* appear
+            if isLoadingInsights && weekInReviewJson == nil {
+                 SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
+            } else if isWeekInReviewActive { // Only show card if active
+                WeekInReviewCard(
+                     jsonString: weekInReviewJson,
+                     generatedDate: weekInReviewDate,
+                     cardId: "weekInReviewCard"
+                 )
+                 .id("weekInReviewCard")
+                 .padding(.horizontal, styles.layout.paddingXL)
+                 .opacity(cardsAppeared ? 1 : 0)
+                 .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2), value: cardsAppeared)
+            }
+        } else {
+            EmptyView() // Don't show anything if not active and not loading
+        }
+    }
+
+    @ViewBuilder private var feelInsightSection: some View {
+        if isLoadingInsights && feelInsightsJson == nil {
+            SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
+        } else {
+            FeelInsightCard(cardId: "feelCard")
+            .id("feelCard")
+            .padding(.horizontal, styles.layout.paddingXL)
+            .opacity(cardsAppeared ? 1 : 0)
+            .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3), value: cardsAppeared)
+        }
+    }
+
+    @ViewBuilder private var thinkInsightSection: some View {
+        if isLoadingInsights && thinkInsightsJson == nil {
+            SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
+        } else {
+             ThinkInsightCard(cardId: "thinkCard")
+             .id("thinkCard")
+             .padding(.horizontal, styles.layout.paddingXL)
+             .opacity(cardsAppeared ? 1 : 0)
+             .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.4), value: cardsAppeared)
+         }
+    }
+
+    @ViewBuilder private var actInsightSection: some View {
+        if isLoadingInsights && actInsightsJson == nil {
+            SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
+        } else {
+              ActInsightCard(cardId: "actCard")
+              .id("actCard")
+              .padding(.horizontal, styles.layout.paddingXL)
+              .opacity(cardsAppeared ? 1 : 0)
+              .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5), value: cardsAppeared)
+          }
+    }
+
+    @ViewBuilder private var learnInsightSection: some View {
+         if isLoadingInsights && learnInsightsJson == nil {
+             SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
+         } else {
+               LearnInsightCard(cardId: "learnCard")
+               .id("learnCard")
+               .padding(.horizontal, styles.layout.paddingXL)
+               .opacity(cardsAppeared ? 1 : 0)
+               .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.6), value: cardsAppeared)
+           }
+    }
+
+    private var reflectCTASection: some View {
+         VStack(spacing: styles.layout.spacingM) {
+             Text("Discuss your insights and explore patterns with AI.")
+                 .font(styles.typography.bodyFont)
+                 .foregroundColor(styles.colors.textSecondary)
+                 .multilineTextAlignment(.center)
+                 .padding(.horizontal)
+             Button("Start Reflection") {
+                 chatManager.startNewChat()
+                 NotificationCenter.default.post(name: .switchToTabNotification, object: nil, userInfo: ["tabIndex": 2])
+             }
+             .buttonStyle(UIStyles.PrimaryButtonStyle())
+         }
+          .padding(.horizontal, styles.layout.paddingXL)
+    }
+
     private var engagementHookSection: some View {
         VStack(alignment: .center, spacing: styles.layout.spacingM) {
-            Image(systemName: "pencil.line") // Engaging icon
+            Image(systemName: "pencil.line")
                 .font(.system(size: 40))
                 .foregroundColor(styles.colors.accent)
                 .padding(.bottom, styles.layout.spacingS)
-
             Text("What Insight Do You Crave?")
-                .font(styles.typography.title3) // Use title3 for emphasis
+                .font(styles.typography.title3)
                 .foregroundColor(styles.colors.text)
                 .multilineTextAlignment(.center)
-
             Text("Your journey is unique, and this app is evolving. What new insight type would help you most right now? Share your ideas and help shape the future of Note to Self!")
                 .font(styles.typography.bodyFont)
                 .foregroundColor(styles.colors.textSecondary)
                 .multilineTextAlignment(.leading)
-                .lineSpacing(4) // Add a bit of line spacing
-
-            Button {
-                // TODO: Implement feedback mechanism (e.g., open mail, link to form, in-app feedback)
-                print("[InsightsView] 'Share Your Ideas' button tapped.")
-            } label: {
+                .lineSpacing(4)
+            Button { print("[InsightsView] 'Share Your Ideas' button tapped.") } label: {
                  Text("Share Your Ideas")
-                     .foregroundColor(styles.colors.accent) // Use accent color for ghost button text
+                     .foregroundColor(styles.colors.accent)
                      .font(styles.typography.bodyLarge)
             }
-            .buttonStyle(UIStyles.GhostButtonStyle()) // Use Ghost style for a less prominent button
+            .buttonStyle(UIStyles.GhostButtonStyle())
             .padding(.top, styles.layout.spacingS)
         }
-        .padding(.vertical, styles.layout.paddingXL) // Generous vertical padding
-        .padding(.horizontal, styles.layout.paddingL) // Standard horizontal padding
-        .background(styles.colors.secondaryBackground.opacity(0.5)) // Subtle background
+        .padding(.vertical, styles.layout.paddingXL)
+        .padding(.horizontal, styles.layout.paddingL)
+        .background(styles.colors.secondaryBackground.opacity(0.5))
         .cornerRadius(styles.layout.radiusL)
-        .padding(.horizontal, styles.layout.paddingXL) // Outer padding to align with cards
+        .padding(.horizontal, styles.layout.paddingXL)
     }
 
-
-     // Helper to check if all insight states are nil
-     private func areAllInsightsNil() -> Bool {
-         return dailyReflectionJson == nil &&
-                weekInReviewJson == nil &&
-                feelInsightsJson == nil &&
-                thinkInsightsJson == nil &&
-                actInsightsJson == nil &&
-                learnInsightsJson == nil &&
-                journeyJson == nil
-     }
-
-
-    // --- Data Loading ---
+    // --- Data Loading (Keep As Is) ---
     private func loadStoredInsights() {
-         // Set initial loading state only if starting completely fresh
-          if lastLoadTimestamp == nil {
-              isLoadingInsights = true
-          }
-         print("[InsightsView] Loading stored insights from DB...")
-         Task {
-             // ... (async let fetches remain the same) ...
-             async let dailyReflectionFetch = try? self.databaseService.loadLatestInsight(type: "dailyReflection")
-             async let weekInReviewFetch = try? self.databaseService.loadLatestInsight(type: "weekInReview")
-             async let feelFetch = try? self.databaseService.loadLatestInsight(type: "feelInsights")
-             async let thinkFetch = try? self.databaseService.loadLatestInsight(type: "thinkInsights")
-             async let actFetch = try? self.databaseService.loadLatestInsight(type: "actInsights")
-             async let learnFetch = try? self.databaseService.loadLatestInsight(type: "learnInsights")
-             async let journeyFetch = try? self.databaseService.loadLatestInsight(type: "journeyNarrative")
+        if lastLoadTimestamp == nil { isLoadingInsights = true }
+        print("[InsightsView] Loading stored insights from DB...")
+        Task {
+            async let dailyReflectionFetch = try? databaseService.loadLatestInsight(type: "dailyReflection")
+            async let weekInReviewFetch = try? databaseService.loadLatestInsight(type: "weekInReview")
+            async let feelFetch = try? databaseService.loadLatestInsight(type: "feelInsights")
+            async let thinkFetch = try? databaseService.loadLatestInsight(type: "thinkInsights")
+            async let actFetch = try? databaseService.loadLatestInsight(type: "actInsights")
+            async let learnFetch = try? databaseService.loadLatestInsight(type: "learnInsights")
+            async let journeyFetch = try? databaseService.loadLatestInsight(type: "journeyNarrative")
 
-             let dailyReflectionResult = await dailyReflectionFetch
-             let weekInReviewResult = await weekInReviewFetch
-             let feelResult = await feelFetch
-             let thinkResult = await thinkFetch
-             let actResult = await actFetch
-             let learnResult = await learnFetch
-             let journeyResult = await journeyFetch
+            let dailyReflectionResult = await dailyReflectionFetch
+            let weekInReviewResult = await weekInReviewFetch
+            let feelResult = await feelFetch
+            let thinkResult = await thinkFetch
+            let actResult = await actFetch
+            let learnResult = await learnFetch
+            let journeyResult = await journeyFetch
 
-             await MainActor.run {
-                 // Update state variables...
-                 // Adjust tuple destructuring to ignore the third element (contextItem)
-                 if let (json, date, _) = dailyReflectionResult { self.dailyReflectionJson = json; self.dailyReflectionDate = date } else { self.dailyReflectionJson = nil; self.dailyReflectionDate = nil }
-                 if let (json, date, _) = weekInReviewResult { self.weekInReviewJson = json; self.weekInReviewDate = date } else { self.weekInReviewJson = nil; self.weekInReviewDate = nil }
-                 if let (json, date, _) = feelResult { self.feelInsightsJson = json; self.feelInsightsDate = date } else { self.feelInsightsJson = nil; self.feelInsightsDate = nil }
-                 if let (json, date, _) = thinkResult { self.thinkInsightsJson = json; self.thinkInsightsDate = date } else { self.thinkInsightsJson = nil; self.thinkInsightsDate = nil }
-                 if let (json, date, _) = actResult { self.actInsightsJson = json; self.actInsightsDate = date } else { self.actInsightsJson = nil; self.actInsightsDate = nil }
-                 if let (json, date, _) = learnResult { self.learnInsightsJson = json; self.learnInsightsDate = date } else { self.learnInsightsJson = nil; self.learnInsightsDate = nil }
-                 if let (json, date, _) = journeyResult { self.journeyJson = json; self.journeyDate = date } else { self.journeyJson = nil; self.journeyDate = nil }
+            await MainActor.run {
+                if let (json, date, _) = dailyReflectionResult { dailyReflectionJson = json; dailyReflectionDate = date } else { dailyReflectionJson = nil; dailyReflectionDate = nil }
+                if let (json, date, _) = weekInReviewResult { weekInReviewJson = json; weekInReviewDate = date } else { weekInReviewJson = nil; weekInReviewDate = nil }
+                if let (json, date, _) = feelResult { feelInsightsJson = json; feelInsightsDate = date } else { feelInsightsJson = nil; feelInsightsDate = nil }
+                if let (json, date, _) = thinkResult { thinkInsightsJson = json; thinkInsightsDate = date } else { thinkInsightsJson = nil; thinkInsightsDate = nil }
+                if let (json, date, _) = actResult { actInsightsJson = json; actInsightsDate = date } else { actInsightsJson = nil; actInsightsDate = nil }
+                if let (json, date, _) = learnResult { learnInsightsJson = json; learnInsightsDate = date } else { learnInsightsJson = nil; learnInsightsDate = nil }
+                if let (json, date, _) = journeyResult { journeyJson = json; journeyDate = date } else { journeyJson = nil; journeyDate = nil }
 
-                 // Set isLoadingInsights to false AFTER data is loaded/processed
-                 isLoadingInsights = false
-                 lastLoadTimestamp = Date() // Update timestamp
-                 print("[InsightsView] Finished loading insights.")
-             }
-         }
-     }
+                isLoadingInsights = false
+                lastLoadTimestamp = Date()
+                print("[InsightsView] Finished loading insights.")
+            }
+        }
+    }
 }
 
-// Preview Provider
+// MARK: - Previews (Keep As Is)
 struct InsightsView_Previews: PreviewProvider {
       @StateObject static var databaseService = DatabaseService()
       static var llmService = LLMService.shared
@@ -540,11 +428,10 @@ struct InsightsView_Previews: PreviewProvider {
       @StateObject static var chatManager = ChatManager(databaseService: databaseService, llmService: llmService, subscriptionManager: subscriptionManager)
 
       static var previews: some View {
-          // Preview showing the empty state specifically
-           PreviewDataLoadingContainer(loadData: false) { // Corrected initializer call
+           PreviewDataLoadingContainer(loadData: false) {
                InsightsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
-                   .environmentObject(AppState()) // Provide an empty AppState
-                   .environmentObject(chatManager) // Pass chatManager even if empty
+                   .environmentObject(AppState())
+                   .environmentObject(chatManager)
                    .environmentObject(databaseService)
                    .environmentObject(subscriptionManager)
                    .environmentObject(ThemeManager.shared)
@@ -552,10 +439,9 @@ struct InsightsView_Previews: PreviewProvider {
            }
            .previewDisplayName("Empty State")
 
-          // Preview showing the loaded state
-           PreviewDataLoadingContainer(loadData: true) { // Corrected initializer call
+           PreviewDataLoadingContainer(loadData: true) {
                 InsightsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
-                    .environmentObject(appState) // Use the one with loaded data
+                    .environmentObject(appState)
                     .environmentObject(chatManager)
                     .environmentObject(databaseService)
                     .environmentObject(subscriptionManager)
@@ -565,39 +451,35 @@ struct InsightsView_Previews: PreviewProvider {
             .previewDisplayName("Loaded State")
       }
 
-      // Keep PreviewDataLoadingContainer but allow skipping data load
-      // Make initializer public or internal if needed across modules
       struct PreviewDataLoadingContainer<Content: View>: View {
           @ViewBuilder let content: Content
-          let loadData: Bool // Add flag
+          let loadData: Bool
           @State private var isLoading = true
 
-          // Corrected Initializer with labels
            init(loadData: Bool, @ViewBuilder content: () -> Content) {
                self.loadData = loadData
                self.content = content()
            }
 
-
           var body: some View {
               Group {
-                  if isLoading && loadData { // Only show loader if loadData is true
+                  if isLoading && loadData {
                        ProgressView("Loading Preview Data...").frame(maxWidth: .infinity, maxHeight: .infinity).background(UIStyles.shared.colors.appBackground).onAppear { Task { await performDataLoad(); isLoading = false } }
-                  } else if isLoading && !loadData { // If not loading data, just set isLoading to false
+                  } else if isLoading && !loadData {
                        Color.clear.onAppear { isLoading = false }
                   }
                   else { content }
               }
           }
-          func performDataLoad() async { // Renamed function
-               guard loadData else { return } // Skip if flag is false
+          func performDataLoad() async {
+               guard loadData else { return }
                print("Preview: Starting data load...")
                let dbService = InsightsView_Previews.databaseService
                let state = InsightsView_Previews.appState
                let chatMgr = InsightsView_Previews.chatManager
                do {
                    let entries = try dbService.loadAllJournalEntries()
-                   await MainActor.run { state._journalEntries = entries } // Modify underlying storage
+                   await MainActor.run { state._journalEntries = entries }
                    print("Preview: Loaded \(entries.count) entries")
                    let chats = try dbService.loadAllChats()
                    await MainActor.run { chatMgr.chats = chats; if let first = chats.first { chatMgr.currentChat = first } else { chatMgr.currentChat = Chat() } }
