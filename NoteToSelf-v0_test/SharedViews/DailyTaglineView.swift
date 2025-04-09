@@ -8,30 +8,56 @@ struct DailyTaglineView: View {
 
     // Removed computed color logic
 
-     // State for animation
-     @State private var appeared: Bool = false
+     // State for persistent pulse animation
+     @State private var pulsing: Bool = false
+
+     // Define the gradient
+     private var textGradient: LinearGradient {
+         LinearGradient(
+             gradient: Gradient(colors: [
+                 styles.colors.accent, // Start with accent
+                 colorScheme == .dark ? styles.colors.secondaryAccent : styles.colors.accent.opacity(0.7) // End with secondaryAccent (dark) or lighter accent (light)
+             ]),
+             startPoint: .topLeading,
+             endPoint: .bottomTrailing
+         )
+     }
 
      var body: some View {
-         Text(tagline)
-             .font(styles.typography.largeTitle) // Use largest predefined title size
-             .foregroundColor(styles.colors.textSecondary) // Use textSecondary color directly
-             .multilineTextAlignment(.center)
-             .frame(maxWidth: .infinity, alignment: .center)
-             .padding(.vertical, styles.layout.spacingXL * 2) // Double vertical padding
-             .padding(.horizontal, styles.layout.paddingL) // Horizontal padding
-             // Animation modifiers
-             .scaleEffect(appeared ? 1.0 : 0.95)
-             .opacity(appeared ? 1.0 : 0.0)
-             .onAppear {
-                 // Use a slight delay for a nicer effect
-                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                     withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                         appeared = true
+         ZStack {
+             // Subtle background glow elements
+             Circle()
+                 .fill(styles.colors.accent.opacity(0.08))
+                 .blur(radius: 30)
+                 .frame(width: 150, height: 150)
+                 .offset(x: -50, y: -20)
+
+             Circle()
+                  .fill(styles.colors.secondaryAccent.opacity(0.06))
+                  .blur(radius: 40)
+                  .frame(width: 180, height: 180)
+                  .offset(x: 60, y: 30)
+
+             // Tagline Text
+             Text(tagline)
+                 .font(styles.typography.largeTitle)
+                 // Apply gradient using foregroundStyle
+                 .foregroundStyle(textGradient)
+                 .multilineTextAlignment(.center)
+                 .frame(maxWidth: .infinity, alignment: .center)
+                 .padding(.vertical, styles.layout.spacingXL * 2) // Double vertical padding
+                 .padding(.horizontal, styles.layout.paddingL) // Horizontal padding
+                 // Persistent Pulse Animation
+                 .scaleEffect(pulsing ? 1.02 : 1.0) // Subtle scale change
+                 .onAppear {
+                     // Start the continuous animation
+                     withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
+                         pulsing = true
                      }
                  }
-             }
-             // Reset on disappear if desired, otherwise it stays revealed
-             // .onDisappear { appeared = false }
+         }
+         // Clip the ZStack to prevent glow from extending too far if needed
+         // .clipShape(Rectangle())
      }
  }
 
