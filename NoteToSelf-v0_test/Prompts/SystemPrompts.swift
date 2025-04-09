@@ -4,9 +4,11 @@ struct SystemPrompts {
 
     // Helper function to load the objective function from the file
     private static func loadObjectiveFunction() -> String {
-        guard let url = Bundle.main.url(forResource: "ObjectiveFunction", withExtension: "txt", subdirectory: "Prompts"),
+        // Attempt to load without subdirectory first, as build phases might flatten the structure.
+        // Ensure "Prompts/ObjectiveFunction.txt" has Target Membership checked.
+        guard let url = Bundle.main.url(forResource: "ObjectiveFunction", withExtension: "txt"),
               let content = try? String(contentsOf: url) else {
-            print("‼️ ERROR: Could not load ObjectiveFunction.txt. Using default placeholder.")
+            print("‼️ ERROR: Could not load Prompts/ObjectiveFunction.txt. Ensure file exists and has Target Membership. Using default placeholder.")
             return """
             Default Objective Placeholder: Empower the user through deep emotional awareness, strategic insight, decisive action, and continual learning.
             """ // Fallback content

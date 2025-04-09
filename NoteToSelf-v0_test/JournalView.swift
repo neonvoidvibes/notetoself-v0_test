@@ -75,7 +75,21 @@ struct JournalView: View {
             VStack(spacing: 0) {
                 headerView
                 filterPanelView
-                journalContent // Extracted ScrollView content
+                // Pass ScrollViewProxy down to journalContent
+                ScrollViewReader { scrollProxy in
+                     journalContent(scrollProxy: scrollProxy) // Pass proxy
+                     // Move onChange here to capture scrollProxy
+                     .onChange(of: appState.journalExpandedEntryId) { _, newId in
+                         guard let entryId = newId, filteredEntries.contains(where: { $0.id == entryId }) else {
+                             // print("[JournalView.onChange(expandedId)] New ID \(newId?.uuidString ?? "nil") is nil or not in filtered list. Cannot scroll.")
+                             return
+                         }
+                         print("[JournalView.onChange(expandedId)] Scrolling to \(entryId).")
+                         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { // Add animation
+                             scrollProxy.scrollTo(entryId, anchor: .top) // Perform scroll
+                         }
+                     }
+                }
             }
 
             floatingAddButton // Extracted floating button (action now sets AppState flag)
@@ -196,7 +210,8 @@ struct JournalView: View {
                   print("[JournalView] Set showingNewEntrySheet = true, reset AppState flag.") // Debug Print
               }
           }
-    } // End Body
+         // Scroll logic moved inside ScrollViewReader in body.
+     } // End Body
 
 
     // MARK: - Computed View Properties
@@ -279,68 +294,70 @@ struct JournalView: View {
         }
     }
 
-    private var journalContent: some View {
-        ScrollViewReader { scrollProxy in
-             ScrollView {
-                 VStack(spacing: 0) { // Main container VStack - Set spacing to 0
-                     GeometryReader { geometry in
-                         Color.clear.preference(
-                             key: ScrollOffsetPreferenceKey.self,
-                             value: geometry.frame(in: .named("scrollView")).minY
-                         )
-                     }
-                     .frame(height: 0)
+    // Update signature to accept ScrollViewProxy
+    private func journalContent(scrollProxy: ScrollViewProxy) -> some View {
+        // Remove the outer ScrollViewReader as it's now passed in
+        ScrollView {
+            VStack(spacing: 0) { // Main container VStack - Set spacing to 0
+                GeometryReader { geometry in
+                    Color.clear.preference(
+                        key: ScrollOffsetPreferenceKey.self,
+                        value: geometry.frame(in: .named("scrollView")).minY
+                    )
+                }
+                .frame(height: 0)
 
-                     // --- Journey Card ---
-                     JourneyInsightCard()
-                         .padding(.horizontal, styles.layout.paddingL)
-                         .padding(.top, styles.layout.spacingXL)
-                         .padding(.bottom, styles.layout.spacingL)
+                // --- Journey Card ---
+                JourneyInsightCard()
+                    .padding(.horizontal, styles.layout.paddingL)
+                    .padding(.top, styles.layout.spacingXL)
+                    .padding(.bottom, styles.layout.spacingL)
 
-                     // --- Entry List / Empty State ---
-                     if filteredEntries.isEmpty {
-                        emptyState
-                     } else {
-                        journalListWithCTA // Use modified list that includes CTA logic
-                     }
+                // --- Entry List / Empty State ---
+                if filteredEntries.isEmpty {
+                   emptyState
+                } else {
+                   journalListWithCTA // Use modified list that includes CTA logic
+                }
 
-                     // Ensure CTA is placed if "Today" and "Yesterday" were empty
-                     // (This logic is now handled within journalListWithCTA)
+                // Ensure CTA is placed if "Today" and "Yesterday" were empty
+                // (This logic is now handled within journalListWithCTA)
 
-                     // Bottom padding for FAB
-                     Spacer(minLength: styles.layout.paddingXL + 80) // Keep space for FAB
+                // Bottom padding for FAB
+                Spacer(minLength: styles.layout.paddingXL + 80) // Keep space for FAB
 
-                 } // End Main container VStack
-             } // End ScrollView
-             .coordinateSpace(name: "scrollView")
-             .disabled(mainScrollingDisabled)
-             .onAppear {
-                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                       guard let entryId = appState.journalExpandedEntryId,
-                             filteredEntries.contains(where: { $0.id == entryId }) else {
-                           print("[JournalView.onAppear] No valid expanded entry ID or entry not in filtered list. Cannot scroll.")
-                           return
-                       }
-                       scrollProxy.scrollTo(entryId, anchor: .top)
-                       print("[JournalView.onAppear] Restored scroll to expanded entry: \(entryId)")
+            } // End Main container VStack
+        } // End ScrollView
+        .coordinateSpace(name: "scrollView")
+        .disabled(mainScrollingDisabled)
+        .onAppear {
+             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                  guard let entryId = appState.journalExpandedEntryId,
+                        filteredEntries.contains(where: { $0.id == entryId }) else {
+                      // print("[JournalView.onAppear] No valid expanded entry ID or entry not in filtered list. Cannot scroll.")
+                      return
                   }
+                  // Initial scroll if needed, but onChange will handle most cases
+                  // scrollProxy.scrollTo(entryId, anchor: .top)
+                  // print("[JournalView.onAppear] Restored scroll to expanded entry: \(entryId)")
              }
-             .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                 let scrollingDown = value < lastScrollPosition
-                 if abs(value - lastScrollPosition) > 10 {
-                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                         if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
-                         else { tabBarOffset = 0; tabBarVisible = true }
-                     }
-                     lastScrollPosition = value
-                 }
-             }
-             .simultaneousGesture(
-                 TapGesture().onEnded {
-                      UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                 }
-             )
-        } // End ScrollViewReader
+        }
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+            let scrollingDown = value < lastScrollPosition
+            if abs(value - lastScrollPosition) > 10 {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
+                    else { tabBarOffset = 0; tabBarVisible = true }
+                }
+                lastScrollPosition = value
+            }
+        }
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
+        )
+        // Removed ScrollViewReader wrapper here
     }
 
     // NEW: Combined journal list with integrated CTA placement logic
