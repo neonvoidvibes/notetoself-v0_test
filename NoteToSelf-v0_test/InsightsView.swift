@@ -451,8 +451,8 @@ struct InsightsView: View {
    // --- NEW: Engagement Hook Section ---
    private var engagementHookSection: some View {
        VStack(alignment: .center, spacing: styles.layout.spacingM) {
-           Image(systemName: "sparkles") // Engaging icon
-               .font(.system(size: 32))
+           Image(systemName: "pencil.line") // Engaging icon
+               .font(.system(size: 40))
                .foregroundColor(styles.colors.accent)
                .padding(.bottom, styles.layout.spacingS)
 
@@ -461,10 +461,10 @@ struct InsightsView: View {
                .foregroundColor(styles.colors.text)
                .multilineTextAlignment(.center)
 
-           Text("Your journey is unique. What new perspective or connection would help you most right now? Share your ideas and help shape the future of Note to Self!")
+           Text("Your journey is unique, and this app is evolving. What new insight type would help you most right now? Share your ideas and help shape the future of Note to Self!")
                .font(styles.typography.bodyFont)
                .foregroundColor(styles.colors.textSecondary)
-               .multilineTextAlignment(.center)
+               .multilineTextAlignment(.leading)
                .lineSpacing(4) // Add a bit of line spacing
 
            Button {
@@ -473,6 +473,7 @@ struct InsightsView: View {
            } label: {
                 Text("Share Your Ideas")
                     .foregroundColor(styles.colors.accent) // Use accent color for ghost button text
+                    .font(styles.typography.bodyLarge)
            }
            .buttonStyle(UIStyles.GhostButtonStyle()) // Use Ghost style for a less prominent button
            .padding(.top, styles.layout.spacingS)
