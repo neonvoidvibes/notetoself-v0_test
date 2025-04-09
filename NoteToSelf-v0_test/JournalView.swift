@@ -286,10 +286,14 @@ struct JournalView: View {
      private func journalContent() -> some View {
          // Remove the outer ScrollViewReader as it's now passed in
          ScrollView {
-            VStack(spacing: 0) { // Main container VStack - Set spacing to 0
-                // Removed GeometryReader for scroll tracking
+             VStack(spacing: 0) { // Main container VStack - Set spacing to 0
+                 // Removed GeometryReader for scroll tracking
 
-                // --- Journey Card ---
+                 // --- Daily Tagline ---
+                 // TODO: Implement logic to cycle tagline daily
+                 DailyTaglineView(tagline: "Keep showing up.") // Sample Journal tagline
+
+                 // --- Journey Card ---
                 JourneyInsightCard()
                     .padding(.horizontal, styles.layout.paddingL)
                     .padding(.top, styles.layout.spacingXL)

@@ -242,6 +242,11 @@ struct ReflectionsView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 8)
 
+                // --- Daily Tagline ---
+                // TODO: Implement logic to cycle tagline daily
+                DailyTaglineView(tagline: "Turn emotion into insight.") // Sample Reflect tagline
+                    .padding(.top, -styles.layout.spacingM) // Adjust top padding slightly if needed below header
+
                 // Chat content - FIXED HEIGHT to prevent layout shifts
                 GeometryReader { geometry in
                     ScrollViewReader { scrollView in
