@@ -283,7 +283,8 @@ struct JourneyInsightCard: View {
 
             do {
                 // Step 1: Load from DB - Removed await
-                if let (json, date) = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                // Adjust tuple destructuring to ignore the third element (contextItem)
+                if let (json, date, _) = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
                     loadedDate = date
                     print("[JourneyCard] Loaded JSON from DB (Length: \(json.count)): >>>\(json.prefix(200))...<<<") // Log loaded JSON
 

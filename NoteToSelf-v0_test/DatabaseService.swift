@@ -199,7 +199,7 @@ class DatabaseService: ObservableObject {
         print("Attempted toggle star (\(isStarred)) for JournalEntry ID: \(id.uuidString)")
     }
 
-    func findSimilarJournalEntries(to queryVector: [Float], limit: Int = 5) throws -> [JournalEntry] {
+    func findSimilarJournalEntries(to queryVector: [Float], limit: Int = 5) throws -> [ContextItem] { // Correct return type
         guard !queryVector.isEmpty else { return [] }
         guard queryVector.count == self.embeddingDimension else {
              throw DatabaseError.dimensionMismatch(expected: self.embeddingDimension, actual: queryVector.count)
@@ -318,7 +318,7 @@ class DatabaseService: ObservableObject {
         print("Attempted toggle star (\(isStarred)) for ChatMessage ID: \(id.uuidString)")
     }
 
-    func findSimilarChatMessages(to queryVector: [Float], limit: Int = 5) throws -> [(message: ChatMessage, chatId: UUID)] {
+    func findSimilarChatMessages(to queryVector: [Float], limit: Int = 5) throws -> [ContextItem] { // Correct return type
          guard !queryVector.isEmpty else { return [] }
          guard queryVector.count == self.embeddingDimension else {
               throw DatabaseError.dimensionMismatch(expected: self.embeddingDimension, actual: queryVector.count)

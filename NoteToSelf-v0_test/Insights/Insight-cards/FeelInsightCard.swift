@@ -193,7 +193,8 @@ struct FeelInsightCard: View {
         print("[FeelInsightCard] Loading insight...")
         Task {
             do {
-                if let (json, date) = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                 // Adjust tuple destructuring to ignore the third element (contextItem)
+                if let (json, date, _) = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
                     decodeJSON(json: json, date: date)
                 } else {
                     await MainActor.run {
