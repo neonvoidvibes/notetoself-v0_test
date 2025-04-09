@@ -103,8 +103,8 @@ struct InsightsView: View {
                 ScrollView {
                     // --- Daily Tagline ---
                     // TODO: Implement logic to cycle tagline daily
-                    DailyTaglineView(tagline: "See yourself clearer.") // Sample Insights tagline
-
+                    DailyTaglineView(tagline: "See yourself clearer.", iconName: "puzzlepiece.extension.fill") // Insights icon
+  
                     // Main content container using VStack
                     VStack(spacing: styles.layout.cardSpacing) { // Use cardSpacing for VStack
                         // Timestamp Display (Keep As Is)

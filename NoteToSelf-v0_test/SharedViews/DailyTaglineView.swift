@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DailyTaglineView: View {
     let tagline: String
+    let iconName: String // Add parameter for icon name
 
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var styles = UIStyles.shared
@@ -15,7 +16,7 @@ struct DailyTaglineView: View {
      var body: some View {
          ZStack { // Use ZStack to layer icon behind text
              // Background Icon
-             Image(systemName: "brain.head.profile") // Appropriate icon
+             Image(systemName: iconName) // Use the parameter here
                  .resizable()
                  .scaledToFit()
                  .frame(width: 120, height: 120) // Large size
@@ -37,13 +38,13 @@ struct DailyTaglineView: View {
 
 #Preview {
     VStack {
-        DailyTaglineView(tagline: "Keep showing up.")
+        DailyTaglineView(tagline: "Keep showing up.", iconName: "book.closed.fill") // Journal icon
             .background(Color.gray.opacity(0.1))
 
-        DailyTaglineView(tagline: "See yourself clearer.")
+        DailyTaglineView(tagline: "See yourself clearer.", iconName: "puzzlepiece.extension.fill") // Insights icon
             .background(Color.gray.opacity(0.1))
 
-        DailyTaglineView(tagline: "Turn emotion into insight.")
+        DailyTaglineView(tagline: "Turn emotion into insight.", iconName: "bubble.left.and.bubble.right.fill") // Reflect icon
             .background(Color.gray.opacity(0.1))
     }
     .environmentObject(UIStyles.shared)
@@ -51,18 +52,18 @@ struct DailyTaglineView: View {
     .preferredColorScheme(.light) // Preview light mode
 }
 
-#Preview("Dark Mode") {
-    VStack {
-        DailyTaglineView(tagline: "Keep showing up.")
-            .background(Color.black)
+ #Preview("Dark Mode") {
+     VStack {
+         DailyTaglineView(tagline: "Keep showing up.", iconName: "book.closed.fill") // Journal icon
+             .background(Color.black)
 
-        DailyTaglineView(tagline: "See yourself clearer.")
-            .background(Color.black)
+         DailyTaglineView(tagline: "See yourself clearer.", iconName: "puzzlepiece.extension.fill") // Insights icon
+             .background(Color.black)
 
-        DailyTaglineView(tagline: "Turn emotion into insight.")
-            .background(Color.black)
-    }
-    .environmentObject(UIStyles.shared)
+         DailyTaglineView(tagline: "Turn emotion into insight.", iconName: "bubble.left.and.bubble.right.fill") // Reflect icon
+             .background(Color.black)
+     }
+     .environmentObject(UIStyles.shared)
     .environmentObject(ThemeManager.shared)
     .preferredColorScheme(.dark) // Preview dark mode
 }
