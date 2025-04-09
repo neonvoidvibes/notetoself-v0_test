@@ -6,19 +6,32 @@ struct DailyTaglineView: View {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var styles = UIStyles.shared
 
-    // Computed color based on color scheme
-    private var taglineColor: Color {
-        colorScheme == .dark ? styles.colors.secondaryAccent : styles.colors.accent
-    }
+    // Removed computed color logic
 
-    var body: some View {
+     // State for animation
+     @State private var appeared: Bool = false
+
+     var body: some View {
          Text(tagline)
              .font(styles.typography.largeTitle) // Use largest predefined title size
-             .foregroundColor(taglineColor) // Adaptive color
+             .foregroundColor(styles.colors.textSecondary) // Use textSecondary color directly
              .multilineTextAlignment(.center)
              .frame(maxWidth: .infinity, alignment: .center)
              .padding(.vertical, styles.layout.spacingXL * 2) // Double vertical padding
              .padding(.horizontal, styles.layout.paddingL) // Horizontal padding
+             // Animation modifiers
+             .scaleEffect(appeared ? 1.0 : 0.95)
+             .opacity(appeared ? 1.0 : 0.0)
+             .onAppear {
+                 // Use a slight delay for a nicer effect
+                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                     withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                         appeared = true
+                     }
+                 }
+             }
+             // Reset on disappear if desired, otherwise it stays revealed
+             // .onDisappear { appeared = false }
      }
  }
 
