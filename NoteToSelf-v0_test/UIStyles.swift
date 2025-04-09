@@ -197,20 +197,20 @@ class UIStyles: ObservableObject {
         .padding(.bottom, layout.spacingS)
     }
 
-     // MARK: - Expandable Card Helper (Updated)
-    func expandableCard<Content: View>(
-        scrollProxy: ScrollViewProxy? = nil,
-        cardId: String? = nil,
-        showOpenButton: Bool = true, // Add parameter with default
-        @ViewBuilder content: @escaping () -> Content
-    ) -> some View {
-        ExpandableCard( // Call the simplified ExpandableCard struct's explicit init
-            content: content,
-            scrollProxy: scrollProxy,
-            cardId: cardId,
-            colors: self.colors,
-            typography: self.typography,
-            layout: self.layout,
+      // MARK: - Expandable Card Helper (Updated)
+     func expandableCard<Content: View>(
+         // scrollProxy: ScrollViewProxy? = nil, // Removed
+         // cardId: String? = nil, // Removed
+         showOpenButton: Bool = true, // Add parameter with default
+         @ViewBuilder content: @escaping () -> Content
+     ) -> some View {
+         ExpandableCard( // Call the simplified ExpandableCard struct's explicit init
+             content: content,
+             // scrollProxy: scrollProxy, // Removed
+             // cardId: cardId, // Removed
+             colors: self.colors,
+             typography: self.typography,
+             layout: self.layout,
             showOpenButton: showOpenButton // Pass parameter through
         )
     }

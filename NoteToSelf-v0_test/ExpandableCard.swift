@@ -7,32 +7,32 @@ struct ExpandableCard<Content: View>: View {
 
     // Properties passed from UIStyles or parent view
     let colors: ThemeColors
-    let typography: ThemeTypography
-    let layout: UIStyles.Layout
-    let showOpenButton: Bool // New parameter
+     let typography: ThemeTypography
+     let layout: UIStyles.Layout
+     let showOpenButton: Bool // New parameter
 
-    // scrollProxy and cardId might not be strictly needed now, but keep for potential future use cases
-    var scrollProxy: ScrollViewProxy? = nil
-    var cardId: String? = nil
+     // Removed unused scrollProxy and cardId properties
+     // var scrollProxy: ScrollViewProxy? = nil
+     // var cardId: String? = nil
 
-    // Internal state for hover effect
+     // Internal state for hover effect
     @State private var hovered: Bool = false
 
-    // Explicit Initializer
-    init(
-        @ViewBuilder content: @escaping () -> Content,
-        scrollProxy: ScrollViewProxy? = nil,
-        cardId: String? = nil,
-        colors: ThemeColors,
-        typography: ThemeTypography,
+     // Explicit Initializer
+     init(
+         @ViewBuilder content: @escaping () -> Content,
+         // scrollProxy: ScrollViewProxy? = nil, // Removed
+         // cardId: String? = nil, // Removed
+         colors: ThemeColors,
+         typography: ThemeTypography,
         layout: UIStyles.Layout,
         showOpenButton: Bool = true // Default to true
-    ) {
-        self.content = content
-        self.scrollProxy = scrollProxy
-        self.cardId = cardId
-        self.colors = colors
-        self.typography = typography
+     ) {
+         self.content = content
+         // self.scrollProxy = scrollProxy // Removed
+         // self.cardId = cardId // Removed
+         self.colors = colors
+         self.typography = typography
         self.layout = layout
         self.showOpenButton = showOpenButton // Assign new parameter
     }

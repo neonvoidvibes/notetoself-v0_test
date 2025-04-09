@@ -2,13 +2,13 @@ import SwiftUI
 import Charts // For mood trend chart
 
 struct FeelInsightCard: View {
-    @EnvironmentObject var appState: AppState
-    @EnvironmentObject var databaseService: DatabaseService
+     @EnvironmentObject var appState: AppState
+     @EnvironmentObject var databaseService: DatabaseService
 
-    var scrollProxy: ScrollViewProxy? = nil
-    var cardId: String? = nil
+     // var scrollProxy: ScrollViewProxy? = nil // Removed
+     var cardId: String? = nil
 
-    @State private var showingFullScreen = false
+     @State private var showingFullScreen = false
     @ObservedObject private var styles = UIStyles.shared
 
     // Keep internal loading logic for now
@@ -33,8 +33,8 @@ struct FeelInsightCard: View {
 
     var body: some View {
         styles.expandableCard(
-            scrollProxy: scrollProxy,
-            cardId: cardId,
+            // scrollProxy: scrollProxy, // Removed
+            // cardId: cardId, // Removed
             content: {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
                     // Header

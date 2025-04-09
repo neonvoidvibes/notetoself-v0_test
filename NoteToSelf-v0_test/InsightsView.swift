@@ -157,61 +157,49 @@ struct InsightsView: View {
 
 
                 // Main content ScrollView
-                ScrollViewReader { scrollProxy in
-                    ScrollView {
-                        GeometryReader { geometry in // For scroll offset detection
-                            Color.clear.preference(key: ScrollOffsetPreferenceKey.self, value: geometry.frame(in: .named("scrollView")).minY)
-                        }.frame(height: 0)
+                // Removed ScrollViewReader
+                ScrollView {
+                    // Removed GeometryReader for scroll offset tracking
+                    // Removed .frame(height: 0)
 
-                         // --- Timestamp Display moved here ---
-                         if let timestamp = lastLoadTimestamp {
-                              HStack { // Use HStack for alignment if needed
-                                  Spacer() // Center align
-                                  Text("Last updated: \(timestamp, formatter: timestampFormatter)")
-                                      .font(styles.typography.caption)
-                                      .foregroundColor(styles.colors.textSecondary.opacity(0.8))
-                                  Spacer()
-                              }
-                              .padding(.top, 0) // Minimal top padding
-                              .padding(.bottom, styles.layout.spacingM) // Space before cards
-                              .padding(.horizontal, styles.layout.paddingXL) // Match card padding
-                         } else if isLoadingInsights && hasAnyEntries { // Show placeholder only during initial load AND if entries exist
-                              HStack {
-                                  Spacer()
-                                  Text("Loading insights...")
-                                      .font(styles.typography.caption)
-                                      .foregroundColor(styles.colors.textSecondary.opacity(0.7))
-                                  Spacer()
-                              }
-                               .padding(.top, 0)
-                               .padding(.bottom, styles.layout.spacingM)
-                               .padding(.horizontal, styles.layout.paddingXL)
-                         }
-                         // --- End Timestamp ---
+                     // --- Timestamp Display moved here ---
+                     if let timestamp = lastLoadTimestamp {
+                          HStack { // Use HStack for alignment if needed
+                              Spacer() // Center align
+                              Text("Last updated: \(timestamp, formatter: timestampFormatter)")
+                                  .font(styles.typography.caption)
+                                  .foregroundColor(styles.colors.textSecondary.opacity(0.8))
+                              Spacer()
+                          }
+                          .padding(.top, 0) // Minimal top padding
+                          .padding(.bottom, styles.layout.spacingM) // Space before cards
+                          .padding(.horizontal, styles.layout.paddingXL) // Match card padding
+                     } else if isLoadingInsights && hasAnyEntries { // Show placeholder only during initial load AND if entries exist
+                          HStack {
+                              Spacer()
+                              Text("Loading insights...")
+                                  .font(styles.typography.caption)
+                                  .foregroundColor(styles.colors.textSecondary.opacity(0.7))
+                              Spacer()
+                          }
+                           .padding(.top, 0)
+                           .padding(.bottom, styles.layout.spacingM)
+                           .padding(.horizontal, styles.layout.paddingXL)
+                     }
+                     // --- End Timestamp ---
 
 
-                        // Initial Empty State or Content
-                        if !hasAnyEntries {
-                            emptyStateView // Show modified empty state
-                        } else {
-                            // [4.1] Use Skeleton Cards during initial load, otherwise show cards
-                             insightsCardList(scrollProxy: scrollProxy)
-                        }
-                    }
-                    .coordinateSpace(name: "scrollView")
-                    .disabled(mainScrollingDisabled)
-                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                        // Scroll handling logic (Keep existing)
-                        let scrollingDown = value < lastScrollPosition
-                        if abs(value - lastScrollPosition) > 10 {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                if scrollingDown { tabBarOffset = 100; tabBarVisible = false }
-                                else { tabBarOffset = 0; tabBarVisible = true }
-                            }
-                            lastScrollPosition = value
-                        }
+                    // Initial Empty State or Content
+                    if !hasAnyEntries {
+                        emptyStateView // Show modified empty state
+                    } else {
+                        // [4.1] Use Skeleton Cards during initial load, otherwise show cards
+                         insightsCardList() // Call without proxy
                     }
                 }
+                .coordinateSpace(name: "scrollView")
+                .disabled(mainScrollingDisabled)
+                // Removed .onPreferenceChange modifier
             }
         }
         .onAppear {
@@ -237,7 +225,7 @@ struct InsightsView: View {
 
     // MARK: - Card List View
     @ViewBuilder
-    private func insightsCardList(scrollProxy: ScrollViewProxy) -> some View {
+    private func insightsCardList() -> some View { // Removed scrollProxy parameter
         LazyVStack(spacing: styles.layout.cardSpacing) { // Use standard card spacing
 
             // --- Daily Reflection Card ---
@@ -247,7 +235,7 @@ struct InsightsView: View {
                   DailyReflectionInsightCard(
                        jsonString: dailyReflectionJson,
                        generatedDate: dailyReflectionDate,
-                       scrollProxy: scrollProxy,
+                       // scrollProxy: scrollProxy, // Removed
                        cardId: "dailyReflectionCard"
                    )
                    .id("dailyReflectionCard")
@@ -255,7 +243,7 @@ struct InsightsView: View {
                    .opacity(cardsAppeared ? 1 : 0)
                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
                    // Add vertical padding only if there is content
-                   .padding(.vertical, dailyReflectionHasContent ? styles.layout.spacingM : 0)
+                   .padding(.vertical, dailyReflectionHasContent ? styles.layout.spacingM : 20)
               }
 
             // --- Conditional "Add New Note" Button ---
@@ -287,7 +275,7 @@ struct InsightsView: View {
                   WeekInReviewCard(
                        jsonString: weekInReviewJson,
                        generatedDate: weekInReviewDate,
-                       scrollProxy: scrollProxy,
+                       // scrollProxy: scrollProxy, // Removed
                        cardId: "weekInReviewCard"
                    )
                    .id("weekInReviewCard")
@@ -310,7 +298,7 @@ struct InsightsView: View {
                 SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
             } else {
                 FeelInsightCard(
-                    scrollProxy: scrollProxy,
+                    // scrollProxy: scrollProxy, // Removed
                     cardId: "feelCard"
                 )
                 .id("feelCard")
@@ -324,7 +312,7 @@ struct InsightsView: View {
                 SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
             } else {
                  ThinkInsightCard(
-                     scrollProxy: scrollProxy,
+                     // scrollProxy: scrollProxy, // Removed
                      cardId: "thinkCard"
                  )
                  .id("thinkCard")
@@ -338,7 +326,7 @@ struct InsightsView: View {
                 SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
             } else {
                   ActInsightCard(
-                      scrollProxy: scrollProxy,
+                      // scrollProxy: scrollProxy, // Removed
                       cardId: "actCard"
                   )
                   .id("actCard")
@@ -352,7 +340,7 @@ struct InsightsView: View {
                  SkeletonCardView().padding(.horizontal, styles.layout.paddingXL)
              } else {
                    LearnInsightCard(
-                       scrollProxy: scrollProxy,
+                       // scrollProxy: scrollProxy, // Removed
                        cardId: "learnCard"
                    )
                    .id("learnCard")
@@ -384,18 +372,18 @@ struct InsightsView: View {
              }
               .padding(.horizontal, styles.layout.paddingXL) // Padding for the whole CTA VStack
               .padding(.vertical, styles.layout.spacingL) // Vertical padding
-   
-   
-             // --- Engagement Hook Section ---
-             engagementHookSection
-                 .padding(.top, styles.layout.spacingXL) // Add space before this section
-   
-   
-            // Bottom padding
-            Spacer().frame(height: styles.layout.paddingXL + 80) // Keep bottom padding
-        }
-        .padding(.top, 0) // No top padding needed on LazyVStack itself
-    }
+
+
+          // --- Engagement Hook Section ---
+          engagementHookSection
+              .padding(.top, styles.layout.spacingXL) // Add space before this section
+
+
+         // Bottom padding
+         Spacer().frame(height: styles.layout.paddingXL + 80) // Keep bottom padding
+     }
+     .padding(.top, 0) // No top padding needed on LazyVStack itself
+ }
 
 
     // MARK: - Component Views
@@ -448,54 +436,54 @@ struct InsightsView: View {
          }.padding(.vertical, 50)
      }
 
-   // --- NEW: Engagement Hook Section ---
-   private var engagementHookSection: some View {
-       VStack(alignment: .center, spacing: styles.layout.spacingM) {
-           Image(systemName: "pencil.line") // Engaging icon
-               .font(.system(size: 40))
-               .foregroundColor(styles.colors.accent)
-               .padding(.bottom, styles.layout.spacingS)
+    // --- NEW: Engagement Hook Section ---
+    private var engagementHookSection: some View {
+        VStack(alignment: .center, spacing: styles.layout.spacingM) {
+            Image(systemName: "pencil.line") // Engaging icon
+                .font(.system(size: 40))
+                .foregroundColor(styles.colors.accent)
+                .padding(.bottom, styles.layout.spacingS)
 
-           Text("What Insight Do You Crave?")
-               .font(styles.typography.title3) // Use title3 for emphasis
-               .foregroundColor(styles.colors.text)
-               .multilineTextAlignment(.center)
+            Text("What Insight Do You Crave?")
+                .font(styles.typography.title3) // Use title3 for emphasis
+                .foregroundColor(styles.colors.text)
+                .multilineTextAlignment(.center)
 
-           Text("Your journey is unique, and this app is evolving. What new insight type would help you most right now? Share your ideas and help shape the future of Note to Self!")
-               .font(styles.typography.bodyFont)
-               .foregroundColor(styles.colors.textSecondary)
-               .multilineTextAlignment(.leading)
-               .lineSpacing(4) // Add a bit of line spacing
+            Text("Your journey is unique, and this app is evolving. What new insight type would help you most right now? Share your ideas and help shape the future of Note to Self!")
+                .font(styles.typography.bodyFont)
+                .foregroundColor(styles.colors.textSecondary)
+                .multilineTextAlignment(.leading)
+                .lineSpacing(4) // Add a bit of line spacing
 
-           Button {
-               // TODO: Implement feedback mechanism (e.g., open mail, link to form, in-app feedback)
-               print("[InsightsView] 'Share Your Ideas' button tapped.")
-           } label: {
-                Text("Share Your Ideas")
-                    .foregroundColor(styles.colors.accent) // Use accent color for ghost button text
-                    .font(styles.typography.bodyLarge)
-           }
-           .buttonStyle(UIStyles.GhostButtonStyle()) // Use Ghost style for a less prominent button
-           .padding(.top, styles.layout.spacingS)
-       }
-       .padding(.vertical, styles.layout.paddingXL) // Generous vertical padding
-       .padding(.horizontal, styles.layout.paddingL) // Standard horizontal padding
-       .background(styles.colors.secondaryBackground.opacity(0.5)) // Subtle background
-       .cornerRadius(styles.layout.radiusL)
-       .padding(.horizontal, styles.layout.paddingXL) // Outer padding to align with cards
-   }
-
-
-    // Helper to check if all insight states are nil
-    private func areAllInsightsNil() -> Bool {
-        return dailyReflectionJson == nil &&
-               weekInReviewJson == nil &&
-               feelInsightsJson == nil &&
-               thinkInsightsJson == nil &&
-               actInsightsJson == nil &&
-               learnInsightsJson == nil &&
-               journeyJson == nil
+            Button {
+                // TODO: Implement feedback mechanism (e.g., open mail, link to form, in-app feedback)
+                print("[InsightsView] 'Share Your Ideas' button tapped.")
+            } label: {
+                 Text("Share Your Ideas")
+                     .foregroundColor(styles.colors.accent) // Use accent color for ghost button text
+                     .font(styles.typography.bodyLarge)
+            }
+            .buttonStyle(UIStyles.GhostButtonStyle()) // Use Ghost style for a less prominent button
+            .padding(.top, styles.layout.spacingS)
+        }
+        .padding(.vertical, styles.layout.paddingXL) // Generous vertical padding
+        .padding(.horizontal, styles.layout.paddingL) // Standard horizontal padding
+        .background(styles.colors.secondaryBackground.opacity(0.5)) // Subtle background
+        .cornerRadius(styles.layout.radiusL)
+        .padding(.horizontal, styles.layout.paddingXL) // Outer padding to align with cards
     }
+
+
+     // Helper to check if all insight states are nil
+     private func areAllInsightsNil() -> Bool {
+         return dailyReflectionJson == nil &&
+                weekInReviewJson == nil &&
+                feelInsightsJson == nil &&
+                thinkInsightsJson == nil &&
+                actInsightsJson == nil &&
+                learnInsightsJson == nil &&
+                journeyJson == nil
+     }
 
 
     // --- Data Loading ---
@@ -545,77 +533,77 @@ struct InsightsView: View {
 
 // Preview Provider
 struct InsightsView_Previews: PreviewProvider {
-     @StateObject static var databaseService = DatabaseService()
-     static var llmService = LLMService.shared
-     @StateObject static var subscriptionManager = SubscriptionManager.shared
-     @StateObject static var appState = AppState()
-     @StateObject static var chatManager = ChatManager(databaseService: databaseService, llmService: llmService, subscriptionManager: subscriptionManager)
+      @StateObject static var databaseService = DatabaseService()
+      static var llmService = LLMService.shared
+      @StateObject static var subscriptionManager = SubscriptionManager.shared
+      @StateObject static var appState = AppState()
+      @StateObject static var chatManager = ChatManager(databaseService: databaseService, llmService: llmService, subscriptionManager: subscriptionManager)
 
-     static var previews: some View {
-         // Preview showing the empty state specifically
-          PreviewDataLoadingContainer(loadData: false) { // Corrected initializer call
-              InsightsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
-                  .environmentObject(AppState()) // Provide an empty AppState
-                  .environmentObject(chatManager) // Pass chatManager even if empty
-                  .environmentObject(databaseService)
-                  .environmentObject(subscriptionManager)
-                  .environmentObject(ThemeManager.shared)
-                  .environmentObject(UIStyles.shared)
-          }
-          .previewDisplayName("Empty State")
-
-         // Preview showing the loaded state
-          PreviewDataLoadingContainer(loadData: true) { // Corrected initializer call
+      static var previews: some View {
+          // Preview showing the empty state specifically
+           PreviewDataLoadingContainer(loadData: false) { // Corrected initializer call
                InsightsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
-                   .environmentObject(appState) // Use the one with loaded data
-                   .environmentObject(chatManager)
+                   .environmentObject(AppState()) // Provide an empty AppState
+                   .environmentObject(chatManager) // Pass chatManager even if empty
                    .environmentObject(databaseService)
                    .environmentObject(subscriptionManager)
                    .environmentObject(ThemeManager.shared)
                    .environmentObject(UIStyles.shared)
            }
-           .previewDisplayName("Loaded State")
-     }
+           .previewDisplayName("Empty State")
 
-     // Keep PreviewDataLoadingContainer but allow skipping data load
-     // Make initializer public or internal if needed across modules
-     struct PreviewDataLoadingContainer<Content: View>: View {
-         @ViewBuilder let content: Content
-         let loadData: Bool // Add flag
-         @State private var isLoading = true
+          // Preview showing the loaded state
+           PreviewDataLoadingContainer(loadData: true) { // Corrected initializer call
+                InsightsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
+                    .environmentObject(appState) // Use the one with loaded data
+                    .environmentObject(chatManager)
+                    .environmentObject(databaseService)
+                    .environmentObject(subscriptionManager)
+                    .environmentObject(ThemeManager.shared)
+                    .environmentObject(UIStyles.shared)
+            }
+            .previewDisplayName("Loaded State")
+      }
 
-         // Corrected Initializer with labels
-          init(loadData: Bool, @ViewBuilder content: () -> Content) {
-              self.loadData = loadData
-              self.content = content()
+      // Keep PreviewDataLoadingContainer but allow skipping data load
+      // Make initializer public or internal if needed across modules
+      struct PreviewDataLoadingContainer<Content: View>: View {
+          @ViewBuilder let content: Content
+          let loadData: Bool // Add flag
+          @State private var isLoading = true
+
+          // Corrected Initializer with labels
+           init(loadData: Bool, @ViewBuilder content: () -> Content) {
+               self.loadData = loadData
+               self.content = content()
+           }
+
+
+          var body: some View {
+              Group {
+                  if isLoading && loadData { // Only show loader if loadData is true
+                       ProgressView("Loading Preview Data...").frame(maxWidth: .infinity, maxHeight: .infinity).background(UIStyles.shared.colors.appBackground).onAppear { Task { await performDataLoad(); isLoading = false } }
+                  } else if isLoading && !loadData { // If not loading data, just set isLoading to false
+                       Color.clear.onAppear { isLoading = false }
+                  }
+                  else { content }
+              }
           }
-
-
-         var body: some View {
-             Group {
-                 if isLoading && loadData { // Only show loader if loadData is true
-                      ProgressView("Loading Preview Data...").frame(maxWidth: .infinity, maxHeight: .infinity).background(UIStyles.shared.colors.appBackground).onAppear { Task { await performDataLoad(); isLoading = false } }
-                 } else if isLoading && !loadData { // If not loading data, just set isLoading to false
-                      Color.clear.onAppear { isLoading = false }
-                 }
-                 else { content }
-             }
-         }
-         func performDataLoad() async { // Renamed function
-              guard loadData else { return } // Skip if flag is false
-              print("Preview: Starting data load...")
-              let dbService = InsightsView_Previews.databaseService
-              let state = InsightsView_Previews.appState
-              let chatMgr = InsightsView_Previews.chatManager
-              do {
-                  let entries = try dbService.loadAllJournalEntries()
-                  await MainActor.run { state._journalEntries = entries } // Modify underlying storage
-                  print("Preview: Loaded \(entries.count) entries")
-                  let chats = try dbService.loadAllChats()
-                  await MainActor.run { chatMgr.chats = chats; if let first = chats.first { chatMgr.currentChat = first } else { chatMgr.currentChat = Chat() } }
-                  print("Preview: Loaded \(chats.count) chats")
-              } catch { print("‼️ Preview data loading error: \(error)") }
-              print("Preview: Data loading finished.")
-         }
-     }
+          func performDataLoad() async { // Renamed function
+               guard loadData else { return } // Skip if flag is false
+               print("Preview: Starting data load...")
+               let dbService = InsightsView_Previews.databaseService
+               let state = InsightsView_Previews.appState
+               let chatMgr = InsightsView_Previews.chatManager
+               do {
+                   let entries = try dbService.loadAllJournalEntries()
+                   await MainActor.run { state._journalEntries = entries } // Modify underlying storage
+                   print("Preview: Loaded \(entries.count) entries")
+                   let chats = try dbService.loadAllChats()
+                   await MainActor.run { chatMgr.chats = chats; if let first = chats.first { chatMgr.currentChat = first } else { chatMgr.currentChat = Chat() } }
+                   print("Preview: Loaded \(chats.count) chats")
+               } catch { print("‼️ Preview data loading error: \(error)") }
+               print("Preview: Data loading finished.")
+          }
+      }
 }

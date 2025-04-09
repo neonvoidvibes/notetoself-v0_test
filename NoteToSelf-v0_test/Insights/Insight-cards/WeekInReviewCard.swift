@@ -7,13 +7,13 @@ struct WeekInReviewCard: View {
     // @EnvironmentObject var databaseService: DatabaseService
 
     // Accept data from parent
-    let jsonString: String?
-    let generatedDate: Date?
+     let jsonString: String?
+     let generatedDate: Date?
 
-    var scrollProxy: ScrollViewProxy? = nil
-    var cardId: String? = nil
+     // var scrollProxy: ScrollViewProxy? = nil // Removed
+     var cardId: String? = nil
 
-    @State private var showingFullScreen = false
+     @State private var showingFullScreen = false
     @ObservedObject private var styles = UIStyles.shared
 
     // State for DECODED result, loading/error status during decode
@@ -64,8 +64,8 @@ struct WeekInReviewCard: View {
 
     var body: some View {
         styles.expandableCard(
-            scrollProxy: scrollProxy,
-            cardId: cardId,
+            // scrollProxy: scrollProxy, // Removed
+            // cardId: cardId, // Removed
             content: {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
                     // Header with Date Range and NEW badge - VERIFIED

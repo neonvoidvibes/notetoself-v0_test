@@ -5,13 +5,13 @@ struct DailyReflectionInsightCard: View {
     // Removed databaseService dependency
 
     // Accept data from parent
-    let jsonString: String?
-    let generatedDate: Date? // Keep generatedDate, might be useful later
+     let jsonString: String?
+     let generatedDate: Date? // Keep generatedDate, might be useful later
 
-    var scrollProxy: ScrollViewProxy? = nil
-    var cardId: String? = nil
+     // var scrollProxy: ScrollViewProxy? = nil // Removed
+     var cardId: String? = nil
 
-    @State private var showingFullScreen = false
+     @State private var showingFullScreen = false
     @ObservedObject private var styles = UIStyles.shared
 
     // State for DECODED result
@@ -30,8 +30,8 @@ struct DailyReflectionInsightCard: View {
     var body: some View {
         // Always use expandableCard structure
         styles.expandableCard(
-            scrollProxy: scrollProxy,
-            cardId: cardId,
+            // scrollProxy: scrollProxy, // Removed
+            // cardId: cardId, // Removed
             showOpenButton: hasContent, // Pass hasContent to control button visibility
             content: {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
