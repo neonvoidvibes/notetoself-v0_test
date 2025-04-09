@@ -384,8 +384,13 @@ struct InsightsView: View {
              }
               .padding(.horizontal, styles.layout.paddingXL) // Padding for the whole CTA VStack
               .padding(.vertical, styles.layout.spacingL) // Vertical padding
-
-
+   
+   
+             // --- Engagement Hook Section ---
+             engagementHookSection
+                 .padding(.top, styles.layout.spacingXL) // Add space before this section
+   
+   
             // Bottom padding
             Spacer().frame(height: styles.layout.paddingXL + 80) // Keep bottom padding
         }
@@ -442,6 +447,42 @@ struct InsightsView: View {
              Spacer() // Pushes content towards center vertically
          }.padding(.vertical, 50)
      }
+
+   // --- NEW: Engagement Hook Section ---
+   private var engagementHookSection: some View {
+       VStack(alignment: .center, spacing: styles.layout.spacingM) {
+           Image(systemName: "sparkles") // Engaging icon
+               .font(.system(size: 32))
+               .foregroundColor(styles.colors.accent)
+               .padding(.bottom, styles.layout.spacingS)
+
+           Text("What Insight Do You Crave?")
+               .font(styles.typography.title3) // Use title3 for emphasis
+               .foregroundColor(styles.colors.text)
+               .multilineTextAlignment(.center)
+
+           Text("Your journey is unique. What new perspective or connection would help you most right now? Share your ideas and help shape the future of Note to Self!")
+               .font(styles.typography.bodyFont)
+               .foregroundColor(styles.colors.textSecondary)
+               .multilineTextAlignment(.center)
+               .lineSpacing(4) // Add a bit of line spacing
+
+           Button {
+               // TODO: Implement feedback mechanism (e.g., open mail, link to form, in-app feedback)
+               print("[InsightsView] 'Share Your Ideas' button tapped.")
+           } label: {
+                Text("Share Your Ideas")
+                    .foregroundColor(styles.colors.accent) // Use accent color for ghost button text
+           }
+           .buttonStyle(UIStyles.GhostButtonStyle()) // Use Ghost style for a less prominent button
+           .padding(.top, styles.layout.spacingS)
+       }
+       .padding(.vertical, styles.layout.paddingXL) // Generous vertical padding
+       .padding(.horizontal, styles.layout.paddingL) // Standard horizontal padding
+       .background(styles.colors.secondaryBackground.opacity(0.5)) // Subtle background
+       .cornerRadius(styles.layout.radiusL)
+       .padding(.horizontal, styles.layout.paddingXL) // Outer padding to align with cards
+   }
 
 
     // Helper to check if all insight states are nil
