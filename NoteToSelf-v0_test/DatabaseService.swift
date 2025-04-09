@@ -220,21 +220,33 @@ class DatabaseService: ObservableObject {
             """
         let params: [Value] = [.text(queryJSON), .text(queryJSON), .integer(Int64(limit))]
 
-        print("[DB Search] Executing corrected JournalEntries search...")
+        print("[DB Search] Executing JournalEntries search for RAG context...")
         let rows = try self.connection.query(sql, params)
-        var results: [JournalEntry] = []
+        var results: [ContextItem] = [] // Return ContextItem
         for row in rows {
             guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
                   let text = try? row.getString(1),
                   let moodStr = try? row.getString(2), let mood = Mood(rawValue: moodStr),
                   let dateTimestamp = try? row.getInt(3),
                   let intensityInt = try? row.getInt(4),
-                  let isStarredInt = try? row.getInt(5) // Read isStarred
-            else { print("Warning: Failed decode JournalEntry row: \(row)"); continue }
+                  let isStarredInt = try? row.getInt(5)
+            else { print("Warning: Failed decode JournalEntry row for RAG: \(row)"); continue }
+
             let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
-            results.append(JournalEntry(id: id, text: text, mood: mood, date: date, intensity: Int(intensityInt), isStarred: isStarredInt == 1)) // Init with isStarred
+            let contextItem = ContextItem(
+                id: id,
+                text: text,
+                sourceType: .journalEntry,
+                date: date,
+                mood: mood,
+                moodIntensity: Int(intensityInt),
+                isStarred: isStarredInt == 1,
+                insightCardType: nil, // Not applicable
+                relatedChatId: nil // Not applicable
+            )
+            results.append(contextItem)
         }
-        print("[DB Search] Corrected JournalEntries search successful. Found \(results.count) entries.")
+        print("[DB Search] JournalEntries RAG search successful. Found \(results.count) items.")
         return results
     }
 
@@ -326,9 +338,9 @@ class DatabaseService: ObservableObject {
              """
          let params: [Value] = [.text(queryJSON), .text(queryJSON), .integer(Int64(limit))]
 
-         print("[DB Search] Executing corrected ChatMessages search...")
+         print("[DB Search] Executing ChatMessages search for RAG context...")
         let rows = try self.connection.query(sql, params)
-        var results: [(message: ChatMessage, chatId: UUID)] = []
+        var results: [ContextItem] = [] // Return ContextItem
         for row in rows {
              guard let idStr = try? row.getString(0), let id = UUID(uuidString: idStr),
                    let chatIdStr = try? row.getString(1), let chatId = UUID(uuidString: chatIdStr),
@@ -336,12 +348,24 @@ class DatabaseService: ObservableObject {
                    let isUserInt = try? row.getInt(3),
                    let dateTimestamp = try? row.getInt(4),
                    let isStarredInt = try? row.getInt(5)
-             else { print("Warning: Failed decode ChatMessage row: \(row)"); continue }
+             else { print("Warning: Failed decode ChatMessage row for RAG: \(row)"); continue }
+
              let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
-             let message = ChatMessage(id: id, text: text, isUser: isUserInt == 1, date: date, isStarred: isStarredInt == 1)
-             results.append((message: message, chatId: chatId))
+             let prefix = (isUserInt == 1) ? "User" : "AI"
+             let contextItem = ContextItem(
+                 id: id,
+                 text: "\(prefix): \(text)", // Prepend User/AI to text
+                 sourceType: .chatMessage,
+                 date: date,
+                 mood: nil, // Chat messages don't have mood
+                 moodIntensity: nil,
+                 isStarred: isStarredInt == 1,
+                 insightCardType: nil, // Not applicable
+                 relatedChatId: chatId // Include related chat ID
+             )
+             results.append(contextItem)
         }
-        print("[DB Search] Corrected ChatMessages search successful. Found \(results.count) messages.")
+        print("[DB Search] ChatMessages RAG search successful. Found \(results.count) items.")
         return results
     }
 
@@ -407,9 +431,9 @@ class DatabaseService: ObservableObject {
     }
 
 
-    /// Loads the most recently generated insight JSON string for a specific type.
+    /// Loads the most recently generated insight for a specific type, returning its JSON, date, and a ContextItem representation.
     /// NOTE: This is a synchronous function. Callers should dispatch to a background thread.
-    func loadLatestInsight(type: String) throws -> (jsonData: String, generatedDate: Date)? {
+    func loadLatestInsight(type: String) throws -> (jsonData: String, generatedDate: Date, contextItem: ContextItem)? {
         let sql = "SELECT jsonData, generatedDate FROM GeneratedInsights WHERE insightType = ? ORDER BY generatedDate DESC LIMIT 1;" // Ensure latest
         let params: [Value] = [.text(type)]
 
@@ -426,7 +450,22 @@ class DatabaseService: ObservableObject {
 
             let date = Date(timeIntervalSince1970: TimeInterval(dateTimestamp))
             print("[DB Insight] Loaded insight type '\(type)' generated on \(date.formatted()).")
-            return (jsonData: json, generatedDate: date) // Return the first valid row
+
+            // Create a ContextItem from the insight data
+            // We don't have a direct ID or starred status for insights in the DB
+            // Use a hash of the type+date as a stable ID? Or just random UUID? Let's use random.
+            let contextItem = ContextItem(
+                id: UUID(), // No persistent ID for insight itself
+                text: "Insight (\(type)): \(json.prefix(200))...", // Use JSON prefix as text context
+                sourceType: .insight,
+                date: date, // Use generation date
+                mood: nil, // Insights don't have mood
+                moodIntensity: nil,
+                isStarred: false, // Insights aren't starred
+                insightCardType: type, // Store the insight type
+                relatedChatId: nil
+            )
+            return (jsonData: json, generatedDate: date, contextItem: contextItem) // Return tuple including ContextItem
         }
 
         // If loop finishes without returning, no insight was found

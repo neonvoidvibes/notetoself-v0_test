@@ -255,7 +255,7 @@ struct InsightsView: View {
                    .opacity(cardsAppeared ? 1 : 0)
                    .animation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1), value: cardsAppeared)
                    // Add vertical padding only if there is content
-                   .padding(.vertical, dailyReflectionHasContent ? styles.layout.spacingM : 20)
+                   .padding(.vertical, dailyReflectionHasContent ? styles.layout.spacingM : 0)
               }
 
             // --- Conditional "Add New Note" Button ---

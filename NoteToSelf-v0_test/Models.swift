@@ -418,6 +418,33 @@ struct MoodDataPoint: Identifiable, Codable, Equatable {
 
 
 // MARK: - App State
+// MARK: - RAG Context Item
+/// Represents a piece of context retrieved for the AI, including metadata for weighting and understanding.
+struct ContextItem: Identifiable {
+    let id: UUID
+    let text: String
+    let sourceType: ContextSourceType
+    let date: Date
+    let mood: Mood? // Optional for chat messages or insights without explicit mood
+    let moodIntensity: Int? // Optional
+    let isStarred: Bool
+    let insightCardType: String? // Optional, only for insights
+    let relatedChatId: UUID? // Optional, only for chat messages
+
+    // Calculated property for age in days (used for weighting)
+    var ageInDays: Int {
+        return Calendar.current.dateComponents([.day], from: date, to: Date()).day ?? 0
+    }
+}
+
+// Enum to identify the source of the context item
+enum ContextSourceType: String {
+    case journalEntry = "Journal Entry"
+    case chatMessage = "Chat Message"
+    case insight = "AI Insight"
+}
+
+
 @MainActor
 class AppState: ObservableObject {
     // The actual stored entries loaded from the database

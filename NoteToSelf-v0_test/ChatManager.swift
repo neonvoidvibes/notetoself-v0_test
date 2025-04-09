@@ -87,67 +87,61 @@ class ChatManager: ObservableObject {
                     // Concurrent lookups
                     async let similarEntriesFetch = dbService.findSimilarJournalEntries(to: queryEmbedding, limit: 3)
                     async let similarMessagesFetch = dbService.findSimilarChatMessages(to: queryEmbedding, limit: 5)
-                    async let latestSummaryFetch = dbService.loadLatestInsight(type: "weeklySummary")
-                    async let latestMoodTrendFetch = dbService.loadLatestInsight(type: "moodTrend")
-                    async let latestRecsFetch = dbService.loadLatestInsight(type: "recommendation")
-
+                    async let latestSummaryFetch = try? dbService.loadLatestInsight(type: "weeklySummary") // Use try? for non-critical insights
+                    async let latestMoodTrendFetch = try? dbService.loadLatestInsight(type: "moodTrend")
+                    async let latestRecsFetch = try? dbService.loadLatestInsight(type: "recommendation")
 
                     // Await results
-                    let entries = try await similarEntriesFetch
-                    let messages = try await similarMessagesFetch
-                    let summaryData = try? await latestSummaryFetch // Use try? to ignore errors here
-                    let moodTrendData = try? await latestMoodTrendFetch
-                    let recommendationsData = try? await latestRecsFetch
+                    let entries = try await similarEntriesFetch // ContextItems from Journal
+                    let messages = try await similarMessagesFetch // ContextItems from Chat
+                    let summaryData = await latestSummaryFetch // Optional tuple
+                    let moodTrendData = await latestMoodTrendFetch // Optional tuple
+                    let recommendationsData = await latestRecsFetch // Optional tuple
 
                     print("[ChatPipeline] RAG retrieval success: \(entries.count) entries, \(messages.count) messages, \(summaryData != nil ? 1 : 0) summary, \(moodTrendData != nil ? 1 : 0) trend, \(recommendationsData != nil ? 1 : 0) recs.")
 
-                    var formattedContextItems: [String] = []
+                    var allContextItems: [ContextItem] = []
+                    allContextItems.append(contentsOf: entries) // Add similar entries
+                    allContextItems.append(contentsOf: messages) // Add similar messages
 
-                    // Format Journal Entries
-                    if !entries.isEmpty {
-                        formattedContextItems.append("Context from recent/relevant journal entries:")
-                        for entry in entries {
-                            let filteredText = filterPII(text: entry.text)
-                            formattedContextItems.append("- Entry (\(entry.date.formatted(date: .numeric, time: .omitted)), Mood: \(entry.mood.name)): \(filteredText.prefix(100))...")
+                    // Add latest insights as ContextItems
+                    if let insight = summaryData { allContextItems.append(insight.contextItem) }
+                    if let insight = moodTrendData { allContextItems.append(insight.contextItem) }
+                    if let insight = recommendationsData { allContextItems.append(insight.contextItem) }
+
+                    // --- Weighting and Sorting ---
+                    let weightedItems = allContextItems.map { item -> (item: ContextItem, weight: Double) in
+                        let weight = calculateWeight(for: item)
+                        return (item, weight)
+                    }.sorted { $0.weight > $1.weight } // Sort descending by weight
+
+                    print("[ChatPipeline] Calculated weights for \(weightedItems.count) context items.")
+                    // Log top 3 weighted items for debugging
+                    // weightedItems.prefix(3).forEach { print("  - Item ID: \($0.item.id), Type: \($0.item.sourceType.rawValue), Weight: \($0.weight)") }
+
+                    // Select top N items (e.g., top 8)
+                    let topItems = weightedItems.prefix(8).map { $0.item }
+
+                    // --- Format Context String with Metadata ---
+                    var contextStrings: [String] = ["Context items (most relevant first):"]
+                    for item in topItems {
+                        let filteredText = filterPII(text: item.text)
+                        var metadataString = "(\(item.sourceType.rawValue), \(item.date.formatted(date: .numeric, time: .shortened))"
+                        if let mood = item.mood {
+                            metadataString += ", Mood: \(mood.name)"
+                            if let intensity = item.moodIntensity { metadataString += "/\(intensity)"} // Add intensity if available
                         }
+                        if item.isStarred { metadataString += ", STARRED" }
+                        if let cardType = item.insightCardType { metadataString += ", Insight: \(cardType)" }
+                        metadataString += ")"
+                        contextStrings.append("- \(metadataString): \(filteredText)")
                     }
 
-                    // Format Chat Messages
-                    if !messages.isEmpty {
-                        formattedContextItems.append("\nContext from recent/relevant chat messages:")
-                        for msgTuple in messages.sorted(by: { $0.message.date < $1.message.date }) {
-                             let prefix = msgTuple.message.isUser ? "You" : "AI"
-                             let filteredText = filterPII(text: msgTuple.message.text)
-                             formattedContextItems.append("- \(prefix) (\(msgTuple.message.date.formatted(date: .omitted, time: .shortened))): \(filteredText.prefix(80))...")
-                        }
-                    }
-
-                    // Format AI Insights
-                    var insightContext: [String] = []
-                    let decoder = JSONDecoder()
-
-                    if let (summaryJson, _) = summaryData, let data = summaryJson.data(using: .utf8), let summary = try? decoder.decode(WeeklySummaryResult.self, from: data) {
-                        insightContext.append("Last Weekly Summary: \(summary.mainSummary.prefix(100))... Themes: \(summary.keyThemes.joined(separator: ", ")). Trend: \(summary.moodTrend).")
-                    }
-                     if let (trendJson, _) = moodTrendData, let data = trendJson.data(using: .utf8), let trend = try? decoder.decode(MoodTrendResult.self, from: data) {
-                         insightContext.append("Recent Mood Trend: \(trend.overallTrend). Dominant: \(trend.dominantMood). Analysis: \(trend.analysis.prefix(100))...")
-                     }
-                    if let (recsJson, _) = recommendationsData, let data = recsJson.data(using: .utf8), let recs = try? decoder.decode(RecommendationResult.self, from: data), !recs.recommendations.isEmpty {
-                        let recTitles = recs.recommendations.map { $0.title }.joined(separator: ", ")
-                        insightContext.append("Recent Recommendations: \(recTitles).")
-                    }
-
-                    if !insightContext.isEmpty {
-                        formattedContextItems.append("\nContext from recent AI-generated insights:")
-                        formattedContextItems.append(contentsOf: insightContext.map { "- \($0)" })
-                    }
-
-
-                    ragContextString = formattedContextItems.joined(separator: "\n")
-                    print("[ChatPipeline] PII filtering & context formatting complete. Context length: \(ragContextString.count) chars.")
+                    ragContextString = contextStrings.joined(separator: "\n")
+                    print("[ChatPipeline] Weighted context formatting complete. Context length: \(ragContextString.count) chars.")
 
                 } catch {
-                    print("‼️ [ChatPipeline] RAG DB retrieval failed: \(error)")
+                    print("‼️ [ChatPipeline] RAG DB retrieval or processing failed: \(error)")
                     retrievalError = error
                     ragContextString = ""
                 }
@@ -488,5 +482,42 @@ class ChatManager: ObservableObject {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.date(from: dateString)
+    }
+
+    // MARK: - Context Weighting
+
+    /// Calculates a relevance weight for a given context item.
+    /// Higher weight means more relevant.
+    private func calculateWeight(for item: ContextItem) -> Double {
+        var score: Double = 1.0 // Base score
+
+        // --- Time Decay ---
+        // Exponential decay: weight = base * decayRate ^ ageInDays
+        // Example: decayRate = 0.95 -> 5% decay per day
+        // Adjust decayRate to make newer items significantly more important
+        let decayRate: Double = 0.90 // 10% decay per day, faster decay
+        let ageFactor = pow(decayRate, Double(item.ageInDays))
+        score *= ageFactor
+
+        // --- Starred Boost ---
+        if item.isStarred {
+            score *= 2.5 // Increase boost for starred items
+        }
+
+        // --- Source Type Weighting ---
+        switch item.sourceType {
+        case .journalEntry: score *= 1.0 // Base weight for journal entries
+        case .chatMessage: score *= 0.8 // Slightly less weight for chats? Adjust as needed.
+        case .insight: score *= 1.2 // Slightly boost insights? Adjust as needed.
+        }
+
+        // --- Mood Intensity Weighting ---
+        if let intensity = item.moodIntensity {
+            // Example: Intensity 1 (Slight) = 0.9x, Intensity 2 (Moderate) = 1.0x, Intensity 3 (Strong) = 1.1x
+            score *= (1.0 + (Double(intensity - 2) * 0.1))
+        }
+
+        // Ensure score is non-negative
+        return max(0, score)
     }
 }
