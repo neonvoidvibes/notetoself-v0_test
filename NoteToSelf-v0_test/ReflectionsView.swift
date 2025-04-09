@@ -247,7 +247,7 @@ struct ReflectionsView: View {
                     VStack { // Use VStack with Spacers to center vertically
                         Spacer() // Pushes tagline down
                         // TODO: Implement logic to cycle tagline daily
-                        DailyTaglineView(tagline: "Turn emotion into insight.", iconName: "bubble.left.and.bubble.right.fill") // Reflect icon
+                        DailyTaglineView(tagline: "Turn emotion into insight.", iconName: "bubble") // Reflect icon
                             // Reduce negative padding adjustment as internal padding increased
                             .padding(.top, -styles.layout.spacingXL) // Adjust if needed
                             .transition(.opacity.combined(with: .scale)) // Add animation

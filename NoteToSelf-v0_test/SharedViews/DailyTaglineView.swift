@@ -19,7 +19,7 @@ struct DailyTaglineView: View {
              Image(systemName: iconName) // Use the parameter here
                  .resizable()
                  .scaledToFit()
-                 .frame(width: 120, height: 120) // Large size
+                 .frame(width: 165, height: 165) // Large size
                  .foregroundColor(styles.colors.textSecondary.opacity(0.1)) // Adaptive gray (light/dark) via textSecondary, very low opacity
 
              // Tagline Text

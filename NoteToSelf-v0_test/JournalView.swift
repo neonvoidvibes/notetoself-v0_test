@@ -291,7 +291,7 @@ struct JournalView: View {
 
                   // --- Daily Tagline ---
                   // TODO: Implement logic to cycle tagline daily
-                  DailyTaglineView(tagline: "Keep showing up.", iconName: "book.closed.fill") // Journal icon
+                  DailyTaglineView(tagline: "Keep showing up.", iconName: "pencil") // Journal icon
 
                   // --- Journey Card ---
                 JourneyInsightCard()
