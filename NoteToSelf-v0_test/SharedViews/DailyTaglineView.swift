@@ -12,15 +12,15 @@ struct DailyTaglineView: View {
     }
 
     var body: some View {
-        Text(tagline)
-            .font(styles.typography.title3) // Same size as card headers
-            .foregroundColor(taglineColor) // Adaptive color
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.vertical, styles.layout.spacingXL) // Ample top/bottom padding
-            .padding(.horizontal, styles.layout.paddingL) // Horizontal padding
-    }
-}
+         Text(tagline)
+             .font(styles.typography.largeTitle) // Use largest predefined title size
+             .foregroundColor(taglineColor) // Adaptive color
+             .multilineTextAlignment(.center)
+             .frame(maxWidth: .infinity, alignment: .center)
+             .padding(.vertical, styles.layout.spacingXL * 2) // Double vertical padding
+             .padding(.horizontal, styles.layout.paddingL) // Horizontal padding
+     }
+ }
 
 #Preview {
     VStack {

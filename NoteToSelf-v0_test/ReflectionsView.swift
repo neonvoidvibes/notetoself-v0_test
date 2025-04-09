@@ -242,111 +242,90 @@ struct ReflectionsView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 8)
 
-                // --- Daily Tagline ---
-                // TODO: Implement logic to cycle tagline daily
-                DailyTaglineView(tagline: "Turn emotion into insight.") // Sample Reflect tagline
-                    .padding(.top, -styles.layout.spacingM) // Adjust top padding slightly if needed below header
-
-                // Chat content - FIXED HEIGHT to prevent layout shifts
-                GeometryReader { geometry in
-                    ScrollViewReader { scrollView in
-                        ScrollView {
-                            // Empty state
-                            if chatManager.currentChat.messages.isEmpty {
-                                VStack(alignment: .center, spacing: styles.layout.spacingL) {
-                                    Text("My AI")
-                                        .font(styles.typography.headingFont)
-                                        .foregroundColor(styles.colors.text)
-                                        .padding(.bottom, 4)
-                                    Text("Ask questions, find clarity.")
-                                        .font(styles.typography.bodyLarge)
-                                        .foregroundColor(styles.colors.accent)
-                                        .multilineTextAlignment(.center)
-                                }
-                                .padding(.horizontal, styles.layout.paddingXL)
-                                .padding(.vertical, styles.layout.spacingXL * 1.5)
-                                .padding(.top, 80)
-                                .padding(.bottom, 40)
-                                .frame(maxWidth: .infinity)
-                                .background(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            styles.colors.appBackground,
-                                            styles.colors.appBackground.opacity(0.9)
-                                        ]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-                            }
-
-                            // Messages - NO ANIMATIONS on the container
-                            LazyVStack(spacing: styles.layout.spacingL) {
-                                ForEach(chatManager.currentChat.messages) { message in
-                                    ChatBubble(
-                                        message: message,
-                                        isExpanded: expandedMessageId == message.id,
-                                        onTap: {
-                                            expandedMessageId = (expandedMessageId == message.id) ? nil : message.id
-                                        },
-                                        styles: self.styles // Pass styles instance
-                                    )
-                                    .id(message.id)
-                                }
-
-                                // Typing indicator
-                                if chatManager.isTyping {
-                                    BreathingDotIndicator() // Use the new component
-                                        .id("TypingIndicator") // Keep ID for scrolling if needed
-                                        .transition(.opacity) // Add fade transition
-                                }
-
-                                // Scroll anchor - make it stick directly to the last message with minimal height
-                                Color.clear
-                                    .frame(height: 1)
-                                    .id("BottomAnchor")
-                            }
-                            .padding(.horizontal, styles.layout.paddingL)
-                            .padding(.vertical, styles.layout.paddingL)
-                            // Reduce bottom padding to prevent excessive scrolling space
-                            .padding(.bottom, 8)
-                        }
-                        .frame(height: geometry.size.height)
-                        .onTapGesture {
-                            // Dismiss keyboard on tap
-                            if isInputFocused {
-                                isInputFocused = false
-                            }
-                        }
-                        // --- Refined Scrolling Logic ---
-                        .onChange(of: chatManager.currentChat.messages.count) { _, _ in
-                            // Scroll to the *last message* when the count changes
-                            if scrollAtBottom, let lastMessageId = chatManager.currentChat.messages.last?.id {
-                                // Scroll immediately, ScrollViewReader waits for the ID
-                                scrollView.scrollTo(lastMessageId, anchor: .bottom)
-                                print("Scrolled to last message: \(lastMessageId)")
-                            }
-                        }
-                        .onChange(of: chatManager.isTyping) { _, isTyping in
-                            // Scroll to the indicator *when it appears*
-                            if isTyping && scrollAtBottom {
-                                // Scroll immediately, ScrollViewReader waits for the ID
-                                scrollView.scrollTo("TypingIndicator", anchor: .bottom)
-                                print("Scrolled to TypingIndicator")
-                            }
-                        }
-                        .onAppear {
-                            // Initial scroll: Target last message if available, else anchor
-                            if let lastMessageId = chatManager.currentChat.messages.last?.id {
-                                scrollView.scrollTo(lastMessageId, anchor: .bottom)
-                            } else {
-                                scrollView.scrollTo("BottomAnchor", anchor: .bottom)
-                            }
-                        }
-                        // Removed DragGesture interaction with scrollAtBottom
-                        // --- End Refined Scrolling Logic ---
+                // --- Conditional Daily Tagline (Centered Vertically) ---
+                if chatManager.currentChat.messages.isEmpty {
+                    VStack { // Use VStack with Spacers to center vertically
+                        Spacer() // Pushes tagline down
+                        // TODO: Implement logic to cycle tagline daily
+                        DailyTaglineView(tagline: "Turn emotion into insight.") // Sample Reflect tagline
+                            .transition(.opacity.combined(with: .scale)) // Add animation
+                        Spacer() // Pushes tagline up
                     }
-                }
+                    // This VStack fills the space between header and input area when chat is empty
+                } else {
+                     // Chat content - FIXED HEIGHT to prevent layout shifts
+                     // This GeometryReader + content should only appear if chat is NOT empty
+                     GeometryReader { geometry in
+                         ScrollViewReader { scrollView in
+                             ScrollView {
+                                 // Messages - NO ANIMATIONS on the container
+                                 LazyVStack(spacing: styles.layout.spacingL) {
+                                     ForEach(chatManager.currentChat.messages) { message in
+                                         ChatBubble(
+                                             message: message,
+                                             isExpanded: expandedMessageId == message.id,
+                                             onTap: {
+                                                 expandedMessageId = (expandedMessageId == message.id) ? nil : message.id
+                                             },
+                                             styles: self.styles // Pass styles instance
+                                         )
+                                         .id(message.id)
+                                     }
+
+                                     // Typing indicator
+                                     if chatManager.isTyping {
+                                         BreathingDotIndicator() // Use the new component
+                                             .id("TypingIndicator") // Keep ID for scrolling if needed
+                                             .transition(.opacity) // Add fade transition
+                                     }
+
+                                     // Scroll anchor - make it stick directly to the last message with minimal height
+                                     Color.clear
+                                         .frame(height: 1)
+                                         .id("BottomAnchor")
+                                 }
+                                 .padding(.horizontal, styles.layout.paddingL)
+                                 .padding(.vertical, styles.layout.paddingL)
+                                 // Reduce bottom padding to prevent excessive scrolling space
+                                 .padding(.bottom, 8)
+                             }
+                             .frame(height: geometry.size.height)
+                             .onTapGesture {
+                                 // Dismiss keyboard on tap
+                                 if isInputFocused {
+                                     isInputFocused = false
+                                 }
+                             }
+                             // --- Refined Scrolling Logic ---
+                             .onChange(of: chatManager.currentChat.messages.count) { _, _ in
+                                 // Scroll to the *last message* when the count changes
+                                 if scrollAtBottom, let lastMessageId = chatManager.currentChat.messages.last?.id {
+                                     // Scroll immediately, ScrollViewReader waits for the ID
+                                     scrollView.scrollTo(lastMessageId, anchor: .bottom)
+                                     print("Scrolled to last message: \(lastMessageId)")
+                                 }
+                             }
+                             .onChange(of: chatManager.isTyping) { _, isTyping in
+                                 // Scroll to the indicator *when it appears*
+                                 if isTyping && scrollAtBottom {
+                                     // Scroll immediately, ScrollViewReader waits for the ID
+                                     scrollView.scrollTo("TypingIndicator", anchor: .bottom)
+                                     print("Scrolled to TypingIndicator")
+                                 }
+                             }
+                             .onAppear {
+                                 // Initial scroll: Target last message if available, else anchor
+                                 if let lastMessageId = chatManager.currentChat.messages.last?.id {
+                                     scrollView.scrollTo(lastMessageId, anchor: .bottom)
+                                 } else {
+                                     scrollView.scrollTo("BottomAnchor", anchor: .bottom)
+                                 }
+                             }
+                             // Removed DragGesture interaction with scrollAtBottom
+                             // --- End Refined Scrolling Logic ---
+                         }
+                     }
+                } // End else block (chat not empty)
 
                 // Input area - Dynamic Height up to 4 lines
                 if !bottomSheetExpanded {
