@@ -248,6 +248,8 @@ struct ReflectionsView: View {
                         Spacer() // Pushes tagline down
                         // TODO: Implement logic to cycle tagline daily
                         DailyTaglineView(tagline: "Turn emotion into insight.") // Sample Reflect tagline
+                            // Reduce negative padding adjustment as internal padding increased
+                            .padding(.top, -styles.layout.spacingXL) // Adjust if needed
                             .transition(.opacity.combined(with: .scale)) // Add animation
                         Spacer() // Pushes tagline up
                     }

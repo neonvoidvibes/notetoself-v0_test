@@ -8,56 +8,30 @@ struct DailyTaglineView: View {
 
     // Removed computed color logic
 
-     // State for persistent pulse animation
-     @State private var pulsing: Bool = false
+     // Removed pulsing state variable
 
-     // Define the gradient
-     private var textGradient: LinearGradient {
-         LinearGradient(
-             gradient: Gradient(colors: [
-                 styles.colors.accent, // Start with accent
-                 colorScheme == .dark ? styles.colors.secondaryAccent : styles.colors.accent.opacity(0.7) // End with secondaryAccent (dark) or lighter accent (light)
-             ]),
-             startPoint: .topLeading,
-             endPoint: .bottomTrailing
-         )
-     }
+     // Removed textGradient definition
 
      var body: some View {
-         ZStack {
-             // Subtle background glow elements
-             Circle()
-                 .fill(styles.colors.accent.opacity(0.08))
-                 .blur(radius: 30)
-                 .frame(width: 150, height: 150)
-                 .offset(x: -50, y: -20)
-
-             Circle()
-                  .fill(styles.colors.secondaryAccent.opacity(0.06))
-                  .blur(radius: 40)
-                  .frame(width: 180, height: 180)
-                  .offset(x: 60, y: 30)
+         ZStack { // Use ZStack to layer icon behind text
+             // Background Icon
+             Image(systemName: "brain.head.profile") // Appropriate icon
+                 .resizable()
+                 .scaledToFit()
+                 .frame(width: 120, height: 120) // Large size
+                 .foregroundColor(styles.colors.textSecondary.opacity(0.1)) // Adaptive gray (light/dark) via textSecondary, very low opacity
 
              // Tagline Text
              Text(tagline)
                  .font(styles.typography.largeTitle)
-                 // Apply gradient using foregroundStyle
-                 .foregroundStyle(textGradient)
+                 .foregroundColor(styles.colors.accent) // Use accent color directly
                  .multilineTextAlignment(.center)
                  .frame(maxWidth: .infinity, alignment: .center)
-                 .padding(.vertical, styles.layout.spacingXL * 2) // Double vertical padding
+                 .padding(.vertical, styles.layout.spacingXL * 3) // Keep increased vertical padding
                  .padding(.horizontal, styles.layout.paddingL) // Horizontal padding
-                 // Persistent Pulse Animation
-                 .scaleEffect(pulsing ? 1.02 : 1.0) // Subtle scale change
-                 .onAppear {
-                     // Start the continuous animation
-                     withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
-                         pulsing = true
-                     }
-                 }
+                 // Removed animation modifiers
+                 // Removed background capsule
          }
-         // Clip the ZStack to prevent glow from extending too far if needed
-         // .clipShape(Rectangle())
      }
  }
 
