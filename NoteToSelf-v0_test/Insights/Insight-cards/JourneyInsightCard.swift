@@ -99,8 +99,8 @@ struct JourneyInsightCard: View {
                                 .font(styles.typography.bodySmall)
                                 .foregroundColor(loadNarrativeError ? styles.colors.error : styles.colors.textSecondary) // Use error color if loading failed
                                 .lineLimit(5) // Increased line limit to 5
-                                .fixedSize(horizontal: false, vertical: true)
-                                .frame(minHeight: 20) // Ensure minimum height
+                                .fixedSize(horizontal: false, vertical: true) // Allows vertical expansion
+                                // REMOVED: .frame(minHeight: 20)
                                 .padding(.bottom, styles.layout.spacingS) // Space below snippet
 
                             // New StreakDotsView
