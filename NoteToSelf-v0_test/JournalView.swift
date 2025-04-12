@@ -287,18 +287,15 @@ struct JournalView: View {
          // Remove the outer ScrollViewReader as it's now passed in
          ScrollView {
              VStack(spacing: 0) { // Main container VStack - Set spacing to 0
-                 // Removed GeometryReader for scroll tracking
 
                   // --- Journey Card (Conditional) ---
                   if appState.currentStreak > 0 {
                       // Pass the AppState environment object during initialization
                       JourneyInsightCard(appState: appState)
                           .padding(.horizontal, styles.layout.paddingL)
-                 // Pass the AppState environment object during initialization
-                 JourneyInsightCard(appState: appState)
+                          .padding(.top, styles.layout.paddingL) // Apply standard top padding when shown
                           .padding(.bottom, styles.layout.spacingS) // Reduced bottom padding
-                      // Apply top padding based on streak presence
-                     .padding(.top, appState.currentStreak > 0 ? styles.layout.paddingL : 0) // Add top padding only if streak exists
+                          .transition(.opacity.combined(with: .move(edge: .top))) // Add animation
                   }
 
                  // --- Entry List / Empty State ---

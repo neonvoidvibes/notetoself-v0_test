@@ -4,55 +4,69 @@ struct StreakDotsView: View {
     @StateObject private var viewModel: StreakViewModel // Use StateObject for owned view model
     @ObservedObject private var styles = UIStyles.shared // Observe UIStyles
     private let dotSize: CGFloat = 28 // Size of each dot
-    private let dotSpacing: CGFloat = 8 // Spacing between dots
+    // Removed dotSpacing, calculated dynamically now
 
     init(appState: AppState) {
         _viewModel = StateObject(wrappedValue: StreakViewModel(appState: appState))
     }
 
-    private var weekdayLabels: [String] {
-        let calendar = Calendar.current
-        // Use veryShortWeekdaySymbols which are locale-aware ("S", "M", "T" etc.)
-        // Reorder based on firstDayOfWeek
-        let symbols = calendar.veryShortWeekdaySymbols
-        let firstWeekdayIndex = viewModel.firstDayOfWeek - 1 // 0-based index
-        let reorderedSymbols = Array(symbols[firstWeekdayIndex...] + symbols[..<firstWeekdayIndex])
-        return reorderedSymbols
-    }
+    private func getWeekdayLabels() -> [String] {
+         let calendar = Calendar.current
+         // Use shortWeekdaySymbols ("Mon", "Tue", etc.)
+         let symbols = calendar.shortWeekdaySymbols
+         let firstWeekdayIndex = viewModel.firstDayOfWeek - 1 // 0-based index
+
+         // Ensure we have 7 symbols
+         guard symbols.count == 7 else { return [] }
+
+         let reorderedSymbols = Array(symbols[firstWeekdayIndex...] + symbols[..<firstWeekdayIndex])
+         // Shorten to 2 characters (e.g., "Mo", "Tu")
+         return reorderedSymbols.map { String($0.prefix(2)) }
+     }
 
     var body: some View {
-        VStack(spacing: styles.layout.spacingS) { // Space between labels and bar/dots
-            // Weekday Labels
-            HStack(spacing: dotSpacing) {
-                ForEach(weekdayLabels, id: \.self) { label in
-                    Text(label)
-                        .font(styles.typography.caption) // Small caption font
-                        .foregroundColor(styles.colors.textSecondary) // Corrected: styles.colors
-                        .frame(width: dotSize, height: 15, alignment: .center) // Align labels with dots
-                }
-            }
+        // Use GeometryReader to determine available width for precise dot placement
+        GeometryReader { geometry in
+             let totalWidth = geometry.size.width
+             let totalSpacing = totalWidth - (7 * dotSize) // Total space available for gaps
+             let calculatedSpacing = max(0, totalSpacing / 6) // Space between centers of dots
 
-            // Background Bar + Dots
-            ZStack {
-                // Background Bar
-                RoundedRectangle(cornerRadius: dotSize / 2) // Make ends perfectly round
-                    .fill(styles.colors.streakBarBackground) // Corrected: styles.colors
-                    .frame(height: dotSize) // Height matches dot size
-
-                // Dots
-                HStack(spacing: dotSpacing) {
-                    ForEach(viewModel.streakDays) { dayData in
-                        DotView(
-                            isFilled: dayData.isFilled,
-                            isToday: dayData.isToday,
-                            showGlow: dayData.isWithin24Hours // Control glow based on viewModel data
-                        )
-                        .frame(width: dotSize, height: dotSize) // Ensure consistent size
+            VStack(spacing: styles.layout.spacingS) { // Space between labels and bar/dots
+                // Weekday Labels - Positioned above dots
+                HStack(spacing: calculatedSpacing) { // Use calculated spacing
+                    ForEach(getWeekdayLabels(), id: \.self) { label in
+                        Text(label)
+                            .font(styles.typography.caption) // Small caption font
+                            .foregroundColor(styles.colors.textSecondary)
+                            .frame(width: dotSize, height: 15, alignment: .center) // Align labels with dots
                     }
                 }
+                .frame(width: totalWidth) // Ensure labels HStack uses full width
+
+                // Background Bar + Dots
+                ZStack {
+                    // Background Bar - Spans full width
+                    RoundedRectangle(cornerRadius: dotSize / 2) // Make ends perfectly round
+                        .fill(styles.colors.streakBarBackground) // Use theme color
+                        .frame(height: dotSize) // Height matches dot size
+
+                    // Dots - Positioned precisely
+                    HStack(spacing: calculatedSpacing) { // Use calculated spacing
+                        ForEach(viewModel.streakDays) { dayData in
+                            DotView(
+                                isFilled: dayData.isFilled,
+                                isToday: dayData.isToday,
+                                showGlow: dayData.isWithin24Hours // Control glow based on viewModel data
+                            )
+                            .frame(width: dotSize, height: dotSize) // Ensure consistent size
+                        }
+                    }
+                    .frame(width: totalWidth) // Ensure dots HStack uses full width
+                }
+                .frame(height: dotSize) // Constrain ZStack height
             }
-            .frame(height: dotSize) // Constrain ZStack height
         }
+        .frame(height: 15 + styles.layout.spacingS + dotSize) // Calculate total height for GeometryReader
     }
 }
 

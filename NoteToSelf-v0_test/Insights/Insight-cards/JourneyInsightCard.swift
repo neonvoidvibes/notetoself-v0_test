@@ -2,11 +2,10 @@ import SwiftUI
 
 struct JourneyInsightCard: View {
     @EnvironmentObject var appState: AppState
-    // REMOVED: @EnvironmentObject var databaseService: DatabaseService
+    @EnvironmentObject var databaseService: DatabaseService // Re-inject DatabaseService for narrative loading
     @ObservedObject private var styles = UIStyles.shared
 
     @State private var isExpanded: Bool = false
-    // REMOVED: Narrative state, now handled by generator/view model if needed
 
     // Use the StreakViewModel to get data
     // ViewModel now depends on AppState, which is an EnvironmentObject
@@ -15,13 +14,27 @@ struct JourneyInsightCard: View {
     // we'll pass AppState in the initializer.
     @StateObject private var streakViewModel: StreakViewModel
 
+    // Re-add state for narrative
+    @State private var narrativeResult: StreakNarrativeResult? = nil
+    @State private var generatedDate: Date? = nil
+    @State private var isLoadingNarrative: Bool = false
+    @State private var loadNarrativeError: Bool = false
+    private let insightTypeIdentifier = "journeyNarrative"
+
     // Initialize with AppState provided by the parent view (JournalView)
-    // Note: JourneyInsightCard is currently used in JournalView. JournalView already has @EnvironmentObject AppState.
-    // We will modify JournalView later to pass appState to JourneyInsightCard.
-    // For now, this init makes the card require AppState.
      init(appState: AppState) {
          _streakViewModel = StateObject(wrappedValue: StreakViewModel(appState: appState))
      }
+
+    // Re-add computed property for display text, handling loading/error states
+    private var narrativeDisplayText: String {
+         if isLoadingNarrative { return "Loading narrative..." }
+         if loadNarrativeError { return "Could not load narrative." }
+         guard let result = narrativeResult, !result.narrativeText.isEmpty else {
+             return streakViewModel.currentStreak > 0 ? "Analyzing your recent journey..." : "Your journey's story will appear here."
+         }
+         return result.narrativeText
+    }
 
 
     // UX-focused streak sub-headline (Using ViewModel's streak)
@@ -90,10 +103,24 @@ struct JourneyInsightCard: View {
                             .foregroundColor(styles.colors.accent) // USE ACCENT COLOR
                             .padding(.vertical, styles.layout.spacingS)
 
-                         // REMOVED: Large dots/chart section (now handled by StreakDotsView above)
-                         // REMOVED: "Recent Activity" header
+                         // RESTORED: Narrative Text Section
+                         VStack(alignment: .leading) {
+                             Text("Highlights")
+                                 .font(styles.typography.bodyLarge.weight(.semibold))
+                                 .foregroundColor(styles.colors.text)
+                                 .padding(.bottom, styles.layout.spacingXS)
 
-                        // REMOVED: Narrative Text Section (No longer displayed directly here)
+                              // Use the narrativeDisplayText property
+                              Text(narrativeDisplayText)
+                                 .font(styles.typography.bodyFont)
+                                 // Use error color if loading failed
+                                 .foregroundColor(loadNarrativeError ? styles.colors.error : styles.colors.textSecondary)
+                                 .frame(maxWidth: .infinity, alignment: .leading)
+                                 .fixedSize(horizontal: false, vertical: true)
+
+                         }
+                         .padding(.vertical, styles.layout.spacingS)
+                         // --- End Restored Narrative Text ---
 
                         // Streak Milestones
                         VStack(alignment: .leading, spacing: styles.layout.spacingM) {
@@ -134,9 +161,9 @@ struct JourneyInsightCard: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
 
-                // Container for "Show more" text and chevron button
+                // Container for "Show more" / "Close" text and chevron button
                 VStack(spacing: styles.layout.spacingXS) { // Use spacingXS between text and button
-                    Text("Show more of my journey") // Updated text
+                    Text(isExpanded ? "Close" : "Show more of my journey") // Conditional text
                         .font(.system(size: 10, weight: .regular, design: .monospaced)) // Match nav style
                         .foregroundColor(styles.colors.accent) // Changed color to accent
 
@@ -160,8 +187,51 @@ struct JourneyInsightCard: View {
         } // End Outer VStack
         .background(styles.colors.cardBackground) // Corrected: styles.colors
         .cornerRadius(styles.layout.radiusL) // Apply corner radius to outer VStack
-         // Removed .onAppear / .onReceive for narrative loading
+        // Re-add triggers for loading narrative
+        .onAppear(perform: loadNarrative)
+        .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
+             print("[JourneyCard] Received insightsDidUpdate notification.")
+             loadNarrative()
+        }
     } // End body
+
+     // Re-add function to load and decode the insight
+     private func loadNarrative() {
+         guard !isLoadingNarrative else { return }
+         isLoadingNarrative = true
+         loadNarrativeError = false
+         narrativeResult = nil // Clear previous result
+         print("[JourneyCard] Loading narrative insight...")
+         Task {
+             var loadedDate: Date? = nil
+             var decodeError: Error? = nil
+             var finalResult: StreakNarrativeResult? = nil
+             do {
+                 // Use injected databaseService
+                 if let (json, date, _) = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
+                     loadedDate = date
+                     if let data = json.data(using: .utf8) {
+                         let decoder = JSONDecoder()
+                         do { finalResult = try decoder.decode(StreakNarrativeResult.self, from: data) }
+                         catch { decodeError = error }
+                     } else { decodeError = NSError(domain: "JourneyCard", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert JSON string to Data"]) }
+                 } else {
+                      print("[JourneyCard] No stored narrative found.")
+                 }
+             } catch {
+                 decodeError = error
+                 print("‼️ [JourneyCard] Error loading insight: \(error)")
+             }
+             // Update state on main thread
+             await MainActor.run {
+                 self.narrativeResult = finalResult
+                 self.generatedDate = loadedDate
+                 self.loadNarrativeError = (decodeError != nil)
+                 self.isLoadingNarrative = false
+                  print("[JourneyCard] Narrative load complete. Error: \(loadNarrativeError)")
+             }
+         }
+     }
 }
 
 // Preview Struct - Updated to pass AppState
@@ -176,12 +246,18 @@ struct JourneyInsightCard: View {
         JournalEntry(text: "Yesterday entry", mood: .neutral, date: calendar.date(byAdding: .day, value: -1, to: today)!),
     ]
 
+    // Inject DatabaseService for narrative loading in preview
+    let previewDbService = DatabaseService()
+    // Optionally pre-populate narrative for preview if needed
+    // Task { try? await previewDbService.saveGeneratedInsight(...) }
+
     return ScrollView {
         // Pass the AppState instance during initialization
         JourneyInsightCard(appState: previewAppState)
             .padding()
     }
     .environmentObject(previewAppState) // Still provide AppState for other potential dependencies
+    .environmentObject(previewDbService) // Provide DatabaseService
     .environmentObject(UIStyles.shared)
     .environmentObject(ThemeManager.shared)
     .background(Color.gray.opacity(0.1))
