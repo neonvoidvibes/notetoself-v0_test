@@ -50,6 +50,22 @@ struct StreakDotsView: View {
                         .fill(styles.colors.streakBarBackground) // Use theme color
                         .frame(height: dotSize) // Height matches dot size
 
+                    // Accent Bar (Active Streak) - Positioned behind dots
+                    if let range = viewModel.activeStreakRangeIndices, range.count > 1 { // Only show if streak is 2+ days
+                        let startDotIndex = range.lowerBound
+                        let endDotIndex = range.upperBound - 1
+                        let barWidth = CGFloat(range.count) * dotSize + CGFloat(range.count - 1) * calculatedSpacing
+                        let leadingOffset = CGFloat(startDotIndex) * (dotSize + calculatedSpacing)
+
+                        RoundedRectangle(cornerRadius: dotSize / 2)
+                            .fill(styles.colors.accent) // Accent color bar
+                            .frame(width: barWidth, height: dotSize)
+                            .offset(x: leadingOffset - (totalWidth - barWidth) / 2) // Center adjustment needed
+                             // Animate width/position changes
+                            .animation(.easeInOut, value: viewModel.activeStreakRangeIndices)
+
+                    }
+
                     // Dots - Positioned precisely
                     HStack(spacing: calculatedSpacing) { // Use calculated spacing
                         ForEach(viewModel.streakDays) { dayData in
@@ -80,12 +96,13 @@ private struct DotView: View {
 
     var body: some View {
         Circle()
-            .fill(isFilled ? styles.colors.accent : Color.clear) // Corrected: styles.colors
-            .overlay(
-                // Show border ONLY if NOT filled
-                Circle()
-                    .strokeBorder(styles.colors.divider, lineWidth: isFilled ? 0 : 1.5) // Corrected: styles.colors
-            )
+             // Use accent color if filled, otherwise completely transparent
+            .fill(isFilled ? styles.colors.accent : Color.clear)
+            // Remove border entirely for empty dots
+             .overlay(
+                  Circle()
+                       .strokeBorder(Color.clear, lineWidth: 0) // No border for filled or empty
+              )
             .glow(radius: 15, isActive: showGlow) // Apply conditional glow modifier
     }
 }

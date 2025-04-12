@@ -36,6 +36,23 @@ struct JourneyInsightCard: View {
          return result.narrativeText
     }
 
+     // Re-add Narrative Snippet for collapsed view - WITH TRUNCATION & loading/error state
+     private var narrativeSnippetDisplay: String {
+         if isLoadingNarrative { return "Loading..." }
+         if loadNarrativeError { return "Narrative unavailable" }
+         guard let result = narrativeResult else {
+             return "Your journey unfolds..." // Default when no result
+         }
+         // Use storySnippet if result exists, otherwise fallback
+         let snippet = result.storySnippet.isEmpty ? "Your journey unfolds..." : result.storySnippet
+         let maxLength = 100 // Slightly shorter max length for collapsed view
+         if snippet.count > maxLength {
+             return String(snippet.prefix(maxLength)) + "..."
+         } else {
+             return snippet
+         }
+     }
+
 
     // UX-focused streak sub-headline (Using ViewModel's streak)
     private var streakSubHeadline: String {
@@ -68,15 +85,26 @@ struct JourneyInsightCard: View {
 
                         // --- Conditionally Show Streak Info ---
                         if streakViewModel.currentStreak > 0 {
-                            // New StreakDotsView (Replaces MiniActivityDots)
-                             StreakDotsView(appState: appState) // Pass AppState if needed by view model
-                                 .padding(.bottom, styles.layout.spacingXS)
+                            // Add extra padding below "Keep showing up."
+                             Spacer(minLength: styles.layout.spacingM)
 
-                            // Streak Headline (Moved Below Dots)
-                             Text(streakSubHeadline)
-                                 .font(styles.typography.bodyFont.weight(.bold))
-                                 .foregroundColor(styles.colors.text)
-                                 .padding(.top, styles.layout.spacingS) // Add space above headline
+                            // Streak Headline (Moved Above Dots)
+                            Text(streakSubHeadline)
+                                .font(styles.typography.bodyFont.weight(.bold))
+                                .foregroundColor(styles.colors.text)
+                                .padding(.bottom, styles.layout.spacingXS) // Space below headline
+
+                            // Re-add Narrative Snippet Display
+                            Text(narrativeSnippetDisplay) // Use the property that handles loading/error
+                                .font(styles.typography.bodySmall)
+                                .foregroundColor(loadNarrativeError ? styles.colors.error : styles.colors.textSecondary) // Use error color if loading failed
+                                .lineLimit(2) // Limit snippet lines
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(minHeight: 20) // Ensure minimum height
+                                .padding(.bottom, styles.layout.spacingS) // Space below snippet
+
+                            // New StreakDotsView
+                            StreakDotsView(appState: appState) // Pass AppState
 
                         } else {
                              // Placeholder or message when no streak

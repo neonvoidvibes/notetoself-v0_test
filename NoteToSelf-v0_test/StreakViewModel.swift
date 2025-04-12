@@ -19,6 +19,7 @@ class StreakViewModel: ObservableObject {
     @Published var streakDays: [StreakDay] = []
     @Published var currentStreak: Int = 0
     @Published var firstDayOfWeek: Int = Calendar.current.firstWeekday // 1=Sun, 2=Mon
+    @Published var activeStreakRangeIndices: Range<Int>? = nil // Indices for accent bar
 
     init(appState: AppState) {
         self.appState = appState
@@ -94,7 +95,30 @@ class StreakViewModel: ObservableObject {
                 isWithin24Hours: isWithin24Hours
             )
         }
-        // print("[StreakViewModel] Recalculated: \(self.streakDays.count) days, Streak: \(self.currentStreak)")
+
+        // Calculate active streak range indices
+        self.activeStreakRangeIndices = calculateActiveStreakRange(streakDays: self.streakDays)
+
+        // print("[StreakViewModel] Recalculated: \(self.streakDays.count) days, Streak: \(self.currentStreak), Range: \(self.activeStreakRangeIndices)")
+    }
+
+    // Function to calculate the range of the current continuous streak within the displayed 7 days
+    private func calculateActiveStreakRange(streakDays: [StreakDay]) -> Range<Int>? {
+        guard let lastFilledIndex = streakDays.lastIndex(where: { $0.isFilled }) else {
+            return nil // No filled days
+        }
+
+        var startIndex = lastFilledIndex
+        while startIndex > 0 && streakDays[startIndex - 1].isFilled {
+            startIndex -= 1
+        }
+
+        // Ensure the range has at least one element and ends at the last filled index
+        guard startIndex <= lastFilledIndex else { return nil }
+
+        // Return range covering the continuous filled segment ending at lastFilledIndex
+        // Range is start...<end, so end index is lastFilledIndex + 1
+        return startIndex..<(lastFilledIndex + 1)
     }
 
     private func calculateWeekDates(calendar: Calendar, effectiveToday: Date, firstDayOfWeek: Int) -> [Date] {
