@@ -241,36 +241,31 @@ struct JourneyInsightCard: View {
                     .padding(.bottom, styles.layout.paddingM) // Add bottom padding to expanded content
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
-
-                // --- Expand/Collapse Control Area ---
-                VStack(spacing: styles.layout.spacingXS) { // Container for text and button
-                    Text("Show more")
-                        .font(.system(size: 10, weight: .regular, design: .monospaced))
-                        .foregroundColor(styles.colors.text)
-
+            // Container for "Show more" text and chevron button
+                VStack(spacing: styles.layout.spacingXS) { // Use spacingXS between text and button
+                    Text("Show more of my journey") // Updated text
+                        .font(.system(size: 10, weight: .regular, design: .monospaced)) // Match nav style
+                        .foregroundColor(styles.colors.accent) // Changed color to accent
+                        // Removed bottom padding, rely on VStack spacing
+    
                     Button(action: {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             isExpanded.toggle()
                         }
                     }) {
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 24, weight: .bold))
+                            .font(.system(size: 24, weight: .bold)) // Larger size
                             .foregroundColor(styles.colors.accent)
                             .rotationEffect(Angle(degrees: isExpanded ? 180 : 0))
                     }
                     .frame(maxWidth: .infinity) // Center horizontally
                 }
                 .padding(.top, styles.layout.paddingS) // Padding above the text/button group
-                .padding(.bottom, styles.layout.spacingS) // Reduced padding below button group
-
+                .padding(.bottom, styles.layout.paddingL + styles.layout.paddingL) // Further increased padding below button group
+    
             } // End Main Content VStack
     
-             // Explicit Rectangle used as Divider
-             Rectangle()
-                 .fill(styles.colors.accent) // Use accent color for fill
-                 .frame(height: 3) // Set thickness to 3pt
-                 .padding(.top, styles.layout.spacingS) // Slightly increased top padding
-                 .padding(.bottom, styles.layout.spacingM) // Keep moderate bottom padding
+             // REMOVED Divider Rectangle and its padding
     
             } // End Outer VStack
             .background(styles.colors.cardBackground) // Apply background to outer VStack
