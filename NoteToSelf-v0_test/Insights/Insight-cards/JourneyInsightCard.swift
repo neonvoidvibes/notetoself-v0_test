@@ -90,7 +90,7 @@ struct JourneyInsightCard: View {
 
                             // Streak Headline (Moved Above Dots)
                             Text(streakSubHeadline)
-                                .font(styles.typography.bodyFont.weight(.bold))
+                                 .font(styles.typography.title3) // Use title3 font size
                                 .foregroundColor(styles.colors.text)
                                 .padding(.bottom, styles.layout.spacingXS) // Space below headline
 
@@ -98,7 +98,7 @@ struct JourneyInsightCard: View {
                             Text(narrativeSnippetDisplay) // Use the property that handles loading/error
                                 .font(styles.typography.bodySmall)
                                 .foregroundColor(loadNarrativeError ? styles.colors.error : styles.colors.textSecondary) // Use error color if loading failed
-                                .lineLimit(2) // Limit snippet lines
+                                .lineLimit(5) // Increased line limit to 5
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(minHeight: 20) // Ensure minimum height
                                 .padding(.bottom, styles.layout.spacingS) // Space below snippet

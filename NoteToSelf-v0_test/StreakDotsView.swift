@@ -50,23 +50,34 @@ struct StreakDotsView: View {
                         .fill(styles.colors.streakBarBackground) // Use theme color
                         .frame(height: dotSize) // Height matches dot size
 
-                    // Accent Bar (Active Streak) - Positioned behind dots
-                    if let range = viewModel.activeStreakRangeIndices, range.count > 1 { // Only show if streak is 2+ days
-                        let startDotIndex = range.lowerBound
-                        let endDotIndex = range.upperBound - 1
-                        let barWidth = CGFloat(range.count) * dotSize + CGFloat(range.count - 1) * calculatedSpacing
-                        let leadingOffset = CGFloat(startDotIndex) * (dotSize + calculatedSpacing)
+                    // Layer containing Accent Bar and Dots, aligned to the leading edge
+                    HStack(spacing: 0) {
+                         // Accent Bar (Active Streak) - Positioned using Spacers and HStack
+                         if let range = viewModel.activeStreakRangeIndices, range.count >= 1 { // Show even for 1 day (dot highlight)
+                             let startDotIndex = range.lowerBound
+                             let barWidth = CGFloat(range.count) * dotSize + CGFloat(max(0, range.count - 1)) * calculatedSpacing
+                             let leadingSpacerWidth = CGFloat(startDotIndex) * (dotSize + calculatedSpacing)
 
-                        RoundedRectangle(cornerRadius: dotSize / 2)
-                            .fill(styles.colors.accent) // Accent color bar
-                            .frame(width: barWidth, height: dotSize)
-                            .offset(x: leadingOffset - (totalWidth - barWidth) / 2) // Center adjustment needed
-                             // Animate width/position changes
-                            .animation(.easeInOut, value: viewModel.activeStreakRangeIndices)
+                             // Spacer to push the accent bar to the correct starting position
+                             Spacer(minLength: leadingSpacerWidth)
 
+                             // The accent bar itself
+                             RoundedRectangle(cornerRadius: dotSize / 2)
+                                 .fill(styles.colors.accent) // Accent color bar
+                                 .frame(width: barWidth, height: dotSize)
+                                  // Animate width/position changes
+                                 .animation(.easeInOut, value: viewModel.activeStreakRangeIndices)
+
+                             // Spacer to fill the remaining space
+                             Spacer(minLength: 0)
+                         } else {
+                              // If no active streak, add a spacer to take up full width
+                              Spacer(minLength: 0)
+                         }
                     }
+                     .frame(width: totalWidth) // Ensure this layer takes full width for spacer calculations
 
-                    // Dots - Positioned precisely
+                    // Dots - Positioned precisely (rendered on top of bars)
                     HStack(spacing: calculatedSpacing) { // Use calculated spacing
                         ForEach(viewModel.streakDays) { dayData in
                             DotView(
