@@ -49,27 +49,31 @@ struct StreakDotsView: View {
                     RoundedRectangle(cornerRadius: dotSize / 2) // Make ends perfectly round
                         .fill(styles.colors.streakBarBackground) // Use theme color
                         .frame(height: dotSize) // Height matches dot size
-
-                    // Accent Bar (Active Streak) - Positioned directly with frame and offset
+    
+                    // Accent Bar (Active Streak) - Positioned using calculated frame & position
                     if let range = viewModel.activeStreakRangeIndices, range.count >= 1 {
-                        let startDotIndex = range.lowerBound
-                        let barWidth = CGFloat(range.count) * dotSize + CGFloat(max(0, range.count - 1)) * calculatedSpacing
-                        // Calculate the starting x-position of the accent bar relative to the ZStack's leading edge
-                        let startX = CGFloat(startDotIndex) * (dotSize + calculatedSpacing)
-
+                        let startDotIndex = CGFloat(range.lowerBound)
+                        let numDots = CGFloat(range.count)
+                        let barWidth = numDots * dotSize + max(0, numDots - 1) * calculatedSpacing
+    
+                        // Calculate the x-coordinate of the center of the accent bar
+                        // Center of first dot in range = startDotIndex * (dotSize + spacing) + dotSize / 2
+                        // Center of last dot in range = (startDotIndex + numDots - 1) * (dotSize + spacing) + dotSize / 2
+                        // Center of bar = midpoint between centers of first and last dots in range
+                        let firstDotCenterX = startDotIndex * (dotSize + calculatedSpacing) + dotSize / 2
+                        let lastDotCenterX = (startDotIndex + numDots - 1) * (dotSize + calculatedSpacing) + dotSize / 2
+                        let barCenterX = (firstDotCenterX + lastDotCenterX) / 2
+    
                         RoundedRectangle(cornerRadius: dotSize / 2)
                             .fill(styles.colors.accent) // Accent color bar
+                             // TEMPORARY DEBUG BORDER
+                             // .border(Color.red, width: 1)
                             .frame(width: barWidth, height: dotSize)
-                             // Position the bar using offset from the calculated start position within the ZStack
-                             // We position it relative to the ZStack's center initially, then shift left to align leading edges
-                            .offset(x: startX - totalWidth / 2 + barWidth / 2)
-                             // Animate width/position changes
+                            .position(x: barCenterX, y: dotSize / 2) // Position center of the bar
                             .animation(.easeInOut, value: viewModel.activeStreakRangeIndices)
-                             // Ensure it's behind the dots (ZStack draws subsequent views on top)
-                            .zIndex(0) // Background Bar = -1 (Implicit), Accent Bar = 0, Dots = 1 (Implicit)
                     }
-
-                    // Dots - Positioned precisely (rendered on top of accent bar)
+    
+                    // Dots - Positioned precisely (rendered on top of bars)
                     HStack(spacing: calculatedSpacing) { // Use calculated spacing
                         ForEach(viewModel.streakDays) { dayData in
                             DotView(

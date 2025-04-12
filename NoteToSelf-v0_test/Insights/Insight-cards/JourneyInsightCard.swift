@@ -89,6 +89,8 @@ struct JourneyInsightCard: View {
                              Spacer(minLength: styles.layout.spacingM)
 
                             // Streak Headline (Moved Above Dots)
+                            // Note: This headline uses title3 font but won't be sticky like section headers
+                            // due to being inside the card structure, not a direct child of LazyVStack.
                             Text(streakSubHeadline)
                                  .font(styles.typography.title3) // Use title3 font size
                                 .foregroundColor(styles.colors.text)
@@ -99,8 +101,7 @@ struct JourneyInsightCard: View {
                                 .font(styles.typography.bodySmall)
                                 .foregroundColor(loadNarrativeError ? styles.colors.error : styles.colors.textSecondary) // Use error color if loading failed
                                 .lineLimit(5) // Increased line limit to 5
-                                .fixedSize(horizontal: false, vertical: true) // Allows vertical expansion
-                                // REMOVED: .frame(minHeight: 20)
+                                // REMOVED: .fixedSize(horizontal: false, vertical: true) - Let layout handle expansion
                                 .padding(.bottom, styles.layout.spacingS) // Space below snippet
 
                             // New StreakDotsView

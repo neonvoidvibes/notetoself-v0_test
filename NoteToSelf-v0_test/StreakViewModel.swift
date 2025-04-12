@@ -97,7 +97,10 @@ class StreakViewModel: ObservableObject {
         }
 
         // Calculate active streak range indices
+        print("[StreakViewModel Debug] Days data for range calc: \(self.streakDays.map { $0.isFilled })")
         self.activeStreakRangeIndices = calculateActiveStreakRange(streakDays: self.streakDays)
+        print("[StreakViewModel Debug] Calculated Range: \(String(describing: self.activeStreakRangeIndices))")
+
 
         // print("[StreakViewModel] Recalculated: \(self.streakDays.count) days, Streak: \(self.currentStreak), Range: \(self.activeStreakRangeIndices)")
     }
