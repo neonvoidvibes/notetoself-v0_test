@@ -53,23 +53,7 @@ struct JourneyInsightCard: View {
          }
      }
 
-
-    // UX-focused streak sub-headline (Using ViewModel's streak)
-    private var streakSubHeadline: String {
-        let streak = streakViewModel.currentStreak
-        let hasTodayEntry = appState.hasEntryToday // Keep using AppState directly for hasEntryToday check
-
-        if streak > 0 {
-            if hasTodayEntry {
-                return "\(streak) Day Streak!"
-            } else {
-                // Provide encouraging message if streak exists but no entry today
-                return "Keep your \(streak)-day streak going!"
-            }
-        } else {
-            return "Start a new streak today!"
-        }
-    }
+     // REMOVED: streakSubHeadline computed property (moved to JournalView)
 
     var body: some View {
         // Outer VStack for the entire card content + divider
@@ -82,27 +66,19 @@ struct JourneyInsightCard: View {
                         Text("Keep showing up.") // Main title
                             .font(styles.typography.largeTitle)
                             .foregroundColor(styles.colors.accent)
+                            .padding(.bottom, styles.layout.spacingM) // Add padding below title
 
                         // --- Conditionally Show Streak Info ---
                         if streakViewModel.currentStreak > 0 {
-                            // Add extra padding below "Keep showing up."
-                             Spacer(minLength: styles.layout.spacingM)
 
-                            // Streak Headline (Moved Above Dots)
-                            // Note: This headline uses title3 font but won't be sticky like section headers
-                            // due to being inside the card structure, not a direct child of LazyVStack.
-                            Text(streakSubHeadline)
-                                 .font(styles.typography.title3) // Use title3 font size
-                                .foregroundColor(styles.colors.text)
-                                .padding(.bottom, styles.layout.spacingXS) // Space below headline
-
-                            // Re-add Narrative Snippet Display
+                            // Re-add Narrative Snippet Display (Now between title and dots)
                             Text(narrativeSnippetDisplay) // Use the property that handles loading/error
                                 .font(styles.typography.bodySmall)
                                 .foregroundColor(loadNarrativeError ? styles.colors.error : styles.colors.textSecondary) // Use error color if loading failed
                                 .lineLimit(5) // Increased line limit to 5
                                 // REMOVED: .fixedSize(horizontal: false, vertical: true) - Let layout handle expansion
                                 .padding(.bottom, styles.layout.spacingS) // Space below snippet
+
 
                             // New StreakDotsView
                             StreakDotsView(appState: appState) // Pass AppState
@@ -114,7 +90,6 @@ struct JourneyInsightCard: View {
                                 .foregroundColor(styles.colors.textSecondary)
                                 .padding(.vertical, styles.layout.spacingL) // Add padding to maintain layout roughly
                         }
-                         // REMOVED: Narrative snippet from collapsed view
                     }
                     Spacer()
                 }

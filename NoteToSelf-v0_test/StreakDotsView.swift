@@ -47,32 +47,36 @@ struct StreakDotsView: View {
                 ZStack {
                     // Background Bar - Spans full width
                     RoundedRectangle(cornerRadius: dotSize / 2) // Make ends perfectly round
+                        // Background Bar - Spans full width
+                    RoundedRectangle(cornerRadius: dotSize / 2) // Make ends perfectly round
                         .fill(styles.colors.streakBarBackground) // Use theme color
                         .frame(height: dotSize) // Height matches dot size
-    
-                    // Accent Bar (Active Streak) - Positioned using calculated frame & position
-                    if let range = viewModel.activeStreakRangeIndices, range.count >= 1 {
-                        let startDotIndex = CGFloat(range.lowerBound)
-                        let numDots = CGFloat(range.count)
-                        let barWidth = numDots * dotSize + max(0, numDots - 1) * calculatedSpacing
-    
-                        // Calculate the x-coordinate of the center of the accent bar
-                        // Center of first dot in range = startDotIndex * (dotSize + spacing) + dotSize / 2
-                        // Center of last dot in range = (startDotIndex + numDots - 1) * (dotSize + spacing) + dotSize / 2
-                        // Center of bar = midpoint between centers of first and last dots in range
-                        let firstDotCenterX = startDotIndex * (dotSize + calculatedSpacing) + dotSize / 2
-                        let lastDotCenterX = (startDotIndex + numDots - 1) * (dotSize + calculatedSpacing) + dotSize / 2
-                        let barCenterX = (firstDotCenterX + lastDotCenterX) / 2
-    
-                        RoundedRectangle(cornerRadius: dotSize / 2)
-                            .fill(styles.colors.accent) // Accent color bar
-                             // TEMPORARY DEBUG BORDER
-                             // .border(Color.red, width: 1)
-                            .frame(width: barWidth, height: dotSize)
-                            .position(x: barCenterX, y: dotSize / 2) // Position center of the bar
-                            .animation(.easeInOut, value: viewModel.activeStreakRangeIndices)
+                        .zIndex(-1) // Ensure it's at the very back
+
+                    // Accent Bars (Active Streaks) - Iterate over calculated ranges
+                    ForEach(viewModel.activeStreakRanges, id: \.self) { range in
+                         if range.count >= 1 { // Draw bar even for single highlighted dot
+                             let startDotIndex = CGFloat(range.lowerBound)
+                             let numDots = CGFloat(range.count)
+                             let barWidth = numDots * dotSize + max(0, numDots - 1) * calculatedSpacing
+
+                             let firstDotCenterX = startDotIndex * (dotSize + calculatedSpacing) + dotSize / 2
+                             let lastDotCenterX = (startDotIndex + numDots - 1) * (dotSize + calculatedSpacing) + dotSize / 2
+                             let barCenterX = (firstDotCenterX + lastDotCenterX) / 2
+
+                             // Instantiate the dedicated AccentBarView
+                             AccentBarView(
+                                 width: barWidth,
+                                 height: dotSize,
+                                 cornerRadius: dotSize / 2,
+                                 fillColor: styles.colors.accent
+                             )
+                             .position(x: barCenterX, y: dotSize / 2) // Position center of the bar
+                             .animation(.easeInOut, value: viewModel.activeStreakRanges) // Animate based on ranges array
+                             .zIndex(0) // Ensure it's above the gray bar
+                         }
                     }
-    
+
                     // Dots - Positioned precisely (rendered on top of bars)
                     HStack(spacing: calculatedSpacing) { // Use calculated spacing
                         ForEach(viewModel.streakDays) { dayData in
@@ -85,11 +89,26 @@ struct StreakDotsView: View {
                         }
                     }
                     .frame(width: totalWidth) // Ensure dots HStack uses full width
+                    .zIndex(1) // Ensure dots are explicitly drawn on top
                 }
                 .frame(height: dotSize) // Constrain ZStack height
             }
         }
         .frame(height: 15 + styles.layout.spacingS + dotSize) // Calculate total height for GeometryReader
+    }
+
+    // New private struct for the accent bar
+    private struct AccentBarView: View {
+        let width: CGFloat
+        let height: CGFloat
+        let cornerRadius: CGFloat
+        let fillColor: Color
+
+        var body: some View {
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .fill(fillColor)
+                .frame(width: width, height: height)
+        }
     }
 }
 

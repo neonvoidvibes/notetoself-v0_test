@@ -19,7 +19,7 @@ class StreakViewModel: ObservableObject {
     @Published var streakDays: [StreakDay] = []
     @Published var currentStreak: Int = 0
     @Published var firstDayOfWeek: Int = Calendar.current.firstWeekday // 1=Sun, 2=Mon
-    @Published var activeStreakRangeIndices: Range<Int>? = nil // Indices for accent bar
+    @Published var activeStreakRanges: [Range<Int>] = [] // Store multiple ranges
 
     init(appState: AppState) {
         self.appState = appState
@@ -96,33 +96,48 @@ class StreakViewModel: ObservableObject {
             )
         }
 
-        // Calculate active streak range indices
+        // Calculate active streak ranges
         print("[StreakViewModel Debug] Days data for range calc: \(self.streakDays.map { $0.isFilled })")
-        self.activeStreakRangeIndices = calculateActiveStreakRange(streakDays: self.streakDays)
-        print("[StreakViewModel Debug] Calculated Range: \(String(describing: self.activeStreakRangeIndices))")
+        self.activeStreakRanges = calculateAllActiveStreakRanges(streakDays: self.streakDays)
+        print("[StreakViewModel Debug] Calculated Ranges: \(self.activeStreakRanges)")
 
-
-        // print("[StreakViewModel] Recalculated: \(self.streakDays.count) days, Streak: \(self.currentStreak), Range: \(self.activeStreakRangeIndices)")
+        // print("[StreakViewModel] Recalculated: \(self.streakDays.count) days, Streak: \(self.currentStreak), Ranges: \(self.activeStreakRanges)")
     }
 
-    // Function to calculate the range of the current continuous streak within the displayed 7 days
-    private func calculateActiveStreakRange(streakDays: [StreakDay]) -> Range<Int>? {
-        guard let lastFilledIndex = streakDays.lastIndex(where: { $0.isFilled }) else {
-            return nil // No filled days
+    // Function to calculate ALL continuous ranges of 2 or more filled dots
+    private func calculateAllActiveStreakRanges(streakDays: [StreakDay]) -> [Range<Int>] {
+        var ranges: [Range<Int>] = []
+        var startIndex: Int? = nil
+
+        for (index, day) in streakDays.enumerated() {
+            if day.isFilled {
+                if startIndex == nil {
+                    startIndex = index // Start of a potential new range
+                }
+            } else {
+                if let start = startIndex {
+                    // End of a filled sequence
+                    let range = start..<index
+                    if range.count >= 1 { // A single dot still needs highlighting, bar needs >=2 though
+                         // Check length before adding for bar visibility (logic moved to View)
+                         ranges.append(range)
+                    }
+                    startIndex = nil // Reset for the next potential range
+                }
+            }
         }
 
-        var startIndex = lastFilledIndex
-        while startIndex > 0 && streakDays[startIndex - 1].isFilled {
-            startIndex -= 1
+        // Check if the sequence ends with filled dots
+        if let start = startIndex {
+            let range = start..<streakDays.count
+            if range.count >= 1 {
+                 ranges.append(range)
+            }
         }
 
-        // Ensure the range has at least one element and ends at the last filled index
-        guard startIndex <= lastFilledIndex else { return nil }
-
-        // Return range covering the continuous filled segment ending at lastFilledIndex
-        // Range is start...<end, so end index is lastFilledIndex + 1
-        return startIndex..<(lastFilledIndex + 1)
+        return ranges
     }
+
 
     private func calculateWeekDates(calendar: Calendar, effectiveToday: Date, firstDayOfWeek: Int) -> [Date] {
         guard let currentWeekStartDate = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: effectiveToday)) else {

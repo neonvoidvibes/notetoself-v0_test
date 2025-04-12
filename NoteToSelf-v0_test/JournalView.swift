@@ -282,104 +282,124 @@ struct JournalView: View {
         }
     }
 
-     // Remove scrollProxy parameter
-     private func journalContent() -> some View {
-         // Remove the outer ScrollViewReader as it's now passed in
-         ScrollView {
-             VStack(spacing: 0) { // Main container VStack - Set spacing to 0
+    // Computed property for the streak headline text
+    private var streakHeadlineText: String {
+        let streak = appState.currentStreak
+        let hasTodayEntry = appState.hasEntryToday
 
-                  // --- Journey Card (Conditional) ---
-                  if appState.currentStreak > 0 {
-                      // Pass the AppState environment object during initialization
-                      JourneyInsightCard(appState: appState)
-                          .padding(.horizontal, styles.layout.paddingL)
-                          .padding(.top, styles.layout.paddingL) // Apply standard top padding when shown
-                          .padding(.bottom, styles.layout.spacingS) // Reduced bottom padding
-                          .transition(.opacity.combined(with: .move(edge: .top))) // Add animation
-                  }
-
-                 // --- Entry List / Empty State ---
-                 if filteredEntries.isEmpty {
-                   emptyState
-                } else {
-                   journalListWithCTA // Use modified list that includes CTA logic
-                }
-
-                // Ensure CTA is placed if "Today" and "Yesterday" were empty
-                // (This logic is now handled within journalListWithCTA)
-
-                // Bottom padding for FAB
-                Spacer(minLength: styles.layout.paddingXL + 80) // Keep space for FAB
-
-            } // End Main container VStack
-        } // End ScrollView
-         .coordinateSpace(name: "scrollView")
-         .disabled(mainScrollingDisabled)
-         // Removed scrollProxy related logic from onAppear
-        // Removed .onPreferenceChange modifier
-        .simultaneousGesture(
-            TapGesture().onEnded {
-                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-            }
-        )
-        // Removed ScrollViewReader wrapper here
+        if streak > 0 {
+            return hasTodayEntry ? "\(streak) Day Streak!" : "Keep your \(streak)-day streak going!"
+        } else {
+            // This case shouldn't be reached if the section is conditional, but good to have
+            return "Start a new streak today!"
+        }
     }
 
-    // NEW: Combined journal list with integrated CTA placement logic
-    private var journalListWithCTA: some View {
-        // Set LazyVStack spacing to 0 to minimize gap between sections
-        LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-            let entriesGrouped = groupedEntries // Cache for efficiency
-            let hasToday = entriesGrouped.contains { $0.0 == "Today" }
-            let hasYesterday = entriesGrouped.contains { $0.0 == "Yesterday" }
+    private func journalContent() -> some View {
+        // Use LazyVStack directly inside ScrollView for sticky headers
+        ScrollView {
+            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) { // Use LazyVStack
 
-            ForEach(entriesGrouped.indices, id: \.self) { sectionIndex in
-                let (section, entries) = entriesGrouped[sectionIndex]
+                 // --- Conditional Streak Section ---
+                 if appState.currentStreak > 0 {
+                      Section {
+                          // The JourneyInsightCard content (excluding the headline)
+                          JourneyInsightCard(appState: appState)
+                              .padding(.horizontal, styles.layout.paddingL)
+                              // Apply top padding based on streak presence
+                              // .padding(.top, styles.layout.paddingL) // Padding now part of section spacing
+                              .padding(.bottom, styles.layout.paddingL) // Add bottom padding to separate from entries
+                              .transition(.opacity.combined(with: .move(edge: .top))) // Add animation
+                      } header: {
+                          // Use SharedSectionHeader for the sticky headline
+                          SharedSectionHeader(title: streakHeadlineText, backgroundColor: styles.colors.appBackground)
+                      }
+                      // Add explicit ID to the section for potential targeting
+                       .id("journey-card-section")
+                 }
 
-                Section(header: SharedSectionHeader(title: section, backgroundColor: styles.colors.appBackground)
-                                    .id("header-\(section)")
-                                    // Removed top padding from header view itself
-                ) {
-                    // Add spacing *between* cards within a section using a regular VStack
-                    VStack(spacing: styles.layout.radiusM) { // Use standard card spacing here
-                         ForEach(entries) { entry in
-                             JournalEntryCard(
-                                 entry: entry,
-                                 isExpanded: appState.journalExpandedEntryId == entry.id,
-                                 onTap: { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { appState.journalExpandedEntryId = appState.journalExpandedEntryId == entry.id ? nil : entry.id } },
-                                 onExpand: { fullscreenEntry = entry },
-                                 onStar: { toggleStar(entry) }
-                             )
-                             // REMOVED horizontal padding here - apply to VStack below
-                             .transition(.opacity.combined(with: .move(edge: .top)))
-                             .id(entry.id)
-                         }
+                // --- Entry List / Empty State ---
+                if filteredEntries.isEmpty {
+                    // Embed emptyState in a container to allow Spacer to work within LazyVStack
+                    VStack {
+                        emptyState
                     }
-                    .padding(.horizontal, styles.layout.paddingL) // Apply horizontal padding to the card group
-                    // Add bottom padding to the card group to create space before next header/CTA
-                    .padding(.bottom, styles.layout.paddingL)
+                    .padding(.top, appState.currentStreak > 0 ? 0 : styles.layout.paddingXL) // Add top padding only if streak card isn't shown
 
-                } // End Section
-
-                // CTA Placement Logic:
-                // Place AFTER "Today" section if it exists
-                if section == "Today" {
-                    ctaSectionView.padding(.vertical, styles.layout.paddingXL) // Add padding around CTA
+                } else {
+                   journalListWithCTA // This already returns Sections within the LazyVStack
                 }
-                // Place AFTER "Yesterday" section if "Today" doesn't exist but "Yesterday" does
-                else if section == "Yesterday" && !hasToday {
-                    ctaSectionView.padding(.vertical, styles.layout.paddingXL)
-                }
-            } // End ForEach sections
 
-            // CTA Placement Logic (Fallback):
-            // Place at the very end if NEITHER "Today" NOR "Yesterday" sections exist
-            if !hasToday && !hasYesterday && !entriesGrouped.isEmpty {
-                // Ensure it's only added if there are SOME entries at all
-                ctaSectionView.padding(.vertical, styles.layout.paddingXL)
+               // Ensure CTA is placed if "Today" and "Yesterday" were empty
+               // (Logic moved inside journalListWithCTA)
+
+               // Bottom padding for FAB
+               Spacer(minLength: styles.layout.paddingXL + 80) // Keep space for FAB
+
+           } // End LazyVStack
+       } // End ScrollView
+        .coordinateSpace(name: "scrollView")
+        .disabled(mainScrollingDisabled)
+        .simultaneousGesture(
+           TapGesture().onEnded {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+           }
+       )
+   }
+
+   // NEW: Combined journal list with integrated CTA placement logic
+    @ViewBuilder // <-- IMPORTANT: Make this ViewBuilder to return Sections
+    private var journalListWithCTA: some View {
+        let entriesGrouped = groupedEntries // Cache for efficiency
+        let hasToday = entriesGrouped.contains { $0.0 == "Today" }
+        let hasYesterday = entriesGrouped.contains { $0.0 == "Yesterday" }
+
+        // Loop through the grouped entries and create Sections
+        ForEach(entriesGrouped.indices, id: \.self) { sectionIndex in
+            let (section, entries) = entriesGrouped[sectionIndex]
+
+            Section(header: SharedSectionHeader(title: section, backgroundColor: styles.colors.appBackground)
+                                .id("header-\(section)")
+            ) {
+                // Use regular VStack for cards within the section
+                VStack(spacing: styles.layout.radiusM) {
+                    ForEach(entries) { entry in
+                        JournalEntryCard(
+                            entry: entry,
+                            isExpanded: appState.journalExpandedEntryId == entry.id,
+                            onTap: { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { appState.journalExpandedEntryId = appState.journalExpandedEntryId == entry.id ? nil : entry.id } },
+                            onExpand: { fullscreenEntry = entry },
+                            onStar: { toggleStar(entry) }
+                        )
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .id(entry.id)
+                    }
+                }
+                .padding(.horizontal, styles.layout.paddingL)
+                .padding(.bottom, styles.layout.paddingL) // Add bottom padding to separate from next header/CTA
             }
-        } // End LazyVStack
-    }
+
+            // CTA Placement Logic: Place AFTER specific sections if they exist
+            if section == "Today" {
+                 // Wrap CTA in its own Section for correct spacing in LazyVStack
+                 Section {
+                     ctaSectionView.padding(.vertical, styles.layout.paddingXL)
+                 }
+            } else if section == "Yesterday" && !hasToday {
+                 Section {
+                     ctaSectionView.padding(.vertical, styles.layout.paddingXL)
+                 }
+            }
+        } // End ForEach sections
+
+        // CTA Placement Logic (Fallback): Place at the end if neither Today/Yesterday existed
+        if !hasToday && !hasYesterday && !entriesGrouped.isEmpty {
+             // Ensure it's only added if there are SOME entries at all
+             Section {
+                 ctaSectionView.padding(.vertical, styles.layout.paddingXL)
+             }
+        }
+    } // End journalListWithCTA
 
 
      // CTA Section View (remains the same)
