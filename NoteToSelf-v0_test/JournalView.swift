@@ -308,8 +308,7 @@ struct JournalView: View {
                       // Match leading padding of SharedSectionHeader, keep trailing padding standard
                       .padding(.leading, styles.layout.paddingL * 2)
                       .padding(.trailing, styles.layout.paddingL)
-                      .padding(.top, styles.layout.paddingL) // Top padding
-                      .padding(.bottom, styles.layout.spacingL) // Space below title
+                      .padding(.vertical, styles.layout.paddingL * 4) // ADDED ample vertical padding
                       // No VStack wrapper needed now
 
                  // --- Conditional Streak Section (Headline + Card) ---
