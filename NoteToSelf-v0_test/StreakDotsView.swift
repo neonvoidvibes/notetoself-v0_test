@@ -46,15 +46,14 @@ struct StreakDotsView: View {
                 // Background Bar + Dots
                 ZStack {
                     // Background Bar - Spans full width
-                    RoundedRectangle(cornerRadius: dotSize / 2) // Make ends perfectly round
-                        // Background Bar - Spans full width
-                    RoundedRectangle(cornerRadius: dotSize / 2) // Make ends perfectly round
-                        .fill(Color.red) // DEBUG: Use RED color
-                        .frame(height: dotSize) // Height matches dot size
-                        .zIndex(-1) // Ensure it's at the very back
-                        .onAppear { // <-- DEBUG PRINT
-                             print("[StreakDotsView Debug] Resolved background bar color: Color.red") // Updated debug print
+                    RoundedRectangle(cornerRadius: dotSize / 2)
+                        .fill(styles.colors.textSecondary.opacity(0.3)) // Restore intended mid-gray color
+                        .frame(height: dotSize)
+                        .zIndex(-1) // Restore zIndex
+                        .onAppear {
+                             print("[StreakDotsView Debug] Resolved background bar color: \(styles.colors.textSecondary.opacity(0.3))") // Restore print
                         }
+
 
                     // Accent Bars (Active Streaks) - Iterate over calculated ranges
                     ForEach(viewModel.activeStreakRanges, id: \.self) { range in
@@ -94,6 +93,7 @@ struct StreakDotsView: View {
                     .frame(width: totalWidth) // Ensure dots HStack uses full width
                     .zIndex(1) // Ensure dots are explicitly drawn on top
                 }
+                // Removed green background
                 .frame(height: dotSize) // Constrain ZStack height
             }
         }
