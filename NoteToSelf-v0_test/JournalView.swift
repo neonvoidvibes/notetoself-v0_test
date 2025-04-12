@@ -289,13 +289,17 @@ struct JournalView: View {
              VStack(spacing: 0) { // Main container VStack - Set spacing to 0
                  // Removed GeometryReader for scroll tracking
 
-                  // REMOVED Daily Tagline View
-
-                  // --- Journey Card ---
-                 JourneyInsightCard()
-                     .padding(.horizontal, styles.layout.paddingL)
-                     .padding(.top, styles.layout.paddingXL + styles.layout.paddingL + styles.layout.paddingL + styles.layout.paddingL) // Added another paddingL
-                     .padding(.bottom, styles.layout.spacingS) // Reduced bottom padding
+                  // --- Journey Card (Conditional) ---
+                  if appState.currentStreak > 0 {
+                      // Pass the AppState environment object during initialization
+                      JourneyInsightCard(appState: appState)
+                          .padding(.horizontal, styles.layout.paddingL)
+                 // Pass the AppState environment object during initialization
+                 JourneyInsightCard(appState: appState)
+                          .padding(.bottom, styles.layout.spacingS) // Reduced bottom padding
+                      // Apply top padding based on streak presence
+                     .padding(.top, appState.currentStreak > 0 ? styles.layout.paddingL : 0) // Add top padding only if streak exists
+                  }
 
                  // --- Entry List / Empty State ---
                  if filteredEntries.isEmpty {

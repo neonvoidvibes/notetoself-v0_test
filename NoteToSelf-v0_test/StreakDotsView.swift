@@ -27,7 +27,7 @@ struct StreakDotsView: View {
                 ForEach(weekdayLabels, id: \.self) { label in
                     Text(label)
                         .font(styles.typography.caption) // Small caption font
-                        .foregroundColor(styles.styles.colors.textSecondary)
+                        .foregroundColor(styles.colors.textSecondary) // Corrected: styles.colors
                         .frame(width: dotSize, height: 15, alignment: .center) // Align labels with dots
                 }
             }
@@ -36,7 +36,7 @@ struct StreakDotsView: View {
             ZStack {
                 // Background Bar
                 RoundedRectangle(cornerRadius: dotSize / 2) // Make ends perfectly round
-                    .fill(styles.styles.colors.streakBarBackground) // Use theme color
+                    .fill(styles.colors.streakBarBackground) // Corrected: styles.colors
                     .frame(height: dotSize) // Height matches dot size
 
                 // Dots
@@ -66,11 +66,11 @@ private struct DotView: View {
 
     var body: some View {
         Circle()
-            .fill(isFilled ? styles.styles.colors.accent : Color.clear) // Fill if filled, clear otherwise
+            .fill(isFilled ? styles.colors.accent : Color.clear) // Corrected: styles.colors
             .overlay(
                 // Show border ONLY if NOT filled
                 Circle()
-                    .strokeBorder(styles.styles.colors.divider, lineWidth: isFilled ? 0 : 1.5) // Thicker border for empty
+                    .strokeBorder(styles.colors.divider, lineWidth: isFilled ? 0 : 1.5) // Corrected: styles.colors
             )
             .glow(radius: 15, isActive: showGlow) // Apply conditional glow modifier
     }

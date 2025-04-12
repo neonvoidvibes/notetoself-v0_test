@@ -52,6 +52,8 @@ struct ThemeColors {
     let primaryButtonText: Color
     let accentIconForeground: Color
 
+    let streakBarBackground: Color // Add the missing property definition
+
     // REMOVED Journey Card Specific Inverted Text Colors
     // let journeyCardTextPrimary: Color
     // let journeyCardTextSecondary: Color

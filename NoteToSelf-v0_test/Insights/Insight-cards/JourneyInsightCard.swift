@@ -9,13 +9,20 @@ struct JourneyInsightCard: View {
     // REMOVED: Narrative state, now handled by generator/view model if needed
 
     // Use the StreakViewModel to get data
-    // Note: Initialize here or pass from parent if needed elsewhere
+    // ViewModel now depends on AppState, which is an EnvironmentObject
+    // We need to initialize it using the environment object.
+    // Since @StateObject initialization happens before environment objects are available,
+    // we'll pass AppState in the initializer.
     @StateObject private var streakViewModel: StreakViewModel
 
-    init() {
-        // Initialize the ViewModel here, passing the AppState
-        _streakViewModel = StateObject(wrappedValue: StreakViewModel(appState: AppState.shared)) // Assuming AppState is accessible like this or via Environment
-    }
+    // Initialize with AppState provided by the parent view (JournalView)
+    // Note: JourneyInsightCard is currently used in JournalView. JournalView already has @EnvironmentObject AppState.
+    // We will modify JournalView later to pass appState to JourneyInsightCard.
+    // For now, this init makes the card require AppState.
+     init(appState: AppState) {
+         _streakViewModel = StateObject(wrappedValue: StreakViewModel(appState: appState))
+     }
+
 
     // UX-focused streak sub-headline (Using ViewModel's streak)
     private var streakSubHeadline: String {
@@ -99,22 +106,22 @@ struct JourneyInsightCard: View {
                                     label: "7 Days",
                                     icon: "star.fill",
                                     isAchieved: streakViewModel.currentStreak >= 7,
-                                    accentColor: styles.styles.colors.accent,
-                                    defaultStrokeColor: styles.styles.colors.tertiaryAccent
+                                    accentColor: styles.colors.accent, // Corrected: styles.colors
+                                    defaultStrokeColor: styles.colors.tertiaryAccent // Corrected: styles.colors
                                 )
                                  MilestoneView(
                                      label: "30 Days",
                                      icon: "star.fill",
                                      isAchieved: streakViewModel.currentStreak >= 30,
-                                     accentColor: styles.styles.colors.accent,
-                                     defaultStrokeColor: styles.styles.colors.tertiaryAccent
+                                     accentColor: styles.colors.accent, // Corrected: styles.colors
+                                     defaultStrokeColor: styles.colors.tertiaryAccent // Corrected: styles.colors
                                  )
                                  MilestoneView(
                                      label: "100 Days",
                                      icon: "star.fill",
                                      isAchieved: streakViewModel.currentStreak >= 100,
-                                     accentColor: styles.styles.colors.accent,
-                                     defaultStrokeColor: styles.styles.colors.tertiaryAccent
+                                     accentColor: styles.colors.accent, // Corrected: styles.colors
+                                     defaultStrokeColor: styles.colors.tertiaryAccent // Corrected: styles.colors
                                  )
                             }
                             .frame(maxWidth: .infinity, alignment: .center)
@@ -151,13 +158,13 @@ struct JourneyInsightCard: View {
             } // End Main Content VStack
 
         } // End Outer VStack
-        .background(styles.styles.colors.cardBackground) // Apply background to outer VStack
+        .background(styles.colors.cardBackground) // Corrected: styles.colors
         .cornerRadius(styles.layout.radiusL) // Apply corner radius to outer VStack
          // Removed .onAppear / .onReceive for narrative loading
     } // End body
 }
 
-// Preview Struct - Needs update to work with ViewModel
+// Preview Struct - Updated to pass AppState
 #Preview {
     // Provide a shared AppState instance for the ViewModel inside the preview
     let previewAppState = AppState()
@@ -170,10 +177,11 @@ struct JourneyInsightCard: View {
     ]
 
     return ScrollView {
-        JourneyInsightCard() // ViewModel initializes itself using AppState.shared (or injected)
+        // Pass the AppState instance during initialization
+        JourneyInsightCard(appState: previewAppState)
             .padding()
     }
-    .environmentObject(previewAppState) // Provide the mock AppState
+    .environmentObject(previewAppState) // Still provide AppState for other potential dependencies
     .environmentObject(UIStyles.shared)
     .environmentObject(ThemeManager.shared)
     .background(Color.gray.opacity(0.1))
