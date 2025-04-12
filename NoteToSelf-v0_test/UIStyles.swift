@@ -94,39 +94,70 @@ class UIStyles: ObservableObject {
     func accentBar() -> some View {
         Rectangle()
             .fill(colors.accent) // Use theme color
-            .frame(width: 20, height: 3)
-    }
-
-    // MARK: - Header Title with Accent Bar
-    func headerTitleWithAccent(_ title: String) -> some View {
-        VStack(spacing: 8) {
-            Text(title)
-                .font(typography.title1) // Use theme typography
-                .foregroundColor(colors.text) // Use theme color
-
-            accentBar()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .center)
-        .padding(.top, 20)
-        .padding(.bottom, 10)
     }
-
-    // MARK: - Button Styles
-    struct PrimaryButtonStyle: ButtonStyle {
+    
+    // MARK: - Glow Effect Modifier
+    struct Glow: ViewModifier {
         @ObservedObject var styles = UIStyles.shared
-        func makeBody(configuration: Configuration) -> some View {
-            configuration.label
-                .font(styles.typography.bodyFont.weight(.semibold))
-                .padding(styles.layout.paddingM)
-                .frame(maxWidth: .infinity)
-                .background(styles.colors.accent)
-                .foregroundColor(styles.colors.accentContrastText)
-                .cornerRadius(styles.layout.radiusM)
-                .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+        var radius: CGFloat = 10 // Default radius
+        var isActive: Bool = true // Control whether the glow is active
+    
+        func body(content: Content) -> some View {
+            content
+                .shadow(color: isActive ? styles.colors.accent.opacity(0.6) : Color.clear, radius: radius / 2) // Inner subtle glow
+                .shadow(color: isActive ? styles.colors.accent.opacity(0.4) : Color.clear, radius: radius)     // Outer wider glow
         }
     }
-
-    struct SecondaryButtonStyle: ButtonStyle {
+    
+    extension View {
+        func glow(radius: CGFloat = 10, isActive: Bool = true) -> some View {
+            self.modifier(Glow(radius: radius, isActive: isActive))
+        }
+    }
+    
+    #Preview {
+        // Example usage in different contexts
+        VStack {
+            List {
+                Section(header: SharedSectionHeader(title: "Menu Section", backgroundColor: UIStyles.shared.colors.menuBackground)) {
+                    Text("Chat Item 1")
+                }
+                .listRowBackground(UIStyles.shared.colors.menuBackground)
+            }
+            .listStyle(.plain)
+            .frame(height: 100)
+    
+            ScrollView {
+                LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) { // Set spacing to 0 here too
+                    Section(header: SharedSectionHeader(title: "App Section (Journal/Insights)", backgroundColor: UIStyles.shared.colors.appBackground)) {
+                        Text("Journal Item 1")
+                    }
+                }
+            }
+            .frame(height: 100)
+    
+            // Glow Preview
+            HStack {
+                Circle().fill(Color.blue).frame(width: 50, height: 50).glow(isActive: true)
+                Circle().fill(Color.blue).frame(width: 50, height: 50).glow(isActive: false)
+            }
+            .padding()
+    
+        }
+        .background(Color.gray)
+        .preferredColorScheme(.dark)
+    }
+                let primaryButtonText: Color
+        let accentIconForeground: Color
+    
+        let streakBarBackground: Color // NEW: For the bar behind streak dots
+    
+        // REMOVED Journey Card Specific Inverted Text Colors
+        // let journeyCardTextPrimary: Color
+        // let journeyCardTextSecondary: Color
+    }
         @ObservedObject var styles = UIStyles.shared
         func makeBody(configuration: Configuration) -> some View {
             configuration.label

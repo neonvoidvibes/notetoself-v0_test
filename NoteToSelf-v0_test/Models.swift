@@ -457,6 +457,10 @@ class AppState: ObservableObject {
     // REMOVED: @Published var tabToSelectAfterSheetDismissal: Int? = nil
     @Published var isFadingOutForNewEntry: Bool = false // Flag to fade background
 
+    // --- Streak Override (Developer Settings) ---
+    @AppStorage("overrideStreakStartDate") var overrideStreakStartDate: Bool = false
+    @AppStorage("simulatedStreakStartWeekday") var simulatedStreakStartWeekday: Int = Calendar.current.component(.weekday, from: Date()) // Default to today
+
     // Computed property for views to observe
     // Returns empty array if simulation is enabled, otherwise returns real entries
     var journalEntries: [JournalEntry] {

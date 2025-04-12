@@ -423,6 +423,9 @@ struct DeveloperSection: View {
     @State private var isGenerating: Bool = false // State for button feedback
     @State private var generationMessage: String = "" // State for feedback message
 
+    // Calendar instance for weekday symbols
+    private var calendar: Calendar { Calendar.current }
+
     var body: some View {
         VStack(alignment: .leading, spacing: styles.layout.spacingM) {
             Text("Developer Options")
@@ -497,6 +500,36 @@ struct DeveloperSection: View {
                     }
                     .tint(styles.colors.accent)
                     .font(styles.typography.bodyFont)
+
+                    // --- Streak Simulation ---
+                    Divider().background(styles.colors.divider)
+
+                    Toggle(isOn: $appState.overrideStreakStartDate) {
+                         Text("Simulate Streak Start")
+                             .foregroundColor(styles.colors.text)
+                    }
+                    .tint(styles.colors.accent)
+                    .font(styles.typography.bodyFont)
+
+                    if appState.overrideStreakStartDate {
+                        HStack {
+                            Text("Streak Starts On:")
+                                .font(styles.typography.bodyFont)
+                                .foregroundColor(styles.colors.text)
+                            Spacer()
+                            Picker("Streak Start", selection: $appState.simulatedStreakStartWeekday) {
+                                // Use Calendar to get weekday symbols respecting locale and firstWeekday
+                                ForEach(1...7, id: \.self) { weekday in
+                                    Text(calendar.weekdaySymbols[weekday - 1]).tag(weekday)
+                                }
+                            }
+                            .pickerStyle(MenuPickerStyle()) // Compact style
+                             // Tint the picker control if needed
+                             // .tint(styles.colors.accent) // Uncomment if you want the Picker button accented
+                        }
+                        .padding(.leading) // Indent the picker slightly
+                    }
+                    // --- End Streak Simulation ---
 
                 }
                 .padding(styles.layout.paddingL)
