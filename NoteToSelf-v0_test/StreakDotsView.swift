@@ -52,6 +52,9 @@ struct StreakDotsView: View {
                         .fill(styles.colors.streakBarBackground) // Use theme color
                         .frame(height: dotSize) // Height matches dot size
                         .zIndex(-1) // Ensure it's at the very back
+                        .onAppear { // <-- DEBUG PRINT
+                             print("[StreakDotsView Debug] Resolved streakBarBackground color: \(styles.colors.streakBarBackground)")
+                        }
 
                     // Accent Bars (Active Streaks) - Iterate over calculated ranges
                     ForEach(viewModel.activeStreakRanges, id: \.self) { range in

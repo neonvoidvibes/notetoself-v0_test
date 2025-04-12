@@ -300,14 +300,15 @@ struct JournalView: View {
         ScrollView {
             LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) { // Use LazyVStack
 
-                 // --- Top Page Title ---
+                 // --- Top Page Title (Inside LazyVStack) ---
                  Text("Keep showing up.")
                       .font(styles.typography.largeTitle)
                       .foregroundColor(styles.colors.accent)
                       .frame(maxWidth: .infinity, alignment: .leading)
-                      .padding(.horizontal, styles.layout.paddingL) // Match card horizontal padding
-                      .padding(.top, styles.layout.paddingL) // Add top padding
+                      .padding(.horizontal, styles.layout.paddingL) // Horizontal padding applied directly
+                      .padding(.top, styles.layout.paddingL) // Top padding
                       .padding(.bottom, styles.layout.spacingL) // Space below title
+                      // No VStack wrapper needed now
 
                  // --- Conditional Streak Section (Headline + Card) ---
                  if appState.currentStreak > 0 {
