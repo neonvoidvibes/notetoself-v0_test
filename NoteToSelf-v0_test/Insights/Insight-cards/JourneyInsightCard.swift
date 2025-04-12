@@ -61,12 +61,9 @@ struct JourneyInsightCard: View {
             // Main Content Area (Header + Optional Expanded View)
             VStack(spacing: 0) { // Use spacing 0 here, manage space internally
                 // --- Collapsed/Header View ---
+                // REMOVED: "Keep showing up." title was moved to JournalView
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: styles.layout.spacingM) { // Increased spacing
-                        Text("Keep showing up.") // Main title
-                            .font(styles.typography.largeTitle)
-                            .foregroundColor(styles.colors.accent)
-                            .padding(.bottom, styles.layout.spacingM) // Add padding below title
 
                         // --- Conditionally Show Streak Info ---
                         if streakViewModel.currentStreak > 0 {

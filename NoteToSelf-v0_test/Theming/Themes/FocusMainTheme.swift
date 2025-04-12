@@ -44,7 +44,7 @@ struct FocusMainTheme: Theme {
         primaryButtonText: Color("FocusMainPrimaryButtonText"),
         accentIconForeground: Color("FocusMainAccentIconForeground"),
 
-        streakBarBackground: Color(lightHex: "#D1D1D6", darkHex: "#48484A") // Darker light gray / Lighter dark gray
+        streakBarBackground: Color(lightHex: "#D1D1D6", darkHex: "#3A3A3C") // REVERTED: Light gray / Dark gray
 
         // REMOVED Journey Card Specific Inverted Text Colors
         // journeyCardTextPrimary: Color(lightHex: "#1A1A1A", darkHex: "#F0F0F0"),

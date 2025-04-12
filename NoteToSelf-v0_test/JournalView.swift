@@ -300,14 +300,21 @@ struct JournalView: View {
         ScrollView {
             LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) { // Use LazyVStack
 
-                 // --- Conditional Streak Section ---
+                 // --- Top Page Title ---
+                 Text("Keep showing up.")
+                      .font(styles.typography.largeTitle)
+                      .foregroundColor(styles.colors.accent)
+                      .frame(maxWidth: .infinity, alignment: .leading)
+                      .padding(.horizontal, styles.layout.paddingL) // Match card horizontal padding
+                      .padding(.top, styles.layout.paddingL) // Add top padding
+                      .padding(.bottom, styles.layout.spacingL) // Space below title
+
+                 // --- Conditional Streak Section (Headline + Card) ---
                  if appState.currentStreak > 0 {
                       Section {
                           // The JourneyInsightCard content (excluding the headline)
                           JourneyInsightCard(appState: appState)
-                              .padding(.horizontal, styles.layout.paddingL)
-                              // Apply top padding based on streak presence
-                              // .padding(.top, styles.layout.paddingL) // Padding now part of section spacing
+                              .padding(.horizontal, styles.layout.paddingL) // Horizontal padding for the card content
                               .padding(.bottom, styles.layout.paddingL) // Add bottom padding to separate from entries
                               .transition(.opacity.combined(with: .move(edge: .top))) // Add animation
                       } header: {
@@ -315,7 +322,7 @@ struct JournalView: View {
                           SharedSectionHeader(title: streakHeadlineText, backgroundColor: styles.colors.appBackground)
                       }
                       // Add explicit ID to the section for potential targeting
-                       .id("journey-card-section")
+                      .id("journey-card-section")
                  }
 
                 // --- Entry List / Empty State ---
