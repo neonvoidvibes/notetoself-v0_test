@@ -305,7 +305,9 @@ struct JournalView: View {
                       .font(styles.typography.largeTitle)
                       .foregroundColor(styles.colors.accent)
                       .frame(maxWidth: .infinity, alignment: .leading)
-                      .padding(.horizontal, styles.layout.paddingL) // Horizontal padding applied directly
+                      // Match leading padding of SharedSectionHeader, keep trailing padding standard
+                      .padding(.leading, styles.layout.paddingL * 2)
+                      .padding(.trailing, styles.layout.paddingL)
                       .padding(.top, styles.layout.paddingL) // Top padding
                       .padding(.bottom, styles.layout.spacingL) // Space below title
                       // No VStack wrapper needed now

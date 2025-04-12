@@ -49,11 +49,11 @@ struct StreakDotsView: View {
                     RoundedRectangle(cornerRadius: dotSize / 2) // Make ends perfectly round
                         // Background Bar - Spans full width
                     RoundedRectangle(cornerRadius: dotSize / 2) // Make ends perfectly round
-                        .fill(styles.colors.streakBarBackground) // Use theme color
+                        .fill(styles.colors.textSecondary.opacity(0.3)) // Use mid gray (textSecondary with opacity)
                         .frame(height: dotSize) // Height matches dot size
                         .zIndex(-1) // Ensure it's at the very back
                         .onAppear { // <-- DEBUG PRINT
-                             print("[StreakDotsView Debug] Resolved streakBarBackground color: \(styles.colors.streakBarBackground)")
+                             print("[StreakDotsView Debug] Resolved background bar color: \(styles.colors.textSecondary.opacity(0.3))")
                         }
 
                     // Accent Bars (Active Streaks) - Iterate over calculated ranges
