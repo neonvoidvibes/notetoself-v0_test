@@ -289,14 +289,12 @@ struct JournalView: View {
              VStack(spacing: 0) { // Main container VStack - Set spacing to 0
                  // Removed GeometryReader for scroll tracking
 
-                  // --- Daily Tagline ---
-                  // TODO: Implement logic to cycle tagline daily
-                  DailyTaglineView(tagline: "Keep showing up.", iconName: "pencil") // Journal icon
+                  // REMOVED Daily Tagline View
 
                   // --- Journey Card ---
                  JourneyInsightCard()
                      .padding(.horizontal, styles.layout.paddingL)
-                     .padding(.top, styles.layout.spacingXL)
+                     .padding(.top, styles.layout.paddingXL + styles.layout.paddingL + styles.layout.paddingL + styles.layout.paddingL) // Added another paddingL
                      .padding(.bottom, styles.layout.spacingS) // Reduced bottom padding
 
                  // --- Entry List / Empty State ---

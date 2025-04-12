@@ -94,325 +94,258 @@ struct JourneyInsightCard: View {
     }
 
     var body: some View {
+        // Outer VStack for the entire card content + divider
         VStack(spacing: 0) {
-            // --- Collapsed/Header View (Modified) ---
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: styles.layout.spacingM) { // Increased spacing
-                    Text("Journey")
-                        .font(styles.typography.largeTitle) // Use largeTitle font size
-                        .foregroundColor(styles.colors.accent) // Title uses accent color
+            // Main Content Area (Header + Optional Expanded View)
+            VStack(spacing: 0) { // Use spacing 0 here, manage space internally
+                // --- Collapsed/Header View (Modified) ---
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: styles.layout.spacingM) { // Increased spacing
+                        Text("Keep showing up.") // Changed title text
+                            .font(styles.typography.largeTitle) // Use largeTitle font size
+                            .foregroundColor(styles.colors.accent) // Title uses accent color
 
-                    // Use standard text color for streak subheadline
-                     Text(streakSubHeadline)
-                         .font(styles.typography.bodyFont.weight(.bold))
-                         .foregroundColor(styles.colors.text) // Standard text color
-
-
-                    // [3.3] Add Mini Activity Dots
-                    MiniActivityDots(habitData: habitData)
-                        // Add padding below dots
-                        .padding(.bottom, styles.layout.spacingXS)
+                        // Use standard text color for streak subheadline
+                         Text(streakSubHeadline)
+                             .font(styles.typography.bodyFont.weight(.bold))
+                             .foregroundColor(styles.colors.text) // Standard text color
 
 
-                    // Display loading/error state or the snippet
-                    HStack {
-                         if isLoading {
-                             Text("Loading...")
-                                 .font(styles.typography.bodySmall)
-                                 .foregroundColor(styles.colors.textSecondary)
-                             ProgressView().scaleEffect(0.7).padding(.leading, 2)
-                         } else if loadError {
-                             Text("Narrative unavailable")
-                                 .font(styles.typography.bodySmall)
-                                 .foregroundColor(styles.colors.error)
-                         } else {
-                             Text(narrativeSnippetDisplay)
-                                 .font(styles.typography.bodySmall)
-                                 .foregroundColor(styles.colors.textSecondary) // Standard secondary text color
-                                 .lineLimit(5) // Increased line limit for snippet
-                                 .fixedSize(horizontal: false, vertical: true)
-                         }
-                         Spacer() // Push text/loader left
-                    }
-                     .frame(minHeight: 30) // Adjust min height for snippet
-                }
-                Spacer()
-                // REMOVED: Top-right chevron removed
-            }
-            .padding(.horizontal, styles.layout.paddingL)
-            .padding(.vertical, styles.layout.paddingM + 4)
-
-            // --- Expanded Content (remains the same) ---
-            if isExpanded {
-                VStack(alignment: .leading, spacing: styles.layout.spacingL) {
-                    Divider().background(styles.colors.divider.opacity(0.5))
-
-                    // Habit Chart
-                    VStack(alignment: .leading, spacing: styles.layout.spacingS) {
-                        Text("Recent Activity")
-                            .font(styles.typography.bodyLarge.weight(.semibold))
-                            .foregroundColor(styles.colors.text)
+                        // [3.3] Add Mini Activity Dots
+                        MiniActivityDots(habitData: habitData)
+                            // Add padding below dots
                             .padding(.bottom, styles.layout.spacingXS)
 
-                        HStack(spacing: styles.layout.spacingS) {
-                            ForEach(0..<7) { index in
-                                VStack(spacing: 4) {
-                                    Circle()
-                                        .fill(habitData[index] ? styles.colors.accent : styles.colors.secondaryBackground)
-                                        .frame(width: 25, height: 25)
-                                        .overlay(
-                                            Circle().stroke(styles.colors.divider.opacity(0.5), lineWidth: 1)
-                                        )
-                                    Text(weekdayLabels[index])
-                                        .font(styles.typography.caption)
-                                        .foregroundColor(styles.colors.textSecondary)
-                                }
-                                .frame(maxWidth: .infinity)
-                            }
+
+                        // Display loading/error state or the snippet
+                        HStack {
+                             if isLoading {
+                                 Text("Loading...")
+                                     .font(styles.typography.bodySmall)
+                                     .foregroundColor(styles.colors.textSecondary)
+                                 ProgressView().scaleEffect(0.7).padding(.leading, 2)
+                             } else if loadError {
+                                 Text("Narrative unavailable")
+                                     .font(styles.typography.bodySmall)
+                                     .foregroundColor(styles.colors.error)
+                             } else {
+                                 Text(narrativeSnippetDisplay)
+                                     .font(styles.typography.bodySmall)
+                                     .foregroundColor(styles.colors.textSecondary) // Standard secondary text color
+                                     .lineLimit(5) // Increased line limit for snippet
+                                     .fixedSize(horizontal: false, vertical: true)
+                             }
+                             Spacer() // Push text/loader left
                         }
+                         .frame(minHeight: 30) // Adjust min height for snippet
                     }
-                    .padding(.top, styles.layout.paddingS)
-
-                    // Explainer Text
-                    Text("Consistency is key to building lasting habits. Celebrate your progress, one day at a time!")
-                        .font(styles.typography.bodySmall)
-                        .foregroundColor(styles.colors.textSecondary)
-                        .padding(.vertical, styles.layout.spacingS)
-
-                    // Narrative Text
-                     VStack(alignment: .leading) {
-                         Text("Highlights")
-                             .font(styles.typography.bodyLarge.weight(.semibold))
-                             .foregroundColor(styles.colors.text)
-                             .padding(.bottom, styles.layout.spacingXS)
-
-                         if isLoading {
-                             ProgressView()
-                                 .tint(styles.colors.accent)
-                                 .frame(maxWidth: .infinity, alignment: .center)
-                         } else {
-                             Text(narrativeDisplayText) // Use the property that includes fallbacks
-                                 .font(styles.typography.bodyFont)
-                                 .foregroundColor(loadError ? styles.colors.error : styles.colors.textSecondary)
-                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                 .fixedSize(horizontal: false, vertical: true)
-                         }
-                     }
-                     .padding(.vertical, styles.layout.spacingS)
-
-                    // Streak Milestones
-                    VStack(alignment: .leading, spacing: styles.layout.spacingM) {
-                        Text("Milestones")
-                            .font(styles.typography.bodyLarge.weight(.semibold))
-                            .foregroundColor(styles.colors.text)
-
-                        HStack(spacing: styles.layout.spacingL) {
-                            MilestoneView(
-                                label: "7 Days",
-                                icon: "star.fill",
-                                isAchieved: appState.currentStreak >= 7,
-                                accentColor: styles.colors.accent,
-                                defaultStrokeColor: styles.colors.tertiaryAccent
-                            )
-                             MilestoneView(
-                                 label: "30 Days",
-                                 icon: "star.fill",
-                                 isAchieved: appState.currentStreak >= 30,
-                                 accentColor: styles.colors.accent,
-                                 defaultStrokeColor: styles.colors.tertiaryAccent
-                             )
-                             MilestoneView(
-                                 label: "100 Days",
-                                 icon: "star.fill",
-                                 isAchieved: appState.currentStreak >= 100,
-                                 accentColor: styles.colors.accent,
-                                 defaultStrokeColor: styles.colors.tertiaryAccent
-                             )
-                        }
-                        .frame(maxWidth: .infinity, alignment: .center)
-                    }
-                    .padding(.top, styles.layout.paddingS)
-
+                    Spacer()
+                    // REMOVED: Top-right chevron removed
                 }
                 .padding(.horizontal, styles.layout.paddingL)
-                // Removed bottom padding here, handled by chevron area below
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
+                .padding(.vertical, styles.layout.paddingM + 4)
 
-            // --- Expand/Collapse Chevron Button (Bottom Center) ---
-            Button(action: {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    isExpanded.toggle()
+                // --- Expanded Content (remains the same) ---
+                if isExpanded {
+                    VStack(alignment: .leading, spacing: styles.layout.spacingL) {
+                        Divider().background(styles.colors.divider.opacity(0.5))
+
+                        // Habit Chart
+                        VStack(alignment: .leading, spacing: styles.layout.spacingS) {
+                            Text("Recent Activity")
+                                .font(styles.typography.bodyLarge.weight(.semibold))
+                                .foregroundColor(styles.colors.text)
+                                .padding(.bottom, styles.layout.spacingXS)
+
+                            HStack(spacing: styles.layout.spacingS) {
+                                ForEach(0..<7) { index in
+                                    VStack(spacing: 4) {
+                                        Circle()
+                                            .fill(habitData[index] ? styles.colors.accent : styles.colors.secondaryBackground)
+                                            .frame(width: 25, height: 25)
+                                            .overlay(
+                                                Circle().stroke(styles.colors.divider.opacity(0.5), lineWidth: 1)
+                                            )
+                                        Text(weekdayLabels[index])
+                                            .font(styles.typography.caption)
+                                            .foregroundColor(styles.colors.textSecondary)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                            }
+                        }
+                        .padding(.top, styles.layout.paddingS)
+
+                        // Explainer Text
+                        Text("Consistency is key to building lasting habits. Celebrate your progress, one day at a time!")
+                            .font(styles.typography.bodySmall)
+                            .foregroundColor(styles.colors.textSecondary)
+                            .padding(.vertical, styles.layout.spacingS)
+
+                        // Narrative Text
+                         VStack(alignment: .leading) {
+                             Text("Highlights")
+                                 .font(styles.typography.bodyLarge.weight(.semibold))
+                                 .foregroundColor(styles.colors.text)
+                                 .padding(.bottom, styles.layout.spacingXS)
+
+                             if isLoading {
+                                 ProgressView()
+                                     .tint(styles.colors.accent)
+                                     .frame(maxWidth: .infinity, alignment: .center)
+                             } else {
+                                 Text(narrativeDisplayText) // Use the property that includes fallbacks
+                                     .font(styles.typography.bodyFont)
+                                     .foregroundColor(loadError ? styles.colors.error : styles.colors.textSecondary)
+                                     .frame(maxWidth: .infinity, alignment: .leading)
+                                     .fixedSize(horizontal: false, vertical: true)
+                             }
+                         }
+                         .padding(.vertical, styles.layout.spacingS)
+
+                        // Streak Milestones
+                        VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                            Text("Milestones")
+                                .font(styles.typography.bodyLarge.weight(.semibold))
+                                .foregroundColor(styles.colors.text)
+
+                            HStack(spacing: styles.layout.spacingL) {
+                                MilestoneView(
+                                    label: "7 Days",
+                                    icon: "star.fill",
+                                    isAchieved: appState.currentStreak >= 7,
+                                    accentColor: styles.colors.accent,
+                                    defaultStrokeColor: styles.colors.tertiaryAccent
+                                )
+                                 MilestoneView(
+                                     label: "30 Days",
+                                     icon: "star.fill",
+                                     isAchieved: appState.currentStreak >= 30,
+                                     accentColor: styles.colors.accent,
+                                     defaultStrokeColor: styles.colors.tertiaryAccent
+                                 )
+                                 MilestoneView(
+                                     label: "100 Days",
+                                     icon: "star.fill",
+                                     isAchieved: appState.currentStreak >= 100,
+                                     accentColor: styles.colors.accent,
+                                     defaultStrokeColor: styles.colors.tertiaryAccent
+                                 )
+                            }
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        }
+                        .padding(.top, styles.layout.paddingS)
+
+                    }
+                    .padding(.horizontal, styles.layout.paddingL)
+                    .padding(.bottom, styles.layout.paddingM) // Add bottom padding to expanded content
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
-            }) {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 24, weight: .bold)) // Larger size
-                    .foregroundColor(styles.colors.accent)
-                    .rotationEffect(Angle(degrees: isExpanded ? 180 : 0))
-                    .padding(.vertical, 12) // Ample vertical padding around chevron
-            }
-            .frame(maxWidth: .infinity) // Center horizontally
-            .padding(.bottom, isExpanded ? styles.layout.paddingS : 0)
-         .frame(maxWidth: .infinity) // Center horizontally
-           .padding(.top, styles.layout.paddingS) // Padding above chevron
-           // REMOVED conditional bottom padding from chevron button container
 
-       } // End Main Content VStack
+                // --- Expand/Collapse Control Area ---
+                VStack(spacing: styles.layout.spacingXS) { // Container for text and button
+                    Text("Show more")
+                        .font(.system(size: 10, weight: .regular, design: .monospaced))
+                        .foregroundColor(styles.colors.text)
 
-        // Add thick Divider below the main content VStack and Chevron button
-        Divider()
-            .frame(height: 12) // Increased divider thickness
-            .background(styles.colors.accent) // Use accent color
-            .padding(.vertical, styles.layout.paddingL) // Keep ample top/bottom padding for balance
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            isExpanded.toggle()
+                        }
+                    }) {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(styles.colors.accent)
+                            .rotationEffect(Angle(degrees: isExpanded ? 180 : 0))
+                    }
+                    .frame(maxWidth: .infinity) // Center horizontally
+                }
+                .padding(.top, styles.layout.paddingS) // Padding above the text/button group
+                .padding(.bottom, styles.layout.spacingS) // Reduced padding below button group
 
-        // Apply background and corner radius to the outer container VStack
-        .background(styles.colors.cardBackground)
-         .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
+            } // End Main Content VStack
+    
+             // Explicit Rectangle used as Divider
+             Rectangle()
+                 .fill(styles.colors.accent) // Use accent color for fill
+                 .frame(height: 3) // Set thickness to 3pt
+                 .padding(.top, styles.layout.spacingS) // Slightly increased top padding
+                 .padding(.bottom, styles.layout.spacingM) // Keep moderate bottom padding
+    
+            } // End Outer VStack
+            .background(styles.colors.cardBackground) // Apply background to outer VStack
+        .cornerRadius(styles.layout.radiusL) // Apply corner radius to outer VStack
+        .onAppear { loadInsight() }
+        .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
              print("[JourneyCard] Received insightsDidUpdate notification.")
              loadInsight()
         }
     } // End body
 
-    // Function to load and decode the insight
+    // Function to load and decode the insight (remains the same)
     private func loadInsight() {
-        // Avoid concurrent loads
-        guard !isLoading else {
-            print("[JourneyCard] Load already in progress. Skipping.")
-            return
-        }
-        print("[JourneyCard] Initiating insight load for type: \(insightTypeIdentifier)...")
+        guard !isLoading else { return }
         isLoading = true
         loadError = false
-        narrativeResult = nil // Reset result before loading
-
+        narrativeResult = nil
         Task {
-            // Removed unused loadedJson variable
             var loadedDate: Date? = nil
             var decodeError: Error? = nil
             var finalResult: StreakNarrativeResult? = nil
-
             do {
-                // Step 1: Load from DB - Removed await
-                // Adjust tuple destructuring to ignore the third element (contextItem)
                 if let (json, date, _) = try databaseService.loadLatestInsight(type: insightTypeIdentifier) {
                     loadedDate = date
-                    print("[JourneyCard] Loaded JSON from DB (Length: \(json.count)): >>>\(json.prefix(200))...<<<") // Log loaded JSON
-
-                    // Step 2: Decode JSON
                     if let data = json.data(using: .utf8) {
                         let decoder = JSONDecoder()
-                        do {
-                            let result = try decoder.decode(StreakNarrativeResult.self, from: data)
-                            finalResult = result
-                            print("[JourneyCard] Successfully decoded JSON. Snippet: '>>>\(result.storySnippet)'. Narrative: '>>>\(result.narrativeText)<<<'")
-                        } catch {
-                            decodeError = error // Store decoding error
-                            print("‼️ [JourneyCard] JSON Decoding Error: \(error). Raw JSON: >>>\(json)<<<")
-                        }
-                    } else {
-                        decodeError = NSError(domain: "JourneyCard", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert JSON string to Data"])
-                        print("‼️ [JourneyCard] Failed to convert JSON string to Data.")
-                    }
-                } else {
-                    // No insight found in DB
-                    print("[JourneyCard] No stored narrative insight found in DB for type '\(insightTypeIdentifier)'.")
+                        do { finalResult = try decoder.decode(StreakNarrativeResult.self, from: data) }
+                        catch { decodeError = error }
+                    } else { decodeError = NSError(domain: "JourneyCard", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert JSON string to Data"]) }
                 }
-            } catch {
-                 // Error loading from DB
-                 print("‼️ [JourneyCard] Failed to load insight from DB: \(error)")
-                 // Propagate the error to the main thread update
-                 decodeError = error // Use decodeError to signify loading failure
-            }
-
-            // Step 3: Update UI on Main Thread
+            } catch { decodeError = error }
             await MainActor.run {
-                self.narrativeResult = finalResult // Update with decoded result (or nil if failed/not found)
-                self.generatedDate = loadedDate // Update date (or nil)
-                self.loadError = (decodeError != nil) // Set error flag if any error occurred
-                self.isLoading = false // Mark loading as complete
-                print("[JourneyCard] Load complete. isLoading: false, loadError: \(self.loadError), narrativeResult is nil: \(self.narrativeResult == nil)")
+                self.narrativeResult = finalResult
+                self.generatedDate = loadedDate
+                self.loadError = (decodeError != nil)
+                self.isLoading = false
             }
         }
     }
 }
 
-// --- Preview Struct ---
+// --- Preview Struct (remains the same) ---
 private struct JourneyCardPreviewWrapper: View {
     @StateObject private var mockAppState: AppState
     @StateObject private var mockAppStateNoToday: AppState
     @StateObject private var mockAppStateNoStreak: AppState
-
-    // Ensure previews use the shared instances or correctly initialized ones
     @StateObject private static var mockUIStyles = UIStyles.shared
-    @StateObject private static var mockDatabaseService = DatabaseService() // Use @StateObject if it has @Published
+    @StateObject private static var mockDatabaseService = DatabaseService()
     @StateObject private static var mockThemeManager = ThemeManager.shared
 
     init() {
-        let state1 = AppState()
-        let calendar = Calendar.current
-        let today = Date()
+        let state1 = AppState(); let calendar = Calendar.current; let today = Date()
         state1.journalEntries = [
             JournalEntry(text: "Today entry", mood: .happy, date: today),
             JournalEntry(text: "Yesterday entry", mood: .neutral, date: calendar.date(byAdding: .day, value: -1, to: today)!),
             JournalEntry(text: "3 days ago entry", mood: .sad, date: calendar.date(byAdding: .day, value: -3, to: today)!),
             JournalEntry(text: "5 days ago entry", mood: .content, date: calendar.date(byAdding: .day, value: -5, to: today)!)
-        ]
-        _mockAppState = StateObject(wrappedValue: state1)
-
+        ]; _mockAppState = StateObject(wrappedValue: state1)
         let state2 = AppState()
         state2.journalEntries = [
             JournalEntry(text: "Yesterday entry", mood: .neutral, date: calendar.date(byAdding: .day, value: -1, to: today)!),
             JournalEntry(text: "2 days ago", mood: .sad, date: calendar.date(byAdding: .day, value: -2, to: today)!)
-        ]
-        _mockAppStateNoToday = StateObject(wrappedValue: state2)
-
-        let state3 = AppState()
-        state3.journalEntries = [
-            JournalEntry(text: "3 days ago", mood: .sad, date: calendar.date(byAdding: .day, value: -3, to: today)!)
-        ]
-        _mockAppStateNoStreak = StateObject(wrappedValue: state3)
-
-        // Add mock narrative to DB for preview
-        let mockNarrative = StreakNarrativeResult(storySnippet: "Preview snippet loaded!", narrativeText: "This is the detailed narrative text for the preview.")
-        let encoder = JSONEncoder()
+        ]; _mockAppStateNoToday = StateObject(wrappedValue: state2)
+        let state3 = AppState(); state3.journalEntries = [ JournalEntry(text: "3 days ago", mood: .sad, date: calendar.date(byAdding: .day, value: -3, to: today)!) ]; _mockAppStateNoStreak = StateObject(wrappedValue: state3)
+        let mockNarrative = StreakNarrativeResult(storySnippet: "Preview snippet loaded!", narrativeText: "This is the detailed narrative text for the preview."); let encoder = JSONEncoder()
         if let data = try? encoder.encode(mockNarrative), let jsonString = String(data: data, encoding: .utf8) {
-            Task {
-                try? await Self.mockDatabaseService.saveGeneratedInsight(type: "journeyNarrative", date: Date(), jsonData: jsonString)
-                print("[Preview] Saved mock journeyNarrative to DB.")
-            }
+            Task { try? await Self.mockDatabaseService.saveGeneratedInsight(type: "journeyNarrative", date: Date(), jsonData: jsonString) }
         }
     }
-
     var body: some View {
-        ScrollView {
-            VStack {
-                 JourneyInsightCard()
-                     .padding()
-                     .environmentObject(mockAppState)
-                     .environmentObject(Self.mockDatabaseService)
-                     .environmentObject(Self.mockUIStyles)
-                     .environmentObject(Self.mockThemeManager)
-
-                 JourneyInsightCard()
-                      .padding()
-                      .environmentObject(mockAppStateNoToday)
-                      .environmentObject(Self.mockDatabaseService)
-                      .environmentObject(Self.mockUIStyles)
-                      .environmentObject(Self.mockThemeManager)
-
-                  JourneyInsightCard()
-                       .padding()
-                       .environmentObject(mockAppStateNoStreak)
-                       .environmentObject(Self.mockDatabaseService)
-                       .environmentObject(Self.mockUIStyles)
-                       .environmentObject(Self.mockThemeManager)
-             }
-        }
-        .background(Color.gray.opacity(0.1))
-        .preferredColorScheme(.light)
+        ScrollView { VStack {
+            JourneyInsightCard().padding().environmentObject(mockAppState).environmentObject(Self.mockDatabaseService).environmentObject(Self.mockUIStyles).environmentObject(Self.mockThemeManager)
+            JourneyInsightCard().padding().environmentObject(mockAppStateNoToday).environmentObject(Self.mockDatabaseService).environmentObject(Self.mockUIStyles).environmentObject(Self.mockThemeManager)
+            JourneyInsightCard().padding().environmentObject(mockAppStateNoStreak).environmentObject(Self.mockDatabaseService).environmentObject(Self.mockUIStyles).environmentObject(Self.mockThemeManager)
+        }} .background(Color.gray.opacity(0.1)).preferredColorScheme(.light)
     }
 }
-
-#Preview {
-    JourneyCardPreviewWrapper()
-}
+#Preview { JourneyCardPreviewWrapper() }
