@@ -95,17 +95,17 @@ struct JourneyInsightCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // --- Collapsed/Header View ---
+            // --- Collapsed/Header View (Modified) ---
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: styles.layout.spacingM) { // Increased spacing
                     Text("Journey")
-                        .font(styles.typography.title3)
-                        .foregroundColor(styles.colors.text)
+                        .font(styles.typography.largeTitle) // Use largeTitle font size
+                        .foregroundColor(styles.colors.accent) // Title uses accent color
 
-                    // Use slightly different text color depending on light/dark mode for streak
+                    // Use standard text color for streak subheadline
                      Text(streakSubHeadline)
                          .font(styles.typography.bodyFont.weight(.bold))
-                         .foregroundColor(colorScheme == .light ? styles.colors.accent : styles.colors.secondaryAccent)
+                         .foregroundColor(styles.colors.text) // Standard text color
 
 
                     // [3.3] Add Mini Activity Dots
@@ -128,32 +128,21 @@ struct JourneyInsightCard: View {
                          } else {
                              Text(narrativeSnippetDisplay)
                                  .font(styles.typography.bodySmall)
-                                 .foregroundColor(styles.colors.textSecondary)
-                                 .lineLimit(2) // Limit snippet to 2 lines
+                                 .foregroundColor(styles.colors.textSecondary) // Standard secondary text color
+                                 .lineLimit(5) // Increased line limit for snippet
                                  .fixedSize(horizontal: false, vertical: true)
                          }
                          Spacer() // Push text/loader left
                     }
                      .frame(minHeight: 30) // Adjust min height for snippet
                 }
-                // REMOVED .frame(minHeight: 70) - let content dictate height
                 Spacer()
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(styles.colors.tertiaryAccent)
-                    .rotationEffect(Angle(degrees: isExpanded ? 180 : 0))
-                    .padding(.top, styles.layout.paddingS)
+                // REMOVED: Top-right chevron removed
             }
             .padding(.horizontal, styles.layout.paddingL)
             .padding(.vertical, styles.layout.paddingM + 4)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    isExpanded.toggle()
-                }
-            }
 
-            // --- Expanded Content ---
+            // --- Expanded Content (remains the same) ---
             if isExpanded {
                 VStack(alignment: .leading, spacing: styles.layout.spacingL) {
                     Divider().background(styles.colors.divider.opacity(0.5))
@@ -242,26 +231,47 @@ struct JourneyInsightCard: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .center)
                     }
-                    .padding(.top, styles.layout.spacingS)
+                    .padding(.top, styles.layout.paddingS)
 
                 }
                 .padding(.horizontal, styles.layout.paddingL)
-                .padding(.bottom, styles.layout.paddingM)
+                // Removed bottom padding here, handled by chevron area below
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
-        }
+
+            // --- Expand/Collapse Chevron Button (Bottom Center) ---
+            Button(action: {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    isExpanded.toggle()
+                }
+            }) {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 24, weight: .bold)) // Larger size
+                    .foregroundColor(styles.colors.accent)
+                    .rotationEffect(Angle(degrees: isExpanded ? 180 : 0))
+                    .padding(.vertical, 12) // Ample vertical padding around chevron
+            }
+            .frame(maxWidth: .infinity) // Center horizontally
+            .padding(.bottom, isExpanded ? styles.layout.paddingS : 0)
+         .frame(maxWidth: .infinity) // Center horizontally
+           .padding(.top, styles.layout.paddingS) // Padding above chevron
+           // REMOVED conditional bottom padding from chevron button container
+
+       } // End Main Content VStack
+
+        // Add thick Divider below the main content VStack and Chevron button
+        Divider()
+            .frame(height: 12) // Increased divider thickness
+            .background(styles.colors.accent) // Use accent color
+            .padding(.vertical, styles.layout.paddingL) // Keep ample top/bottom padding for balance
+
+        // Apply background and corner radius to the outer container VStack
         .background(styles.colors.cardBackground)
-        .cornerRadius(styles.layout.radiusL)
-        .overlay(
-            RoundedRectangle(cornerRadius: styles.layout.radiusL)
-                .stroke(styles.colors.accent, lineWidth: 2) // Keep accent border
-        )
-        .onAppear { loadInsight() }
-        .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
+         .onReceive(NotificationCenter.default.publisher(for: .insightsDidUpdate)) { _ in
              print("[JourneyCard] Received insightsDidUpdate notification.")
              loadInsight()
         }
-    }
+    } // End body
 
     // Function to load and decode the insight
     private func loadInsight() {
@@ -332,9 +342,10 @@ private struct JourneyCardPreviewWrapper: View {
     @StateObject private var mockAppStateNoToday: AppState
     @StateObject private var mockAppStateNoStreak: AppState
 
-    private static let mockUIStyles = UIStyles.shared
-    private static let mockDatabaseService = DatabaseService()
-    private static let mockThemeManager = ThemeManager.shared
+    // Ensure previews use the shared instances or correctly initialized ones
+    @StateObject private static var mockUIStyles = UIStyles.shared
+    @StateObject private static var mockDatabaseService = DatabaseService() // Use @StateObject if it has @Published
+    @StateObject private static var mockThemeManager = ThemeManager.shared
 
     init() {
         let state1 = AppState()
@@ -366,7 +377,7 @@ private struct JourneyCardPreviewWrapper: View {
         let encoder = JSONEncoder()
         if let data = try? encoder.encode(mockNarrative), let jsonString = String(data: data, encoding: .utf8) {
             Task {
-                try? Self.mockDatabaseService.saveGeneratedInsight(type: "journeyNarrative", date: Date(), jsonData: jsonString)
+                try? await Self.mockDatabaseService.saveGeneratedInsight(type: "journeyNarrative", date: Date(), jsonData: jsonString)
                 print("[Preview] Saved mock journeyNarrative to DB.")
             }
         }

@@ -294,13 +294,13 @@ struct JournalView: View {
                   DailyTaglineView(tagline: "Keep showing up.", iconName: "pencil") // Journal icon
 
                   // --- Journey Card ---
-                JourneyInsightCard()
-                    .padding(.horizontal, styles.layout.paddingL)
-                    .padding(.top, styles.layout.spacingXL)
-                    .padding(.bottom, styles.layout.spacingL)
+                 JourneyInsightCard()
+                     .padding(.horizontal, styles.layout.paddingL)
+                     .padding(.top, styles.layout.spacingXL)
+                     .padding(.bottom, styles.layout.spacingS) // Reduced bottom padding
 
-                // --- Entry List / Empty State ---
-                if filteredEntries.isEmpty {
+                 // --- Entry List / Empty State ---
+                 if filteredEntries.isEmpty {
                    emptyState
                 } else {
                    journalListWithCTA // Use modified list that includes CTA logic
