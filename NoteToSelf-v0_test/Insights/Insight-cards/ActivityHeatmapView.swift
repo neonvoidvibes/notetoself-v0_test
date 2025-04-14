@@ -1,6 +1,7 @@
 import SwiftUI
 
-struct MiniCalendarHeatmapView: View {
+// RENAMED struct
+struct ActivityHeatmapView: View {
     let data: [HeatmapDayInfo] // Expects 35 days, ordered chronologically
     let onTapDay: (JournalEntry) -> Void // Callback when a day with an entry is tapped
 
@@ -66,7 +67,8 @@ struct MiniCalendarHeatmapView: View {
     // Use static helper from JourneyInsightCard for consistency
     let data = JourneyInsightCard.prepareHeatmapData(for: today, using: mockEntries)
 
-    return MiniCalendarHeatmapView(data: data) { entry in
+    // Use RENAMED struct in preview
+    ActivityHeatmapView(data: data) { entry in
         print("Tapped entry: \(entry.id)")
     }
     .padding()

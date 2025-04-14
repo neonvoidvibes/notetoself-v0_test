@@ -83,38 +83,43 @@ struct EntryPreviewPopupView: View {
     }
 }
 
+// Define PreviewContainer outside the #Preview block
+fileprivate struct PreviewContainer: View {
+    @State var showPopup = true
+    // Pass the entry to the container instead of capturing
+    let entry: JournalEntry
+
+    var body: some View {
+        ZStack {
+            LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+                .ignoresSafeArea()
+
+            if showPopup {
+                EntryPreviewPopupView(entry: entry, isPresented: $showPopup) {
+                    print("Expand tapped!")
+                }
+            }
+
+            Button("Show Popup") { showPopup = true }
+                .padding()
+                .buttonStyle(.borderedProminent)
+                .disabled(showPopup)
+
+        }
+         .environmentObject(UIStyles.shared)
+         .environmentObject(ThemeManager.shared)
+    }
+}
+
+
 #Preview {
+    // Define sampleEntry here, accessible by PreviewContainer below
     let sampleEntry = JournalEntry(
         text: "This is a preview of the journal entry text. It might be quite long, so we should only show a few lines here to give the user an idea of the content before they decide to expand it fully.",
         mood: .happy,
         date: Date()
     )
 
-    // Need a container to simulate presentation state
-    struct PreviewContainer: View {
-        @State var showPopup = true
-        @State var entry = sampleEntry
-        var body: some View {
-            ZStack {
-                LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
-                    .ignoresSafeArea()
-
-                if showPopup {
-                    EntryPreviewPopupView(entry: entry, isPresented: $showPopup) {
-                        print("Expand tapped!")
-                    }
-                }
-
-                Button("Show Popup") { showPopup = true }
-                .padding()
-                .buttonStyle(.borderedProminent)
-                .disabled(showPopup)
-
-            }
-             .environmentObject(UIStyles.shared)
-             .environmentObject(ThemeManager.shared)
-        }
-    }
-
-    return PreviewContainer()
+    // Instantiate the container, passing the entry
+    PreviewContainer(entry: sampleEntry)
 }

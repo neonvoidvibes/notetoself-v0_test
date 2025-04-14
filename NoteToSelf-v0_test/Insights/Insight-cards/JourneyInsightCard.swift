@@ -146,9 +146,9 @@ struct JourneyInsightCard: View {
                     .lineLimit(5)
                     .padding(.bottom, styles.layout.spacingS)
 
-                // NEW: Mini Calendar Heatmap
+                // NEW: Activity Heatmap (Renamed)
                 // Pass the helper function reference for the tap action
-                MiniCalendarHeatmapView(data: heatmapData, onTapDay: handleHeatmapTap)
+                ActivityHeatmapView(data: heatmapData, onTapDay: handleHeatmapTap)
                 // Add some padding below the heatmap
                 .padding(.bottom, styles.layout.spacingS)
 
@@ -201,37 +201,30 @@ struct JourneyInsightCard: View {
                     .foregroundColor(styles.colors.text)
 
                 HStack(spacing: styles.layout.spacingL) {
-
-                    // Explicitly declare type
-                    let milestone7: MilestoneView = MilestoneView(
+                    // Revert to direct initialization
+                    MilestoneView(
                         label: "7 Days",
                         icon: "star.fill",
                         isAchieved: appState.currentStreak >= 7, // Use AppState directly
                         accentColor: styles.colors.accent,
                         defaultStrokeColor: styles.colors.tertiaryAccent
                     )
-                    milestone7 // Use the declared variable
-
-                     // Explicitly declare type
-                     let milestone30: MilestoneView = MilestoneView(
+                     // Revert to direct initialization
+                     MilestoneView(
                          label: "30 Days",
                          icon: "star.fill",
                          isAchieved: appState.currentStreak >= 30, // Use AppState directly
                          accentColor: styles.colors.accent,
                          defaultStrokeColor: styles.colors.tertiaryAccent
                      )
-                     milestone30 // Use the declared variable
-
-                     // Explicitly declare type
-                     let milestone100: MilestoneView = MilestoneView(
+                     // Revert to direct initialization
+                     MilestoneView(
                          label: "100 Days",
                          icon: "star.fill",
                          isAchieved: appState.currentStreak >= 100, // Use AppState directly
                          accentColor: styles.colors.accent,
                          defaultStrokeColor: styles.colors.tertiaryAccent
                      )
-                     milestone100 // Use the declared variable
-
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
                 }
@@ -268,7 +261,8 @@ struct JourneyInsightCard: View {
 
     // --- Data Preparation Function (Static) ---
     // Made static to avoid potential issues calling instance methods during initialization
-    private static func prepareHeatmapData(for date: Date, using entries: [JournalEntry]) -> [HeatmapDayInfo] {
+    // Changed from private to internal (default access level) to be accessible by Preview
+    static func prepareHeatmapData(for date: Date, using entries: [JournalEntry]) -> [HeatmapDayInfo] {
         let calendar = Calendar.current
         let daysToShow = 35 // 5 rows * 7 days
         guard let endDate = calendar.startOfDay(for: date) as Date?, // Today
