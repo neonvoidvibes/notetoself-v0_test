@@ -10,6 +10,15 @@ struct MilestoneView: View {
 
     @ObservedObject private var styles = UIStyles.shared // Need styles for typography
 
+    // Explicit Initializer (Marked internal for clarity, though it's the default)
+    internal init(label: String, icon: String, isAchieved: Bool, accentColor: Color, defaultStrokeColor: Color) {
+        self.label = label
+        self.icon = icon
+        self.isAchieved = isAchieved
+        self.accentColor = accentColor
+        self.defaultStrokeColor = defaultStrokeColor
+    }
+
     var body: some View {
         VStack(spacing: 8) { // Consistent spacing
             ZStack {

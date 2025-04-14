@@ -1,5 +1,6 @@
 import SwiftUI
 
+@available(*, deprecated, message: "Replaced by MiniCalendarHeatmapView within JourneyInsightCard.")
 struct StreakDotsView: View {
     @StateObject private var viewModel: StreakViewModel // Use StateObject for owned view model
     @ObservedObject private var styles = UIStyles.shared // Observe UIStyles

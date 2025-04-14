@@ -317,7 +317,8 @@ Text(Taglines.getTagline(for: .journal))
                  if appState.currentStreak > 0 {
                       Section {
                           // The JourneyInsightCard content (excluding the headline)
-                          JourneyInsightCard(appState: appState)
+                          // Initialize without passing appState; it uses @EnvironmentObject
+                          JourneyInsightCard()
                               .padding(.horizontal, styles.layout.paddingL) // Horizontal padding for the card content
                               .padding(.bottom, styles.layout.paddingL) // Add bottom padding to separate from entries
                               .transition(.opacity.combined(with: .move(edge: .top))) // Add animation
