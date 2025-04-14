@@ -102,8 +102,8 @@ struct InsightsView: View {
                 // --- ScrollView with VStack ---
                 ScrollView {
                     // --- Daily Tagline ---
-                    // TODO: Implement logic to cycle tagline daily
-                    DailyTaglineView(tagline: "See yourself clearer.", iconName: "chart.bar.fill") // Insights icon
+                    // Use dynamic tagline based on the day
+                    DailyTaglineView(tagline: Taglines.getTagline(for: .insights), iconName: "chart.bar.fill") // Insights icon
   
                     // Main content container using VStack
                     VStack(spacing: styles.layout.cardSpacing) { // Use cardSpacing for VStack
