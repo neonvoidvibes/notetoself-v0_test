@@ -193,4 +193,7 @@ class ActivityHeatmapViewModel: ObservableObject {
          }
          return result.narrativeText
     }
+
+    // REMOVED duplicate declaration - it exists earlier in the file.
+    // var narrativeSnippetDisplay: String { ... }
 }

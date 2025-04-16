@@ -37,15 +37,7 @@ struct ActivityHeatmapView: View {
             // Card Content VStack
             VStack(alignment: .leading, spacing: 0) {
 
-                // Narrative Snippet (Only when collapsed)
-                if !viewModel.isExpanded {
-                     Text(viewModel.narrativeSnippetDisplay)
-                         .font(styles.typography.bodySmall)
-                         .foregroundColor(viewModel.loadNarrativeError ? styles.colors.error : styles.colors.textSecondary)
-                         .lineLimit(2) // Limit snippet length visually
-                         .padding(.bottom, styles.layout.spacingM) // Space below snippet
-                         .transition(.opacity) // Fade in/out
-                }
+                // REMOVED: Narrative Snippet display from inside the card
 
                 // Weekday Header
                 HStack(spacing: 6) { // Match grid spacing
@@ -96,7 +88,8 @@ struct ActivityHeatmapView: View {
 
             // Expand/Collapse Button & Text (Outside the card background)
             VStack(spacing: styles.layout.spacingXS) {
-                Text(viewModel.isExpanded ? "Collapse" : "Show full activity history")
+                // Updated Text
+                Text(viewModel.isExpanded ? "Close" : "Show full activity")
                     .font(.system(size: 10, weight: .regular, design: .monospaced))
                     .foregroundColor(styles.colors.accent)
 
@@ -104,7 +97,7 @@ struct ActivityHeatmapView: View {
                     viewModel.toggleExpansion()
                 }) {
                     Image(systemName: viewModel.isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 24, weight: .bold)) // Larger chevron
+                        .font(.system(size: 18, weight: .bold)) // Smaller chevron
                         .foregroundColor(styles.colors.accent)
                 }
                 .frame(maxWidth: .infinity) // Allow button to take width for centering text above

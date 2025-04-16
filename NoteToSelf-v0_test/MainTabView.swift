@@ -177,8 +177,7 @@ struct MainTabView: View {
                               .padding(.bottom, bottomSheetExpanded ? 16 : 8)
                           }
                           .buttonStyle(PlainButtonStyle())
-                          .disabled(isPreviewPopupPresented) // Disable button when popup is shown
-                          .opacity(isPreviewPopupPresented ? 0.5 : 1.0) // Dim when disabled
+                          // REMOVED: .disabled and .opacity from button itself
 
                           if bottomSheetExpanded {
                               HStack(spacing: 0) {
@@ -199,6 +198,9 @@ struct MainTabView: View {
                       .opacity(isKeyboardVisible ? 0 : 1)
                       .animation(.default, value: isKeyboardVisible)
                       .background( bottomSheetExpanded ? styles.colors.bottomSheetBackground : (selectedTab == 2 ? styles.colors.inputBackground : styles.colors.appBackground) )
+                      // Disable the entire VStack if popup is shown
+                      .disabled(isPreviewPopupPresented)
+                      .opacity(isPreviewPopupPresented ? 0.5 : 1.0) // Also dim the entire area
                   }
               }
               .frame(height: isKeyboardVisible ? 0 : (bottomSheetExpanded ? fullSheetHeight : peekHeight))
