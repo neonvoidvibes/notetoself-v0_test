@@ -14,9 +14,8 @@ struct HeatmapDayCell: View {
     var body: some View {
         ZStack {
             // Base background/shape
-            RoundedRectangle(cornerRadius: styles.layout.radiusM / 2) // Keep subtle rounding
-                // Revert to standard secondary background for all cells
-                .fill(styles.colors.secondaryBackground.opacity(0.3))
+            RoundedRectangle(cornerRadius: styles.layout.radiusM / 2)
+                .fill(styles.colors.secondaryBackground.opacity(0.3)) // Standard background for all
                 .frame(width: cellSize, height: cellSize)
 
             // Display Mood Icon if entry exists
@@ -32,8 +31,18 @@ struct HeatmapDayCell: View {
             // REMOVED: Inner Ring Overlay for today indicator
         }
         .frame(width: cellSize, height: cellSize) // Ensure ZStack respects the size
-        // Apply a subtle glow using shadow modifier if it's today
-        .shadow(color: isToday ? styles.colors.accent.opacity(0.5) : Color.clear, radius: 4)
+        // REMOVED glow/shadow indicator
+
+        // Day Number Overlay (dimmed, hidden if entry exists)
+        .overlay(
+             // Only show day number if there's NO entry for the day
+             dayInfo.entry == nil ?
+                 Text("\(Calendar.current.component(.day, from: dayInfo.date))")
+                     .font(styles.typography.bodySmall) // Slightly smaller font
+                     .foregroundColor(styles.colors.textSecondary.opacity(0.4)) // Dimmer text color
+                     .frame(maxWidth: .infinity, maxHeight: .infinity) // Center it
+                 : nil // Render nothing if there is an entry
+         )
     }
 }
 

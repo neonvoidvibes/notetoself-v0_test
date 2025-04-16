@@ -345,14 +345,19 @@ struct JournalView: View {
                 // --- NEW Activity Heatmap Section ---
                 Section {
                     // Narrative Snippet (Always visible below header)
-                     Text(heatmapViewModel.narrativeSnippetDisplay)
-                         .font(styles.typography.bodyFont) // Size already increased
-                         .foregroundColor(heatmapViewModel.loadNarrativeError ? styles.colors.error : styles.colors.textSecondary)
-                         .fixedSize(horizontal: false, vertical: true) // Ensure vertical expansion & prevent truncation
-                         .padding(.horizontal, styles.layout.paddingL * 2) // Match SharedSectionHeader padding
+                     // Wrap in VStack to potentially help layout calculation
+                     VStack(alignment: .leading) {
+                         Text(heatmapViewModel.narrativeSnippetDisplay)
+                             .font(styles.typography.bodyFont) // Size already increased
+                             .foregroundColor(heatmapViewModel.loadNarrativeError ? styles.colors.error : styles.colors.textSecondary)
+                             .fixedSize(horizontal: false, vertical: true) // Ensure vertical expansion & prevent truncation
+                             .frame(minHeight: 20) // Add minimum height to encourage space allocation
+                     }
+                     .padding(.horizontal, styles.layout.paddingL * 2) // Match SharedSectionHeader padding
                          .padding(.top, styles.layout.spacingXS) // Small space below header
                          .padding(.bottom, styles.layout.spacingM) // Space above heatmap card
                          .frame(maxWidth: .infinity, alignment: .leading)
+                         .transition(.opacity) // Restore transition
                          // No conditional check needed anymore
 
                     // Instantiate the new heatmap view

@@ -41,9 +41,16 @@ struct ActivityHeatmapView: View {
 
                 // Weekday Header
                 HStack(spacing: 6) { // Match grid spacing
-                    ForEach(weekdaySymbols, id: \.self) { symbol in
+                    ForEach(weekdaySymbols.indices, id: \.self) { index in
+                        let symbol = weekdaySymbols[index]
+                        // Determine if this symbol represents today's weekday
+                        let calendar = Calendar.current
+                        let todayWeekday = calendar.component(.weekday, from: Date()) // 1...7
+                        // Adjust todayWeekday based on firstWeekday to match the reordered symbols index
+                        let adjustedTodayIndex = (todayWeekday - calendar.firstWeekday + 7) % 7
+    
                         Text(symbol)
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.system(size: 10, weight: index == adjustedTodayIndex ? .bold : .medium)) // Bold if today's weekday
                             .foregroundColor(styles.colors.textSecondary)
                             .frame(maxWidth: .infinity)
                     }
@@ -96,12 +103,14 @@ struct ActivityHeatmapView: View {
                  Button(action: {
                      viewModel.toggleExpansion()
                  }) {
-                     // Retry double chevrons system names
-                     Image(systemName: viewModel.isExpanded ? "chevrons.up" : "chevrons.down")
+                     // Revert to single chevrons - they seem more reliable
+                     Image(systemName: viewModel.isExpanded ? "chevron.up" : "chevron.down")
                          .font(.system(size: 18, weight: .bold))
                          .foregroundColor(styles.colors.accent)
-                         .padding(5) // Keep padding for tap area
+                         .padding(5)
                  }
+                 // Ensure button itself takes minimal space needed
+                 .fixedSize()
              }
              .frame(maxWidth: .infinity, alignment: .center) // Restore frame for centering text
              .padding(.top, styles.layout.spacingS) // Space between card and button
