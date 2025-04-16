@@ -93,14 +93,14 @@ struct ActivityHeatmapView: View {
                     .font(.system(size: 10, weight: .regular, design: .monospaced))
                     .foregroundColor(styles.colors.accent)
 
-                Button(action: {
-                    viewModel.toggleExpansion()
-                }) {
-                    // Use double chevrons
-                    Image(systemName: viewModel.isExpanded ? "chevrons.up" : "chevrons.down")
-                        .font(.system(size: 18, weight: .bold)) // Keep size
-                        .foregroundColor(styles.colors.accent)
-                }
+                 Button(action: {
+                     viewModel.toggleExpansion()
+                 }) {
+                     // Use double chevrons system names
+                     Image(systemName: viewModel.isExpanded ? "chevrons.up" : "chevrons.down")
+                         .font(.system(size: 18, weight: .bold)) // Keep size
+                         .foregroundColor(styles.colors.accent)
+                 }
                 .frame(maxWidth: .infinity) // Allow button to take width for centering text above
             }
             .padding(.top, styles.layout.spacingS) // Space between card and button
