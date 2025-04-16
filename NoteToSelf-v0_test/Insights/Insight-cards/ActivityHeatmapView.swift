@@ -96,8 +96,8 @@ struct ActivityHeatmapView: View {
                  Button(action: {
                      viewModel.toggleExpansion()
                  }) {
-                     // Revert to single chevrons
-                     Image(systemName: viewModel.isExpanded ? "chevron.up" : "chevron.down")
+                     // Retry double chevrons system names
+                     Image(systemName: viewModel.isExpanded ? "chevrons.up" : "chevrons.down")
                          .font(.system(size: 18, weight: .bold))
                          .foregroundColor(styles.colors.accent)
                          .padding(5) // Keep padding for tap area
