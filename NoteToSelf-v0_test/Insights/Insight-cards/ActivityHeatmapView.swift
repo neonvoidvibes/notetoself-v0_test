@@ -96,8 +96,9 @@ struct ActivityHeatmapView: View {
                 Button(action: {
                     viewModel.toggleExpansion()
                 }) {
-                    Image(systemName: viewModel.isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 18, weight: .bold)) // Smaller chevron
+                    // Use double chevrons
+                    Image(systemName: viewModel.isExpanded ? "chevrons.up" : "chevrons.down")
+                        .font(.system(size: 18, weight: .bold)) // Keep size
                         .foregroundColor(styles.colors.accent)
                 }
                 .frame(maxWidth: .infinity) // Allow button to take width for centering text above

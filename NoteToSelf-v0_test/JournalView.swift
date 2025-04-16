@@ -65,6 +65,22 @@ struct JournalView: View {
         }
     }
 
+    // ViewModel for the heatmap
+    @StateObject private var heatmapViewModel: ActivityHeatmapViewModel
+
+    // State for entry preview popup
+    @State private var showingEntryPreview = false
+    @State private var entryForPreview: JournalEntry? = nil
+
+    // Initializer to inject AppState and DatabaseService into heatmap ViewModel
+    init(tabBarOffset: Binding<CGFloat>, lastScrollPosition: Binding<CGFloat>, tabBarVisible: Binding<Bool>, appState: AppState, databaseService: DatabaseService) {
+        self._tabBarOffset = tabBarOffset
+        self._lastScrollPosition = lastScrollPosition
+        self._tabBarVisible = tabBarVisible
+        // Initialize the heatmap ViewModel with appState and databaseService
+        self._heatmapViewModel = StateObject(wrappedValue: ActivityHeatmapViewModel(appState: appState, databaseService: databaseService))
+    }
+
     // MARK: - Body
     var body: some View {
         ZStack {
@@ -298,33 +314,17 @@ struct JournalView: View {
         }
     }
 
-    // Computed property for the streak headline text
+    // Computed property for the streak headline text (no longer used for header)
     private var streakHeadlineText: String {
         let streak = appState.currentStreak
         let hasTodayEntry = appState.hasEntryToday
 
         if streak > 0 {
+            // This property is no longer used but kept for now.
             return hasTodayEntry ? "\(streak) Day Streak!" : "Keep your \(streak)-day streak going!"
         } else {
-            // This case shouldn't be reached if the section is conditional, but good to have
             return "Start a new streak today!" // This property is no longer used but kept for now.
         }
-    }
-
-    // ViewModel for the heatmap
-    @StateObject private var heatmapViewModel: ActivityHeatmapViewModel
-
-    // State for entry preview popup
-    @State private var showingEntryPreview = false
-    @State private var entryForPreview: JournalEntry? = nil
-
-    // Initializer to inject AppState and DatabaseService into heatmap ViewModel
-    init(tabBarOffset: Binding<CGFloat>, lastScrollPosition: Binding<CGFloat>, tabBarVisible: Binding<Bool>, appState: AppState, databaseService: DatabaseService) {
-        self._tabBarOffset = tabBarOffset
-        self._lastScrollPosition = lastScrollPosition
-        self._tabBarVisible = tabBarVisible
-        // Initialize the heatmap ViewModel with appState and databaseService
-        self._heatmapViewModel = StateObject(wrappedValue: ActivityHeatmapViewModel(appState: appState, databaseService: databaseService))
     }
 
     private func journalContent() -> some View {
@@ -344,6 +344,20 @@ struct JournalView: View {
 
                 // --- NEW Activity Heatmap Section ---
                 Section {
+                    // Narrative Snippet (Displayed INSIDE section, only when collapsed)
+                    if !heatmapViewModel.isExpanded {
+                        Text(heatmapViewModel.narrativeSnippetDisplay)
+                            .font(styles.typography.bodyFont) // Increased font size
+                            .foregroundColor(heatmapViewModel.loadNarrativeError ? styles.colors.error : styles.colors.textSecondary)
+                            .lineLimit(5) // Allow up to 5 lines
+                            .fixedSize(horizontal: false, vertical: true) // Ensure vertical expansion
+                            .padding(.horizontal, styles.layout.paddingL) // Match card horizontal padding
+                            .padding(.top, styles.layout.spacingXS) // Small space below header
+                            .padding(.bottom, styles.layout.spacingM) // Space above heatmap card
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .transition(.opacity) // Fade in/out
+                    }
+
                     // Instantiate the new heatmap view
                     ActivityHeatmapView(viewModel: heatmapViewModel) { entry in
                         // Action to perform when a cell is tapped
@@ -352,28 +366,16 @@ struct JournalView: View {
                             self.showingEntryPreview = true
                         }
                     }
-                    .padding(.horizontal, styles.layout.paddingL) // Padding for the card
-                    .padding(.bottom, styles.layout.paddingL) // Space below heatmap
+                    .padding(.horizontal, styles.layout.paddingL) // Padding for the card itself
+                    // Add bottom padding *after* the heatmap view
+                    .padding(.bottom, styles.layout.paddingL) // Space below heatmap card
                     .transition(.opacity.combined(with: .move(edge: .top))) // Animation
+
                 } header: {
                     // Use a simpler title like "Activity"
                     SharedSectionHeader(title: "Activity", backgroundColor: styles.colors.appBackground)
                 }
                 .id("activity-heatmap-section") // Section ID
-
-                 // Narrative Snippet (Displayed outside card, only when collapsed)
-                 if !heatmapViewModel.isExpanded {
-                     Text(heatmapViewModel.narrativeSnippetDisplay)
-                         .font(styles.typography.bodyFont) // Increased font size
-                         .foregroundColor(heatmapViewModel.loadNarrativeError ? styles.colors.error : styles.colors.textSecondary)
-                         .lineLimit(5) // Allow up to 5 lines
-                         .fixedSize(horizontal: false, vertical: true) // Ensure vertical expansion
-                         .padding(.horizontal, styles.layout.paddingL) // Match card horizontal padding
-                         .padding(.top, styles.layout.spacingXS) // Small space below header
-                         .padding(.bottom, styles.layout.spacingM) // Space above heatmap card
-                         .frame(maxWidth: .infinity, alignment: .leading)
-                         .transition(.opacity) // Fade in/out
-                 }
 
 
                 // --- Entry List / Empty State ---
@@ -741,7 +743,7 @@ struct JournalEntryCard: View {
             if isExpanded { // Restored expanded content section
                 Divider()
                     .background(styles.colors.divider) // Use theme color
-                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
+                    .padding(.horizontal, 16)
 
                 // Display full text using larger font size and unlimited lines
                 Text(entry.text)
