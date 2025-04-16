@@ -82,10 +82,80 @@ struct ActivityHeatmapView: View {
             }
             .padding(.top, styles.layout.spacingS) // Space above button
 
+            // --- Expanded Content ---
+            if viewModel.isExpanded {
+                expandedContentView
+                    .transition(.opacity.combined(with: .move(edge: .top))) // Animate appearance
+            }
+
         }
         .padding(styles.layout.paddingM) // Padding inside the card
         .background(cardBackgroundColor) // Apply subtle gray background
         .cornerRadius(styles.layout.radiusL) // Rounded corners for the card
+    }
+
+    // Extracted view for the expanded content
+    private var expandedContentView: some View {
+        VStack(alignment: .leading, spacing: styles.layout.spacingL) { // Consistent spacing
+            Divider().background(styles.colors.divider.opacity(0.5))
+
+            // Explainer Text
+            Text("Consistency is key to building lasting habits and unlocking deeper insights. Celebrate your progress, one day at a time!")
+                .font(styles.typography.bodySmall)
+                .foregroundColor(styles.colors.accent)
+                .padding(.vertical, styles.layout.spacingS)
+
+             // Narrative Text Section
+             VStack(alignment: .leading) {
+                 Text("Highlights")
+                     .font(styles.typography.bodyLarge.weight(.semibold))
+                     .foregroundColor(styles.colors.text)
+                     .padding(.bottom, styles.layout.spacingXS)
+
+                  Text(viewModel.narrativeDisplayText) // Use ViewModel's computed property
+                     .font(styles.typography.bodyFont)
+                     .foregroundColor(viewModel.loadNarrativeError ? styles.colors.error : styles.colors.textSecondary)
+                     .frame(maxWidth: .infinity, alignment: .leading)
+                     .fixedSize(horizontal: false, vertical: true)
+             }
+             .padding(.vertical, styles.layout.spacingS)
+
+            // Streak Milestones
+            VStack(alignment: .leading, spacing: styles.layout.spacingM) {
+                Text("Milestones")
+                    .font(styles.typography.bodyLarge.weight(.semibold))
+                    .foregroundColor(styles.colors.text)
+
+                HStack(spacing: styles.layout.spacingL) {
+                    // Use viewModel.currentStreak
+                    MilestoneView(
+                        label: "7 Days",
+                        icon: "star.fill",
+                        isAchieved: viewModel.currentStreak >= 7,
+                        accentColor: styles.colors.accent,
+                        defaultStrokeColor: styles.colors.tertiaryAccent
+                    )
+                    MilestoneView(
+                        label: "30 Days",
+                        icon: "star.fill",
+                        isAchieved: viewModel.currentStreak >= 30,
+                        accentColor: styles.colors.accent,
+                        defaultStrokeColor: styles.colors.tertiaryAccent
+                    )
+                    MilestoneView(
+                        label: "100 Days",
+                        icon: "star.fill",
+                        isAchieved: viewModel.currentStreak >= 100,
+                        accentColor: styles.colors.accent,
+                        defaultStrokeColor: styles.colors.tertiaryAccent
+                    )
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .padding(.top, styles.layout.spacingS)
+
+        }
+        .padding(.top, styles.layout.spacingM) // Add padding above the expanded content
     }
 }
 

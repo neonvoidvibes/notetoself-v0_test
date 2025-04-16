@@ -23,8 +23,20 @@ class ActivityHeatmapViewModel: ObservableObject {
     @Published var heatmapData: [HeatmapDayInfo] = []
     @Published var isExpanded: Bool = false
 
+    // Narrative State
+    @Published var narrativeResult: StreakNarrativeResult? = nil
+    @Published var narrativeGeneratedDate: Date? = nil
+    @Published var isLoadingNarrative: Bool = false
+    @Published var loadNarrativeError: Bool = false
+    private let narrativeInsightTypeIdentifier = "journeyNarrative"
+
     let totalDaysToShow = 35 // 5 rows * 7 days
     let collapsedDaysToShow = 7 // 1 row * 7 days
+
+    // Expose current streak from AppState
+    var currentStreak: Int {
+        appState.currentStreak
+    }
 
     // Expose the relevant slice of data based on expansion state
     var visibleHeatmapData: [HeatmapDayInfo] {
@@ -40,6 +52,7 @@ class ActivityHeatmapViewModel: ObservableObject {
         self.appState = appState
         print("[ActivityHeatmapViewModel] Initializing...")
         prepareHeatmapData() // Initial data prep
+        loadNarrative() // << ADDED: Load initial narrative
 
         // Observe changes in AppState entries
         appState.$_journalEntries // Observe the underlying storage
@@ -47,6 +60,7 @@ class ActivityHeatmapViewModel: ObservableObject {
             .sink { [weak self] _ in
                 print("[ActivityHeatmapViewModel] Journal entries changed, preparing heatmap data...")
                 self?.prepareHeatmapData()
+                self?.loadNarrative() // << ADDED: Reload narrative when entries change
             }
             .store(in: &cancellables)
     }
@@ -107,5 +121,73 @@ class ActivityHeatmapViewModel: ObservableObject {
             isExpanded.toggle()
         }
         print("[ActivityHeatmapViewModel] Expansion toggled. isExpanded = \(isExpanded)")
+    }
+
+    // --- Narrative Loading ---
+    private func loadNarrative() {
+        guard !isLoadingNarrative else { return }
+        isLoadingNarrative = true
+        loadNarrativeError = false
+        narrativeResult = nil // Clear previous result while loading
+        print("[ActivityHeatmapViewModel] Loading narrative insight...")
+        Task {
+            var loadedDate: Date? = nil
+            var decodeError: Error? = nil
+            var finalResult: StreakNarrativeResult? = nil
+            do {
+                // Access databaseService via AppState or pass it in init if needed
+                // Assuming AppState holds a reference or we modify init later
+                // For now, let's assume DatabaseService is accessible globally or via AppState
+                // Example: let dbService = await appState.databaseService // If AppState holds it
+                let dbService = DatabaseService() // TEMPORARY: Instantiate directly - Needs proper injection later
+
+                if let (json, date, _) = try dbService.loadLatestInsight(type: narrativeInsightTypeIdentifier) {
+                    loadedDate = date
+                    if let data = json.data(using: .utf8) {
+                        let decoder = JSONDecoder()
+                        do { finalResult = try decoder.decode(StreakNarrativeResult.self, from: data) }
+                        catch { decodeError = error }
+                    } else { decodeError = NSError(domain: "ActivityHeatmapVM", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert JSON string to Data"]) }
+                } else {
+                     print("[ActivityHeatmapViewModel] No stored narrative found.")
+                }
+            } catch {
+                decodeError = error
+                print("‼️ [ActivityHeatmapViewModel] Error loading narrative insight: \(error)")
+            }
+            // Update state on main thread
+            await MainActor.run {
+                self.narrativeResult = finalResult
+                self.narrativeGeneratedDate = loadedDate
+                self.loadNarrativeError = (decodeError != nil)
+                self.isLoadingNarrative = false
+                 print("[ActivityHeatmapViewModel] Narrative load complete. Error: \(loadNarrativeError)")
+            }
+        }
+    }
+
+    // --- Computed Properties for Narrative Display ---
+    var narrativeSnippetDisplay: String {
+         if isLoadingNarrative { return "Loading..." }
+         if loadNarrativeError { return "Narrative unavailable" }
+         guard let result = narrativeResult else {
+             return "Your journey unfolds..." // Default when no result
+         }
+         let snippet = result.storySnippet.isEmpty ? "Your journey unfolds..." : result.storySnippet
+         let maxLength = 100 // Keep snippet concise
+         if snippet.count > maxLength {
+             return String(snippet.prefix(maxLength)) + "..."
+         } else {
+             return snippet
+         }
+     }
+
+    var narrativeDisplayText: String {
+         if isLoadingNarrative { return "Loading narrative..." }
+         if loadNarrativeError { return "Could not load narrative." }
+         guard let result = narrativeResult, !result.narrativeText.isEmpty else {
+             return currentStreak > 0 ? "Analyzing your recent journey..." : "Your journey's story will appear here."
+         }
+         return result.narrativeText
     }
 }
