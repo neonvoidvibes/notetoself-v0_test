@@ -136,7 +136,8 @@ struct MainTabView: View {
                   // ZStack for view switching
                   Group {
                        if selectedTab == 0 {
-                           JournalView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
+                           // Pass the appState environment object to JournalView's initializer
+                           JournalView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true), appState: appState)
                                .transition(.opacity)
                        } else if selectedTab == 1 {
                            InsightsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))

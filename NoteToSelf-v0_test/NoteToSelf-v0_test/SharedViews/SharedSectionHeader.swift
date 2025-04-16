@@ -24,9 +24,9 @@ struct SharedSectionHeader: View {
         // Increased padding to align with indented card content
         .padding(.leading, styles.layout.paddingL * 2)
         .frame(maxWidth: .infinity, alignment: .leading) // Ensure HStack takes full width for background
-        // REMOVED: .padding(.top, 12) - Removed in previous step
-        // REMOVED: .padding(.bottom, 5) - Let font line height and LazyVStack spacing control gap
-        .padding(.vertical, 8) // Apply some vertical padding for visual spacing within the background
+        // Adjust vertical padding for less space
+        .padding(.top, 10) // Slightly less top padding
+        .padding(.bottom, 4) // Slightly less bottom padding
         .listRowInsets(EdgeInsets()) // For List compatibility - important for sticky behavior
         .background(backgroundColor) // Apply the specific background color
     }

@@ -18,9 +18,9 @@ struct EntryPreviewPopupView: View {
 
     var body: some View {
         ZStack {
-            // Dimmed background overlay
+            // Dimmed background overlay - Applying ignoresSafeArea() here dims the whole screen
             Color.black.opacity(0.6)
-                .ignoresSafeArea()
+                .ignoresSafeArea() // Ensure it covers the entire screen
                 .onTapGesture {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                         isPresented = false

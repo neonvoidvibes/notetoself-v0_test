@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		11C3E5F52DD608A100B6995B /* ActivityHeatmapViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11C3E5F42DD608A100B6995B /* ActivityHeatmapViewModel.swift */; };
+		11C3E5F72DD608A700B6995B /* ActivityHeatmapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11C3E5F62DD608A700B6995B /* ActivityHeatmapView.swift */; };
+		11C3E5F92DD608AD00B6995B /* HeatmapDayCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11C3E5F82DD608AD00B6995B /* HeatmapDayCell.swift */; };
 		64D8462E2DA049B40003CAC1 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 64D8462D2DA049B40003CAC1 /* LaunchScreen.storyboard */; };
 		64F78A932D9787AD00925FE8 /* Libsql in Frameworks */ = {isa = PBXBuildFile; productRef = 64F78A922D9787AD00925FE8 /* Libsql */; };
 		64F78B3A2D989BD700925FE8 /* OpenAI in Frameworks */ = {isa = PBXBuildFile; productRef = 64F78B392D989BD700925FE8 /* OpenAI */; };
@@ -27,12 +30,16 @@
 		64281C662DD2E19400B48FE9 /* ThinkDetailContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ThinkDetailContent.swift; path = "Insights/insight-detail/ThinkDetailContent.swift"; sourceTree = "<group>"; };
 		6483FB4C2D8E9E5100E8EA20 /* NoteToSelf-v0_test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NoteToSelf-v0_test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		64D8462D2DA049B40003CAC1 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		11C3E5F42DD608A100B6995B /* ActivityHeatmapViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ActivityHeatmapViewModel.swift; path = "Insights/Insight-cards/ActivityHeatmapViewModel.swift"; sourceTree = "<group>"; };
+		11C3E5F62DD608A700B6995B /* ActivityHeatmapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ActivityHeatmapView.swift; path = "Insights/Insight-cards/ActivityHeatmapView.swift"; sourceTree = "<group>"; };
+		11C3E5F82DD608AD00B6995B /* HeatmapDayCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HeatmapDayCell.swift; path = "Insights/Insight-cards/HeatmapDayCell.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		64D8461B2D9EFE190003CAC1 /* Exceptions for "NoteToSelf-v0_test" folder in "NoteToSelf-v0_test" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				// Existing exceptions
 				"Docs/17_libSQL Vector Search.md",
 				"Docs/17b_libSQL Implementation Plan.md",
 				"Docs/18_Backend Service Integration Plan.md",

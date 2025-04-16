@@ -81,6 +81,21 @@ struct JournalView: View {
             }
 
             floatingAddButton // Extracted floating button (action now sets AppState flag)
+
+            // Entry Preview Popup Overlay
+            if showingEntryPreview, let entry = entryForPreview {
+                 EntryPreviewPopupView(entry: entry, isPresented: $showingEntryPreview) {
+                     // Action for the "Expand" button in the popup
+                     showingEntryPreview = false
+                     // Use DispatchQueue to ensure state change happens after dismissal animation starts
+                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                         fullscreenEntry = entry // Trigger fullscreen view
+                     }
+                 }
+                 .transition(.scale(scale: 0.9).combined(with: .opacity))
+                 .zIndex(10) // Ensure popup is on top
+             }
+
         } // End ZStack
         .onAppear { // Trigger animation when view appears
             // Use DispatchQueue to delay slightly if needed for visual effect
@@ -291,8 +306,24 @@ struct JournalView: View {
             return hasTodayEntry ? "\(streak) Day Streak!" : "Keep your \(streak)-day streak going!"
         } else {
             // This case shouldn't be reached if the section is conditional, but good to have
-            return "Start a new streak today!"
+            return "Start a new streak today!" // This property is no longer used but kept for now.
         }
+    }
+
+    // ViewModel for the heatmap
+    @StateObject private var heatmapViewModel: ActivityHeatmapViewModel
+
+    // State for entry preview popup
+    @State private var showingEntryPreview = false
+    @State private var entryForPreview: JournalEntry? = nil
+
+    // Initializer to inject AppState into heatmap ViewModel
+    init(tabBarOffset: Binding<CGFloat>, lastScrollPosition: Binding<CGFloat>, tabBarVisible: Binding<Bool>, appState: AppState) {
+        self._tabBarOffset = tabBarOffset
+        self._lastScrollPosition = lastScrollPosition
+        self._tabBarVisible = tabBarVisible
+        // Initialize the heatmap ViewModel with the appState
+        self._heatmapViewModel = StateObject(wrappedValue: ActivityHeatmapViewModel(appState: appState))
     }
 
     private func journalContent() -> some View {
@@ -300,35 +331,34 @@ struct JournalView: View {
         ScrollView {
             LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) { // Use LazyVStack
 
-// --- Top Page Title (Inside LazyVStack) ---
-// Use dynamic tagline based on the day
-Text(Taglines.getTagline(for: .journal))
-.font(styles.typography.largeTitle)
-.foregroundColor(styles.colors.accent)
-.frame(maxWidth: .infinity, alignment: .leading)
-                      // Match leading padding of SharedSectionHeader, keep trailing padding standard
-                      .padding(.leading, styles.layout.paddingL * 2)
-                      .padding(.trailing, styles.layout.paddingL)
-                      .padding(.top, styles.layout.paddingL * 4) // Increased top padding
-                      .padding(.bottom, styles.layout.paddingL * 2) // Decreased bottom padding
-                      // No VStack wrapper needed now
+                // --- Top Page Title (Inside LazyVStack) ---
+                Text(Taglines.getTagline(for: .journal))
+                    .font(styles.typography.largeTitle)
+                    .foregroundColor(styles.colors.accent)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, styles.layout.paddingL * 2)
+                    .padding(.trailing, styles.layout.paddingL)
+                    .padding(.top, styles.layout.paddingL * 4)
+                    .padding(.bottom, styles.layout.paddingL * 2)
 
-                 // --- Conditional Streak Section (Headline + Card) ---
-                 if appState.currentStreak > 0 {
-                      Section {
-                          // The JourneyInsightCard content (excluding the headline)
-                          // Initialize without passing appState; it uses @EnvironmentObject
-                          JourneyInsightCard()
-                              .padding(.horizontal, styles.layout.paddingL) // Horizontal padding for the card content
-                              .padding(.bottom, styles.layout.paddingL) // Add bottom padding to separate from entries
-                              .transition(.opacity.combined(with: .move(edge: .top))) // Add animation
-                      } header: {
-                          // Use SharedSectionHeader for the sticky headline
-                          SharedSectionHeader(title: streakHeadlineText, backgroundColor: styles.colors.appBackground)
-                      }
-                      // Add explicit ID to the section for potential targeting
-                      .id("journey-card-section")
-                 }
+                // --- NEW Activity Heatmap Section ---
+                Section {
+                    // Instantiate the new heatmap view
+                    ActivityHeatmapView(viewModel: heatmapViewModel) { entry in
+                        // Action to perform when a cell is tapped
+                        self.entryForPreview = entry
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            self.showingEntryPreview = true
+                        }
+                    }
+                    .padding(.horizontal, styles.layout.paddingL) // Padding for the card
+                    .padding(.bottom, styles.layout.paddingL) // Space below heatmap
+                    .transition(.opacity.combined(with: .move(edge: .top))) // Animation
+                } header: {
+                    // Use a simpler title like "Activity"
+                    SharedSectionHeader(title: "Activity", backgroundColor: styles.colors.appBackground)
+                }
+                .id("activity-heatmap-section") // Section ID
 
                 // --- Entry List / Empty State ---
                 if filteredEntries.isEmpty {
@@ -580,12 +610,42 @@ Text(Taglines.getTagline(for: .journal))
 
 // ... (Keep existing ScrollOffsetPreferenceKey) ...
 
-struct ScrollOffsetPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
+// MARK: - Preview Provider
+struct JournalView_Previews: PreviewProvider {
+    // Need to create mock AppState and DatabaseService for the preview
+    @StateObject static var previewAppState = AppState()
+    @StateObject static var previewDbService = DatabaseService()
+
+    static var previews: some View {
+        // Simulate some entries for the preview
+        let _ = {
+             let calendar = Calendar.current
+             let today = Date()
+             previewAppState._journalEntries = (0..<40).compactMap { i -> JournalEntry? in
+                 guard let date = calendar.date(byAdding: .day, value: -i, to: today) else { return nil }
+                 if i % 2 == 0 { // Add entry every other day
+                     return JournalEntry(text: "Preview Entry \(i)", mood: Mood.allCases.randomElement() ?? .neutral, date: date)
+                 }
+                 return nil
+             }
+         }()
+
+        // Initialize JournalView correctly for the preview
+        JournalView(
+            tabBarOffset: .constant(0),
+            lastScrollPosition: .constant(0),
+            tabBarVisible: .constant(true),
+            appState: previewAppState // Pass the mock AppState
+        )
+        .environmentObject(previewAppState) // Provide AppState via environment
+        .environmentObject(previewDbService) // Provide DatabaseService via environment
+        .environmentObject(UIStyles.shared)
+        .environmentObject(ThemeManager.shared)
+        .background(Color.gray.opacity(0.1))
+        .preferredColorScheme(.dark)
     }
 }
+
 
 // Restored JournalEntryCard to original accordion style, removed context menu
 struct JournalEntryCard: View {
@@ -664,13 +724,17 @@ struct JournalEntryCard: View {
             if isExpanded { // Restored expanded content section
                 Divider()
                     .background(styles.colors.divider) // Use theme color
-                    .padding(.horizontal, 16)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
 
-                Text(entry.text) // Show full text when expanded
-                    .font(styles.typography.bodyFont)
-                    .foregroundColor(styles.colors.text)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
+                // Display full text using larger font size and unlimited lines
+                Text(entry.text)
+                     .font(styles.typography.bodyLarge) // Make text one size larger
+                     .foregroundColor(styles.colors.text)
+                     .lineLimit(nil) // Show full text (<5 lines limit automatically handled by content size)
+                     .fixedSize(horizontal: false, vertical: true) // Allow vertical expansion
+                     .padding(.horizontal, 20)
+                     .padding(.top, 16) // Keep top padding
+                     .padding(.bottom, 8) // Reduce bottom padding slightly
 
                 // Action buttons - only Expand button now
                 HStack {

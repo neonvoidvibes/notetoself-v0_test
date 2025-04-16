@@ -1,65 +1,60 @@
 import SwiftUI
 
 struct HeatmapDayCell: View {
-    let dayInfo: HeatmapDayInfo
-    let onTap: (JournalEntry) -> Void // Callback with the entry when tapped
-
+    let dayInfo: HeatmapDayInfo // Use the shared struct
     @ObservedObject private var styles = UIStyles.shared
-    private let cellSize: CGFloat = 18 // Size of the cell
+
+    private let cellSize: CGFloat = 36 // Increased size (2x of original 18)
+
+    // Determine if the cell represents today
+    private var isToday: Bool {
+        Calendar.current.isDateInToday(dayInfo.date)
+    }
 
     var body: some View {
         ZStack {
-            // Background for the cell area
-            RoundedRectangle(cornerRadius: 3)
-                 // Very faint background, slightly more visible if it's today
-                .fill(styles.colors.secondaryBackground.opacity(isToday() ? 0.3 : 0.15))
+            // Base background/shape
+            RoundedRectangle(cornerRadius: styles.layout.radiusM / 2) // Keep subtle rounding
+                // Slightly more visible background than before
+                .fill(styles.colors.secondaryBackground.opacity(isToday ? 0.5 : 0.3))
                 .frame(width: cellSize, height: cellSize)
 
-            // Mood Dot if entry exists
-            if let moodColor = dayInfo.moodColor {
-                Circle()
-                    .fill(moodColor)
-                    // Make dot slightly smaller than the cell
-                    .frame(width: cellSize * 0.7, height: cellSize * 0.7)
+            // Display Mood Icon if entry exists
+            if let mood = dayInfo.mood {
+                 mood.icon // Use the mood's icon property
+                     .resizable()
+                     .scaledToFit()
+                     .foregroundColor(mood.color) // Color the icon with the mood color
+                     .frame(width: cellSize * 0.6, height: cellSize * 0.6) // Icon size relative to cell
+                     .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 1) // Subtle shadow for icon pop
             }
-        }
-        .frame(width: cellSize, height: cellSize) // Ensure ZStack respects the cell size
-        .contentShape(Rectangle()) // Define tappable area
-        .onTapGesture {
-            if let entry = dayInfo.entry {
-                onTap(entry) // Trigger callback only if there's an entry
-            }
-        }
-        // Add a subtle border if it's today for extra emphasis
-        .overlay(
-             RoundedRectangle(cornerRadius: 3)
-                 .stroke(isToday() ? styles.colors.accent : Color.clear, lineWidth: 1)
-         )
-    }
 
-    private func isToday() -> Bool {
-        Calendar.current.isDateInToday(dayInfo.date)
+            // Today Indicator Border (subtle accent)
+            if isToday {
+                RoundedRectangle(cornerRadius: styles.layout.radiusM / 2)
+                    .stroke(styles.colors.accent.opacity(0.8), lineWidth: 1.5) // Slightly thicker, less opaque
+                    .frame(width: cellSize - 1, height: cellSize - 1) // Inset slightly
+            }
+        }
+        .frame(width: cellSize, height: cellSize) // Ensure ZStack respects the size
     }
 }
 
 #Preview {
-    let calendar = Calendar.current
+    let styles = UIStyles.shared
     let today = Date()
-    let yesterdayEntry = JournalEntry(text: "Yesterday", mood: .calm, date: calendar.date(byAdding: .day, value: -1, to: today)!)
-    let emptyDay = Date()
+    let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
+    let mockEntryHappy = JournalEntry(text: "Happy day", mood: .happy, date: today)
+    let mockEntrySad = JournalEntry(text: "Sad day", mood: .sad, date: yesterday)
 
     return HStack(spacing: 10) {
-        // Day with entry
-        HeatmapDayCell(dayInfo: HeatmapDayInfo(date: yesterdayEntry.date, entry: yesterdayEntry)) { _ in }
-        // Empty day
-        HeatmapDayCell(dayInfo: HeatmapDayInfo(date: emptyDay, entry: nil)) { _ in }
-        // Today with entry
-        HeatmapDayCell(dayInfo: HeatmapDayInfo(date: today, entry: yesterdayEntry)) { _ in }
-
+        HeatmapDayCell(dayInfo: HeatmapDayInfo(date: today, entry: mockEntryHappy))
+        HeatmapDayCell(dayInfo: HeatmapDayInfo(date: yesterday, entry: mockEntrySad))
+        HeatmapDayCell(dayInfo: HeatmapDayInfo(date: Calendar.current.date(byAdding: .day, value: -2, to: today)!, entry: nil)) // Empty
     }
     .padding()
-    .background(Color.black)
-    .environmentObject(UIStyles.shared)
+    .background(styles.colors.appBackground)
+    .environmentObject(styles)
     .environmentObject(ThemeManager.shared)
     .preferredColorScheme(.dark)
 }
