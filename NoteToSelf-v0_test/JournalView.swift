@@ -97,6 +97,7 @@ struct JournalView: View {
              }
 
         } // End ZStack
+        .environment(\.isPreviewPopupPresented, showingEntryPreview) // Set environment key
         .onAppear { // Trigger animation when view appears
             // Use DispatchQueue to delay slightly if needed for visual effect
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -317,13 +318,13 @@ struct JournalView: View {
     @State private var showingEntryPreview = false
     @State private var entryForPreview: JournalEntry? = nil
 
-    // Initializer to inject AppState into heatmap ViewModel
-    init(tabBarOffset: Binding<CGFloat>, lastScrollPosition: Binding<CGFloat>, tabBarVisible: Binding<Bool>, appState: AppState) {
+    // Initializer to inject AppState and DatabaseService into heatmap ViewModel
+    init(tabBarOffset: Binding<CGFloat>, lastScrollPosition: Binding<CGFloat>, tabBarVisible: Binding<Bool>, appState: AppState, databaseService: DatabaseService) {
         self._tabBarOffset = tabBarOffset
         self._lastScrollPosition = lastScrollPosition
         self._tabBarVisible = tabBarVisible
-        // Initialize the heatmap ViewModel with the appState
-        self._heatmapViewModel = StateObject(wrappedValue: ActivityHeatmapViewModel(appState: appState))
+        // Initialize the heatmap ViewModel with appState and databaseService
+        self._heatmapViewModel = StateObject(wrappedValue: ActivityHeatmapViewModel(appState: appState, databaseService: databaseService))
     }
 
     private func journalContent() -> some View {
@@ -635,7 +636,8 @@ struct JournalView_Previews: PreviewProvider {
             tabBarOffset: .constant(0),
             lastScrollPosition: .constant(0),
             tabBarVisible: .constant(true),
-            appState: previewAppState // Pass the mock AppState
+            appState: previewAppState, // Pass the mock AppState
+            databaseService: previewDbService // Pass the mock DatabaseService
         )
         .environmentObject(previewAppState) // Provide AppState via environment
         .environmentObject(previewDbService) // Provide DatabaseService via environment

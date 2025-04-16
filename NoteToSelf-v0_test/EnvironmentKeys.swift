@@ -15,6 +15,12 @@ struct BottomSheetExpandedKey: EnvironmentKey {
     static let defaultValue: Bool = false
 }
 
+// MARK: - Preview Popup Presented Key
+struct IsPreviewPopupPresentedKey: EnvironmentKey {
+    static let defaultValue: Bool = false
+}
+
+
 // MARK: - Environment Values Extension
 extension EnvironmentValues {
     var mainScrollingDisabled: Bool {
@@ -31,6 +37,11 @@ extension EnvironmentValues {
         get { self[BottomSheetExpandedKey.self] }
         set { self[BottomSheetExpandedKey.self] = newValue }
     }
+
+    var isPreviewPopupPresented: Bool {
+        get { self[IsPreviewPopupPresentedKey.self] }
+        set { self[IsPreviewPopupPresentedKey.self] = newValue }
+    }
 }
 
 // MARK: - View Extension for Environment Modifiers
@@ -46,5 +57,8 @@ extension View {
     func bottomSheetExpanded(_ expanded: Bool) -> some View {
         environment(\.bottomSheetExpanded, expanded)
     }
-}
 
+    func isPreviewPopupPresented(_ presented: Bool) -> some View {
+        environment(\.isPreviewPopupPresented, presented)
+    }
+}

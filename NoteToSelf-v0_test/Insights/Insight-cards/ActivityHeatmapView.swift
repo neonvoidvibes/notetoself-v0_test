@@ -27,71 +27,92 @@ struct ActivityHeatmapView: View {
 
     // Background color definition based on theme/mode
     private var cardBackgroundColor: Color {
-        colorScheme == .dark ? Color(red: 0.18, green: 0.18, blue: 0.19) : Color(red: 0.96, green: 0.96, blue: 0.97) // Subtle gray
+        // Make light mode slightly darker gray
+        colorScheme == .dark ? Color(red: 0.18, green: 0.18, blue: 0.19) : Color(red: 0.93, green: 0.93, blue: 0.94)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) { // Use spacing 0 for precise control
+        VStack(alignment: .leading, spacing: 0) { // Main container for card content + button below
 
-            // Weekday Header
-            HStack(spacing: 6) { // Match grid spacing
-                ForEach(weekdaySymbols, id: \.self) { symbol in
-                    Text(symbol)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(styles.colors.textSecondary)
-                        .frame(maxWidth: .infinity)
+            // Card Content VStack
+            VStack(alignment: .leading, spacing: 0) {
+
+                // Narrative Snippet (Only when collapsed)
+                if !viewModel.isExpanded {
+                     Text(viewModel.narrativeSnippetDisplay)
+                         .font(styles.typography.bodySmall)
+                         .foregroundColor(viewModel.loadNarrativeError ? styles.colors.error : styles.colors.textSecondary)
+                         .lineLimit(2) // Limit snippet length visually
+                         .padding(.bottom, styles.layout.spacingM) // Space below snippet
+                         .transition(.opacity) // Fade in/out
                 }
-            }
-            .padding(.horizontal, 4) // Padding to align header text with cells
-            .padding(.bottom, styles.layout.spacingS) // Space between header and grid
 
-            // Heatmap Grid
-            LazyVGrid(columns: columns, spacing: 6) { // Match header spacing
-                // Use the viewModel's `visibleHeatmapData` which respects the expansion state
-                ForEach(viewModel.visibleHeatmapData) { dayInfo in
-                    // Wrap cell in a Button for tap handling
-                    Button {
-                        if let entry = dayInfo.entry {
-                            onSelectEntry(entry)
-                        }
-                    } label: {
-                        HeatmapDayCell(dayInfo: dayInfo)
-                            .id(dayInfo.date) // Use date for stable ID if needed
+                // Weekday Header
+                HStack(spacing: 6) { // Match grid spacing
+                    ForEach(weekdaySymbols, id: \.self) { symbol in
+                        Text(symbol)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(styles.colors.textSecondary)
+                            .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.plain) // Use plain style to allow cell's appearance
                 }
+                .padding(.horizontal, 4) // Padding to align header text with cells
+                .padding(.bottom, styles.layout.spacingS) // Space between header and grid
+
+                // Heatmap Grid
+                LazyVGrid(columns: columns, spacing: 6) { // Match header spacing
+                    // Use the viewModel's `visibleHeatmapData` which respects the expansion state
+                    ForEach(viewModel.visibleHeatmapData) { dayInfo in
+                        // Wrap cell in a Button for tap handling
+                        Button {
+                            if let entry = dayInfo.entry {
+                                onSelectEntry(entry)
+                            }
+                        } label: {
+                            HeatmapDayCell(dayInfo: dayInfo)
+                                .id(dayInfo.date) // Use date for stable ID if needed
+                        }
+                        .buttonStyle(.plain) // Use plain style to allow cell's appearance
+                    }
+                }
+
+                // Spacer to push button down if content is short
+                 if !viewModel.isExpanded && viewModel.visibleHeatmapData.count < viewModel.totalDaysToShow {
+                      Spacer(minLength: 0)
+                 }
+
+                 // REMOVED: Expand/Collapse Button HStack from here
+
+                // --- Expanded Content ---
+                if viewModel.isExpanded {
+                    expandedContentView
+                        .transition(.opacity.combined(with: .move(edge: .top))) // Animate appearance
+                }
+
             }
+            .padding(styles.layout.paddingM) // Padding inside the card
+            .background(cardBackgroundColor) // Apply subtle gray background
+            .cornerRadius(styles.layout.radiusL) // Rounded corners for the card
 
-            // Spacer to push button down if content is short
-             if !viewModel.isExpanded && viewModel.visibleHeatmapData.count < viewModel.totalDaysToShow {
-                  Spacer(minLength: 0)
-             }
+            // Expand/Collapse Button & Text (Outside the card background)
+            VStack(spacing: styles.layout.spacingXS) {
+                Text(viewModel.isExpanded ? "Collapse" : "Show full activity history")
+                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                    .foregroundColor(styles.colors.accent)
 
-            // Expand/Collapse Button (aligned to center)
-            HStack {
-                Spacer()
-                Button {
+                Button(action: {
                     viewModel.toggleExpansion()
-                } label: {
+                }) {
                     Image(systemName: viewModel.isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 24, weight: .bold)) // Larger chevron
                         .foregroundColor(styles.colors.accent)
-                        .padding(8)
                 }
-                Spacer()
+                .frame(maxWidth: .infinity) // Allow button to take width for centering text above
             }
-            .padding(.top, styles.layout.spacingS) // Space above button
+            .padding(.top, styles.layout.spacingS) // Space between card and button
+            .padding(.bottom, styles.layout.paddingS) // Space below button
 
-            // --- Expanded Content ---
-            if viewModel.isExpanded {
-                expandedContentView
-                    .transition(.opacity.combined(with: .move(edge: .top))) // Animate appearance
-            }
-
-        }
-        .padding(styles.layout.paddingM) // Padding inside the card
-        .background(cardBackgroundColor) // Apply subtle gray background
-        .cornerRadius(styles.layout.radiusL) // Rounded corners for the card
+        } // End outer VStack
     }
 
     // Extracted view for the expanded content
@@ -162,6 +183,7 @@ struct ActivityHeatmapView: View {
 #Preview {
     // Create a mock AppState for previewing
     let mockAppState = AppState()
+    let mockDbService = DatabaseService() // Need DB service for view model
     let calendar = Calendar.current
     let today = Date()
     // Add some mock entries for preview
@@ -174,8 +196,8 @@ struct ActivityHeatmapView: View {
         return nil
     } + [JournalEntry(text: "Today", mood: .happy, date: today)] // Ensure today has an entry
 
-    // Instantiate the ViewModel with the mock AppState
-    let previewViewModel = ActivityHeatmapViewModel(appState: mockAppState)
+    // Instantiate the ViewModel with the mock AppState and DBService
+    let previewViewModel = ActivityHeatmapViewModel(appState: mockAppState, databaseService: mockDbService)
 
     return ActivityHeatmapView(viewModel: previewViewModel) { entry in
         print("Preview: Tapped entry from \(entry.date)")
@@ -183,6 +205,7 @@ struct ActivityHeatmapView: View {
     .padding()
     .background(Color.black.opacity(0.9))
     .environmentObject(mockAppState)
+    .environmentObject(mockDbService) // Provide DB service
     .environmentObject(UIStyles.shared)
     .environmentObject(ThemeManager.shared)
     .preferredColorScheme(.dark)

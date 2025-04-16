@@ -31,6 +31,9 @@ struct MainTabView: View {
   @State private var bottomSheetExpanded = false
   @State private var isDragging = false
 
+  // Environment value for preview popup state
+  @Environment(\.isPreviewPopupPresented) private var isPreviewPopupPresented
+
   // Shared UI styles
   @ObservedObject private var styles = UIStyles.shared
 
@@ -136,8 +139,8 @@ struct MainTabView: View {
                   // ZStack for view switching
                   Group {
                        if selectedTab == 0 {
-                           // Pass the appState environment object to JournalView's initializer
-                           JournalView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true), appState: appState)
+                           // Pass the appState and databaseService environment objects to JournalView's initializer
+                           JournalView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true), appState: appState, databaseService: databaseService)
                                .transition(.opacity)
                        } else if selectedTab == 1 {
                            InsightsView(tabBarOffset: .constant(0), lastScrollPosition: .constant(0), tabBarVisible: .constant(true))
@@ -172,7 +175,10 @@ struct MainTabView: View {
                               .contentShape(Rectangle())
                               .padding(.top, bottomSheetExpanded ? 0 : 20)
                               .padding(.bottom, bottomSheetExpanded ? 16 : 8)
-                          }.buttonStyle(PlainButtonStyle())
+                          }
+                          .buttonStyle(PlainButtonStyle())
+                          .disabled(isPreviewPopupPresented) // Disable button when popup is shown
+                          .opacity(isPreviewPopupPresented ? 0.5 : 1.0) // Dim when disabled
 
                           if bottomSheetExpanded {
                               HStack(spacing: 0) {

@@ -18,6 +18,7 @@ struct HeatmapDayInfo: Identifiable, Equatable {
 @MainActor
 class ActivityHeatmapViewModel: ObservableObject {
     @ObservedObject private var appState: AppState
+    private let databaseService: DatabaseService // Add DatabaseService dependency
     private var cancellables = Set<AnyCancellable>()
 
     @Published var heatmapData: [HeatmapDayInfo] = []
@@ -48,8 +49,10 @@ class ActivityHeatmapViewModel: ObservableObject {
         }
     }
 
-    init(appState: AppState) {
+    // Update initializer to accept DatabaseService
+    init(appState: AppState, databaseService: DatabaseService) {
         self.appState = appState
+        self.databaseService = databaseService // Store DatabaseService
         print("[ActivityHeatmapViewModel] Initializing...")
         prepareHeatmapData() // Initial data prep
         loadNarrative() // << ADDED: Load initial narrative
@@ -68,13 +71,27 @@ class ActivityHeatmapViewModel: ObservableObject {
     private func prepareHeatmapData() {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
+        let firstWeekday = calendar.firstWeekday // e.g., 1 for Sunday, 2 for Monday
 
         // Calculate the start date needed to show `totalDaysToShow` ending today
-        guard let startDate = calendar.date(byAdding: .day, value: -(totalDaysToShow - 1), to: today) else {
-            print("‼️ [ActivityHeatmapViewModel] Could not calculate start date.")
-            self.heatmapData = []
-            return
+        // AND ensure the grid starts on the correct first day of the week visually.
+        let todayWeekday = calendar.component(.weekday, from: today) // Weekday of today (1-7)
+        // Calculate how many days ago the *start* of the week containing `startDateCandidate` was, according to the calendar's firstWeekday.
+        // Adjust calculation to ensure the grid always ends with 'today' in the correct weekday slot
+        let daysFromStartOfWeekToToday = (todayWeekday - firstWeekday + 7) % 7
+        let totalDaysToDisplay = totalDaysToShow // Use the full 35 days for calculation base
+        let weeksToDisplay = Int(ceil(Double(totalDaysToDisplay) / 7.0))
+        let daysInLastVisualWeek = daysFromStartOfWeekToToday + 1 // Number of days shown in the last row up to 'today'
+        let totalDaysNeededForGrid = (weeksToDisplay - 1) * 7 + daysInLastVisualWeek
+        let daysToSubtractForGridStart = totalDaysNeededForGrid - 1 // Subtract one less day to get the start date
+
+        guard let startDate = calendar.date(byAdding: .day, value: -daysToSubtractForGridStart, to: today) else {
+             print("‼️ [ActivityHeatmapViewModel] Could not calculate start date for grid alignment.")
+             self.heatmapData = []
+             return
         }
+        print("[ActivityHeatmapViewModel] Calculated grid start date: \(startDate), Today: \(today), FirstWeekday: \(firstWeekday)")
+
 
         // Create a dictionary of the *latest* entry for each day for quick lookup
         let entriesByDay = Dictionary(
@@ -86,26 +103,17 @@ class ActivityHeatmapViewModel: ObservableObject {
 
         var days: [HeatmapDayInfo] = []
         var currentDate = startDate
-        while currentDate <= today {
+        // Generate exactly totalDaysToShow days for the heatmap data array
+        for _ in 0..<totalDaysToShow {
             let entryForDay = entriesByDay[currentDate] // Look up the latest entry for this specific day
             days.append(HeatmapDayInfo(date: currentDate, entry: entryForDay))
             guard let nextDay = calendar.date(byAdding: .day, value: 1, to: currentDate) else { break }
             currentDate = nextDay
         }
 
-        // Ensure we always have exactly `totalDaysToShow` days, padding with empty future dates if needed (unlikely here)
-        let paddingNeeded = totalDaysToShow - days.count
-        if paddingNeeded > 0 {
-            print("⚠️ [ActivityHeatmapViewModel] Padding heatmap data with \(paddingNeeded) future days.")
-            for i in 1...paddingNeeded {
-                 if let futureDate = calendar.date(byAdding: .day, value: i, to: today) {
-                     days.append(HeatmapDayInfo(date: futureDate, entry: nil))
-                 }
-            }
-        }
 
-        // Final check and assignment
-        let finalData = Array(days.suffix(totalDaysToShow))
+        // Final check and assignment - should always have totalDaysToShow now
+        let finalData = days // Use the generated days directly
          // Only update if the data has actually changed to prevent unnecessary UI redraws
          if finalData != self.heatmapData {
              self.heatmapData = finalData
@@ -135,13 +143,8 @@ class ActivityHeatmapViewModel: ObservableObject {
             var decodeError: Error? = nil
             var finalResult: StreakNarrativeResult? = nil
             do {
-                // Access databaseService via AppState or pass it in init if needed
-                // Assuming AppState holds a reference or we modify init later
-                // For now, let's assume DatabaseService is accessible globally or via AppState
-                // Example: let dbService = await appState.databaseService // If AppState holds it
-                let dbService = DatabaseService() // TEMPORARY: Instantiate directly - Needs proper injection later
-
-                if let (json, date, _) = try dbService.loadLatestInsight(type: narrativeInsightTypeIdentifier) {
+                // Use the injected databaseService instance
+                if let (json, date, _) = try databaseService.loadLatestInsight(type: narrativeInsightTypeIdentifier) {
                     loadedDate = date
                     if let data = json.data(using: .utf8) {
                         let decoder = JSONDecoder()

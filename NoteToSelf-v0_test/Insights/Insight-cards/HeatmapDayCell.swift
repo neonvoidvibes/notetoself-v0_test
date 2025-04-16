@@ -24,9 +24,9 @@ struct HeatmapDayCell: View {
                  mood.icon // Use the mood's icon property
                      .resizable()
                      .scaledToFit()
-                     .foregroundColor(mood.color) // Color the icon with the mood color
+                     .foregroundColor(mood.journalColor) // Use journalColor
                      .frame(width: cellSize * 0.6, height: cellSize * 0.6) // Icon size relative to cell
-                     .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 1) // Subtle shadow for icon pop
+                     // REMOVED: .shadow(...)
             }
 
             // Today Indicator Border (subtle accent)
