@@ -15,8 +15,8 @@ struct HeatmapDayCell: View {
         ZStack {
             // Base background/shape
             RoundedRectangle(cornerRadius: styles.layout.radiusM / 2) // Keep subtle rounding
-                // Use accent color with low opacity for today, otherwise secondary background
-                .fill(isToday ? styles.colors.accent.opacity(0.15) : styles.colors.secondaryBackground.opacity(0.3))
+                // Use secondary background for all base cells
+                .fill(styles.colors.secondaryBackground.opacity(0.3))
                 .frame(width: cellSize, height: cellSize)
 
             // Display Mood Icon if entry exists
@@ -26,11 +26,17 @@ struct HeatmapDayCell: View {
                      .scaledToFit()
                      .foregroundColor(mood.journalColor) // Use journalColor
                      .frame(width: cellSize * 0.6, height: cellSize * 0.6) // Icon size relative to cell
-                     // REMOVED: .shadow(...)
+                     .frame(width: cellSize * 0.6, height: cellSize * 0.6) // Icon size relative to cell
             }
 
-            // REMOVED: Today Indicator Border overlay
-            // if isToday { ... }
+            // Today Indicator: Inner Ring Overlay
+            if isToday {
+                 Circle()
+                     // Use strokeBorder for inner stroke
+                     .strokeBorder(styles.colors.accent.opacity(0.8), lineWidth: 2)
+                     // Make the circle smaller than the cell for the ring effect
+                     .frame(width: cellSize * 0.85, height: cellSize * 0.85)
+            }
         }
         .frame(width: cellSize, height: cellSize) // Ensure ZStack respects the size
     }

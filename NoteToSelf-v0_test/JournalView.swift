@@ -350,7 +350,8 @@ struct JournalView: View {
                             .font(styles.typography.bodyFont) // Size already increased
                             .foregroundColor(heatmapViewModel.loadNarrativeError ? styles.colors.error : styles.colors.textSecondary)
                             // REMOVED: .lineLimit(5)
-                            .fixedSize(horizontal: false, vertical: true) // Allow vertical expansion
+                            .fixedSize(horizontal: false, vertical: true) // Ensure vertical expansion
+                            .layoutPriority(1) // Give text priority in layout
                             .padding(.horizontal, styles.layout.paddingL * 2) // Match SharedSectionHeader padding
                             .padding(.top, styles.layout.spacingXS) // Small space below header
                             .padding(.bottom, styles.layout.spacingM) // Space above heatmap card
