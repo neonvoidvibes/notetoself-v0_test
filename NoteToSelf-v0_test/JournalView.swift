@@ -347,16 +347,15 @@ struct JournalView: View {
                     // Narrative Snippet (Displayed INSIDE section, only when collapsed)
                     if !heatmapViewModel.isExpanded {
                         Text(heatmapViewModel.narrativeSnippetDisplay)
-                            .font(styles.typography.bodyFont) // Size already increased
+                            .font(styles.typography.bodyFont) // Increased font size
                             .foregroundColor(heatmapViewModel.loadNarrativeError ? styles.colors.error : styles.colors.textSecondary)
-                            // REMOVED: .lineLimit(5)
-                            .fixedSize(horizontal: false, vertical: true) // Ensure vertical expansion
-                            .layoutPriority(1) // Give text priority in layout
+                             // REMOVED: .lineLimit(5)
+                            .fixedSize(horizontal: false, vertical: true) // Ensure vertical expansion is prioritized
                             .padding(.horizontal, styles.layout.paddingL * 2) // Match SharedSectionHeader padding
                             .padding(.top, styles.layout.spacingXS) // Small space below header
                             .padding(.bottom, styles.layout.spacingM) // Space above heatmap card
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .transition(.opacity) // Fade in/out
+                             // REMOVED: .transition(.opacity) temporarily to debug layout
                     }
 
                     // Instantiate the new heatmap view

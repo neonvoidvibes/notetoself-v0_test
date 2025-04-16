@@ -93,20 +93,18 @@ struct ActivityHeatmapView: View {
                     .font(.system(size: 10, weight: .regular, design: .monospaced))
                     .foregroundColor(styles.colors.accent)
 
-                Button(action: {
-                    viewModel.toggleExpansion()
-                }) {
-                     // Simplify Image view first
-                     Image(systemName: viewModel.isExpanded ? "chevrons.up" : "chevrons.down")
+                 Button(action: {
+                     viewModel.toggleExpansion()
+                 }) {
+                     // Revert to single chevrons
+                     Image(systemName: viewModel.isExpanded ? "chevron.up" : "chevron.down")
                          .font(.system(size: 18, weight: .bold))
                          .foregroundColor(styles.colors.accent)
-                         // Add padding around the icon to increase tap area if needed
-                         .padding(5)
-                }
-                 // REMOVED: .frame(maxWidth: .infinity) temporarily for testing
-            }
-            .frame(maxWidth: .infinity, alignment: .center) // Center the VStack containing text and button
-            .padding(.top, styles.layout.spacingS) // Space between card and button
+                         .padding(5) // Keep padding for tap area
+                 }
+             }
+             .frame(maxWidth: .infinity, alignment: .center) // Restore frame for centering text
+             .padding(.top, styles.layout.spacingS) // Space between card and button
             .padding(.bottom, styles.layout.paddingS) // Space below button
 
         } // End outer VStack
